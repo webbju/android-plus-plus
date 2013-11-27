@@ -1,0 +1,120 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30424</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{52DDF087-9B2C-49AF-BD1C-EC2B9C1DD0F5}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>AndroidPlusPlus.VsDebugEngine</RootNamespace>
+    <AssemblyName>AndroidPlusPlus.VsDebugEngine</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\Key.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\build\bin\$(Configuration)\</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\obj\$(Configuration)\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\build\bin\$(Configuration)\</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\obj\$(Configuration)\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.VisualStudio.Debugger.Interop.10.0, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Debugger.InteropA, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\AndroidPlusPlus.Common\Properties\SharedAssemblyInfo.cs">
+      <Link>Properties\SharedAssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="C\CLangDebuggeeBreakpointBound.cs" />
+    <Compile Include="C\CLangDebuggeeBreakpointPending.cs" />
+    <Compile Include="C\CLangDebuggeeDisassemblyStream.cs" />
+    <Compile Include="C\CLangDebuggeeMemoryBytes.cs" />
+    <Compile Include="C\CLangDebuggeeProperty.cs" />
+    <Compile Include="C\CLangDebuggeeModule.cs" />
+    <Compile Include="C\CLangDebuggeeProgram.cs" />
+    <Compile Include="C\CLangDebuggeeStackFrame.cs" />
+    <Compile Include="C\CLangDebuggeeThread.cs" />
+    <Compile Include="C\CLangDebugger.cs" />
+    <Compile Include="C\CLangDebuggerCallback.cs" />
+    <Compile Include="C\CLangDebuggerEvent.cs" />
+    <Compile Include="DebugEngineGuids.cs" />
+    <Compile Include="DebugEnumerator.cs" />
+    <Compile Include="DebuggeeAddress.cs" />
+    <Compile Include="DebuggeeBreakpointError.cs" />
+    <Compile Include="DebuggeeBreakpointResolution.cs" />
+    <Compile Include="DebuggeeBreakpointBound.cs" />
+    <Compile Include="DebugBreakpointManager.cs" />
+    <Compile Include="DebuggeeBreakpointPending.cs" />
+    <Compile Include="DebuggeeDocumentContext.cs" />
+    <Compile Include="DebuggeeCodeContext.cs" />
+    <Compile Include="DebuggeeProgram.cs" />
+    <Compile Include="DebuggeeProperty.cs" />
+    <Compile Include="DebuggeeStackFrame.cs" />
+    <Compile Include="DebugEngine.cs" />
+    <Compile Include="DebugEngineCallback.cs" />
+    <Compile Include="DebuggeeModule.cs" />
+    <Compile Include="DebuggeeProcess.cs" />
+    <Compile Include="DebuggeeThread.cs" />
+    <Compile Include="DebuggeeExpression.cs" />
+    <Compile Include="DebuggeePort.cs" />
+    <Compile Include="DebugPortSupplier.cs" />
+    <Compile Include="DebugProgramProvider.cs" />
+    <Compile Include="DebugEngineEvent.cs" />
+    <Compile Include="Java\JavaLangDebugger.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AndroidPlusPlus.Common\AndroidPlusPlus.Common.csproj">
+      <Project>{6D575221-37D1-4C3D-82A5-5FEB632069AA}</Project>
+      <Name>AndroidPlusPlus.Common</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Key.snk">
+      <Link>Key.snk</Link>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
