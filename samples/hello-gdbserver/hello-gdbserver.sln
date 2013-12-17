@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hello-gdbserver", "hello-gdbserver.vcxproj", "{36324E8C-BC78-4B9E-A9E4-C6DC98158C80}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Android++ = Debug|Android++
+		Release|Android++ = Release|Android++
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{36324E8C-BC78-4B9E-A9E4-C6DC98158C80}.Debug|Android++.ActiveCfg = Debug|Android++
+		{36324E8C-BC78-4B9E-A9E4-C6DC98158C80}.Debug|Android++.Build.0 = Debug|Android++
+		{36324E8C-BC78-4B9E-A9E4-C6DC98158C80}.Release|Android++.ActiveCfg = Release|Android++
+		{36324E8C-BC78-4B9E-A9E4-C6DC98158C80}.Release|Android++.Build.0 = Release|Android++
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
