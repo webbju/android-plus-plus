@@ -38,7 +38,7 @@
 
     <TargetName>$(ProjectName)</TargetName>
 
-    <TargetExt>.apk</TargetExt>
+    <TargetExt>.so</TargetExt>
 
   </PropertyGroup>
 
@@ -65,8 +65,6 @@
   <!--
     Resolve target platform, environment variables, and toolset default properties.
   -->
-
-  <Import Project="$(VCTargetsPath)\Platforms\{master}\{master}.Paths.default.props" />
 
   <Import Project="$(VCTargetsPath)\Platforms\{master}\PlatformToolsets\{master}.Cpp.$(TargetArchitecture).default.props"/>
 

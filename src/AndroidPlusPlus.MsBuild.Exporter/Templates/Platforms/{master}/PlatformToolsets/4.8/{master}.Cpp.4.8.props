@@ -50,13 +50,15 @@
 
   <PropertyGroup>
 
+    <ExecutablePath Condition="'$(ExecutablePath)' == '' AND '$(SixtyFourBit)' == 'true' AND Exists('$(AndroidNdkRoot)\prebuilt\windows-x86_64')">$(AndroidNdkRoot)\prebuilt\windows-x86_64;$(PATH);</ExecutablePath>
+
     <ExecutablePath Condition="'$(ExecutablePath)' == ''">$(AndroidNdkRoot)\prebuilt\windows\bin;$(PATH);</ExecutablePath>
 
-    <IncludePath Condition="'$(IncludePath)' == ''">$(PlatformToolsetSysRoot)\usr\include;$(PlatformToolsetToolchainFolder)\prebuilt\windows\include</IncludePath>
+    <IncludePath Condition="'$(IncludePath)' == ''">$(PlatformToolsetSysRoot)\usr\include;$(PlatformToolsetPrebuilt)\include</IncludePath>
 
     <ReferencePath Condition="'$(ReferencePath)' == ''"></ReferencePath>
 
-    <LibraryPath Condition="'$(LibraryPath)' == ''">$(PlatformToolsetSysRoot)\usr\lib;$(PlatformToolsetToolchainFolder)\prebuilt\windows\lib</LibraryPath>
+    <LibraryPath Condition="'$(LibraryPath)' == ''">$(PlatformToolsetSysRoot)\usr\lib;$(PlatformToolsetPrebuilt)\lib</LibraryPath>
 
     <SourcePath Condition="'$(SourcePath)' == ''"></SourcePath>
 
@@ -72,7 +74,7 @@
 
     <ClCompile>
 
-      <NoCanonicalPrefixes Condition="'%(ClCompile.NoCanonicalPrefixes)' == ''">false</NoCanonicalPrefixes>
+      <NoCanonicalPrefixes Condition="'%(ClCompile.NoCanonicalPrefixes)' == ''">true</NoCanonicalPrefixes>
 
     </ClCompile>
 
@@ -86,7 +88,7 @@
 
     <Link>
 
-      <NoCanonicalPrefixes Condition="'%(Link.NoCanonicalPrefixes)' == ''">false</NoCanonicalPrefixes>
+      <NoCanonicalPrefixes Condition="'%(Link.NoCanonicalPrefixes)' == ''">true</NoCanonicalPrefixes>
 
     </Link>
 
@@ -100,7 +102,7 @@
 
     <Lib>
 
-      <NoCanonicalPrefixes Condition="'%(Lib.NoCanonicalPrefixes)' == ''">false</NoCanonicalPrefixes>
+      <NoCanonicalPrefixes Condition="'%(Lib.NoCanonicalPrefixes)' == ''">true</NoCanonicalPrefixes>
 
     </Lib>
 

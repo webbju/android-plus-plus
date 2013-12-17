@@ -22,9 +22,9 @@
   xmlns="http://schemas.microsoft.com/build/2009/properties">
 
   <Rule.Categories>
-    <Category Name="General" DisplayName="General" Description="General" />
-    <Category Name="ProjectDefaults" DisplayName="Project Defaults" Description="Project Defaults" />
-    <Category Name="CustomProps" DisplayName="{master}" Description="{master} General Properties" />
+    <Category Name="General" DisplayName="General"/>
+    <Category Name="ProjectDefaults" DisplayName="Project Defaults" />
+    <Category Name="PlatformDefaults" DisplayName="Platform Defaults" />
   </Rule.Categories>
 
   <Rule.DataSource>
@@ -37,52 +37,11 @@
 
   <StringProperty 
     Name="AndroidSdkRoot" 
-    DisplayName="Android SDK Root"
+    DisplayName="SDK Root"
     Description="Specifies the path to the Android SDK root directory."
-    Category="CustomProps" 
+    Category="PlatformDefaults" 
     Subtype="folder" 
   />
-
-  <!--
-    ({master}) Android NDK Root
-  -->
-
-  <StringProperty 
-    Name="AndroidNdkRoot" 
-    DisplayName="Android NDK Root"
-    Description="Specifies the path to the Android NDK root directory."
-    Category="CustomProps" 
-    Subtype="folder" 
-  />
-
-  <!--
-    ({master}) Android Manifest
-  -->
-
-  <StringProperty
-    Name="AndroidManifest"
-    DisplayName="Android Manifest"
-    Description="Specifies the path to the project's AndroidManifest.xml"
-    Category="ProjectDefaults"
-    Subtype="file"
-  />
-
-  <!--
-    ({master}) Android Target Architectures
-  -->
-
-  <EnumProperty
-    Name="TargetArchitecture" 
-    DisplayName="Target Architecture" 
-    Category="ProjectDefaults"
-    MultipleValuesAllowed="true">
-
-    <EnumValue Name="armv5te" DisplayName="ARM Architecture v5te (armv5te)" />
-    <EnumValue Name="armv7-a" DisplayName="ARM Architecture v7-a (armv7-a)" />
-    <EnumValue Name="mips" DisplayName="MIPS Architecture (mips)" />
-    <EnumValue Name="x86" DisplayName="x86 Architecture (x86)" />
-
-  </EnumProperty>
 
   <!--
     ({master}) Android SDK API levels
@@ -92,14 +51,16 @@
 
   <EnumProperty
     Name="AndroidSdkLevel"
-    DisplayName="Android SDK API Target Level"
+    DisplayName="SDK Target API Level"
     Description="Specifies the target API level for SDK dependencies."
-    Category="ProjectDefaults">
+    Category="PlatformDefaults">
 
-    <EnumValue Name="17" DisplayName="Android 4.2 (android-17)" />
-    <EnumValue Name="16" DisplayName="Android 4.1 (android-16)" />
-    <EnumValue Name="15" DisplayName="Android 4.0.3 (android-15)" />
-    <EnumValue Name="14" DisplayName="Android 4.0 (android-14)" />
+    <EnumValue Name="19" DisplayName="Android 4.4 (android-19)" />
+    <EnumValue Name="18" DisplayName="Android 4.3 (android-18)" />
+    <EnumValue Name="17" DisplayName="Android 4.2.x (android-17)" />
+    <EnumValue Name="16" DisplayName="Android 4.1.x (android-16)" />
+    <EnumValue Name="15" DisplayName="Android 4.0.4 (android-15)" />
+    <EnumValue Name="14" DisplayName="Android 4.0.2 (android-14)" />
     <EnumValue Name="13" DisplayName="Android 3.2 (android-13)" />
     <EnumValue Name="12" DisplayName="Android 3.1.x (android-12)" />
     <EnumValue Name="11" DisplayName="Android 3.0.x (android-11)" />
@@ -111,6 +72,18 @@
     <EnumValue Name="3" DisplayName="Android 1.5 (android-3)" />
 
   </EnumProperty>
+  
+  <!--
+    ({master}) Android NDK Root
+  -->
+
+  <StringProperty 
+    Name="AndroidNdkRoot" 
+    DisplayName="NDK Root"
+    Description="Specifies the path to the Android NDK root directory."
+    Category="PlatformDefaults" 
+    Subtype="folder" 
+  />
 
   <!--
     ({master}) Android NDK API levels
@@ -118,13 +91,19 @@
     See: http://developer.android.com/guide/appendix/api-levels.html
   -->
 
-  <EnumProperty 
-    Name="AndroidNdkLevel" 
-    DisplayName="Android NDK API Target Level" 
+  <EnumProperty
+    Name="AndroidNdkLevel"
+    DisplayName="NDK Target API Level"
     Description="Specifies the target API level for NDK dependencies."
-    Category="ProjectDefaults">
+    Category="PlatformDefaults">
 
-    <EnumValue Name="14" DisplayName="Android 4.0 (android-14)" />
+    <EnumValue Name="19" DisplayName="Android 4.4 (android-19)" />
+    <EnumValue Name="18" DisplayName="Android 4.3 (android-18)" />
+    <EnumValue Name="17" DisplayName="Android 4.2.x (android-17)" />
+    <EnumValue Name="16" DisplayName="Android 4.1.x (android-16)" />
+    <EnumValue Name="15" DisplayName="Android 4.0.4 (android-15)" />
+    <EnumValue Name="14" DisplayName="Android 4.0.2 (android-14)" />
+    <EnumValue Name="13" DisplayName="Android 3.2 (android-13)" />
     <EnumValue Name="9" DisplayName="Android 2.3 (android-9)" />
     <EnumValue Name="8" DisplayName="Android 2.2 (android-8)" />
     <EnumValue Name="5" DisplayName="Android 2.0 (android-5)" />
@@ -134,20 +113,19 @@
   </EnumProperty>
 
   <!--
-    ({master}) Android STL libraries
+    ({master}) Android Target Architectures
   -->
 
-  <EnumProperty 
-    Name="AndroidStlType" 
-    DisplayName="STL Type" 
-    Category="ProjectDefaults">
+  <EnumProperty
+    Name="TargetArchitecture" 
+    DisplayName="NDK Target Architecture" 
+    Category="PlatformDefaults"
+    MultipleValuesAllowed="true">
 
-    <EnumValue Name="none" DisplayName="No C++ Support"/>
-    <EnumValue Name="system" DisplayName="Minimal C++ without STL"/>
-    <EnumValue Name="gnustl_static" DisplayName="GNU libstdc++ Static"/>
-    <EnumValue Name="gnustl_dynamic" DisplayName="GNU libstdc++ Dynamic"/>
-    <EnumValue Name="stlport_static" DisplayName="STLport Static"/>
-    <EnumValue Name="stlport_dynamic" DisplayName="STLport Dynamic"/>
+    <EnumValue Name="armv5te" DisplayName="ARM Architecture v5te (armv5te)" />
+    <EnumValue Name="armv7-a" DisplayName="ARM Architecture v7-a (armv7-a)" />
+    <EnumValue Name="mips" DisplayName="MIPS Architecture (mips)" />
+    <EnumValue Name="x86" DisplayName="x86 Architecture (x86)" />
 
   </EnumProperty>
 
@@ -291,7 +269,7 @@
     F1Keyword="VC.Project.VCConfiguration.ConfigurationType">
 
     <EnumValue Name="Makefile" DisplayName="Makefile" Description="Makefile" />
-    <EnumValue Name="Application" DisplayName="Application (.apk)" Description="Application (.apk)" />
+    <EnumValue Name="Application" DisplayName="Application (.apk)" Description="Application (.so)" />
     <EnumValue Name="DynamicLibrary" DisplayName="Dynamic Library (.so)" Description="Dynamic Library (.so)" />
     <EnumValue Name="StaticLibrary" DisplayName="Static library (.a)" Description="Static Library (.a)" />
 

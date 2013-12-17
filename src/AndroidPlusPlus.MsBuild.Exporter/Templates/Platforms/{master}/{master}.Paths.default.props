@@ -22,6 +22,8 @@
     <AndroidSdkRoot Condition="'$(AndroidSdkRoot)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Android SDK Tools@Path)</AndroidSdkRoot>
     <AndroidSdkRoot Condition="'$(AndroidSdkRoot)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Android SDK Tools@Path)</AndroidSdkRoot>
 
+    <AndroidSdkLevel Condition="'$(AndroidSdkLevel)' == '' AND Exists('$(AndroidSdkRoot)\platforms\android-19')">19</AndroidSdkLevel>
+    <AndroidSdkLevel Condition="'$(AndroidSdkLevel)' == '' AND Exists('$(AndroidSdkRoot)\platforms\android-18')">18</AndroidSdkLevel>
     <AndroidSdkLevel Condition="'$(AndroidSdkLevel)' == '' AND Exists('$(AndroidSdkRoot)\platforms\android-17')">17</AndroidSdkLevel>
     <AndroidSdkLevel Condition="'$(AndroidSdkLevel)' == '' AND Exists('$(AndroidSdkRoot)\platforms\android-16')">16</AndroidSdkLevel>
     <AndroidSdkLevel Condition="'$(AndroidSdkLevel)' == '' AND Exists('$(AndroidSdkRoot)\platforms\android-15')">15</AndroidSdkLevel>
@@ -39,7 +41,13 @@
     <AndroidNdkRoot Condition="'$(AndroidNdkRoot)' == ''">$(ANDROID_NDK)</AndroidNdkRoot>
     <AndroidNdkRoot Condition="'$(AndroidNdkRoot)' == ''">$(ANDROID_NDK_ROOT)</AndroidNdkRoot>
 
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-19')">19</AndroidNdkLevel>
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-18')">18</AndroidNdkLevel>
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-17')">17</AndroidNdkLevel>
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-16')">16</AndroidNdkLevel>
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-15')">15</AndroidNdkLevel>
     <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-14')">14</AndroidNdkLevel>
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-13')">13</AndroidNdkLevel>
     <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-9')">9</AndroidNdkLevel>
     <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-8')">8</AndroidNdkLevel>
     <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-5')">5</AndroidNdkLevel>
@@ -49,22 +57,6 @@
     <!-- Crude 64-bit detection -->
     <SixtyFourBit Condition="'$(ProgramW6432)' != ''">true</SixtyFourBit>
     <SixtyFourBit Condition="'$(ProgramW6432)' == ''">false</SixtyFourBit>
-
-    <!-- Java_Home Dir, the JDK -->
-    <JavaVersion Condition="'$(JavaVersion)' == '' and '$(SixtyFourBit)' == 'false'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\JavaSoft\Java Development Kit@CurrentVersion)</JavaVersion>
-    <JavaVersion Condition="'$(JavaVersion)' == '' and '$(SixtyFourBit)' == 'true'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\JavaSoft\Java Development Kit@CurrentVersion)</JavaVersion>
-
-    <!-- Agh, unable to use $() vars within registry query. Hence the hard-coding to version numbers -->
-    <JavaHomeDir Condition="'$(JavaHomeDir)' == ''">$(JAVA_HOME)</JavaHomeDir>
-    <JavaHomeDir Condition="'$(JavaVersion)' == '1.8' and '$(JavaHomeDir)' == '' and '$(SixtyFourBit)' == 'false'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\JavaSoft\Java Development Kit\1.8@JavaHome)</JavaHomeDir>
-    <JavaHomeDir Condition="'$(JavaVersion)' == '1.8' and '$(JavaHomeDir)' == '' and '$(SixtyFourBit)' == 'true'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\JavaSoft\Java Development Kit\1.8@JavaHome)</JavaHomeDir>
-    <JavaHomeDir Condition="'$(JavaVersion)' == '1.7' and '$(JavaHomeDir)' == '' and '$(SixtyFourBit)' == 'false'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\JavaSoft\Java Development Kit\1.7@JavaHome)</JavaHomeDir>
-    <JavaHomeDir Condition="'$(JavaVersion)' == '1.7' and '$(JavaHomeDir)' == '' and '$(SixtyFourBit)' == 'true'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\JavaSoft\Java Development Kit\1.7@JavaHome)</JavaHomeDir>
-    <JavaHomeDir Condition="'$(JavaVersion)' == '1.6' and '$(JavaHomeDir)' == '' and '$(SixtyFourBit)' == 'false'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\JavaSoft\Java Development Kit\1.6@JavaHome)</JavaHomeDir>
-    <JavaHomeDir Condition="'$(JavaVersion)' == '1.6' and '$(JavaHomeDir)' == '' and '$(SixtyFourBit)' == 'true'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\JavaSoft\Java Development Kit\1.6@JavaHome)</JavaHomeDir>
-    <JavaHomeDir Condition="'$(JavaVersion)' == '1.5' and '$(JavaHomeDir)' == '' and '$(SixtyFourBit)' == 'false'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\JavaSoft\Java Development Kit\1.5@JavaHome)</JavaHomeDir>
-    <JavaHomeDir Condition="'$(JavaVersion)' == '1.5' and '$(JavaHomeDir)' == '' and '$(SixtyFourBit)' == 'true'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\JavaSoft\Java Development Kit\1.5@JavaHome)</JavaHomeDir>
-    <JavaHomeDir Condition="'$(JavaHomeDir)' == ''">&lt;unset&gt;</JavaHomeDir>
 
     <VCInstallDir>$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VisualStudio\10.0\Setup\VC@ProductDir)</VCInstallDir>
     <VCInstallDir Condition="'$(VCInstallDir)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\Setup\VC@ProductDir)</VCInstallDir>

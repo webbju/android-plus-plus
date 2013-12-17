@@ -30,42 +30,6 @@
   />
 
   <ContentType
-    Name="AndroidManifest"
-    DisplayName="Android Manifest"
-    ItemType="AndroidManifest"
-  />
-
-  <ContentType
-    Name="AndroidAidl"
-    DisplayName="Android Aidl Interface"
-    ItemType="AndroidAidl"
-  />
-
-  <ContentType
-    Name="AndroidJavaCode"
-    DisplayName="Android Java Code"
-    ItemType="AndroidJava"
-  />
-
-  <ContentType
-    Name="AndroidJavaLibrary"
-    DisplayName="Android Java Library"
-    ItemType="AndroidJavaArchive"
-  />
-
-  <ContentType
-    Name="AndroidDalvik"
-    DisplayName="Android Dalvik Executable"
-    ItemType="AndroidDalvik"
-  />
-
-  <ContentType
-    Name="AndroidApplication"
-    DisplayName="Android Application"
-    ItemType="AndroidApk"
-  />
-
-  <ContentType
       Name="Makefile"
       DisplayName="Makefile"
       ItemType="None">
@@ -85,12 +49,6 @@
 
   <ItemType Name="ClCompile" DisplayName="C/C++ Compiler"/>
   <ItemType Name="ClInclude" DisplayName="C/C++ Header"/>
-  <ItemType Name="AndroidManifest" DisplayName="Android Manifest"/>
-  <ItemType Name="AndroidAidl" DisplayName="Android Aidl Interface"/>
-  <ItemType Name="AndroidJava" DisplayName="Android Java"/>
-  <ItemType Name="AndroidJavaArchive" DisplayName="Android Java Archive"/>
-  <ItemType Name="AndroidDalvik" DisplayName="Android Dalvik Executable"/>
-  <ItemType Name="AndroidApk" DisplayName="Android Application"/>
 
   <ItemType Name="CustomBuild" DisplayName="Custom Build Tool"/>
   <ItemType Name="None" DisplayName="Does not participate in build"/>
@@ -107,11 +65,6 @@
   <FileExtension Name=".h" ContentType="CppHeader"/>
   <FileExtension Name=".hpp" ContentType="CppHeader"/>
   <FileExtension Name=".hxx" ContentType="CppHeader"/>
-
-  <FileExtension Name=".aidl" ContentType="AndroidAidl"/>
-  <FileExtension Name=".java" ContentType="AndroidJavaCode"/>
-  <FileExtension Name=".jar" ContentType="AndroidJavaLibrary"/>
-  <FileExtension Name=".apk" ContentType="AndroidApplication"/>
 
   <FileExtension Name=".mk" ContentType="MakeFile"/>
   <FileExtension Name=".txt" ContentType="Text"/>

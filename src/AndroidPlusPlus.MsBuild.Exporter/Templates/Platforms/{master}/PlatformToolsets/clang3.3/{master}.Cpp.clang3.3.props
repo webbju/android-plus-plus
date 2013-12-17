@@ -20,9 +20,9 @@
 
   <PropertyGroup>
 
-    <GccToolchainVersion>4.7</GccToolchainVersion>
+    <GccToolchainVersion>4.8</GccToolchainVersion>
 
-    <LlvmVersion>3.1</LlvmVersion>
+    <LlvmVersion>3.3</LlvmVersion>
 
     <PlatformToolsetToolchainFolder>$(AndroidNdkRoot)\toolchains\$(TargetPlatformArchitectureToolchainPrefix)-$(GccToolchainVersion)</PlatformToolsetToolchainFolder>
 
@@ -60,13 +60,15 @@
 
   <PropertyGroup>
 
+    <ExecutablePath Condition="'$(ExecutablePath)' == '' AND '$(SixtyFourBit)' == 'true' AND Exists('$(AndroidNdkRoot)\prebuilt\windows-x86_64')">$(AndroidNdkRoot)\prebuilt\windows-x86_64;$(PATH);</ExecutablePath>
+
     <ExecutablePath Condition="'$(ExecutablePath)' == ''">$(AndroidNdkRoot)\prebuilt\windows\bin;$(PATH);</ExecutablePath>
 
-    <IncludePath Condition="'$(IncludePath)' == ''">$(PlatformToolsetSysRoot)\usr\include;$(PlatformToolsetToolchainFolder)\prebuilt\windows\include</IncludePath>
+    <IncludePath Condition="'$(IncludePath)' == ''">$(PlatformToolsetSysRoot)\usr\include;$(PlatformToolsetPrebuilt)\include</IncludePath>
 
     <ReferencePath Condition="'$(ReferencePath)' == ''"></ReferencePath>
 
-    <LibraryPath Condition="'$(LibraryPath)' == ''">$(PlatformToolsetSysRoot)\usr\lib;$(PlatformToolsetToolchainFolder)\prebuilt\windows\lib</LibraryPath>
+    <LibraryPath Condition="'$(LibraryPath)' == ''">$(PlatformToolsetSysRoot)\usr\lib;$(PlatformToolsetPrebuilt)\lib</LibraryPath>
 
     <SourcePath Condition="'$(SourcePath)' == ''"></SourcePath>
 

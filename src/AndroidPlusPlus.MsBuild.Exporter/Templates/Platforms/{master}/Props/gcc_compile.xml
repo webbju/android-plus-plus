@@ -213,7 +213,7 @@
   -->
 
   <EnumProperty
-    Name="OptimizationLevel"
+    Name="Optimization"
     DisplayName="Optimization"
     Description="Select option for code optimization; choose Custom to use specific optimization options.     (/Od, /O1, /O2, /Ox)"
     Category="Optimization">
@@ -226,21 +226,21 @@
     />
 
     <EnumValue
-      Name="O1"
+      Name="MinSpace"
       Switch="O1"
       DisplayName="Optimization Level 1"
       Description="Compiler tries to reduce code size and execution time, without performing any optimizations that take a great deal of compilation time."
     />
 
     <EnumValue
-      Name="O2"
+      Name="MaxSpeed"
       Switch="O2"
       DisplayName="Optimization Level 2"
       Description="Compiler performs nearly all supported optimizations that do not involve a space-speed tradeoff."
     />
 
     <EnumValue
-      Name="O3"
+      Name="Full"
       Switch="O3"
       DisplayName="Optimization Level 3"
       Description="Optimize yet more. Full Optimization and aggressive inlining."
