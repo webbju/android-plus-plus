@@ -7,13 +7,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="jni\hello-gdbserver.c">
+    <ClCompile Include="jni\hello-jni.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="AndroidManifest.xml" />
-    <None Include="src\com\example\hellogdbserver\HelloGdbServer.java">
+    <None Include="src\com\example\hellojni\HelloJni.java">
       <Filter>Source Files</Filter>
     </None>
   </ItemGroup>
