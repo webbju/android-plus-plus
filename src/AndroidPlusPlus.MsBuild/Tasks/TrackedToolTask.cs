@@ -472,15 +472,17 @@ namespace AndroidPlusPlus.MsBuild
         }
       }
 
+#if DEBUG
       for (int i = 0; i < Sources.Length; ++i)
       {
-        Log.LogMessageFromText (string.Format ("[{0}] : Sources [{1}] {2}", ToolName, i, Sources [i].ToString ()), MessageImportance.Low);
+        Log.LogMessageFromText (string.Format ("[{0}] Sources: [{1}] {2}", ToolName, i, Sources [i].ToString ()), MessageImportance.Low);
 
         foreach (string metadataName in Sources [i].MetadataNames)
         {
-          Log.LogMessageFromText (string.Format ("[{0}] : Metadata: '{1}' = {2} ", ToolName, metadataName, Sources [i].GetMetadata (metadataName)), MessageImportance.Low);
+          Log.LogMessageFromText (string.Format ("[{0}] --> Metadata: '{1}' = {2} ", ToolName, metadataName, Sources [i].GetMetadata (metadataName)), MessageImportance.Low);
         }
       }
+#endif
 
       return true;
     }
