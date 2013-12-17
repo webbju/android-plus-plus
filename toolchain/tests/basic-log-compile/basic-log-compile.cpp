@@ -27,7 +27,7 @@
 
 int main (void) 
 {
-  __android_log_write (ANDROID_LOG_INFO, "basic-log-compile", "Hello World!\n");
+  __android_log_write (ANDROID_LOG_INFO, "basic-log-compile", "Hello, World!\n");
 
   return 0;
 }
