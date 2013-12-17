@@ -219,13 +219,13 @@ namespace AndroidPlusPlus.MsBuild.Exporter
       // Clean any existing MsBuild deployment.
       // 
 
-      foreach (string directory in Directory.GetDirectories (msBuildInstallationDir))
+      /*foreach (string directory in Directory.GetDirectories (msBuildInstallationDir + @"\BuildCustomizations"))
       {
         if (directory.Contains (textSubstitution ["{master}"]))
         {
           Directory.Delete (directory, true);
         }
-      }
+      }*/
 
       foreach (string directory in Directory.GetDirectories (msBuildInstallationDir + @"\Platforms"))
       {

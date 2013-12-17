@@ -59,16 +59,12 @@
     <None Include="Templates\Platforms\{master}\Microsoft.Cpp.{master}.default.props" />
     <None Include="Templates\Platforms\{master}\Microsoft.Cpp.{master}.props" />
     <None Include="Templates\Platforms\{master}\Microsoft.Cpp.{master}.targets" />
-    <None Include="Templates\Platforms\{master}\PlatformToolsets\4.4.3\{master}.Cpp.4.4.3.props" />
-    <None Include="Templates\Platforms\{master}\PlatformToolsets\4.4.3\{master}.Cpp.4.4.3.targets" />
     <None Include="Templates\Platforms\{master}\PlatformToolsets\4.6\{master}.Cpp.4.6.props" />
     <None Include="Templates\Platforms\{master}\PlatformToolsets\4.6\{master}.Cpp.4.6.targets" />
-    <None Include="Templates\Platforms\{master}\PlatformToolsets\4.7\{master}.Cpp.4.7.props" />
-    <None Include="Templates\Platforms\{master}\PlatformToolsets\4.7\{master}.Cpp.4.7.targets" />
-    <None Include="Templates\Platforms\{master}\PlatformToolsets\clang3.1\{master}.Cpp.clang3.1.props" />
-    <None Include="Templates\Platforms\{master}\PlatformToolsets\clang3.1\{master}.Cpp.clang3.1.targets" />
-    <None Include="Templates\Platforms\{master}\PlatformToolsets\clang3.2\{master}.Cpp.clang3.2.props" />
-    <None Include="Templates\Platforms\{master}\PlatformToolsets\clang3.2\{master}.Cpp.clang3.2.targets" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\4.8\{master}.Cpp.4.8.props" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\4.8\{master}.Cpp.4.8.targets" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\clang3.3\{master}.Cpp.clang3.3.props" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\clang3.3\{master}.Cpp.clang3.3.targets" />
     <None Include="Templates\Platforms\{master}\PlatformToolsets\{master}.Cpp.armv5te.default.props" />
     <None Include="Templates\Platforms\{master}\PlatformToolsets\{master}.Cpp.armv7-a.default.props" />
     <None Include="Templates\Platforms\{master}\PlatformToolsets\{master}.Cpp.mips.default.props" />
@@ -79,13 +75,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Templates\Platforms\{master}\ImportAfter\{master}Debugger.xml" />
-    <Content Include="Templates\Platforms\{master}\Props\android_aidl.xml" />
-    <Content Include="Templates\Platforms\{master}\Props\android_apk.xml" />
-    <Content Include="Templates\Platforms\{master}\Props\android_apk_deploy.xml" />
-    <Content Include="Templates\Platforms\{master}\Props\android_apk_signer.xml" />
-    <Content Include="Templates\Platforms\{master}\Props\android_dex.xml" />
-    <Content Include="Templates\Platforms\{master}\Props\android_java.xml" />
-    <Content Include="Templates\Platforms\{master}\Props\android_manifest.xml" />
     <Content Include="Templates\Platforms\{master}\Props\custom_general.xml" />
     <Content Include="Templates\Platforms\{master}\Props\custom_general_ps.xml" />
     <Content Include="Templates\Platforms\{master}\Props\custom_project_items_schema.xml" />
@@ -95,12 +84,16 @@
     <Content Include="Templates\Platforms\{master}\Props\gcc_link.xml" />
     <Content Include="Templates\Platforms\{master}\{master}.MsBuild.dll" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Templates\BuildCustomizations\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PreBuildEvent>copy /y /b "$(ProjectDir)\$(OutDir)AndroidPlusPlus.MsBuild.dll" "$(ProjectDir)Templates\Platforms\{master}\{master}.MsBuild.dll"</PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PostBuildEvent>cmd /c xcopy "$(ProjectDir)Templates\*" "$(ProjectDir)$(OutDir)Templates\" /i /s /e /y
+    <PostBuildEvent>cmd /c rmdir "$(ProjectDir)$(OutDir)Templates\" /s /q
+cmd /c xcopy "$(ProjectDir)Templates\*" "$(ProjectDir)$(OutDir)Templates\" /i /s /e /y
 $(TargetPath) --template-dir $(ProjectDir)$(OutDir)Templates\ --vs-version 2010</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
