@@ -5,11 +5,19 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.Common", ".
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.MsBuild", "..\..\src\AndroidPlusPlus.MsBuild\AndroidPlusPlus.MsBuild.csproj", "{E3A93421-987E-4704-B0D8-21415453B5C9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.MsBuild.Exporter", "..\..\src\AndroidPlusPlus.MsBuild.Exporter\AndroidPlusPlus.MsBuild.Exporter.csproj", "{3B52636E-6536-4DA7-B5DD-CD8353049CB9}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E3A93421-987E-4704-B0D8-21415453B5C9} = {E3A93421-987E-4704-B0D8-21415453B5C9}
+	EndProjectSection
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsDebugEngine", "..\..\src\AndroidPlusPlus.VsDebugEngine\AndroidPlusPlus.VsDebugEngine.csproj", "{52DDF087-9B2C-49AF-BD1C-EC2B9C1DD0F5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsDebugLauncherX", "..\..\src\AndroidPlusPlus.VsDebugLauncherX\AndroidPlusPlus.VsDebugLauncherX.csproj", "{7C701BB4-BAD8-40DA-AFDC-B9820A04F005}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsIntegratedPackage", "..\..\src\AndroidPlusPlus.VsIntegratedPackage\AndroidPlusPlus.VsIntegratedPackage.csproj", "{14DF8540-798D-46E9-9EC0-1648D3792660}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3B52636E-6536-4DA7-B5DD-CD8353049CB9} = {3B52636E-6536-4DA7-B5DD-CD8353049CB9}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,6 +33,8 @@ Global
 		{E3A93421-987E-4704-B0D8-21415453B5C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E3A93421-987E-4704-B0D8-21415453B5C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E3A93421-987E-4704-B0D8-21415453B5C9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3B52636E-6536-4DA7-B5DD-CD8353049CB9}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{3B52636E-6536-4DA7-B5DD-CD8353049CB9}.Release|Any CPU.ActiveCfg = Release|x86
 		{52DDF087-9B2C-49AF-BD1C-EC2B9C1DD0F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{52DDF087-9B2C-49AF-BD1C-EC2B9C1DD0F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{52DDF087-9B2C-49AF-BD1C-EC2B9C1DD0F5}.Release|Any CPU.ActiveCfg = Release|Any CPU

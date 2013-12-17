@@ -9,6 +9,8 @@ solution "AndroidPlusPlus"
   
   include "AndroidPlusPlus.MsBuild"
   
+  include "AndroidPlusPlus.MsBuild.Exporter"
+  
   include "AndroidPlusPlus.VsDebugEngine"
   
   include "AndroidPlusPlus.VsDebugLauncherX"
@@ -21,6 +23,6 @@ solution "AndroidPlusPlus"
   
   --include "AndroidPlusPlus.VsIsolatedShell"
   
-  startproject "../AndroidPlusPlus.VsIntegratedPackage"
+  --startproject "../AndroidPlusPlus.VsIntegratedPackage"
   
   

@@ -1,0 +1,113 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{3B52636E-6536-4DA7-B5DD-CD8353049CB9}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>AndroidPlusPlus.MsBuild.Exporter</RootNamespace>
+    <AssemblyName>AndroidPlusPlus.MsBuild.Exporter</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\build\bin\$(Configuration)\</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\obj\$(Configuration)\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\build\bin\$(Configuration)\</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\obj\$(Configuration)\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\AndroidPlusPlus.Common\Properties\SharedAssemblyInfo.cs">
+      <Link>Properties\SharedAssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Templates\Platforms\{master}\ImportAfter\{master}.targets" />
+    <None Include="Templates\Platforms\{master}\ImportBefore\{master}Debugger.props" />
+    <None Include="Templates\Platforms\{master}\Microsoft.Cpp.{master}.default.props" />
+    <None Include="Templates\Platforms\{master}\Microsoft.Cpp.{master}.props" />
+    <None Include="Templates\Platforms\{master}\Microsoft.Cpp.{master}.targets" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\4.4.3\{master}.Cpp.4.4.3.props" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\4.4.3\{master}.Cpp.4.4.3.targets" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\4.6\{master}.Cpp.4.6.props" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\4.6\{master}.Cpp.4.6.targets" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\4.7\{master}.Cpp.4.7.props" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\4.7\{master}.Cpp.4.7.targets" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\clang3.1\{master}.Cpp.clang3.1.props" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\clang3.1\{master}.Cpp.clang3.1.targets" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\clang3.2\{master}.Cpp.clang3.2.props" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\clang3.2\{master}.Cpp.clang3.2.targets" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\{master}.Cpp.armv5te.default.props" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\{master}.Cpp.armv7-a.default.props" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\{master}.Cpp.mips.default.props" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\{master}.Cpp.x86.default.props" />
+    <None Include="Templates\Platforms\{master}\{master}.CppBuild.targets" />
+    <None Include="Templates\Platforms\{master}\{master}.Paths.default.props" />
+    <None Include="Templates\Platforms\{master}\{master}.Toolset.default.props" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Templates\Platforms\{master}\ImportAfter\{master}Debugger.xml" />
+    <Content Include="Templates\Platforms\{master}\Props\android_aidl.xml" />
+    <Content Include="Templates\Platforms\{master}\Props\android_apk.xml" />
+    <Content Include="Templates\Platforms\{master}\Props\android_apk_deploy.xml" />
+    <Content Include="Templates\Platforms\{master}\Props\android_apk_signer.xml" />
+    <Content Include="Templates\Platforms\{master}\Props\android_dex.xml" />
+    <Content Include="Templates\Platforms\{master}\Props\android_java.xml" />
+    <Content Include="Templates\Platforms\{master}\Props\android_manifest.xml" />
+    <Content Include="Templates\Platforms\{master}\Props\custom_general.xml" />
+    <Content Include="Templates\Platforms\{master}\Props\custom_general_ps.xml" />
+    <Content Include="Templates\Platforms\{master}\Props\custom_project_items_schema.xml" />
+    <Content Include="Templates\Platforms\{master}\Props\gcc_compile.xml" />
+    <Content Include="Templates\Platforms\{master}\Props\gcc_directories.xml" />
+    <Content Include="Templates\Platforms\{master}\Props\gcc_lib.xml" />
+    <Content Include="Templates\Platforms\{master}\Props\gcc_link.xml" />
+    <Content Include="Templates\Platforms\{master}\{master}.MsBuild.dll" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>copy /y /b "$(ProjectDir)\$(OutDir)AndroidPlusPlus.MsBuild.dll" "$(ProjectDir)Templates\Platforms\{master}\{master}.MsBuild.dll"</PreBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PostBuildEvent>cmd /c xcopy "$(ProjectDir)Templates\*" "$(ProjectDir)$(OutDir)Templates\" /i /s /e /y
+$(TargetPath) --template-dir $(ProjectDir)$(OutDir)Templates\ --vs-version 2010</PostBuildEvent>
+  </PropertyGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
