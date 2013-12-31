@@ -71,6 +71,8 @@
   <ItemGroup>
     <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild.props" />
     <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild.targets" />
+    <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidDalvik.props" />
+    <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidDalvik.targets" />
     <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidJava.props" />
     <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidJava.targets" />
     <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidManifest.props" />
@@ -137,6 +139,7 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidDalvik.xml" />
     <Content Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidJava.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

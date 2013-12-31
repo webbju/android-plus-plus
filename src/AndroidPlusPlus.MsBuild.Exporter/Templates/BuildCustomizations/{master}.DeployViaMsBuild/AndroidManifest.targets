@@ -29,6 +29,16 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
+  <PropertyGroup>
+    <ComputeAndroidManifestInputsTargets>$(ComputeAndroidManifestInputsTargets);</ComputeAndroidManifestInputsTargets>
+  </PropertyGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
   <!-- 
     First-pass processing of AndroidManifest.xml files and associated resources.
     - AAPT tool exports specified asset directories to R.java sources, containing Id constants.
@@ -38,7 +48,8 @@
     Name="AndroidManifest"
     BeforeTargets="$(AndroidManifestBeforeTargets)"
     AfterTargets="$(AndroidManifestAfterTargets)"
-    Condition="'@(AndroidManifest)' != ''">
+    Condition="'@(AndroidManifest)' != ''"
+    DependsOnTargets="$(ComputeAndroidManifestInputsTargets)">
 
     <!-- Only request APK output for Application targets. -->
     <ItemGroup>
@@ -101,10 +112,6 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <PropertyGroup>
-    <ComputeAndroidJavaInputsTargets>$(ComputeAndroidJavaInputsTargets);ComputeAndroidManifestOutput;</ComputeAndroidJavaInputsTargets>
-  </PropertyGroup>
-  
   <Target
     Name="ComputeAndroidManifestOutput"
     Condition="'@(AndroidManifest)' != ''"

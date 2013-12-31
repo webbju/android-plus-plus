@@ -55,6 +55,16 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
+  <PropertyGroup>
+    <ComputeAndroidJavaInputsTargets>$(ComputeAndroidJavaInputsTargets);ComputeAndroidManifestOutput;</ComputeAndroidJavaInputsTargets>
+  </PropertyGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
   <!-- 
     Compile any associated .java sources.
   -->
@@ -63,7 +73,6 @@
     Name="AndroidJava"
     BeforeTargets="$(AndroidJavaBeforeTargets)"
     AfterTargets="$(AndroidJavaAfterTargets)"
-    Condition="'@(AndroidJava)' != ''"
     DependsOnTargets="$(ComputeAndroidJavaInputsTargets)">
 
     <!-- Ensure requested output directories exist -->
@@ -80,7 +89,7 @@
     <!-- Compile all explicit and generated .java sources. Outputs a list of absolute locations to generated .class files. -->
     <JavaCompile
       BuildingInIDE                  ="$(BuildingInsideVisualStudio)"
-      Sources                        ="@(AndroidJava);@(AndroidAidlOutputFiles)"
+      Sources                        ="@(AndroidJava)"
       TrackerLogDirectory            ="%(AndroidJava.TrackerLogDirectory)"
       TrackFileAccess                ="$(TrackFileAccess)"
       MinimalRebuildFromTracking     ="%(AndroidJava.MinimalRebuildFromTracking)"
@@ -105,7 +114,12 @@
 
   <Target
     Name="ComputeAndroidJavaOutput"
-    Condition="'@(AndroidJava)' != ''">
+    Condition="'@(AndroidJava)' != ''"
+    DependsOnTargets="AndroidJava">
+    <ItemGroup>
+      <AndroidDalvik Include="@(AndroidJavaOutputClassPaths->Metadata('FullPath')->Distinct()->ClearMetadata())" Condition="'@(AndroidJavaOutputClassPaths)' != ''"/>
+    </ItemGroup>
+    <Message Text="TEST = @(AndroidJavaOutputClassPaths)" />
   </Target>
 
   <!--
