@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <ItemGroup>
+    <PropertyPageSchema Include="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml" />
+  </ItemGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <UsingTask TaskName="JavaCompile" AssemblyFile="$(VCTargetsPath)\Platforms\{master}\{master-verbose}.MsBuild.DeployTasks.dll" />
+
+  <UsingTask TaskName="VCMessage" AssemblyName="Microsoft.Build.CppTasks.Common, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <!-- 
+    Evaluate JDK installation version and directory. 
+  -->
+
+  <PropertyGroup>
+
+    <JavaVersion Condition="'$(JavaVersion)' == '' and '$(SixtyFourBit)' == 'false'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\JavaSoft\Java Development Kit@CurrentVersion)</JavaVersion>
+    <JavaVersion Condition="'$(JavaVersion)' == '' and '$(SixtyFourBit)' == 'true'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\JavaSoft\Java Development Kit@CurrentVersion)</JavaVersion>
+
+    <JavaHomeDir Condition="'$(JavaHomeDir)' == ''">$(JAVA_HOME)</JavaHomeDir>
+    <JavaHomeDir Condition="'$(JavaVersion)' == '1.8' and '$(JavaHomeDir)' == '' and '$(SixtyFourBit)' == 'false'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\JavaSoft\Java Development Kit\1.8@JavaHome)</JavaHomeDir>
+    <JavaHomeDir Condition="'$(JavaVersion)' == '1.8' and '$(JavaHomeDir)' == '' and '$(SixtyFourBit)' == 'true'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\JavaSoft\Java Development Kit\1.8@JavaHome)</JavaHomeDir>
+    <JavaHomeDir Condition="'$(JavaVersion)' == '1.7' and '$(JavaHomeDir)' == '' and '$(SixtyFourBit)' == 'false'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\JavaSoft\Java Development Kit\1.7@JavaHome)</JavaHomeDir>
+    <JavaHomeDir Condition="'$(JavaVersion)' == '1.7' and '$(JavaHomeDir)' == '' and '$(SixtyFourBit)' == 'true'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\JavaSoft\Java Development Kit\1.7@JavaHome)</JavaHomeDir>
+    <JavaHomeDir Condition="'$(JavaVersion)' == '1.6' and '$(JavaHomeDir)' == '' and '$(SixtyFourBit)' == 'false'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\JavaSoft\Java Development Kit\1.6@JavaHome)</JavaHomeDir>
+    <JavaHomeDir Condition="'$(JavaVersion)' == '1.6' and '$(JavaHomeDir)' == '' and '$(SixtyFourBit)' == 'true'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\JavaSoft\Java Development Kit\1.6@JavaHome)</JavaHomeDir>
+    <JavaHomeDir Condition="'$(JavaVersion)' == '1.5' and '$(JavaHomeDir)' == '' and '$(SixtyFourBit)' == 'false'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\JavaSoft\Java Development Kit\1.5@JavaHome)</JavaHomeDir>
+    <JavaHomeDir Condition="'$(JavaVersion)' == '1.5' and '$(JavaHomeDir)' == '' and '$(SixtyFourBit)' == 'true'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\JavaSoft\Java Development Kit\1.5@JavaHome)</JavaHomeDir>
+    <JavaHomeDir Condition="'$(JavaHomeDir)' == ''">&lt;unset&gt;</JavaHomeDir>
+
+  </PropertyGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <!-- 
+    Compile any associated .java sources.
+  -->
+
+  <Target
+    Name="AndroidJava"
+    BeforeTargets="$(AndroidJavaBeforeTargets)"
+    AfterTargets="$(AndroidJavaAfterTargets)"
+    Condition="'@(AndroidJava)' != ''"
+    DependsOnTargets="$(ComputeAndroidJavaInputsTargets)">
+
+    <!-- Ensure requested output directories exist -->
+    <MakeDir Directories="%(AndroidJava.ClassOutputDirectory)" Condition="!exists('%(AndroidJava.ClassOutputDirectory)')" />
+    <MakeDir Directories="%(AndroidJava.SourceOutputDirectory)" Condition="!exists('%(AndroidJava.SourceOutputDirectory)')" />
+
+    <!-- Flag sources for incremental build -->
+    <ItemGroup>
+      <AndroidJava>
+        <MinimalRebuildFromTracking Condition="'%(AndroidJava.MinimalRebuildFromTracking)' == '' and '$(BuildType)' == 'Build' and '$(ForceRebuild)' != 'true'">true</MinimalRebuildFromTracking>
+      </AndroidJava>
+    </ItemGroup>
+
+    <!-- Compile all explicit and generated .java sources. Outputs a list of absolute locations to generated .class files. -->
+    <JavaCompile
+      BuildingInIDE                  ="$(BuildingInsideVisualStudio)"
+      Sources                        ="@(AndroidJava);@(AndroidAidlOutputFiles)"
+      TrackerLogDirectory            ="%(AndroidJava.TrackerLogDirectory)"
+      TrackFileAccess                ="$(TrackFileAccess)"
+      MinimalRebuildFromTracking     ="%(AndroidJava.MinimalRebuildFromTracking)"
+      OutputCommandLine              ="%(AndroidJava.OutputCommandLine)"
+      ToolPath                       ="$(JavaHomeDir)\bin"
+      ToolExe                        ="javac.exe"
+      PropertiesFile                 ="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml">
+
+      <Output TaskParameter="OutputFiles" ItemName="AndroidJavaOutputClassFiles" />
+      <Output TaskParameter="OutputClassPaths" ItemName="AndroidJavaOutputClassPaths" />
+      <Output TaskParameter="SkippedExecution" PropertyName="AndroidJavaSkippedExecution" />
+
+    </JavaCompile>
+
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target
+    Name="ComputeAndroidJavaOutput"
+    Condition="'@(AndroidJava)' != ''">
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+</Project>

@@ -521,7 +521,7 @@
       Description="Changes default encoding for resources to UTF-16.  Only useful when API level is set to 7 or higher where the default encoding is UTF-8."
       Category="Advanced"
       Switch="--utf16"
-  />
+    />
 
     <!--
     NonConstantResourceId
@@ -570,7 +570,7 @@
       Category="Advanced"
       Switch="--ignore-assets"
       Separator=" "
-  />
+    />
 
     <!--
     IncludeRawDirectories (needs to be last items in command line)
@@ -583,7 +583,6 @@
       Description="Directories which contents will be included as raw (unprocessed) files."
       Category="General"
       Switch=""
-      SwitchPrefix=" "
     />
 
     <!--
@@ -610,6 +609,66 @@
       Visible="false"
     />
 
+    <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    -->
+    
+    <DynamicEnumProperty
+     Name="AndroidManifestBeforeTargets"
+     Category="General"
+     EnumProvider="Targets"
+     IncludeInCommandLine="False">
+      <DynamicEnumProperty.DisplayName>
+        <sys:String>Execute Before</sys:String>
+      </DynamicEnumProperty.DisplayName>
+      <DynamicEnumProperty.Description>
+        <sys:String>Specifies the targets for the build customization to run before.</sys:String>
+      </DynamicEnumProperty.Description>
+      <DynamicEnumProperty.ProviderSettings>
+        <NameValuePair
+          Name="Exclude"
+          Value="^AndroidManifestBeforeTargets|^Compute" />
+      </DynamicEnumProperty.ProviderSettings>
+      <DynamicEnumProperty.DataSource>
+        <DataSource
+          Persistence="ProjectFile"
+          ItemType=""
+          HasConfigurationCondition="true" />
+      </DynamicEnumProperty.DataSource>
+    </DynamicEnumProperty>
+    
+    <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    -->
+    
+    <DynamicEnumProperty
+      Name="AndroidManifestAfterTargets"
+      Category="General"
+      EnumProvider="Targets"
+      IncludeInCommandLine="False">
+      <DynamicEnumProperty.DisplayName>
+        <sys:String>Execute After</sys:String>
+      </DynamicEnumProperty.DisplayName>
+      <DynamicEnumProperty.Description>
+        <sys:String>Specifies the targets for the build customization to run after.</sys:String>
+      </DynamicEnumProperty.Description>
+      <DynamicEnumProperty.ProviderSettings>
+        <NameValuePair
+          Name="Exclude"
+          Value="^AndroidManifestAfterTargets|^Compute" />
+      </DynamicEnumProperty.ProviderSettings>
+      <DynamicEnumProperty.DataSource>
+        <DataSource
+          Persistence="ProjectFile"
+          ItemType=""
+          HasConfigurationCondition="true" />
+      </DynamicEnumProperty.DataSource>
+    </DynamicEnumProperty>
+    
     <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

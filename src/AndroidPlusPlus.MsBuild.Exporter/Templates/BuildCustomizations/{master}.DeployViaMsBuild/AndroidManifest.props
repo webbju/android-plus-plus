@@ -7,10 +7,12 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
   
-  <PropertyGroup
-    Condition="'$(AndroidManifestBeforeTargets)' == '' and '$(AndroidManifestAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
+  <PropertyGroup Condition="'$(AndroidManifestBeforeTargets)' == '' and '$(AndroidManifestAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
+  
     <AndroidManifestBeforeTargets>Midl</AndroidManifestBeforeTargets>
+    
     <AndroidManifestAfterTargets>CustomBuild</AndroidManifestAfterTargets>
+    
   </PropertyGroup>
 
   <!--
@@ -49,7 +51,7 @@
 
       <ProguardOptionsOutputFile Condition="'%(AndroidManifest.ProguardOptionsOutputFile)' == ''">$(IntDir)bin\proguard.txt</ProguardOptionsOutputFile>
 
-      <ApkOutputFile Condition="'%(AndroidManifest.ApkOutputFile)' == ''">$(IntDir)bin\_AndroidManifest.apk</ApkOutputFile>
+      <ApkOutputFile Condition="'%(AndroidManifest.ApkOutputFile)' == ''"></ApkOutputFile>
 
       <IncludeExistingPackages Condition="'%(AndroidManifest.IncludeExistingPackages)' == ''">$(AndroidSdkRoot)\platforms\android-$(AndroidSdkLevel)\android.jar</IncludeExistingPackages>
 

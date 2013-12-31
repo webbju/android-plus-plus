@@ -843,7 +843,7 @@ namespace AndroidPlusPlus.MsBuild.Common
       }
       catch (Exception e)
       {
-        Log.LogErrorFromException (e, true);
+        Log.LogErrorFromException (e, true, true, null);
       }
     }
 

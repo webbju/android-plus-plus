@@ -1,0 +1,421 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ProjectSchemaDefinitions xmlns="http://schemas.microsoft.com/build/2009/properties" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    -->
+
+  <Rule
+    Name="AndroidJava"
+    PageTemplate="tool"
+    DisplayName="Android Java Tool"
+    Order="200">
+
+    <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    -->
+    
+    <Rule.DataSource>
+      <DataSource Persistence="ProjectFile" ItemType="AndroidJava" />
+    </Rule.DataSource>
+
+    <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    -->
+
+    <Rule.Categories>
+      <Category Name="General" DisplayName="General" />
+      <Category Name="Advanced" DisplayName="Advanced" />
+      <Category Name="Jar" DisplayName="Jar" />
+      <Category Name="Command Line" DisplayName="Command Line" Subtype="CommandLine" />
+    </Rule.Categories>
+
+    <!--
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    -->
+
+    <!--
+      ClassOutputDirectory
+    -->
+
+    <StringProperty
+      Subtype="folder"
+      Name="ClassOutputDirectory"
+      DisplayName="Class Output Directory"
+      Description="Specify where to place generated class files."
+      Category="General"
+      Switch="-d"
+      Separator=" "
+    />
+
+    <!--
+      SourceOutputDirectory
+    -->
+
+    <StringProperty
+      Subtype="folder"
+      Name="SourceOutputDirectory"
+      DisplayName="Source Output Directory"
+      Description="Specify where to place generated source files."
+      Category="General"
+      Switch="-s"
+      Separator=" "
+    />
+
+    <!--
+      ClassPaths
+    -->
+
+    <StringListProperty
+      Subtype="file"
+      Name="ClassPaths"
+      DisplayName="Class Path(s)"
+      Description="Specify where to find user class files, and (optionally) annotation processors and source files. Can be directories, JAR archives, or ZIP archives."
+      Category="General"
+      Switch="-classpath"
+      Separator=" "
+      CommandLineValueSeparator=";"
+    />
+
+    <!--
+      BootClassPaths
+    -->
+
+    <StringListProperty
+      Subtype="file"
+      Name="BootClassPaths"
+      DisplayName="Boot Class Path(s)"
+      Description="Cross-compile against the specified set of boot classes. As with the user class path, boot class path entries can be directories, JAR archives, or ZIP archives."
+      Category="General"
+      Switch="-bootclasspath"
+      Separator=" "
+      CommandLineValueSeparator=";"
+    />
+
+    <!--
+      SourcePath
+    -->
+
+    <StringListProperty
+      Subtype="file"
+      Name="SourcePath"
+      DisplayName="Source Path"
+      Description="Specify the source code path to search for class or interface definitions."
+      Category="General"
+      Switch="-sourcepath"
+      Separator=" "
+      CommandLineValueSeparator=";"
+    />
+
+    <!--
+      SourceCodeVersion
+    -->
+
+    <EnumProperty
+      Name="SourceCodeVersion"
+      DisplayName="Source Code Version"
+      Description="Specifies the version of source code accepted."
+      Category="Advanced">
+
+      <EnumValue
+        Name="1.3"
+        DisplayName="1.3"
+        Description="The compiler does not support assertions, generics, or other language features introduced after JDK 1.3."
+        Switch="-source 1.3"
+      />
+
+      <EnumValue
+        Name="1.4"
+        DisplayName="1.4"
+        Description="The compiler accepts code containing assertions, which were introduced in JDK 1.4."
+        Switch="-source 1.4"
+      />
+
+      <EnumValue
+        Name="1.5"
+        DisplayName="1.5"
+        Description="The compiler accepts code containing generics and other language features introduced in JDK 5."
+        Switch="-source 1.5"
+      />
+
+      <EnumValue
+        Name="1.6"
+        DisplayName="1.6"
+        Description="This is the default value. No language changes were introduced in Java SE 6. However, encoding errors in source files are now reported as errors, instead of warnings, as previously."
+        Switch="-source 1.6"
+      />
+
+    </EnumProperty>
+
+    <!--
+      TargetCodeVersion
+    -->
+
+    <EnumProperty
+      Name="TargetCodeVersion"
+      DisplayName="Target Code Version"
+      Description="Specifies the version of source code accepted."
+      Category="Advanced">
+
+      <EnumValue
+        Name="1.3"
+        DisplayName="1.3"
+        Description="The compiler does not support assertions, generics, or other language features introduced after JDK 1.3."
+        Switch="-target 1.3"
+      />
+
+      <EnumValue
+        Name="1.4"
+        DisplayName="1.4"
+        Description="The compiler accepts code containing assertions, which were introduced in JDK 1.4."
+        Switch="-target 1.4"
+      />
+
+      <EnumValue
+        Name="1.5"
+        DisplayName="1.5"
+        Description="The compiler accepts code containing generics and other language features introduced in JDK 5."
+        Switch="-target 1.5"
+      />
+
+      <EnumValue
+        Name="1.6"
+        DisplayName="1.6"
+        Description="This is the default value. No language changes were introduced in Java SE 6. However, encoding errors in source files are now reported as errors, instead of warnings, as previously."
+        Switch="-target 1.6"
+      />
+
+    </EnumProperty>
+
+    <!--
+      CharacterEncoding
+    -->
+
+    <EnumProperty
+      Name="CharacterEncoding"
+      DisplayName="Character Encoding"
+      Description="Specify character encoding used by source files."
+      Category="Advanced">
+
+      <EnumValue
+        Name="UTF-8"
+        DisplayName="UTF-8"
+        Switch="-encoding UTF-8"
+      />
+
+    </EnumProperty>
+
+    <!--
+      GenerateDebuggingInformation
+    -->
+
+    <BoolProperty
+      Name="GenerateDebuggingInformation"
+      DisplayName="Generate Debugging Information"
+      Description="Generate all debugging information, including local variables. By default, only line number and source file information is generated."
+      Category="General"
+      Switch="-g"
+    />
+
+    <!--
+      DeprecationUsageMessages
+    -->
+
+    <BoolProperty
+      Name="DeprecationUsageMessages"
+      DisplayName="Deprecation Usage Messages"
+      Description="Output source locations where deprecated APIs are used."
+      Category="Advanced"
+      Switch="-deprecation"
+    />
+
+    <!--
+      DisableWarningMessages
+    -->
+
+    <BoolProperty
+      Name="DisableWarningMessages"
+      DisplayName="Disable Warning Messages"
+      Description="Disable warning messages. This has the same meaning as -Xlint:none."
+      Category="General"
+      Switch="-nowarn"
+    />
+
+    <!--
+      Verbose
+    -->
+
+    <BoolProperty
+      Name="Verbose"
+      DisplayName="Verbose"
+      Category="Advanced"
+      Switch="-verbose"
+      Visible="false"
+      IncludeInCommandLine="false"
+    />
+
+    <!--
+      AdditionalOptions
+    -->
+
+    <StringProperty
+      Name="AdditionalOptions"
+      Subtype="AdditionalOptions"
+      DisplayName="Additional Options"
+      Description="Additional Options"
+      Category="Command Line"
+      F1Keyword="vc.project.AdditionalOptionsPage"
+    />
+
+    <!--
+      OutputFile
+    -->
+
+    <StringProperty
+      Subtype="file"
+      Name="OutputFile"
+      DisplayName="Output File (.jar)"
+      Description="Jar file to be created."
+      Category="Jar"
+      IncludeInCommandLine="false"
+    />
+
+    <!--
+      ManifestFile
+    -->
+
+    <StringProperty
+      Subtype="file"
+      Name="ManifestFile"
+      DisplayName="Manifest File"
+      Description="Pre-existing manifest file whose name: value pairs are to be included in MANIFEST.MF in the jar file."
+      Category="Jar"
+      IncludeInCommandLine="false"
+    />
+
+    <!--
+      TrackerLogDirectory
+    -->
+
+    <StringProperty
+      Subtype="folder"
+      Name="TrackerLogDirectory"
+      DisplayName="Tracker Log Directory"
+      Description="Tracker Log Directory."
+      Category="General"
+      IncludeInCommandLine="false"
+      Visible="false"
+    />
+    
+    <!--
+      OutputCommandLine
+    -->
+
+    <BoolProperty
+      Name="OutputCommandLine"
+      DisplayName="Output Command Line"
+      Category="General"
+      IncludeInCommandLine="false"
+    />
+
+    <BoolProperty
+      Name="BuildingInIDE"
+      Visible="false"
+    />
+
+
+    <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    -->
+    
+    <DynamicEnumProperty
+     Name="AndroidJavaBeforeTargets"
+     Category="General"
+     EnumProvider="Targets"
+     IncludeInCommandLine="False">
+      <DynamicEnumProperty.DisplayName>
+        <sys:String>Execute Before</sys:String>
+      </DynamicEnumProperty.DisplayName>
+      <DynamicEnumProperty.Description>
+        <sys:String>Specifies the targets for the build customization to run before.</sys:String>
+      </DynamicEnumProperty.Description>
+      <DynamicEnumProperty.ProviderSettings>
+        <NameValuePair
+          Name="Exclude"
+          Value="^AndroidJavaBeforeTargets|^Compute" />
+      </DynamicEnumProperty.ProviderSettings>
+      <DynamicEnumProperty.DataSource>
+        <DataSource
+          Persistence="ProjectFile"
+          ItemType=""
+          HasConfigurationCondition="true" />
+      </DynamicEnumProperty.DataSource>
+    </DynamicEnumProperty>
+    
+    <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    -->
+    
+    <DynamicEnumProperty
+      Name="AndroidJavaAfterTargets"
+      Category="General"
+      EnumProvider="Targets"
+      IncludeInCommandLine="False">
+      <DynamicEnumProperty.DisplayName>
+        <sys:String>Execute After</sys:String>
+      </DynamicEnumProperty.DisplayName>
+      <DynamicEnumProperty.Description>
+        <sys:String>Specifies the targets for the build customization to run after.</sys:String>
+      </DynamicEnumProperty.Description>
+      <DynamicEnumProperty.ProviderSettings>
+        <NameValuePair
+          Name="Exclude"
+          Value="^AndroidJavaAfterTargets|^Compute" />
+      </DynamicEnumProperty.ProviderSettings>
+      <DynamicEnumProperty.DataSource>
+        <DataSource
+          Persistence="ProjectFile"
+          ItemType=""
+          HasConfigurationCondition="true" />
+      </DynamicEnumProperty.DataSource>
+    </DynamicEnumProperty>
+    
+    <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    -->
+
+  </Rule>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <ItemType Name="AndroidJava" DisplayName="Android Java Tool" />
+
+  <FileExtension Name="*.java" ContentType="AndroidJava" />
+
+  <ContentType  Name="AndroidJava" DisplayName="Android Java Tool" ItemType="AndroidJava" />
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+</ProjectSchemaDefinitions>
