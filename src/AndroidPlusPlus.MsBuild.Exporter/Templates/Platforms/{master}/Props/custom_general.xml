@@ -72,7 +72,27 @@
     <EnumValue Name="3" DisplayName="Android 1.5 (android-3)" />
 
   </EnumProperty>
-  
+
+  <!--
+    ({master}) Android SDK Build-tools Version
+  -->
+
+  <EnumProperty
+    Name="AndroidSdkBuildToolsVersion"
+    DisplayName="SDK Build-tools Version"
+    Description="Specifies which version of 'build-tools' should be used."
+    Category="PlatformDefaults">
+
+    <EnumValue Name="19.0.1" DisplayName="19.0.1" />
+    <EnumValue Name="19" DisplayName="19" />
+    <EnumValue Name="18.1.1" DisplayName="18.1.1" />
+    <EnumValue Name="18.1" DisplayName="18.1" />
+    <EnumValue Name="18.0.1" DisplayName="18.0.1" />
+    <EnumValue Name="18" DisplayName="18" />
+    <EnumValue Name="17" DisplayName="17" />
+
+  </EnumProperty>
+
   <!--
     ({master}) Android NDK Root
   -->
@@ -269,7 +289,7 @@
     F1Keyword="VC.Project.VCConfiguration.ConfigurationType">
 
     <EnumValue Name="Makefile" DisplayName="Makefile" Description="Makefile" />
-    <EnumValue Name="Application" DisplayName="Application (.apk)" Description="Application (.so)" />
+    <EnumValue Name="Application" DisplayName="Application (.so)" Description="Application (.so)" />
     <EnumValue Name="DynamicLibrary" DisplayName="Dynamic Library (.so)" Description="Dynamic Library (.so)" />
     <EnumValue Name="StaticLibrary" DisplayName="Static library (.a)" Description="Static Library (.a)" />
 

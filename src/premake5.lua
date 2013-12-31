@@ -7,7 +7,11 @@ solution "AndroidPlusPlus"
   
   include "AndroidPlusPlus.Common"
   
-  include "AndroidPlusPlus.MsBuild"
+  include "AndroidPlusPlus.MsBuild.Common"
+  
+  include "AndroidPlusPlus.MsBuild.CppTasks"
+  
+  include "AndroidPlusPlus.MsBuild.DeployTasks"
   
   include "AndroidPlusPlus.MsBuild.Exporter"
   

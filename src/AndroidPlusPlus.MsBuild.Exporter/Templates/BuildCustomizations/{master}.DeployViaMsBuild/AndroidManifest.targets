@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <ItemGroup>
+    <PropertyPageSchema Include="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml" />
+  </ItemGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <UsingTask TaskName="AndroidManifestMerge" AssemblyFile="$(VCTargetsPath)\Platforms\{master}\{master-verbose}.MsBuild.DeployTasks.dll" />
+
+  <UsingTask TaskName="AndroidAapt" AssemblyFile="$(VCTargetsPath)\Platforms\{master}\{master-verbose}.MsBuild.DeployTasks.dll" />
+  
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <!-- 
+    First-pass processing of AndroidManifest.xml files and associated resources.
+    - AAPT tool exports specified asset directories to R.java sources, containing Id constants.
+  -->
+
+  <Target
+    Name="AndroidManifest"
+    BeforeTargets="$(AndroidManifestBeforeTargets)"
+    AfterTargets="$(AndroidManifestAfterTargets)"
+    Condition="'@(AndroidManifest)' != ''">
+
+    <!-- Ensure requested output directories exist -->
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName(%(AndroidManifest.ApkOutputFile)))" Condition="!exists('$([System.IO.Path]::GetDirectoryName(%(AndroidManifest.ApkOutputFile)))')" />
+    <MakeDir Directories="%(AndroidManifest.ResourceConstantsOutputDirectory)" Condition="!exists('%(AndroidManifest.ResourceConstantsOutputDirectory)')" />
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName(%(AndroidManifest.ProguardOptionsOutputFile)))" Condition="!exists('$([System.IO.Path]::GetDirectoryName(%(AndroidManifest.ProguardOptionsOutputFile)))')" />
+    <MakeDir Directories="%(AndroidManifest.OutputTextSymbols)" Condition="!exists('%(AndroidManifest.OutputTextSymbols)')" />
+
+    <!-- Merge Application and Library variants. Solves a number of problems with resources and dependencies. -->
+    <AndroidManifestMerge Manifests="@(AndroidManifest)">
+      <Output TaskParameter="MergedManifest" ItemName="AndroidManifestMergedManifest" />
+    </AndroidManifestMerge>
+
+    <!-- Invoke AAPT tool to generate resource constants. -->
+    <AndroidAapt
+      Condition="'@(AndroidManifestMergedManifest)' != ''"
+      BuildingInIDE="$(BuildingInsideVisualStudio)"
+      Sources="@(AndroidManifestMergedManifest)"
+      TrackerLogDirectory="%(AndroidManifest.TrackerLogDirectory)"
+      TrackFileAccess="$(TrackFileAccess)"
+      MinimalRebuildFromTracking="%(AndroidManifest.MinimalRebuildFromTracking)"
+      OutputCommandLine="%(AndroidManifest.OutputCommandLine)"
+      ToolPath="$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)"
+      ToolExe="aapt.exe"
+      ToolArgs="package"
+      PropertiesFile="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml">
+      
+      <Output TaskParameter="OutputApk" ItemName="AndroidManifestOutputApk" />
+      <Output TaskParameter="OutputFiles" ItemName="AndroidManifestOutputFiles" />
+      
+    </AndroidAapt>
+
+    <!-- Composite a list of modified sources, and their resultant (processed) outputs -->
+    <ItemGroup>
+      <AndroidManifest_tlog
+        Include="@(AndroidManifestOutputFiles)"
+        Condition="'@(AndroidManifestOutputFiles)' != '' and '%(AndroidManifest.ExcludedFromBuild)' != 'true'">
+        <Source>@(AndroidManifest, '|')</Source>
+      </AndroidManifest_tlog>
+    </ItemGroup>
+
+    <!-- Update TLog with appropriate lines for inputs/outputs (defined above) -->
+    <WriteLinesToFile
+      Condition="'@(AndroidManifest_tlog)' != '' and '%(AndroidManifest_tlog.ExcludedFromBuild)' != 'true'"
+      File="$(IntDir)$(ProjectName).write.1.tlog"
+      Lines="^%(AndroidManifest_tlog.Source);@(AndroidManifest_tlog-&gt;'%(Fullpath)')"
+    />
+
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target
+    Name="ComputeAndroidManifestOutput"
+    Condition="'@(AndroidManifest)' != ''">
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+</Project>

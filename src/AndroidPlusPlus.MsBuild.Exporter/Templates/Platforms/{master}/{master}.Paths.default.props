@@ -38,6 +38,14 @@
     <AndroidSdkLevel Condition="'$(AndroidSdkLevel)' == '' AND Exists('$(AndroidSdkRoot)\platforms\android-4')">4</AndroidSdkLevel>
     <AndroidSdkLevel Condition="'$(AndroidSdkLevel)' == '' AND Exists('$(AndroidSdkRoot)\platforms\android-3')">3</AndroidSdkLevel>
 
+    <AndroidSdkBuildToolsVersion Condition="'$(AndroidSdkBuildToolsVersion)' == '' AND Exists('$(AndroidSdkRoot)\build-tools\19.0.1')">19.0.1</AndroidSdkBuildToolsVersion>
+    <AndroidSdkBuildToolsVersion Condition="'$(AndroidSdkBuildToolsVersion)' == '' AND Exists('$(AndroidSdkRoot)\build-tools\19')">19</AndroidSdkBuildToolsVersion>
+    <AndroidSdkBuildToolsVersion Condition="'$(AndroidSdkBuildToolsVersion)' == '' AND Exists('$(AndroidSdkRoot)\build-tools\18.1.1')">18.1.1</AndroidSdkBuildToolsVersion>
+    <AndroidSdkBuildToolsVersion Condition="'$(AndroidSdkBuildToolsVersion)' == '' AND Exists('$(AndroidSdkRoot)\build-tools\18.1')">18.1</AndroidSdkBuildToolsVersion>
+    <AndroidSdkBuildToolsVersion Condition="'$(AndroidSdkBuildToolsVersion)' == '' AND Exists('$(AndroidSdkRoot)\build-tools\18.0.1')">18.0.1</AndroidSdkBuildToolsVersion>
+    <AndroidSdkBuildToolsVersion Condition="'$(AndroidSdkBuildToolsVersion)' == '' AND Exists('$(AndroidSdkRoot)\build-tools\18')">18</AndroidSdkBuildToolsVersion>
+    <AndroidSdkBuildToolsVersion Condition="'$(AndroidSdkBuildToolsVersion)' == '' AND Exists('$(AndroidSdkRoot)\build-tools\17')">17</AndroidSdkBuildToolsVersion>
+    
     <AndroidNdkRoot Condition="'$(AndroidNdkRoot)' == ''">$(ANDROID_NDK)</AndroidNdkRoot>
     <AndroidNdkRoot Condition="'$(AndroidNdkRoot)' == ''">$(ANDROID_NDK_ROOT)</AndroidNdkRoot>
 

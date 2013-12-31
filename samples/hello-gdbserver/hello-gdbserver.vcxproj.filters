@@ -12,9 +12,11 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="AndroidManifest.xml" />
     <None Include="src\com\example\hellogdbserver\HelloGdbServer.java">
       <Filter>Source Files</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidManifest Include="AndroidManifest.xml" />
   </ItemGroup>
 </Project>
