@@ -47,6 +47,8 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
         textSubstitution.Add ("{master}", "Android++");
 
+        textSubstitution.Add ("{master-verbose}", "AndroidPlusPlus");
+
         foreach (string version in s_vsVersions)
         {
           ExportMsBuildTemplateForVersion (version, ref textSubstitution);
@@ -219,13 +221,10 @@ namespace AndroidPlusPlus.MsBuild.Exporter
       // Clean any existing MsBuild deployment.
       // 
 
-      /*foreach (string directory in Directory.GetDirectories (msBuildInstallationDir + @"\BuildCustomizations"))
+      foreach (string file in Directory.GetFiles (msBuildInstallationDir + @"\BuildCustomizations", textSubstitution ["{master}"] + "*"))
       {
-        if (directory.Contains (textSubstitution ["{master}"]))
-        {
-          Directory.Delete (directory, true);
-        }
-      }*/
+        File.Delete (file);
+      }
 
       foreach (string directory in Directory.GetDirectories (msBuildInstallationDir + @"\Platforms"))
       {
