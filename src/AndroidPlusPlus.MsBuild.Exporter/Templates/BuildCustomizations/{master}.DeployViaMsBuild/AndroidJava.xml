@@ -33,7 +33,6 @@
       <Category Name="General" DisplayName="General" />
       <Category Name="Advanced" DisplayName="Advanced" />
       <Category Name="Jar" DisplayName="Jar" />
-      <Category Name="Command Line" DisplayName="Command Line" Subtype="CommandLine" />
     </Rule.Categories>
 
     <!--
@@ -258,21 +257,7 @@
       DisplayName="Verbose"
       Category="Advanced"
       Switch="-verbose"
-      Visible="false"
       IncludeInCommandLine="false"
-    />
-
-    <!--
-      AdditionalOptions
-    -->
-
-    <StringProperty
-      Name="AdditionalOptions"
-      Subtype="AdditionalOptions"
-      DisplayName="Additional Options"
-      Description="Additional Options"
-      Category="Command Line"
-      F1Keyword="vc.project.AdditionalOptionsPage"
     />
 
     <!--

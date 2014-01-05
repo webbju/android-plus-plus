@@ -17,8 +17,6 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <UsingTask TaskName="AndroidDex" AssemblyFile="$(VCTargetsPath)\Platforms\{master}\{master-verbose}.MsBuild.DeployTasks.dll" />
-
   <UsingTask TaskName="VCMessage" AssemblyName="Microsoft.Build.CppTasks.Common, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
 
   <!--
@@ -29,9 +27,9 @@
 
   <PropertyGroup>
 
-    <ComputeAndroidDalvikInputsTargets>$(ComputeAndroidDalvikInputsTargets);ComputeAndroidJavaOutput;</ComputeAndroidDalvikInputsTargets>
+    <ComputeAndroidApkInputsTargets>$(ComputeAndroidApkInputsTargets);ComputeAndroidDalvikOutput;</ComputeAndroidApkInputsTargets>
 
-    <CleanDependsOn>$(CleanDependsOn);CleanAndroidDalvik;</CleanDependsOn>
+    <CleanDependsOn>$(CleanDependsOn);CleanAndroidApk;</CleanDependsOn>
 
   </PropertyGroup>
 
@@ -42,8 +40,9 @@
   -->
 
   <Target
-    Name="_AndroidDalvik"
-    DependsOnTargets="$(ComputeAndroidDalvikInputsTargets)">
+    Name="_AndroidApk"
+    Condition="'$(ConfigurationType)' == 'Application'"
+    DependsOnTargets="$(ComputeAndroidApkInputsTargets)">
   </Target>
 
   <!--
@@ -51,51 +50,80 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
-  
+
   <Target
-    Name="AndroidDalvik"
-    BeforeTargets="$(AndroidDalvikBeforeTargets)"
-    AfterTargets="$(AndroidDalvikAfterTargets)"
-    DependsOnTargets="_AndroidDalvik">
+    Name="AndroidApk"
+    BeforeTargets="$(AndroidApkBeforeTargets)"
+    AfterTargets="$(AndroidApkAfterTargets)"
+    DependsOnTargets="AndroidManifest;_Link;_AndroidApk;">
 
     <!-- 
-      Flag sources for incremental build 
+      To ensure old [required] content is not accidentally included, we delete the intermediate dir in order to 'refresh' everything.
     -->
 
-    <ItemGroup>
-      <AndroidDalvik Condition="'@(AndroidDalvik)' != ''">
-        <MinimalRebuildFromTracking Condition="'%(AndroidDalvik.MinimalRebuildFromTracking)' == '' and '$(BuildType)' == 'Build' and '$(ForceRebuild)' != 'true'">true</MinimalRebuildFromTracking>
-      </AndroidDalvik>
-    </ItemGroup>
-
-    <!-- 
-      Ensure requested output directories exist 
-    -->
-
-    <MakeDir 
-      Condition="'@(AndroidDalvik)' != ''"
-      Directories="$([System.IO.Path]::GetDirectoryName(%(AndroidDalvik.OutputFile)))"
+    <RemoveDir 
+      Condition="'@(AndroidApk)' != '' and exists('%(AndroidApk.IntermediateDirectory)')" 
+      Directories="%(AndroidApk.IntermediateDirectory)"
     />
 
     <!-- 
-      Process input class-paths and generate a Dalvik executable (i.e. classes.dex) 
+      Recursively copy native libraries and gdbserver to appropriate architecture paths. 
     -->
 
-    <AndroidDex
-      BuildingInIDE="$(BuildingInsideVisualStudio)"
-      Condition="'@(AndroidDalvik)' != ''"
-      Sources="@(AndroidDalvik)"
-      OutputFile="%(AndroidDalvik.OutputFile)"
-      TrackerLogDirectory ="%(AndroidDalvik.TrackerLogDirectory)"
-      TrackFileAccess="$(TrackFileAccess)"
-      MinimalRebuildFromTracking="%(AndroidDalvik.MinimalRebuildFromTracking)"
-      OutputCommandLine="%(AndroidDalvik.OutputCommandLine)"
-      ToolPath="$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)"
-      ToolExe="dx.bat"
-      PropertiesFile="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml">
-      <Output TaskParameter="OutputFiles" ItemName="AndroidDalvikOutputFiles" />
-      <Output TaskParameter="SkippedExecution" PropertyName="AndroidDalvikSkippedExecution" />
-    </AndroidDex>
+    <ItemGroup Condition="'@(AndroidApk)' != ''">
+      <_NativeLibs Include="$(IntDir)libs\**\*">
+        <IntermediateDirectory>%(AndroidApk.IntermediateDirectory)</IntermediateDirectory>
+      </_NativeLibs>
+    </ItemGroup>
+
+    <Copy 
+      Condition="'@(_NativeLibs)' != ''" 
+      SourceFiles="@(_NativeLibs)" 
+      DestinationFiles="@(_NativeLibs->'%(IntermediateDirectory)\lib\%(RecursiveDir)%(Filename)%(Extension)')" 
+    />
+
+    <!-- 
+      Recursively copy registered files. Registering example: 
+      
+        <ItemGroup>
+          <AndroidApk Include="$(IntDir)**\libs\**\*" />
+        </ItemGroup> 
+    -->
+
+    <Copy 
+      Condition="'@(AndroidApk)' != ''"
+      SourceFiles="@(AndroidApk)" 
+      DestinationFiles="@(AndroidApk->'%(IntermediateDirectory)\%(RecursiveDir)%(Filename)%(Extension)')"
+    />
+
+    <!-- 
+      Duplicate initial AndroidManifest-produced APK (so we can modify it without triggering incremental builds) 
+    -->
+
+    <MakeDir 
+      Condition="'@(AndroidApk)' != ''" 
+      Directories="$([System.IO.Path]::GetDirectoryName(%(AndroidApk.UnsignedOutputFile)))" 
+    />
+
+    <Copy
+      Condition="'@(AndroidApk)' != ''"
+      SourceFiles="@(AndroidManifestOutputApk)"
+      DestinationFiles="%(AndroidApk.UnsignedOutputFile)">
+    </Copy>
+
+    <!-- 
+      Add registered files to the final APK using a 7zip deployment (significantly faster than AAPT). 
+    -->
+
+    <ItemGroup Condition="'@(AndroidApk)' != ''">
+      <AndroidApkUnsignedOutputFile Include="%(AndroidApk.UnsignedOutputFile)"/>
+    </ItemGroup>
+
+    <Exec 
+      Condition="'@(AndroidApkUnsignedOutputFile)' != ''"
+      Command="7za.exe a -tzip -mx7 -r &quot;@(AndroidApkUnsignedOutputFile->Metadata('FullPath'))&quot; *" 
+      WorkingDirectory="%(AndroidApk.IntermediateDirectory)"
+    />
 
   </Target>
 
@@ -106,11 +134,11 @@
   -->
 
   <Target
-    Name="ComputeAndroidDalvikOutput"
-    DependsOnTargets="AndroidDalvik">
+    Name="ComputeAndroidApkOutput"
+    DependsOnTargets="AndroidApk">
 
     <ItemGroup>
-      <AndroidApk Include="@(AndroidDalvikOutputFiles)" />
+      <AndroidApkSign Include="@(AndroidApkUnsignedOutputFile)" />
     </ItemGroup>
 
   </Target>
@@ -121,17 +149,20 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <Target Name="CleanAndroidDalvik">
+  <Target Name="CleanAndroidApk">
 
     <ItemGroup>
-      <CleanAndroidDalvikCache
+      <CleanAndroidApkCache
         Include="
-        $(IntDir)bin\**\*.dex;
-        $(IntDir)bin\**\*.dex.d;"
+        $(IntDir)*.apk;
+        $(IntDir)libs\**\gdbserver;
+        $(IntDir)libs\**\*.a;
+        $(IntDir)libs\**\*.so;
+        $(IntDir)raw\**\*;"
       />
     </ItemGroup>
 
-    <Delete Files="@(CleanAndroidDalvikCache)" />
+    <Delete Files="@(CleanAndroidApkCache)" />
 
   </Target>
 

@@ -54,7 +54,7 @@
     <Compile Include="..\AndroidPlusPlus.Common\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Tasks\AndroidAapt.cs" />
+    <Compile Include="Tasks\AndroidAaptPackage.cs" />
     <Compile Include="Tasks\AndroidAidl.cs" />
     <Compile Include="Tasks\AndroidDex.cs" />
     <Compile Include="Tasks\AndroidManifestMerge.cs" />

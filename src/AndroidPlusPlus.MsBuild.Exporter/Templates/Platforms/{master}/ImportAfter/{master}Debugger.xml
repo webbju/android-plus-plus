@@ -57,13 +57,6 @@
   />
 
   <StringProperty
-    Name="DebuggerAndroidManifest"
-    DisplayName="Android Manifest"
-    Description="Specifies the location of the Application's 'AndroidManifest.xml'."
-    Subtype="file"
-  />
-
-  <StringProperty
     Name="DebuggerCustomLaunchActivity"
     DisplayName="Custom Launch Activity"
     Description="Override the default launch activity. If unset, debugger will use activity with 'android.intent.category.LAUNCHER' intent."
@@ -85,6 +78,11 @@
     Name="DebuggerKeepAppData"
     DisplayName="Keep Application Data (On Install)"
     Description="Ensures that existing data remains for if the Application is re-installed."
+  />
+
+  <StringProperty
+    Name="DebuggerGdbTool"
+    Subtype="file"
   />
 
   <StringListProperty

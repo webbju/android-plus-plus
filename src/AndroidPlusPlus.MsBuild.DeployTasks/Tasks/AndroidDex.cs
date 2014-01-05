@@ -28,7 +28,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class AndroidDex : TrackedToolTask, ITask
+  public class AndroidDex : TrackedOutOfDateToolTask, ITask
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -58,6 +58,34 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
       if (retCode == 0)
       {
         OutputFiles = new ITaskItem [] { OutputFile };
+
+        // 
+        // Create a dependency file containing references to each .jar and .class used during execution.
+        // 
+
+        using (StreamWriter writer = new StreamWriter (OutputFile.GetMetadata ("FullPath") + ".d", false, Encoding.Unicode))
+        {
+          writer.WriteLine (string.Format ("{0}: \\", OutputFile.GetMetadata ("FullPath")));
+
+          foreach (ITaskItem source in Sources)
+          {
+            string sourceFullPath = source.GetMetadata ("FullPath");
+
+            if (Directory.Exists (sourceFullPath))
+            {
+              string [] classPathFiles = Directory.GetFiles (sourceFullPath, "*.class", SearchOption.AllDirectories);
+
+              foreach (string classpath in classPathFiles)
+              {
+                writer.WriteLine (string.Format ("  {0} \\", classpath));
+              }
+            }
+            else
+            {
+              writer.WriteLine (string.Format ("  {0} \\", sourceFullPath));
+            }
+          }
+        }
       }
 
       return retCode;

@@ -27,6 +27,16 @@
     <GenerateManifest>false</GenerateManifest>
 
   </PropertyGroup>
+  
+  <!-- 
+    Register Android-specific extensions which need to be removed on clean.
+  -->
+
+  <PropertyGroup>
+
+    <ExtensionsToDeleteOnClean>*.o;*.d;*.a;*.so;*.java;*.class;*.dex;*.apk;$(ExtensionsToDeleteOnClean);</ExtensionsToDeleteOnClean>
+    
+  </PropertyGroup>
 
   <!--
     Configuration output defaults.
@@ -38,6 +48,8 @@
 
     <TargetName>$(ProjectName)</TargetName>
 
+    <TargetName Condition="'$(ProjectName.Substring(0,3))' != 'lib'">lib$(ProjectName)</TargetName>
+
     <TargetExt>.so</TargetExt>
 
   </PropertyGroup>
@@ -48,6 +60,8 @@
 
     <TargetName>$(ProjectName)</TargetName>
 
+    <TargetName Condition="'$(ProjectName.Substring(0,3))' != 'lib'">lib$(ProjectName)</TargetName>
+
     <TargetExt>.so</TargetExt>
 
   </PropertyGroup>
@@ -57,6 +71,8 @@
     <LibCompiled>true</LibCompiled>
 
     <TargetName>$(ProjectName)</TargetName>
+
+    <TargetName Condition="'$(ProjectName.Substring(0,3))' != 'lib'">lib$(ProjectName)</TargetName>
 
     <TargetExt>.a</TargetExt>
 

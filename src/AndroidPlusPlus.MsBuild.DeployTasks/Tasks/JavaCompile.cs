@@ -53,6 +53,9 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [Required]
+    public string JavaHomeDir { get; set; }
+
     [Output]
     public ITaskItem [] OutputClassPaths { get; set; }
 
@@ -123,7 +126,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected override void LogEventsFromTextOutput (string singleLine, MessageImportance messageImportance)
+    protected override void TrackedExecuteToolOutput (KeyValuePair<string, List<ITaskItem>> commandAndSourceFiles, string singleLine)
     {
       try
       {
@@ -137,43 +140,42 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
           //  [wrote AndroidMT\Debug\bin\classes\com\example\nativemedia\MyRenderer.class]
           // 
 
-          string sanitisedOutput = singleLine.Trim (new char [] { ' ', '[', ']' });
-
-          if (sanitisedOutput.StartsWith ("checking "))
+          if (singleLine.StartsWith ("["))
           {
-            string packageAddressWithClassName = sanitisedOutput.Substring ("checking ".Length);
+            string sanitisedOutput = singleLine.Trim (new char [] { ' ', '[', ']' });
 
-            string packageAddressWithoutClass = packageAddressWithClassName.Substring (0, packageAddressWithClassName.LastIndexOf ('.'));
-
-            if (!m_outputClassPackages.Contains (packageAddressWithoutClass))
+            if (sanitisedOutput.StartsWith ("checking "))
             {
-              m_outputClassPackages.Add (packageAddressWithoutClass);
+              string packageAddressWithClassName = sanitisedOutput.Substring ("checking ".Length);
+
+              string packageAddressWithoutClass = packageAddressWithClassName.Substring (0, packageAddressWithClassName.LastIndexOf ('.'));
+
+              if (!m_outputClassPackages.Contains (packageAddressWithoutClass))
+              {
+                m_outputClassPackages.Add (packageAddressWithoutClass);
+              }
+            }
+            else if (sanitisedOutput.StartsWith ("wrote "))
+            {
+              string classFilePath = Path.GetFullPath (sanitisedOutput.Substring ("wrote ".Length));
+
+              ITaskItem classFileItem = new TaskItem (classFilePath);
+
+              classFileItem.SetMetadata ("ClassOutputDirectory", Sources [0].GetMetadata ("ClassOutputDirectory"));
+
+              m_outputClassSourceFiles.Add (classFileItem);
             }
           }
-          else if (singleLine.StartsWith ("[wrote "))
+
+          if (Sources [0].GetMetadata ("Verbose") == "true")
           {
-            string classFileOutput = singleLine.Trim (new char [] { ' ', '[', ']' }).Substring ("wrote ".Length);
-
-            string classFilePath = Path.GetFullPath (classFileOutput);
-
-            ITaskItem classFileItem = new TaskItem (classFilePath);
-
-            classFileItem.SetMetadata ("ClassOutputDirectory", Sources [0].GetMetadata ("ClassOutputDirectory"));
-
-            m_outputClassSourceFiles.Add (classFileItem);
+            LogEventsFromTextOutput (singleLine, MessageImportance.High);
           }
         }
       }
       catch (Exception e)
       {
         Log.LogErrorFromException (e, true);
-      }
-      finally
-      {
-        if (Sources [0].GetMetadata ("Verbose") == "true")
-        {
-          base.LogEventsFromTextOutput (singleLine, messageImportance);
-        }
       }
     }
 
@@ -196,7 +198,9 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
           throw new ArgumentNullException ();
         }
 
-        builder.Append (m_parsedProperties.Parse (source));
+        builder.Append (" --jdk-home " + GccUtilities.QuoteIfNeeded (JavaHomeDir));
+
+        builder.Append (" " + m_parsedProperties.Parse (source));
 
         builder.Append (" -verbose ");
       }

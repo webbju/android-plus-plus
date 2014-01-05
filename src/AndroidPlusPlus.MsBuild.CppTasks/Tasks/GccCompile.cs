@@ -46,13 +46,13 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected override void LogEventsFromTextOutput (string singleLine, MessageImportance messageImportance)
+    protected override void TrackedExecuteToolOutput (KeyValuePair<string, List<ITaskItem>> commandAndSourceFiles, string singleLine)
     {
       // 
       // Receives GCC output, and transforms any errors or warnings into Visual Studio 'jump to line' format.
       // 
 
-      base.LogEventsFromTextOutput (GccUtilities.ConvertGccOutputToVS (singleLine), messageImportance);
+      LogEventsFromTextOutput (GccUtilities.ConvertGccOutputToVS (singleLine), MessageImportance.High);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -35,7 +35,7 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private Dictionary<string, List<string>> m_dependencyTable;
+    private Dictionary<string, List<string>> m_sourceDependencyTable;
 
     private Encoding m_defaultEncoding = Encoding.Unicode;
 
@@ -45,7 +45,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
     public TrackedFileManager ()
     {
-      m_dependencyTable = new Dictionary<string, List<string>> ();
+      m_sourceDependencyTable = new Dictionary<string, List<string>> ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -92,34 +92,59 @@ namespace AndroidPlusPlus.MsBuild.Common
               {
                 if (trackedSourceLineData.StartsWith ("^"))
                 {
+                  // 
+                  // Encountered a canonical source root node. Add each of the sources referenced here to the dependency graph.
+                  // 
+
                   List<string> trackedSources = new List<string> (trackedSourceLineData.Substring (1).ToUpperInvariant ().Split ('|'));
 
-                  string trackedDependencyEntriesLineData = reader.ReadLine ();
-
-                  while (!string.IsNullOrWhiteSpace (trackedDependencyEntriesLineData))
+                  foreach (string source in trackedSources)
                   {
-                    List<string> dependentSources;
-
-                    if (m_dependencyTable.TryGetValue (ConvertToTrackerFormat (trackedDependencyEntriesLineData), out dependentSources))
+                    if (!m_sourceDependencyTable.ContainsKey (ConvertToTrackerFormat (source)))
                     {
-                      foreach (string source in trackedSources)
+                      m_sourceDependencyTable.Add (ConvertToTrackerFormat (source), new List<string> ());
+                    }
+                  }
+
+                  // 
+                  // Parse the next line, if it contains source dependencies process them - otherwise handle a new root node.
+                  // 
+
+                  trackedSourceLineData = reader.ReadLine ();
+
+                  if (string.IsNullOrWhiteSpace (trackedSourceLineData) || trackedSourceLineData.StartsWith ("^"))
+                  {
+                    continue;
+                  }
+
+                  List<string> trackedSourceDependencies = new List<string> ();
+
+                  while (!string.IsNullOrWhiteSpace (trackedSourceLineData))
+                  {
+                    if (trackedSourceLineData.StartsWith ("^"))
+                    {
+                      break;
+                    }
+
+                    if (!trackedSourceDependencies.Contains (ConvertToTrackerFormat (trackedSourceLineData)))
+                    {
+                      trackedSourceDependencies.Add (ConvertToTrackerFormat (trackedSourceLineData));
+                    }
+
+                    trackedSourceLineData = reader.ReadLine ();
+                  }
+
+                  foreach (string dependency in trackedSourceDependencies)
+                  {
+                    foreach (string source in trackedSources)
+                    {
+                      if (!m_sourceDependencyTable [ConvertToTrackerFormat (source)].Contains (dependency))
                       {
-                        if (!dependentSources.Contains (ConvertToTrackerFormat (source)))
-                        {
-                          dependentSources.Add (ConvertToTrackerFormat (source));
-                        }
+                        m_sourceDependencyTable [ConvertToTrackerFormat (source)].Add (dependency);
                       }
                     }
-                    else
-                    {
-                      m_dependencyTable.Add (ConvertToTrackerFormat (trackedDependencyEntriesLineData), new List<string> (trackedSources));
-                    }
-
-                    trackedDependencyEntriesLineData = reader.ReadLine ();
                   }
                 }
-
-                trackedSourceLineData = reader.ReadLine ();
               }
 
               reader.Close ();
@@ -146,9 +171,11 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void AddDependencyForSources (string dependency, ITaskItem [] sources)
+    public void AddSourcesToTable (ITaskItem [] sources)
     {
-      List<string> dependentSources;
+      // 
+      // Register a set of provided sources, without an associated dependency.
+      // 
 
       try
       {
@@ -156,16 +183,45 @@ namespace AndroidPlusPlus.MsBuild.Common
         {
           string sourceFullPath = source.GetMetadata ("FullPath");
 
-          if (m_dependencyTable.TryGetValue (ConvertToTrackerFormat (dependency), out dependentSources))
+          string sourceFilePathTrackerFormat = ConvertToTrackerFormat (sourceFullPath);
+
+          if (!m_sourceDependencyTable.ContainsKey (sourceFilePathTrackerFormat))
           {
-            if (!dependentSources.Contains (ConvertToTrackerFormat (sourceFullPath)))
-            {
-              dependentSources.Add (ConvertToTrackerFormat (sourceFullPath));
-            }
+            m_sourceDependencyTable.Add (sourceFilePathTrackerFormat, new List<string> ());
           }
-          else
+        }
+      }
+      catch (Exception e)
+      {
+        throw e;
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public void AddDependencyForSources (string dependency, ITaskItem [] sources)
+    {
+      // 
+      // Register a dependency for a set of provided sources. Will add unregistered sources to table if required.
+      // 
+
+      try
+      {
+        AddSourcesToTable (sources);
+
+        string dependencyTrackerFormat = ConvertToTrackerFormat (dependency);
+
+        foreach (ITaskItem source in sources)
+        {
+          string sourceFullPath = source.GetMetadata ("FullPath");
+
+          string sourceFilePathTrackerFormat = ConvertToTrackerFormat (sourceFullPath);
+
+          if (!m_sourceDependencyTable [sourceFilePathTrackerFormat].Contains (dependencyTrackerFormat))
           {
-            m_dependencyTable.Add (ConvertToTrackerFormat (dependency), new List<string> (new string [] { ConvertToTrackerFormat (sourceFullPath) }));
+            m_sourceDependencyTable [sourceFilePathTrackerFormat].Add (dependencyTrackerFormat);
           }
         }
       }
@@ -185,49 +241,15 @@ namespace AndroidPlusPlus.MsBuild.Common
       // Iterate through the entire dependency table removing any of the specified sources. Remove empty entries.
       // 
 
-      List<string> emptyEntries = new List<string> ();
-
       try
       {
-        foreach (KeyValuePair<string, List<string>> tableEntry in m_dependencyTable)
+        foreach (ITaskItem source in sources)
         {
-          foreach (ITaskItem source in sources)
-          {
-            tableEntry.Value.Remove (ConvertToTrackerFormat (source.GetMetadata ("FullPath")));
-          }
+          string sourceFullPath = source.GetMetadata ("FullPath");
 
-          if ((tableEntry.Value.Count == 0) && (emptyEntries.Contains (tableEntry.Key)))
-          {
-            emptyEntries.Add (tableEntry.Key);
-          }
-        }
+          string sourceFilePathTrackerFormat = ConvertToTrackerFormat (sourceFullPath);
 
-        foreach (string entry in emptyEntries)
-        {
-          m_dependencyTable.Remove (entry);
-        }
-      }
-      catch (Exception e)
-      {
-        throw e;
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public void RemoveOutputsFromTable (ITaskItem [] outputs)
-    {
-      // 
-      // Remove any entries for the specified output dependencies.
-      // 
-
-      try
-      {
-        foreach (ITaskItem output in outputs)
-        {
-          m_dependencyTable.Remove (ConvertToTrackerFormat (output.GetMetadata ("FullPath")));
+          m_sourceDependencyTable.Remove (sourceFilePathTrackerFormat);
         }
       }
       catch (Exception e)
@@ -242,29 +264,17 @@ namespace AndroidPlusPlus.MsBuild.Common
 
     public void Save (ITaskItem tlog)
     {
-
-      /*Dictionary<string, List<string>> condensedSourceBasedDependencyTable = new Dictionary<string, List<string>> ();
-
-      foreach (KeyValuePair<string, List<string>> tableEntry in m_dependencyTable)
-      {
-        foreach (string source in tableEntry.Value)
-        {
-          List <string> dependentEntries;
-
-          if (condensedSourceBasedDependencyTable.TryGetValue (source, out dependentEntries))
-          {
-            if (!dependentEntries.Contains (source))
-            {
-              dependentEntries.Add (source);
-            }
-          }
-          else
-          {
-
-          }
-
-        }
-      }*/
+      // 
+      // Output a TLog file for the stored dependency graph.
+      // 
+      // Format:
+      // 
+      //    ^FILE1.C
+      //    FILE1.OBJ
+      //    ^FILE2.C|FILE3.C
+      //    FILE2.OBJ
+      //    FILE3.OBJ
+      // 
 
       try
       {
@@ -282,26 +292,76 @@ namespace AndroidPlusPlus.MsBuild.Common
 
         using (StreamWriter writer = new StreamWriter (tlogFullPath, false, Encoding.Unicode))
         {
-          StringBuilder sourceFileList = new StringBuilder ();
-
-          foreach (KeyValuePair<string, List<string>> tableEntry in m_dependencyTable)
+          foreach (KeyValuePair<string, List<string>> sourceEntry in m_sourceDependencyTable)
           {
-            sourceFileList.Length = 0;
+            writer.WriteLine ('^' + sourceEntry.Key);
 
-            foreach (string source in tableEntry.Value)
+            foreach (string dependency in sourceEntry.Value)
             {
-              sourceFileList.Append ("|" + source.ToUpperInvariant ());
+              writer.WriteLine (dependency);
             }
-
-            sourceFileList.Replace ('|', '^', 0, 1);
-
-            writer.WriteLine (sourceFileList.ToString ());
-
-            writer.WriteLine (tableEntry.Key);
           }
 
           writer.Close ();
         }
+
+        // 
+        // Reorder the dependency graph data so it can be easily output in a condensed format.
+        // 
+
+        /*Dictionary<string, List<string>> condensedDependencyTable = new Dictionary<string, List<string>> ();
+
+        StringBuilder sourceFileList = new StringBuilder ();
+
+        foreach (KeyValuePair<string, List<string>> tableEntry in m_dependencyTable)
+        {
+          sourceFileList.Length = 0;
+
+          foreach (string source in tableEntry.Value)
+          {
+            sourceFileList.Append ("|" + source.ToUpperInvariant ());
+          }
+
+          sourceFileList.Replace ('|', '^', 0, 1);
+
+          string key = sourceFileList.ToString ();
+
+          List<string> condensedDependencyEntryList = null;
+
+          if (condensedDependencyTable.TryGetValue (key, out condensedDependencyEntryList))
+          {
+            condensedDependencyEntryList.Add (tableEntry.Key);
+
+            condensedDependencyTable [key] = condensedDependencyEntryList;
+          }
+          else
+          {
+            condensedDependencyEntryList = new List<string> ();
+
+            condensedDependencyEntryList.Add (tableEntry.Key);
+
+            condensedDependencyTable.Add (key, condensedDependencyEntryList);
+          }
+        }
+
+        // 
+        // Output condensed dependency info to file.
+        // 
+
+        using (StreamWriter writer = new StreamWriter (tlogFullPath, false, Encoding.Unicode))
+        {
+          foreach (KeyValuePair<string, List<string>> tableEntry in condensedDependencyTable)
+          {
+            writer.WriteLine (tableEntry.Key.ToUpperInvariant ());
+
+            foreach (string source in tableEntry.Value)
+            {
+              writer.WriteLine (source.ToUpperInvariant ());
+            }
+          }
+
+          writer.Close ();
+        }*/
       }
       catch (Exception e)
       {
@@ -313,7 +373,7 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private static string ConvertToTrackerFormat (string original)
+    public static string ConvertToTrackerFormat (string original)
     {
       return original.ToUpperInvariant ();
     }

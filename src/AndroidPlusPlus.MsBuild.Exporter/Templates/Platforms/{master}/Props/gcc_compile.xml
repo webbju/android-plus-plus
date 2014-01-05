@@ -428,12 +428,12 @@
   />
 
   <!--
-    OutputFile
+    ObjectFileName
   -->
 
   <StringProperty
     Subtype="file"
-    Name="OutputFile"
+    Name="ObjectFileName"
     DisplayName="Object File Name"
     Description="Specifies a name to override the default object file name; can be file or directory name.     (-o [name])"
     Category="Output Files"

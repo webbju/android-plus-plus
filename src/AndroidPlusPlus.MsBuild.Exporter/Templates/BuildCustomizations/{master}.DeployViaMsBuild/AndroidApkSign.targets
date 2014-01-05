@@ -17,7 +17,9 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <UsingTask TaskName="AndroidDex" AssemblyFile="$(VCTargetsPath)\Platforms\{master}\{master-verbose}.MsBuild.DeployTasks.dll" />
+  <UsingTask TaskName="JavaSigner" AssemblyFile="$(VCTargetsPath)\Platforms\{master}\{master-verbose}.MsBuild.DeployTasks.dll" />
+
+  <UsingTask TaskName="AndroidZipAlign" AssemblyFile="$(VCTargetsPath)\Platforms\{master}\{master-verbose}.MsBuild.DeployTasks.dll" />
 
   <UsingTask TaskName="VCMessage" AssemblyName="Microsoft.Build.CppTasks.Common, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
 
@@ -29,9 +31,9 @@
 
   <PropertyGroup>
 
-    <ComputeAndroidDalvikInputsTargets>$(ComputeAndroidDalvikInputsTargets);ComputeAndroidJavaOutput;</ComputeAndroidDalvikInputsTargets>
+    <ComputeAndroidApkSignInputsTargets>$(ComputeAndroidApkSignInputsTargets);ComputeAndroidApkOutput;</ComputeAndroidApkSignInputsTargets>
 
-    <CleanDependsOn>$(CleanDependsOn);CleanAndroidDalvik;</CleanDependsOn>
+    <CleanDependsOn>$(CleanDependsOn);CleanAndroidApkSign;</CleanDependsOn>
 
   </PropertyGroup>
 
@@ -42,8 +44,9 @@
   -->
 
   <Target
-    Name="_AndroidDalvik"
-    DependsOnTargets="$(ComputeAndroidDalvikInputsTargets)">
+    Name="_AndroidApkSign"
+    Condition="'$(ConfigurationType)' == 'Application'"
+    DependsOnTargets="$(ComputeAndroidApkSignInputsTargets)">
   </Target>
 
   <!--
@@ -51,52 +54,73 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
-  
-  <Target
-    Name="AndroidDalvik"
-    BeforeTargets="$(AndroidDalvikBeforeTargets)"
-    AfterTargets="$(AndroidDalvikAfterTargets)"
-    DependsOnTargets="_AndroidDalvik">
 
-    <!-- 
-      Flag sources for incremental build 
+  <Target
+    Name="AndroidApkSign"
+    BeforeTargets="$(AndroidApkSignBeforeTargets)"
+    AfterTargets="$(AndroidApkSignAfterTargets)"
+    DependsOnTargets="AndroidManifest;_Link;_AndroidApkSign;">
+
+    <!--
+      Duplicate and sign the APK with specified credentials.
+    -->
+
+    <Copy
+      Condition="'@(AndroidApkSign)' != ''"
+      SourceFiles="@(AndroidApkSign)"
+      DestinationFiles="%(AndroidApkSign.SignedOutputFile)">
+      <Output TaskParameter="CopiedFiles" ItemName="AndroidApkSignSignedOutputFile" />
+    </Copy>
+
+    <ItemGroup>
+      <AndroidApkSign>
+        <CommandLineUnsignedJar>@(AndroidApkSignSignedOutputFile)</CommandLineUnsignedJar>
+      </AndroidApkSign>
+    </ItemGroup>
+
+    <JavaSigner
+      BuildingInIDE="$(BuildingInsideVisualStudio)"
+      Condition="'@(AndroidApkSign)' != ''"
+      Sources="@(AndroidApkSign)"
+      TrackerLogDirectory="%(AndroidApkSign.TrackerLogDirectory)"
+      TrackFileAccess="$(TrackFileAccess)"
+      ToolPath="$(JavaHomeDir)\bin"
+      ToolExe="jarsigner.exe"
+      SignedOutputFile="@(AndroidApkSignSignedOutputFile)"
+      OutputCommandLine="%(AndroidApkSign.OutputCommandLine)"
+      PropertiesFile="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml">
+      <Output TaskParameter="OutputFiles" ItemName="AndroidApkSignSignedOutputFile" />
+    </JavaSigner>
+
+    <!--
+      Align the signed APK. (Must be post-signing)
     -->
 
     <ItemGroup>
-      <AndroidDalvik Condition="'@(AndroidDalvik)' != ''">
-        <MinimalRebuildFromTracking Condition="'%(AndroidDalvik.MinimalRebuildFromTracking)' == '' and '$(BuildType)' == 'Build' and '$(ForceRebuild)' != 'true'">true</MinimalRebuildFromTracking>
-      </AndroidDalvik>
+      <AndroidApkSign Remove="@(AndroidApkSign)" />
+      <AndroidApkSign Include="@(AndroidApkSignSignedOutputFile)"  />
     </ItemGroup>
 
-    <!-- 
-      Ensure requested output directories exist 
-    -->
+    <AndroidZipAlign
+      BuildingInIDE="$(BuildingInsideVisualStudio)"
+      Condition="'@(AndroidApkSign)' != ''"
+      Sources="@(AndroidApkSign)"
+      TrackerLogDirectory="%(AndroidApkSign.TrackerLogDirectory)"
+      TrackFileAccess="$(TrackFileAccess)"
+      ToolPath="$(AndroidSdkRoot)\tools"
+      ToolExe="zipalign.exe"
+      OutputCommandLine="%(AndroidApkSign.OutputCommandLine)"
+      AlignedZip="%(AndroidApkSign.SignedAlignedOutputFile)"
+      PropertiesFile="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml">
+      <Output TaskParameter="OutputFiles" ItemName="AndroidApkSignSignedAlignedOutputFile" />
+    </AndroidZipAlign>
 
-    <MakeDir 
-      Condition="'@(AndroidDalvik)' != ''"
-      Directories="$([System.IO.Path]::GetDirectoryName(%(AndroidDalvik.OutputFile)))"
+    <Message
+      Condition="'@(AndroidApkSign)' != ''"
+      Text="$(MSBuildProjectFile) -&gt; @(AndroidApkSign)"
+      Importance="High"
     />
 
-    <!-- 
-      Process input class-paths and generate a Dalvik executable (i.e. classes.dex) 
-    -->
-
-    <AndroidDex
-      BuildingInIDE="$(BuildingInsideVisualStudio)"
-      Condition="'@(AndroidDalvik)' != ''"
-      Sources="@(AndroidDalvik)"
-      OutputFile="%(AndroidDalvik.OutputFile)"
-      TrackerLogDirectory ="%(AndroidDalvik.TrackerLogDirectory)"
-      TrackFileAccess="$(TrackFileAccess)"
-      MinimalRebuildFromTracking="%(AndroidDalvik.MinimalRebuildFromTracking)"
-      OutputCommandLine="%(AndroidDalvik.OutputCommandLine)"
-      ToolPath="$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)"
-      ToolExe="dx.bat"
-      PropertiesFile="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml">
-      <Output TaskParameter="OutputFiles" ItemName="AndroidDalvikOutputFiles" />
-      <Output TaskParameter="SkippedExecution" PropertyName="AndroidDalvikSkippedExecution" />
-    </AndroidDex>
-
   </Target>
 
   <!--
@@ -106,12 +130,8 @@
   -->
 
   <Target
-    Name="ComputeAndroidDalvikOutput"
-    DependsOnTargets="AndroidDalvik">
-
-    <ItemGroup>
-      <AndroidApk Include="@(AndroidDalvikOutputFiles)" />
-    </ItemGroup>
+    Name="ComputeAndroidApkSignOutput"
+    DependsOnTargets="AndroidApkSign">
 
   </Target>
 
@@ -121,17 +141,7 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <Target Name="CleanAndroidDalvik">
-
-    <ItemGroup>
-      <CleanAndroidDalvikCache
-        Include="
-        $(IntDir)bin\**\*.dex;
-        $(IntDir)bin\**\*.dex.d;"
-      />
-    </ItemGroup>
-
-    <Delete Files="@(CleanAndroidDalvikCache)" />
+  <Target Name="CleanAndroidApkSign">
 
   </Target>
 

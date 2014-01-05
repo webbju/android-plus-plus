@@ -64,9 +64,9 @@ namespace AndroidPlusPlus.MsBuild.Common
 
         CanonicalTrackedOutputFiles trackedOutputFiles = new CanonicalTrackedOutputFiles (this, TLogWriteFiles);
 
-        TrackedInputFiles = new CanonicalTrackedInputFiles (this, TLogReadFiles, Sources, ExcludedInputPaths, trackedOutputFiles, true, false);
+        TrackedInputFiles = new CanonicalTrackedInputFiles (this, TLogReadFiles, Sources, ExcludedInputPaths, trackedOutputFiles, true, false);//true);
 
-        ITaskItem [] outOfDateSourcesFromTracking = TrackedInputFiles.ComputeSourcesNeedingCompilation ();
+        ITaskItem [] outOfDateSourcesFromTracking = TrackedInputFiles.ComputeSourcesNeedingCompilation ();// (true);
 
         ITaskItem [] outOfDateSourcesFromCommandLine = GetOutOfDateSourcesFromCmdLineChanges ();
 
@@ -132,6 +132,11 @@ namespace AndroidPlusPlus.MsBuild.Common
             outputFiles.Add (new TaskItem (Path.GetFullPath (source.GetMetadata ("OutputFile"))));
           }
 
+          if (!string.IsNullOrWhiteSpace (source.GetMetadata ("ObjectFileName")))
+          {
+            outputFiles.Add (new TaskItem (Path.GetFullPath (source.GetMetadata ("ObjectFileName"))));
+          }
+
           if (!string.IsNullOrWhiteSpace (source.GetMetadata ("OutputFiles")))
           {
             string [] files = source.GetMetadata ("OutputFiles").Split (';');
@@ -164,11 +169,21 @@ namespace AndroidPlusPlus.MsBuild.Common
       }
       finally
       {
-        OutputWriteTLog (m_commandBuffer, OutOfDateSources);
+#if DEBUG
+        foreach (ITaskItem outputFile in OutputFiles)
+        {
+          Log.LogMessageFromText (string.Format ("[{0}] --> Outputs: '{1}'", ToolName, outputFile), MessageImportance.Low);
+        }
+#endif
 
-        OutputReadTLog (m_commandBuffer, OutOfDateSources);
+        if (TrackFileAccess)
+        {
+          OutputWriteTLog (m_commandBuffer, OutOfDateSources);
 
-        OutputCommandTLog (m_commandBuffer);
+          OutputReadTLog (m_commandBuffer, OutOfDateSources);
+
+          OutputCommandTLog (m_commandBuffer);
+        }
       }
 
       return retCode;
@@ -297,8 +312,6 @@ namespace AndroidPlusPlus.MsBuild.Common
         // Merge existing and new dictionaries. This is quite expensive, but means we can utilise a more simple base export implementation.
         // 
 
-        List<ITaskItem> mergedSources = new List<ITaskItem> ();
-
         Dictionary<string, List<ITaskItem>> cachedCommandLogDictionary = GenerateCommandLinesFromTlog ();
 
         Dictionary<string, List<ITaskItem>> mergedCommandLogDictionary = new Dictionary<string, List<ITaskItem>> ();
@@ -309,24 +322,30 @@ namespace AndroidPlusPlus.MsBuild.Common
 
         foreach (KeyValuePair<string, List<ITaskItem>> entry in commandDictionary)
         {
+          List <ITaskItem> mergedLogDictionaryList = null;
+
+          if (!mergedCommandLogDictionary.TryGetValue (entry.Key, out mergedLogDictionaryList))
+          {
+            mergedLogDictionaryList = new List<ITaskItem> ();
+
+            mergedCommandLogDictionary.Add (entry.Key, mergedLogDictionaryList);
+          }
+
+          List<string> mergedLogDictionaryListAsFullPaths = mergedLogDictionaryList.ConvertAll<string> (element => TrackedFileManager.ConvertToTrackerFormat (element.GetMetadata ("FullPath")));
+
           foreach (ITaskItem source in entry.Value)
           {
-            if (!mergedSources.Contains (source))
+            string sourceFullPath = TrackedFileManager.ConvertToTrackerFormat (source.GetMetadata ("FullPath"));
+
+            if (!mergedLogDictionaryListAsFullPaths.Contains (sourceFullPath))
             {
-              mergedSources.Add (source);
+              mergedLogDictionaryList.Add (source);
 
-              List <ITaskItem> mergedLogDictionaryList = null;
-
-              if (mergedCommandLogDictionary.TryGetValue (entry.Key, out mergedLogDictionaryList))
-              {
-                mergedLogDictionaryList.Add (source);
-              }
-              else
-              {
-                mergedCommandLogDictionary.Add (entry.Key, new List <ITaskItem> { source });
-              }
+              mergedLogDictionaryListAsFullPaths.Add (sourceFullPath);
             }
           }
+
+          mergedCommandLogDictionary [entry.Key] = mergedLogDictionaryList;
         }
 
         // 
@@ -335,72 +354,35 @@ namespace AndroidPlusPlus.MsBuild.Common
 
         foreach (KeyValuePair<string, List<ITaskItem>> entry in cachedCommandLogDictionary)
         {
+          List<ITaskItem> mergedLogDictionaryList = null;
+
+          if (!mergedCommandLogDictionary.TryGetValue (entry.Key, out mergedLogDictionaryList))
+          {
+            mergedLogDictionaryList = new List<ITaskItem> ();
+
+            mergedCommandLogDictionary.Add (entry.Key, mergedLogDictionaryList);
+          }
+
+          List<string> mergedLogDictionaryListAsFullPaths = mergedLogDictionaryList.ConvertAll<string> (element => TrackedFileManager.ConvertToTrackerFormat (element.GetMetadata ("FullPath")));
+
           foreach (ITaskItem source in entry.Value)
           {
-            if (!mergedSources.Contains (source))
+            string sourceFullPath = TrackedFileManager.ConvertToTrackerFormat (source.GetMetadata ("FullPath"));
+
+            if (!mergedLogDictionaryListAsFullPaths.Contains (sourceFullPath))
             {
-              mergedSources.Add (source);
+              mergedLogDictionaryList.Add (source);
 
-              List<ITaskItem> mergedLogDictionaryList = null;
-
-              if (mergedCommandLogDictionary.TryGetValue (entry.Key, out mergedLogDictionaryList))
-              {
-                mergedLogDictionaryList.Add (source);
-              }
-              else
-              {
-                mergedCommandLogDictionary.Add (entry.Key, new List<ITaskItem> { source });
-              }
+              mergedLogDictionaryListAsFullPaths.Add (sourceFullPath);
             }
           }
+
+          mergedCommandLogDictionary [entry.Key] = mergedLogDictionaryList;
         }
 
         base.OutputCommandTLog (mergedCommandLogDictionary);
       }
     }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /*protected override void OutputReadTLog (Dictionary<string, List<ITaskItem>> commandDictionary, CanonicalTrackedOutputFiles outputs, bool appendToOutputLog)
-    {
-      // 
-      // Output a tracking file detailing which files were read (or are dependencies) for the source files built. Changes in these files will invoke recompilation.
-      // 
-
-      CanonicalTrackedInputFiles files = new CanonicalTrackedInputFiles (TLogReadFiles, Sources, outputs, true, false);
-
-      foreach (KeyValuePair<string, List<ITaskItem>> keyPair in commandDictionary)
-      {
-        // 
-        // Remove entries for sources which have been compiled/processed during this execution.
-        // 
-
-        files.RemoveEntriesForSource (keyPair.Value.ToArray ());
-      }
-
-      files.SaveTlog ();
-
-      // 
-      // Append the built sources to the existing (built source stripped) log.
-      // 
-
-      base.OutputReadTLog (commandDictionary, outputs, appendToOutputLog);
-    }*/
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /*protected override CanonicalTrackedOutputFiles OutputWriteTLog (ITaskItem [] inputs)
-    {
-      // 
-      // Should be able to use the default implementation - since OutputFiles, dependencies (and delta updates) are taken into account anyway.
-      // 
-
-      return base.OutputWriteTLog (inputs);
-    }*/
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

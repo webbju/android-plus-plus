@@ -24,7 +24,7 @@
 
     <ClCompile>
 
-      <OutputFile>$(IntDir)%(Filename).obj</OutputFile>
+      <ObjectFileName>$(IntDir)%(Filename).obj</ObjectFileName>
 
       <SystemIncludeDirectories Condition="'%(ClCompile.SystemIncludeDirectories)' == ''">$(IncludePath);</SystemIncludeDirectories>
 
@@ -90,7 +90,7 @@
 
     <Link>
 
-      <OutputFile>$(TargetDir)lib$(TargetName).so</OutputFile>
+      <OutputFile>$(TargetDir)$(TargetName).so</OutputFile>
 
       <OutputSharedLibrary Condition="'%(Link.OutputSharedLibrary)' == ''">true</OutputSharedLibrary>
 

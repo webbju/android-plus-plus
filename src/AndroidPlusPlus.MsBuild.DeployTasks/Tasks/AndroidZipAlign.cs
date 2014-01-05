@@ -45,15 +45,36 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [Required]
+    public ITaskItem AlignedZip { get; set; }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     protected override int TrackedExecuteTool (string pathToTool, string responseFileCommands, string commandLineCommands)
     {
       int retCode = base.TrackedExecuteTool (pathToTool, responseFileCommands, commandLineCommands);
 
       if (retCode == 0)
       {
-        string outputAlignedApk = Path.GetFullPath (Sources [0].GetMetadata ("OutputSignedAlignedApk"));
+        OutputFiles = new ITaskItem [] { AlignedZip };
 
-        OutputFiles = new ITaskItem [] { new TaskItem (outputAlignedApk) };
+        // 
+        // Construct a simple dependency file for tracking purposes.
+        // 
+
+        using (StreamWriter writer = new StreamWriter (AlignedZip.GetMetadata ("FullPath") + ".d", false, Encoding.Unicode))
+        {
+          writer.WriteLine (string.Format ("{0}: \\", AlignedZip.GetMetadata ("FullPath")));
+
+          foreach (ITaskItem source in Sources)
+          {
+            string sourceFullPath = source.GetMetadata ("FullPath");
+
+            writer.WriteLine (string.Format ("  {0} \\", sourceFullPath));
+          }
+        }
       }
 
       return retCode;
@@ -65,11 +86,7 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
 
     protected override string GenerateCommandLineCommands ()
     {
-      string inputUnalignedApk = Path.GetFullPath (Sources [0].GetMetadata ("OutputSignedUnalignedApk"));
-
-      string outputAlignedApk = Path.GetFullPath (Sources [0].GetMetadata ("OutputSignedAlignedApk"));
-
-      return "-f 4 " + GccUtilities.QuoteIfNeeded (inputUnalignedApk) + " " + GccUtilities.QuoteIfNeeded (outputAlignedApk);
+      return "-f 4 " + GccUtilities.QuoteIfNeeded (Sources [0].GetMetadata ("FullPath")) + " " + GccUtilities.QuoteIfNeeded (AlignedZip.GetMetadata ("FullPath"));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -80,7 +97,7 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
     {
       if (Sources.Length == 1)
       {
-        if (Path.GetExtension (Sources [0].GetMetadata ("FullPath")) == ".apk")
+        if (Sources [0].GetMetadata ("Extension") == ".apk")
         {
           return base.ValidateParameters ();
         }

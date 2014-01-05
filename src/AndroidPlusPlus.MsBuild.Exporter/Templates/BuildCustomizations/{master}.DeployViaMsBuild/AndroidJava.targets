@@ -56,7 +56,11 @@
   -->
 
   <PropertyGroup>
+
     <ComputeAndroidJavaInputsTargets>$(ComputeAndroidJavaInputsTargets);ComputeAndroidManifestOutput;</ComputeAndroidJavaInputsTargets>
+
+    <CleanDependsOn>$(CleanDependsOn);CleanAndroidJava;</CleanDependsOn>
+
   </PropertyGroup>
 
   <!--
@@ -65,43 +69,50 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <!-- 
-    Compile any associated .java sources.
-  -->
-
   <Target
     Name="AndroidJava"
     BeforeTargets="$(AndroidJavaBeforeTargets)"
     AfterTargets="$(AndroidJavaAfterTargets)"
     DependsOnTargets="$(ComputeAndroidJavaInputsTargets)">
 
-    <!-- Ensure requested output directories exist -->
-    <MakeDir Directories="%(AndroidJava.ClassOutputDirectory)" Condition="!exists('%(AndroidJava.ClassOutputDirectory)')" />
-    <MakeDir Directories="%(AndroidJava.SourceOutputDirectory)" Condition="!exists('%(AndroidJava.SourceOutputDirectory)')" />
+    <!-- 
+      Ensure requested output directories exist 
+    -->
 
-    <!-- Flag sources for incremental build -->
+    <MakeDir 
+      Condition="'@(AndroidJava)' != ''" 
+      Directories="%(AndroidJava.ClassOutputDirectory);%(AndroidJava.SourceOutputDirectory)" 
+    />
+
+    <!-- 
+      Flag sources for incremental build 
+    -->
+
     <ItemGroup>
-      <AndroidJava>
+      <AndroidJava Condition="'@(AndroidJava)' != ''">
         <MinimalRebuildFromTracking Condition="'%(AndroidJava.MinimalRebuildFromTracking)' == '' and '$(BuildType)' == 'Build' and '$(ForceRebuild)' != 'true'">true</MinimalRebuildFromTracking>
       </AndroidJava>
     </ItemGroup>
 
-    <!-- Compile all explicit and generated .java sources. Outputs a list of absolute locations to generated .class files. -->
-    <JavaCompile
-      BuildingInIDE                  ="$(BuildingInsideVisualStudio)"
-      Sources                        ="@(AndroidJava)"
-      TrackerLogDirectory            ="%(AndroidJava.TrackerLogDirectory)"
-      TrackFileAccess                ="$(TrackFileAccess)"
-      MinimalRebuildFromTracking     ="%(AndroidJava.MinimalRebuildFromTracking)"
-      OutputCommandLine              ="%(AndroidJava.OutputCommandLine)"
-      ToolPath                       ="$(JavaHomeDir)\bin"
-      ToolExe                        ="javac.exe"
-      PropertiesFile                 ="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml">
+    <!-- 
+      Compile all explicit and generated .java sources. Outputs a list of absolute locations to generated .class files. 
+    -->
 
+    <JavaCompile
+      BuildingInIDE="$(BuildingInsideVisualStudio)"
+      Condition="'@(AndroidJava)' != ''"
+      Sources="@(AndroidJava)"
+      TrackerLogDirectory="%(AndroidJava.TrackerLogDirectory)"
+      TrackFileAccess="$(TrackFileAccess)"
+      MinimalRebuildFromTracking="%(AndroidJava.MinimalRebuildFromTracking)"
+      OutputCommandLine="%(AndroidJava.OutputCommandLine)"
+      ToolPath="$(VCTargetsPath)\Platforms\{master}\Toolchain\bin"
+      ToolExe="app-javac-dependencies.exe"
+      JavaHomeDir="$(JavaHomeDir)"
+      PropertiesFile="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml">
       <Output TaskParameter="OutputFiles" ItemName="AndroidJavaOutputClassFiles" />
       <Output TaskParameter="OutputClassPaths" ItemName="AndroidJavaOutputClassPaths" />
       <Output TaskParameter="SkippedExecution" PropertyName="AndroidJavaSkippedExecution" />
-
     </JavaCompile>
 
   </Target>
@@ -114,12 +125,34 @@
 
   <Target
     Name="ComputeAndroidJavaOutput"
-    Condition="'@(AndroidJava)' != ''"
     DependsOnTargets="AndroidJava">
-    <ItemGroup>
-      <AndroidDalvik Include="@(AndroidJavaOutputClassPaths->Metadata('FullPath')->Distinct()->ClearMetadata())" Condition="'@(AndroidJavaOutputClassPaths)' != ''"/>
+
+    <ItemGroup Condition="'@(AndroidJavaOutputClassPaths)' != ''">
+      <AndroidDalvik Include="@(AndroidJavaOutputClassPaths->Metadata('FullPath')->Distinct()->ClearMetadata())" />
     </ItemGroup>
-    <Message Text="TEST = @(AndroidJavaOutputClassPaths)" />
+
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target Name="CleanAndroidJava">
+
+    <ItemGroup>
+      <CleanAndroidJavaCache 
+        Include="
+        $(IntDir)bin\classes\**\*.class;
+        $(IntDir)bin\classes\**\*.class.d;
+        $(IntDir)gen\**\*.class;
+        $(IntDir)gen\**\*.class.d;" 
+      />
+    </ItemGroup>
+
+    <Delete Files="@(CleanAndroidJavaCache)" />
+
   </Target>
 
   <!--

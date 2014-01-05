@@ -8,22 +8,6 @@
 
     <DebuggerFlavor>{master}Debugger</DebuggerFlavor>
 
-    <DebuggerConfiguration Condition="'$(DebuggerConfiguration)' == ''">Custom</DebuggerConfiguration>
-
-    <DebuggerTargetApk Condition="'$(DebuggerTargetApk)' == ''">$(TargetPath)</DebuggerTargetApk>
-
-    <DebuggerAndroidManifest Condition="'$(DebuggerAndroidManifest)' == ''">$(AndroidManifest)</DebuggerAndroidManifest>
-
-    <DebuggerCustomLaunchActivity Condition="'$(DebuggerCustomLaunchActivity)' == ''"></DebuggerCustomLaunchActivity>
-
-    <DebuggerDebugMode Condition="'$(DebuggerDebugMode)' == ''">true</DebuggerDebugMode>
-
-    <DebuggerOpenGlTrace Condition="'$(DebuggerOpenGlTrace)' == ''">false</DebuggerOpenGlTrace>
-
-    <DebuggerKeepAppData Condition="'$(DebuggerKeepAppData)' == ''">true</DebuggerKeepAppData>
-
-    <DebuggerLibraryPaths Condition="'$(DebuggerLibraryPaths)' == ''">$(LibraryPath)</DebuggerLibraryPaths>
-
   </PropertyGroup>
 
 </Project>

@@ -135,6 +135,11 @@ namespace AndroidPlusPlus.MsBuild.Common
             outputFiles.Add (new TaskItem (Path.GetFullPath (source.GetMetadata ("OutputFile"))));
           }
 
+          if (!string.IsNullOrWhiteSpace (source.GetMetadata ("ObjectFileName")))
+          {
+            outputFiles.Add (new TaskItem (Path.GetFullPath (source.GetMetadata ("ObjectFileName"))));
+          }
+
           if (!string.IsNullOrWhiteSpace (source.GetMetadata ("OutputFiles")))
           {
             string [] files = source.GetMetadata ("OutputFiles").Split (';');
@@ -144,6 +149,8 @@ namespace AndroidPlusPlus.MsBuild.Common
               outputFiles.Add (new TaskItem (Path.GetFullPath (file)));
             }
           }
+
+          AddTaskSpecificOutputFiles (ref outputFiles);
         }
 
         OutputFiles = outputFiles.ToArray ();
@@ -252,7 +259,7 @@ namespace AndroidPlusPlus.MsBuild.Common
             {
               if (!string.IsNullOrWhiteSpace (e.Data))
               {
-                LogEventsFromTextOutput (e.Data, MessageImportance.High);
+                TrackedExecuteToolOutput (commandKeyPair, e.Data);
               }
             };
 
@@ -260,7 +267,7 @@ namespace AndroidPlusPlus.MsBuild.Common
             {
               if (!string.IsNullOrWhiteSpace (e.Data))
               {
-                LogEventsFromTextOutput (e.Data, MessageImportance.High);
+                TrackedExecuteToolOutput (commandKeyPair, e.Data);
               }
             };
 
@@ -456,6 +463,15 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    protected virtual void TrackedExecuteToolOutput (KeyValuePair<string, List<ITaskItem>> commandAndSourceFiles, string singleLine)
+    {
+      LogEventsFromTextOutput (singleLine, MessageImportance.High);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     protected virtual bool Setup ()
     {
       SkippedExecution = false;
@@ -626,16 +642,18 @@ namespace AndroidPlusPlus.MsBuild.Common
           {
             List<ITaskItem> bufferTasks = null;
 
-            if (commandBuffer.TryGetValue (commandLineFromProps, out bufferTasks))
-            {
-              bufferTasks.Add (source);
+            ITaskItem fullPathSourceItem = new TaskItem (source.GetMetadata ("FullPath"));
 
-              commandBuffer [commandLineFromProps] = bufferTasks;
-            }
-            else
+            if (!commandBuffer.TryGetValue (commandLineFromProps, out bufferTasks))
             {
-              commandBuffer.Add (commandLineFromProps, new List<ITaskItem> { source });
+              bufferTasks = new List<ITaskItem> ();
+
+              commandBuffer.Add (commandLineFromProps, bufferTasks);
             }
+
+            bufferTasks.Add (fullPathSourceItem);
+
+            commandBuffer [commandLineFromProps] = bufferTasks;
           }
         }
       }
@@ -759,6 +777,8 @@ namespace AndroidPlusPlus.MsBuild.Common
           throw new InvalidOperationException ("TLogReadFiles is missing or does not have a length of 1");
         }
 
+        //System.Diagnostics.Debugger.Break ();
+
         TrackedFileManager trackedFileManager = new TrackedFileManager ();
 
         if (trackedFileManager != null)
@@ -770,6 +790,14 @@ namespace AndroidPlusPlus.MsBuild.Common
           trackedFileManager.ImportFromExistingTLog (TLogReadFiles [0]);
 
           trackedFileManager.RemoveSourcesFromTable (inputs);
+
+          trackedFileManager.AddSourcesToTable (inputs);
+
+          // 
+          // Add any explicit inputs registered by parent task.
+          // 
+
+          AddTaskSpecificDependencies (ref trackedFileManager);
 
           // 
           // Create dependency mappings for 'global' task outputs. Assume these relate to all processed sources.
@@ -783,8 +811,6 @@ namespace AndroidPlusPlus.MsBuild.Common
               {
                 string outputFullPath = output.GetMetadata ("FullPath");
 
-                //trackedFileManager.AddDependencyForSources (outputFullPath, keyPair.Value.ToArray ());
-
                 string [] potentialDependencyFilePaths =
                 {
                   // C style: 'SRC.d'
@@ -793,6 +819,8 @@ namespace AndroidPlusPlus.MsBuild.Common
                   // Java (or Unix) style: 'SRC.java.d' 'FILE.EXT.d'
                   outputFullPath + ".d" 
                 };
+
+                List <string> sourcesAsFullPaths = keyPair.Value.ConvertAll<string> (element => element.GetMetadata ("FullPath"));
 
                 foreach (string dependencyFilePath in potentialDependencyFilePaths)
                 {
@@ -815,16 +843,17 @@ namespace AndroidPlusPlus.MsBuild.Common
                       {
                         string dependencyFileFullPath = file.GetMetadata ("FullPath");
 
-                        if (!dependencyFileFullPath.Equals (dependencyFilePath) && !dependencyFileFullPath.Equals (outputFullPath))
+                        if (!sourcesAsFullPaths.Contains (dependencyFileFullPath))
                         {
-                          if (!File.Exists (dependencyFileFullPath))
+                          if (!dependencyFileFullPath.Equals (dependencyFilePath) && !dependencyFileFullPath.Equals (outputFullPath))
                           {
-                            Log.LogMessage (MessageImportance.High, "Could not find dependency: " + dependencyFileFullPath);
+                            if (!File.Exists (dependencyFileFullPath))
+                            {
+                              Log.LogMessage (MessageImportance.High, "Could not find dependency: " + dependencyFileFullPath);
+                            }
+
+                            trackedFileManager.AddDependencyForSources (dependencyFileFullPath, keyPair.Value.ToArray ());
                           }
-
-                          //Log.LogMessage (MessageImportance.High, "Dependency for " + keyPair.Value.ToArray () [0]);
-
-                          trackedFileManager.AddDependencyForSources (dependencyFileFullPath, keyPair.Value.ToArray ());
                         }
                       }
                     }
@@ -851,7 +880,7 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected virtual void OutputWriteTLog (Dictionary<string, List<ITaskItem>> commandDictionary, ITaskItem [] inputs)
+    protected virtual void OutputWriteTLog (Dictionary<string, List<ITaskItem>> commandDictionary, ITaskItem [] outputs)
     {
       try
       {
@@ -865,7 +894,7 @@ namespace AndroidPlusPlus.MsBuild.Common
           throw new ArgumentNullException ();
         }
 
-        if (inputs == null)
+        if (outputs == null)
         {
           throw new ArgumentNullException ();
         }
@@ -885,7 +914,9 @@ namespace AndroidPlusPlus.MsBuild.Common
 
           trackedFileManager.ImportFromExistingTLog (TLogWriteFiles [0]);
 
-          trackedFileManager.RemoveSourcesFromTable (inputs);
+          trackedFileManager.RemoveSourcesFromTable (outputs);
+
+          trackedFileManager.AddSourcesToTable (outputs);
 
           // 
           // Create dependency mappings between source and explicit output file (object-file type relationship).
@@ -936,34 +967,18 @@ namespace AndroidPlusPlus.MsBuild.Common
                       GccUtilities.DependencyParser parser = new GccUtilities.DependencyParser (dependencyFilePath);
 
 #if DEBUG
-                      Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Write) : {1} ({2})", ToolName, dependencyFilePath, parser.Dependencies.Count), MessageImportance.Low);
+                      Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Write) : {1}", ToolName, dependencyFilePath), MessageImportance.Low);
 
-                      for (int i = 0; i < parser.Dependencies.Count; ++i)
-                      {
-                        Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Write) : [{1}] '{2}'", ToolName, i, parser.Dependencies [i]), MessageImportance.Low);
-                      }
+                      Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Write) : [{1}] '{2}'", ToolName, 0, parser.OutputFile), MessageImportance.Low);
 #endif
 
-                      foreach (ITaskItem file in parser.Dependencies)
-                      {
-                        string dependencyFileFullPath = file.GetMetadata ("FullPath");
-
-                        if (!dependencyFileFullPath.Equals (dependencyFilePath) && !dependencyFileFullPath.Equals (outputFullPath))
-                        {
-                          if (!File.Exists (dependencyFileFullPath))
-                          {
-                            Log.LogMessage (MessageImportance.High, "Could not find dependency: " + dependencyFileFullPath);
-                          }
-
-                          //Log.LogMessage (MessageImportance.High, "Dependency for " + keyPair.Value.ToArray () [0]);
-
-                          trackedFileManager.AddDependencyForSources (dependencyFileFullPath, keyPair.Value.ToArray ());
-                        }
-                      }
+                      trackedFileManager.AddDependencyForSources (parser.OutputFile.GetMetadata ("FullPath"), keyPair.Value.ToArray ());
                     }
                     catch (Exception)
                     {
                       Log.LogMessage (MessageImportance.High, "Could not parse dependency file: " + dependencyFilePath);
+
+                      throw;
                     }
                   }
                 }
@@ -976,8 +991,24 @@ namespace AndroidPlusPlus.MsBuild.Common
       }
       catch (Exception e)
       {
-        Log.LogErrorFromException (e, true);
+        Log.LogErrorFromException (e, true, true, null);
       }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected virtual void AddTaskSpecificDependencies (ref TrackedFileManager trackedFileManager)
+    {
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected virtual void AddTaskSpecificOutputFiles (ref List<ITaskItem> outputFiles)
+    {
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

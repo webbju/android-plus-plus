@@ -56,19 +56,21 @@
 
   <!-- 
     Default include, tools and source directories. Also used by Intellisense. 
+    
+    Additional default references to {master}'s internal toolchain setup here.
   -->
 
   <PropertyGroup>
 
-    <ExecutablePath Condition="'$(ExecutablePath)' == '' AND '$(SixtyFourBit)' == 'true' AND Exists('$(AndroidNdkRoot)\prebuilt\windows-x86_64')">$(AndroidNdkRoot)\prebuilt\windows-x86_64;$(PATH);</ExecutablePath>
+    <ExecutablePath Condition="'$(ExecutablePath)' == '' AND '$(SixtyFourBit)' == 'true' AND Exists('$(AndroidNdkRoot)\prebuilt\windows-x86_64')">$(AndroidNdkRoot)\prebuilt\windows-x86_64;$(VCTargetsPath)\Platforms\{master}\Toolchain\bin;$(PATH);</ExecutablePath>
 
-    <ExecutablePath Condition="'$(ExecutablePath)' == ''">$(AndroidNdkRoot)\prebuilt\windows\bin;$(PATH);</ExecutablePath>
+    <ExecutablePath Condition="'$(ExecutablePath)' == ''">$(AndroidNdkRoot)\prebuilt\windows\bin;$(VCTargetsPath)\Platforms\{master}\Toolchain\bin;$(PATH);</ExecutablePath>
 
-    <IncludePath Condition="'$(IncludePath)' == ''">$(PlatformToolsetSysRoot)\usr\include;$(PlatformToolsetPrebuilt)\include</IncludePath>
+    <IncludePath Condition="'$(IncludePath)' == ''">$(PlatformToolsetSysRoot)\usr\include;$(PlatformToolsetPrebuilt)\include;$(VCTargetsPath)\Platforms\{master}\Toolchain\include;</IncludePath>
 
     <ReferencePath Condition="'$(ReferencePath)' == ''"></ReferencePath>
 
-    <LibraryPath Condition="'$(LibraryPath)' == ''">$(PlatformToolsetSysRoot)\usr\lib;$(PlatformToolsetPrebuilt)\lib</LibraryPath>
+    <LibraryPath Condition="'$(LibraryPath)' == ''">$(PlatformToolsetSysRoot)\usr\lib;$(PlatformToolsetPrebuilt)\lib;$(VCTargetsPath)\Platforms\{master}\Toolchain\lib;</LibraryPath>
 
     <SourcePath Condition="'$(SourcePath)' == ''"></SourcePath>
 

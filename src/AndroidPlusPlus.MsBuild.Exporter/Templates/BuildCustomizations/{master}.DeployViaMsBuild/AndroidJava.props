@@ -45,7 +45,7 @@
 
       <DisableWarningMessages Condition="'%(AndroidJava.DisableWarningMessages)' == ''">false</DisableWarningMessages>
 
-      <Verbose Condition="'%(AndroidJava.Verbose)' == ''">true</Verbose>
+      <Verbose Condition="'%(AndroidJava.Verbose)' == ''">false</Verbose>
 
       <AdditionalOptions Condition="'%(AndroidJava.AdditionalOptions)' == ''"></AdditionalOptions>
 

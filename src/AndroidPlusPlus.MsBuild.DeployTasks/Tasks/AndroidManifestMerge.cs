@@ -53,6 +53,9 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     [Output]
     public ITaskItem MergedManifest { get; set; }
 
+    [Output]
+    public string PackageAddress { get; set; }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -88,6 +91,8 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
               {
                 MergedManifest = new TaskItem (item.ItemSpec);
 
+                PackageAddress = itemManifest.PackageAddress;
+
                 item.CopyMetadataTo (MergedManifest);
               }
               else
@@ -122,7 +127,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
               string existingExtraPackages = MergedManifest.GetMetadata ("ExtraPackages");
 
-              MergedManifest.SetMetadata ("ExtraPackages", existingExtraPackages + ((existingExtraPackages.Length > 0) ? ":" : "") + itemManifest.Package);
+              MergedManifest.SetMetadata ("ExtraPackages", existingExtraPackages + ((existingExtraPackages.Length > 0) ? ":" : "") + itemManifest.PackageAddress);
             }
           }
         }

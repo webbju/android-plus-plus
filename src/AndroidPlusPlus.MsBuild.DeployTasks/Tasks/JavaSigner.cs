@@ -45,13 +45,34 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [Required]
+    public ITaskItem SignedOutputFile { get; set; }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     protected override int TrackedExecuteTool (string pathToTool, string responseFileCommands, string commandLineCommands)
     {
       int retCode = base.TrackedExecuteTool (pathToTool, responseFileCommands, commandLineCommands);
 
       if (retCode == 0)
       {
-        OutputFiles = new ITaskItem [] { new TaskItem (Path.GetFullPath (Sources [0].GetMetadata ("OutputSignedUnalignedApk"))) };
+        // 
+        // Construct a simple dependency file for tracking purposes.
+        // 
+
+        using (StreamWriter writer = new StreamWriter (SignedOutputFile.GetMetadata ("FullPath") + ".d", false, Encoding.Unicode))
+        {
+          writer.WriteLine (string.Format ("{0}: \\", SignedOutputFile.GetMetadata ("FullPath")));
+
+          foreach (ITaskItem source in Sources)
+          {
+            string sourceFullPath = source.GetMetadata ("FullPath");
+
+            writer.WriteLine (string.Format ("  {0} \\", sourceFullPath));
+          }
+        }
       }
 
       return retCode;

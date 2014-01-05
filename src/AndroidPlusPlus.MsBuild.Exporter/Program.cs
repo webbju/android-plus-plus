@@ -271,7 +271,7 @@ namespace AndroidPlusPlus.MsBuild.Exporter
           // Process file contents with same text subsitution settings too.
           // 
 
-          if (Path.GetExtension (newFileName) != ".dll")
+          if ((Path.GetExtension (newFileName) != ".dll") && (Path.GetExtension (newFileName) != ".exe" ))
           {
             StringBuilder fileContents = new StringBuilder (File.ReadAllText (newFileName));
 
