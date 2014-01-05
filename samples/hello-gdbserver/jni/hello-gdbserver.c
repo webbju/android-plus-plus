@@ -14,8 +14,9 @@
  * limitations under the License.
  *
  */
+
 #include <string.h>
-#include <jni.h>
+#include <jni.h> 
 
 /*
  * Class:     com_example_hellogdbserver_HelloGdbServer

@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  */
+
 package com.example.hellogdbserver;
 
 import android.app.Activity;
@@ -22,27 +23,32 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 
-public class HelloGdbServer extends Activity {
-	static {
-		System.loadLibrary("hello-gdbserver");
-	}
-	
-	private OnClickListener induceCrashListener = new OnClickListener() {
-		// When the button is clicked, induce a crash via the native code.
-		public void onClick(View v) {
-			invokeCrash();
-		}
-	};
-	
-    /** Called when the activity is first created. */
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.main);
-        
-        Button button = (Button) findViewById(R.id.induceCrashButton);
-        button.setOnClickListener(induceCrashListener);
+public class HelloGdbServer extends Activity
+{
+    static 
+    {
+      System.loadLibrary ("hello-gdbserver");
     }
 
-    public static native void invokeCrash();
+    private OnClickListener induceCrashListener = new OnClickListener () 
+    {
+      // When the button is clicked, induce a crash via the native code.
+      public void onClick (View v) 
+      {
+        invokeCrash ();
+      }
+    };
+
+    /** Called when the activity is first created. */
+    @Override
+    public void onCreate (Bundle savedInstanceState) 
+    {
+      super.onCreate (savedInstanceState);
+      setContentView (R.layout.main);
+      
+      Button button = (Button) findViewById (R.id.induceCrashButton);
+      button.setOnClickListener (induceCrashListener);
+    }
+
+    public static native void invokeCrash ();
 }

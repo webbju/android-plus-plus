@@ -12,9 +12,11 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="AndroidManifest.xml" />
-    <None Include="src\com\example\hellojni\HelloJni.java">
+    <AndroidManifest Include="AndroidManifest.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidJava Include="src\com\example\hellojni\HelloJni.java">
       <Filter>Source Files</Filter>
-    </None>
+    </AndroidJava>
   </ItemGroup>
 </Project>
