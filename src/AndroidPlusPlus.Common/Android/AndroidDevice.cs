@@ -162,7 +162,7 @@ namespace AndroidPlusPlus.Common
 
       if (!String.IsNullOrEmpty (deviceGetProperties))
       {
-        string [] getPropOutputLines = deviceGetProperties.Split (new char [] { '\r', '\n' });
+        string [] getPropOutputLines = deviceGetProperties.Replace ("\r", "").Split (new char [] { '\n' });
 
         m_deviceProperties.Clear ();
 
@@ -199,7 +199,7 @@ namespace AndroidPlusPlus.Common
 
       if (!String.IsNullOrEmpty (deviceProcessList))
       {
-        string [] processesOutputLines = deviceProcessList.Split (new char [] { '\r', '\n' });
+        string [] processesOutputLines = deviceProcessList.Replace ("\r", "").Split (new char [] { '\n' });
 
         string processesRegExPattern = @"(?<user>[^ ]+)[ ]*(?<pid>[0-9]+)[ ]*(?<ppid>[0-9]+)[ ]*(?<vsize>[0-9]+)[ ]*(?<rss>[0-9]+)[ ]*(?<wchan>[A-Za-z0-9]+)[ ]*(?<pc>[A-Za-z0-9]+)[ ]*(?<s>[^ ]+)[ ]*(?<name>[^\r\n]+)";
 

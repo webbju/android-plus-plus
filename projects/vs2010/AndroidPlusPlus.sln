@@ -23,6 +23,7 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsIntegratedPackage", "..\..\src\AndroidPlusPlus.VsIntegratedPackage\AndroidPlusPlus.VsIntegratedPackage.csproj", "{14DF8540-798D-46E9-9EC0-1648D3792660}"
 	ProjectSection(ProjectDependencies) = postProject
 		{3B52636E-6536-4DA7-B5DD-CD8353049CB9} = {3B52636E-6536-4DA7-B5DD-CD8353049CB9}
+		{7C701BB4-BAD8-40DA-AFDC-B9820A04F005} = {7C701BB4-BAD8-40DA-AFDC-B9820A04F005}
 	EndProjectSection
 EndProject
 Global

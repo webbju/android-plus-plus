@@ -76,7 +76,7 @@ namespace AndroidPlusPlus.Common
 
           if (!String.IsNullOrEmpty (adbDevices.StandardOutput))
           {
-            string [] deviceOutputLines = adbDevices.StandardOutput.Split (new char [] { '\r', '\n' });
+            string [] deviceOutputLines = adbDevices.StandardOutput.Replace ("\r", "").Split (new char [] { '\n' });
 
             foreach (string line in deviceOutputLines)
             {

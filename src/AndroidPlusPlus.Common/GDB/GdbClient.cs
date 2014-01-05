@@ -142,7 +142,7 @@ namespace AndroidPlusPlus.Common
     {
       Trace.WriteLine (string.Format ("[GdbClient] Start:"));
 
-      m_gdbClientInstance = new AsyncRedirectProcess (AndroidSettings.NdkRoot + @"\toolchains\arm-linux-androideabi-4.7\prebuilt\windows-x86_64\bin\arm-linux-androideabi-gdb.exe", "--interpreter=mi");
+      m_gdbClientInstance = new AsyncRedirectProcess (m_gdbSetup.GdbToolPath, m_gdbSetup.GdbToolArguments);
 
       m_gdbClientInstance.Listener = this;
 

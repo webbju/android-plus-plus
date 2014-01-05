@@ -210,8 +210,6 @@ namespace AndroidPlusPlus.VsDebugLauncherX
 
         string debuggerTargetApk = string.Empty;
 
-        string debuggerAndroidManifest = string.Empty;
-
         string debuggerCustomLaunchActivity = string.Empty;
 
         string debuggerDebugMode = string.Empty;
@@ -219,6 +217,8 @@ namespace AndroidPlusPlus.VsDebugLauncherX
         string debuggerOpenGlTrace = string.Empty;
 
         string debuggerKeepAppData = string.Empty;
+
+        string debuggerGdbTool = string.Empty;
 
         string debuggerLibraryPaths = string.Empty;
 
@@ -233,8 +233,6 @@ namespace AndroidPlusPlus.VsDebugLauncherX
 
         projectProperties.TryGetValue ("DebuggerTargetApk", out debuggerTargetApk);
 
-        projectProperties.TryGetValue ("DebuggerAndroidManifest", out debuggerAndroidManifest);
-
         projectProperties.TryGetValue ("DebuggerCustomLaunchActivity", out debuggerCustomLaunchActivity);
 
         projectProperties.TryGetValue ("DebuggerDebugMode", out debuggerDebugMode);
@@ -243,8 +241,101 @@ namespace AndroidPlusPlus.VsDebugLauncherX
 
         projectProperties.TryGetValue ("DebuggerKeepAppData", out debuggerKeepAppData);
 
+        projectProperties.TryGetValue ("DebuggerGdbTool", out debuggerGdbTool);
+
         projectProperties.TryGetValue ("DebuggerLibraryPaths", out debuggerLibraryPaths);
 
+        if (!File.Exists (debuggerGdbTool))
+        {
+          throw new FileNotFoundException ("Could not locate an instance of GDB. Expected: " + debuggerGdbTool);
+        }
+
+        // 
+        // Validate project properties.
+        // 
+
+        string androidSdkRoot = string.Empty;
+
+        string androidSdkBuildToolsVersion = string.Empty;
+
+        projectProperties.TryGetValue ("AndroidSdkRoot", out androidSdkRoot);
+
+        projectProperties.TryGetValue ("AndroidSdkBuildToolsVersion", out androidSdkBuildToolsVersion);
+
+        if (string.IsNullOrWhiteSpace (androidSdkRoot))
+        {
+          throw new DirectoryNotFoundException ("'AndroidSdkRoot' property is empty.");
+        }
+
+        if (!Directory.Exists (androidSdkRoot))
+        {
+          throw new DirectoryNotFoundException ("'AndroidSdkRoot' property references a directory which does not exist. (" + androidSdkRoot + ")");
+        }
+
+        string androidSdkBuildToolsPath = Path.Combine (androidSdkRoot, "build-tools", androidSdkBuildToolsVersion);
+
+        if (!Directory.Exists (androidSdkBuildToolsPath))
+        {
+          throw new DirectoryNotFoundException ("Could not locate Android SDK build-tools. Expected " + androidSdkBuildToolsPath);
+        }
+
+        // 
+        // Spawn a AAPT.exe instance to gain some extra information about the APK we are trying to load.
+        // 
+
+        string applicationPackageName = string.Empty;
+
+        string applicationLaunchActivity = string.Empty;
+
+        using (SyncRedirectProcess getApkDetails = new SyncRedirectProcess (Path.Combine (androidSdkBuildToolsPath, "aapt.exe"), "dump --values badging " + debuggerTargetApk))
+        {
+          getApkDetails.StartAndWaitForExit ();
+
+          string [] apkDetails = getApkDetails.StandardOutput.Replace ("\r", "").Split (new char [] { '\n' });
+
+          foreach (string singleLine in apkDetails)
+          {
+            if (singleLine.StartsWith ("package: "))
+            {
+              // 
+              // Retrieve package name from format: "package: name='com.example.hellogdbserver' versionCode='1' versionName='1.0'"
+              // 
+
+              string [] packageData = singleLine.Substring ("package: ".Length).Split (' ');
+
+              foreach (string data in packageData)
+              {
+                if (data.StartsWith ("name="))
+                {
+                  applicationPackageName = data.Substring ("name=".Length).Trim ('\'');
+                }
+              }
+            }
+            else if (singleLine.StartsWith ("launchable-activity: "))
+            {
+              string [] launchActivityData = singleLine.Substring ("launchable-activity: ".Length).Split (' ');
+
+              foreach (string data in launchActivityData)
+              {
+                if (data.StartsWith ("name="))
+                {
+                  applicationLaunchActivity = data.Substring ("name=".Length).Trim ('\'');
+                }
+              }
+            }
+          }
+        }
+
+        // 
+        // If a specific launch activity was not requested, ensure that the default one is referenced.
+        // 
+
+        if (string.IsNullOrEmpty (debuggerCustomLaunchActivity))
+        {
+          debuggerCustomLaunchActivity = applicationLaunchActivity;
+        }
+
+#if FALSE
         // 
         // Override provided debugger properties with those evaluated from active build configurations.
         // 
@@ -271,17 +362,7 @@ namespace AndroidPlusPlus.VsDebugLauncherX
 
           debuggerAndroidManifest = Path.Combine (antBuildPath, "AndroidManifest.xml");
         }
-
-        // 
-        // Attempt loading associated AndroidManifest.xml, and override any settings with defaults.
-        // 
-
-        AndroidManifest applicationManifest = new AndroidManifest (Path.Combine (projectProjectDir, debuggerAndroidManifest));
-
-        if (string.IsNullOrEmpty (debuggerCustomLaunchActivity))
-        {
-          debuggerCustomLaunchActivity = applicationManifest.LauncherActivityName;
-        }
+#endif
 
         // 
         // Check for any currently connected devices, and determine whether the target application is already installed/running.
@@ -304,7 +385,7 @@ namespace AndroidPlusPlus.VsDebugLauncherX
 
         foreach (AndroidProcess process in debuggingDeviceProcesses)
         {
-          if (process.Name.Equals (applicationManifest.PackageName))
+          if (process.Name.Equals (applicationPackageName))
           {
             shouldAttach = true;
 
@@ -322,7 +403,7 @@ namespace AndroidPlusPlus.VsDebugLauncherX
 
         if (shouldAttach)
         {
-          debugLaunchSettings.Executable = applicationManifest.PackageName;
+          debugLaunchSettings.Executable = applicationPackageName;
 
           debugLaunchSettings.LaunchOperation = DebugLaunchOperation.AlreadyRunning;
         }
@@ -330,7 +411,7 @@ namespace AndroidPlusPlus.VsDebugLauncherX
         {
           if (string.IsNullOrEmpty (debuggerTargetApk) || !File.Exists (debuggerTargetApk))
           {
-            throw new FileNotFoundException ("Could not find required target .apk. Tried: " + debuggerTargetApk);
+            throw new FileNotFoundException ("Could not find required target .apk. Expected: " + debuggerTargetApk);
           }
 
           debugLaunchSettings.Executable = debuggerTargetApk;
@@ -341,9 +422,7 @@ namespace AndroidPlusPlus.VsDebugLauncherX
 
           launchConfig ["TargetApk"] = debuggerTargetApk;
 
-          launchConfig ["AndroidManifest"] = debuggerAndroidManifest;
-
-          launchConfig ["PackageName"] = applicationManifest.PackageName;
+          launchConfig ["PackageName"] = applicationPackageName;
 
           launchConfig ["LaunchActivity"] = debuggerCustomLaunchActivity;
 
@@ -353,6 +432,8 @@ namespace AndroidPlusPlus.VsDebugLauncherX
 
           launchConfig ["OpenGlTrace"] = debuggerOpenGlTrace;
 
+          launchConfig ["GdbTool"] = debuggerGdbTool;
+
           launchConfig ["LibraryPaths"] = StringUtils.ConvertPathWindowsToPosix (debuggerLibraryPaths);
 
           debugLaunchSettings.Options = launchConfig.ToString ();
@@ -360,7 +441,11 @@ namespace AndroidPlusPlus.VsDebugLauncherX
       }
       catch (Exception e)
       {
+#if DEBUG
+        ShowErrorDialog (string.Format ("Debugging failed to launch, encountered exception: {0}\n\nStack trace:\n", e.Message, e.StackTrace));
+#else
         ShowErrorDialog (string.Format ("Debugging failed to launch, encountered exception: {0}", e.Message));
+#endif
       }
 
       return debugLaunchSettings;

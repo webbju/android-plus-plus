@@ -53,9 +53,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       NativeMemoryBytes = new CLangDebuggeeMemoryBytes (this);
 
+      string gdbToolPath = Engine.LaunchConfiguration ["GdbTool"];
+
       string [] libraryPaths = Engine.LaunchConfiguration ["LibraryPaths"].Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
 
-      m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, libraryPaths);
+      m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, gdbToolPath, libraryPaths);
 
       GdbServer = new GdbServer (m_gdbSetup);
 

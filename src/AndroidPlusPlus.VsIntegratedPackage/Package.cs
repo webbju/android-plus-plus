@@ -260,7 +260,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     {
       string traceLog = Path.ChangeExtension (Assembly.GetExecutingAssembly ().Location, ".log");
 
-      Trace.WriteLine ("[AndroidMTPackage] Trace Log: " + traceLog);
+      Trace.WriteLine ("[Package] Trace Log: " + traceLog);
 
       m_traceWriterListener = new TextWriterTraceListener (traceLog);
 

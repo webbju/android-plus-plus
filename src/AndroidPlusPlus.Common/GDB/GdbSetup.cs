@@ -27,7 +27,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public GdbSetup (AndroidProcess process, string [] libraryPaths)
+    public GdbSetup (AndroidProcess process, string gdbToolPath, string [] libraryPaths)
     {
       Process = process;
 
@@ -37,9 +37,18 @@ namespace AndroidPlusPlus.Common
 
       Port = 5039;
 
-      CacheDirectory = string.Format (@"{0}\AndroidMT\Cache\{1}\{2}", Environment.GetFolderPath (Environment.SpecialFolder.ApplicationData), Process.HostDevice.ID, Process.Name);
+      CacheDirectory = string.Format (@"{0}\Android++\Cache\{1}\{2}", Environment.GetFolderPath (Environment.SpecialFolder.ApplicationData), Process.HostDevice.ID, Process.Name);
 
       Directory.CreateDirectory (CacheDirectory);
+
+      GdbToolPath = gdbToolPath;
+
+      GdbToolArguments = "--interpreter=mi";
+
+      if (!File.Exists (gdbToolPath))
+      {
+        throw new FileNotFoundException ("Could not find requested GDB instance. Expected: " + gdbToolPath);
+      }
 
       // 
       // Evaluate a compound list of explicit native library locations on the host machine.
@@ -71,6 +80,10 @@ namespace AndroidPlusPlus.Common
     public List <string> LibraryPaths { get; private set; }
 
     public string CacheDirectory { get; private set; }
+
+    public string GdbToolPath { get; private set; }
+
+    public string GdbToolArguments { get; private set; }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -122,26 +135,28 @@ namespace AndroidPlusPlus.Common
 
       Trace.WriteLine (string.Format ("[GdbSetup] CacheDeviceBinaries: "));
 
-      if (Process.HostDevice.Pull ("/system/bin/app_process", Path.Combine (CacheDirectory, "app_process")))
+      string [] remoteBinaries = 
       {
-        Trace.WriteLine (string.Format ("[GdbSetup] Pulled app_process from device/emulator."));
+        "/system/bin/app_process",
+        "/system/bin/linker",
+        "/system/lib/libc.so",
+        "/system/lib/libdvm.so",
+        "/system/lib/libart.so"
+      };
 
-        deviceBinaries.Add (Path.Combine (CacheDirectory, "app_process"));
+      foreach (string binary in remoteBinaries)
+      {
+        if (Process.HostDevice.Pull (binary, Path.Combine (CacheDirectory, Path.GetFileName (binary))))
+        {
+          Trace.WriteLine (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", Path.GetFileName (binary)));
+
+          deviceBinaries.Add (Path.Combine (CacheDirectory, Path.GetFileName (binary)));
+        }
       }
 
-      if (Process.HostDevice.Pull ("/system/bin/linker", Path.Combine (CacheDirectory, "linker")))
-      {
-        Trace.WriteLine (string.Format ("[GdbSetup] Pulled linker from device/emulator."));
-
-        deviceBinaries.Add (Path.Combine (CacheDirectory, "linker"));
-      }
-
-      if (Process.HostDevice.Pull ("/system/lib/libc.so", Path.Combine (CacheDirectory, "libc.so")))
-      {
-        Trace.WriteLine (string.Format ("[GdbSetup] Pulled libc.so from device/emulator."));
-
-        deviceBinaries.Add (Path.Combine (CacheDirectory, "libc.so"));
-      }
+      // 
+      // Application binaries (those under /lib/ of an installed application).
+      // 
 
       if (Process.HostDevice.Pull (string.Format ("{0}/lib/", Process.InternalCacheDirectory), CacheDirectory))
       {
@@ -173,13 +188,24 @@ namespace AndroidPlusPlus.Common
 
       gdbExecutionCommands.Add ("set breakpoint pending on");
 
-      //gdbExecutionCommands.Add ("set debug remote 1");
+#if FALSE
+      gdbExecutionCommands.Add ("set debug remote 1");
 
-      //gdbExecutionCommands.Add ("set debug infrun 1");
+      gdbExecutionCommands.Add ("set debug infrun 1");
+#endif
 
-      string libraryDirectories = string.Join (" ", LibraryPaths);
+      // 
+      // Space characters are the delimiters in a GDB library list, ensure that paths with spaces are appropriately escaped.
+      // 
 
-      gdbExecutionCommands.Add ("directory " + libraryDirectories);
+      StringBuilder sanitisedLibraryPaths = new StringBuilder ();
+
+      foreach (string path in LibraryPaths)
+      {
+        sanitisedLibraryPaths.Append (path.Replace (" ", "\\ ") + " ");
+      }
+
+      gdbExecutionCommands.Add ("directory " + sanitisedLibraryPaths.ToString ());
 
       string appProcessPath = Path.Combine (CacheDirectory, "app_process");
 
