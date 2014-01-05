@@ -142,17 +142,22 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
           if (singleLine.StartsWith ("["))
           {
+            if (Sources [0].GetMetadata ("Verbose") == "true")
+            {
+              LogEventsFromTextOutput (singleLine, MessageImportance.High);
+            }
+
             string sanitisedOutput = singleLine.Trim (new char [] { ' ', '[', ']' });
 
             if (sanitisedOutput.StartsWith ("checking "))
             {
-              string packageAddressWithClassName = sanitisedOutput.Substring ("checking ".Length);
+              string packageNameWithClassName = sanitisedOutput.Substring ("checking ".Length);
 
-              string packageAddressWithoutClass = packageAddressWithClassName.Substring (0, packageAddressWithClassName.LastIndexOf ('.'));
+              string packageNameWithoutClass = packageNameWithClassName.Substring (0, packageNameWithClassName.LastIndexOf ('.'));
 
-              if (!m_outputClassPackages.Contains (packageAddressWithoutClass))
+              if (!m_outputClassPackages.Contains (packageNameWithoutClass))
               {
-                m_outputClassPackages.Add (packageAddressWithoutClass);
+                m_outputClassPackages.Add (packageNameWithoutClass);
               }
             }
             else if (sanitisedOutput.StartsWith ("wrote "))
@@ -166,8 +171,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
               m_outputClassSourceFiles.Add (classFileItem);
             }
           }
-
-          if (Sources [0].GetMetadata ("Verbose") == "true")
+          else
           {
             LogEventsFromTextOutput (singleLine, MessageImportance.High);
           }

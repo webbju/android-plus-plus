@@ -98,6 +98,14 @@
       Compile all explicit and generated .java sources. Outputs a list of absolute locations to generated .class files. 
     -->
 
+    <ItemGroup Condition="'@(AndroidJava)' != ''">
+      <AndroidJavaJars Include="@(AndroidJava)" Condition="'%(Extension)' =='.jar'" />
+      <AndroidJava Remove="@(AndroidJavaJars)" />
+      <AndroidJava>
+        <ClassPaths>@(AndroidJavaJars->Metadata('FullPath')->Distinct());%(AndroidJava.ClassPaths);</ClassPaths>
+      </AndroidJava>
+    </ItemGroup>
+
     <JavaCompile
       BuildingInIDE="$(BuildingInsideVisualStudio)"
       Condition="'@(AndroidJava)' != ''"

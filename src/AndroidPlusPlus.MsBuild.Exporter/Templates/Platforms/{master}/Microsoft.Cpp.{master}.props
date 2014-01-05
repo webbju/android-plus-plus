@@ -27,15 +27,15 @@
     <GenerateManifest>false</GenerateManifest>
 
   </PropertyGroup>
-  
+
   <!-- 
     Register Android-specific extensions which need to be removed on clean.
   -->
 
   <PropertyGroup>
 
-    <ExtensionsToDeleteOnClean>*.o;*.d;*.a;*.so;*.java;*.class;*.dex;*.apk;$(ExtensionsToDeleteOnClean);</ExtensionsToDeleteOnClean>
-    
+    <ExtensionsToDeleteOnClean>*.o;*.d;*.a;*.so;$(ExtensionsToDeleteOnClean);</ExtensionsToDeleteOnClean>
+
   </PropertyGroup>
 
   <!--

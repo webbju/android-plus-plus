@@ -54,7 +54,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     public ITaskItem MergedManifest { get; set; }
 
     [Output]
-    public string PackageAddress { get; set; }
+    public string PackageName { get; set; }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -91,7 +91,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
               {
                 MergedManifest = new TaskItem (item.ItemSpec);
 
-                PackageAddress = itemManifest.PackageAddress;
+                PackageName = itemManifest.PackageName;
 
                 item.CopyMetadataTo (MergedManifest);
               }
@@ -117,6 +117,12 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
         if (MergedManifest != null)
         {
+          List<string> extraPackages = new List<string> ();
+
+          List<string> extraResourcePaths = new List<string> ();
+
+          extraResourcePaths.Add (MergedManifest.GetMetadata ("IncludeResourceDirectories"));
+
           foreach (ITaskItem item in Manifests)
           {
             if (item.GetMetadata ("FullPath") != MergedManifest.GetMetadata ("FullPath"))
@@ -125,11 +131,21 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
               itemManifest.Load (item.GetMetadata ("FullPath"));
 
-              string existingExtraPackages = MergedManifest.GetMetadata ("ExtraPackages");
+              if (!extraPackages.Contains (itemManifest.PackageName))
+              {
+                extraPackages.Add (itemManifest.PackageName);
+              }
 
-              MergedManifest.SetMetadata ("ExtraPackages", existingExtraPackages + ((existingExtraPackages.Length > 0) ? ":" : "") + itemManifest.PackageAddress);
+              if (!extraResourcePaths.Contains (item.GetMetadata ("IncludeResourceDirectories")))
+              {
+                extraResourcePaths.Add (item.GetMetadata ("IncludeResourceDirectories"));
+              }
             }
           }
+
+          MergedManifest.SetMetadata ("ExtraPackages", String.Join (":", extraPackages.ToArray ()));
+
+          MergedManifest.SetMetadata ("IncludeResourceDirectories", String.Join (";", extraResourcePaths.ToArray ()));
         }
 
         return true;
