@@ -156,12 +156,15 @@
       <AndroidJavaReorderCache Include="@(AndroidJava)" />
       <AndroidJava Remove="@(AndroidJava)" />
       <AndroidJava 
-        Include="@(AndroidManifestOutputFiles->Metadata('FullPath')->Distinct()->ClearMetadata());
+        Include="@(AndroidManifestOutputFiles->ClearMetadata()->Distinct());
           $(BuildConfigOutputPath)\BuildConfig.java;
-          @(AndroidJavaReorderCache)"
+          @(AndroidJavaReorderCache->ClearMetadata()->Distinct())"
         Exclude="@(AndroidManifestOutputApk)"
       />
     </ItemGroup>
+
+    <Message Text="ComputeAndroidManifestOutput: @(AndroidJava)" Importance="low" />
+    
   </Target>
 
   <!--
