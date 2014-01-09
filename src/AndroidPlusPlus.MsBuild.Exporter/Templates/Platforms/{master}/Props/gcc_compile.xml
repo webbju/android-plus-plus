@@ -18,7 +18,6 @@
   Name="CL"
   PageTemplate="tool"
   DisplayName="C/C++"
-  SwitchPrefix="-"
   Order="10"
   xmlns="http://schemas.microsoft.com/build/2009/properties"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -58,21 +57,21 @@
 
     <EnumValue 
       Name="CompileAsC" 
-      Switch="x c" 
+      Switch="-x c" 
       DisplayName="Compile as C Code" 
       Description="Compile as C Code"
     />
 
     <EnumValue 
       Name="CompileAsCpp" 
-      Switch="x c++" 
+      Switch="-x c++" 
       DisplayName="Compile as C++ Code" 
       Description="Compile as C++ Code"
     />
 
     <EnumValue
       Name="CompileAsAsm"
-      Switch="x assembler-with-cpp"
+      Switch="-x assembler-with-cpp"
       DisplayName="Compile as Assembly Code"
       Description="Compile as Assembly Code"
     />
@@ -88,7 +87,7 @@
     DisplayName="Generate Debugging Information"
     Description="Produce debugging information in the operating system's native format (stabs, COFF, XCOFF, or DWARF 2). GDB can work with this debugging information."
     Category="General"
-    Switch="g"
+    Switch="-g"
     F1Keyword="VC.Project.VCCLCompilerTool.WarnAsError"
   />
 
@@ -105,7 +104,7 @@
 
     <EnumValue
       Name="DisableAllWarnings"
-      Switch="w"
+      Switch="-w"
       DisplayName="Turn Off All Warnings"
       Description="Disables all warnings."
     />
@@ -119,14 +118,14 @@
 
     <EnumValue
       Name="EnableAllWarnings"
-      Switch="Wall"
+      Switch="-Wall"
       DisplayName="Enable All Warnings"
       Description="Enables all warnings, including those disabled by default."
     />
 
     <EnumValue
       Name="EnableExtraWarnings"
-      Switch="Wall -Wextra"
+      Switch="-Wall -Wextra"
       DisplayName="Enable Extra Warnings"
       Description="Enables all warnings, and any extra warning flags that are not enabled by -Wall"
     />
@@ -142,7 +141,7 @@
     DisplayName="Treat Warnings As Errors"
     Description="Treats all compiler warnings as errors. For a new project, it may be best to use -Werror in all compilations; resolving all warnings will ensure the fewest possible hard-to-find code defects."
     Category="General"
-    Switch="Werror"
+    Switch="-Werror"
     F1Keyword="VC.Project.VCCLCompilerTool.WarnAsError"
   />
 
@@ -220,49 +219,49 @@
 
     <EnumValue
       Name="Disabled"
-      Switch="O0"
+      Switch="-O0"
       DisplayName="Disabled"
       Description="No optimization."
     />
 
     <EnumValue
       Name="MinSpace"
-      Switch="O1"
+      Switch="-O1"
       DisplayName="Optimization Level 1"
       Description="Compiler tries to reduce code size and execution time, without performing any optimizations that take a great deal of compilation time."
     />
 
     <EnumValue
       Name="MaxSpeed"
-      Switch="O2"
+      Switch="-O2"
       DisplayName="Optimization Level 2"
       Description="Compiler performs nearly all supported optimizations that do not involve a space-speed tradeoff."
     />
 
     <EnumValue
       Name="Full"
-      Switch="O3"
+      Switch="-O3"
       DisplayName="Optimization Level 3"
       Description="Optimize yet more. Full Optimization and aggressive inlining."
     />
 
     <EnumValue
       Name="Og"
-      Switch="Og"
+      Switch="-Og"
       DisplayName="Optimize For Debugging"
       Description="Enables optimizations that do not interfere with debugging. It should be the optimization level of choice for the standard edit-compile-debug cycle."
     />
 
     <EnumValue
       Name="Os"
-      Switch="Os"
+      Switch="-Os"
       DisplayName="Minimize Size"
       Description="Optimize for size. -Os enables all -O2 optimizations that do not typically increase code size."
     />
 
     <EnumValue
       Name="Ofast"
-      Switch="Ofast"
+      Switch="-Ofast"
       DisplayName="Minimize Speed"
       Description="Disregard strict standards compliance. -Ofast enables all -O3 optimizations. It also enables optimizations that are not valid for all standard-compliant programs."
     />
@@ -278,8 +277,8 @@
     DisplayName="Omit Frame Pointers"
     Description="Suppresses creation of frame pointers on the call stack."
     Category="Optimization"
-    Switch="fomit-frame-pointer"
-    ReverseSwitch="fno-omit-frame-pointer"
+    Switch="-fomit-frame-pointer"
+    ReverseSwitch="-fno-omit-frame-pointer"
   />
 
   <!--
@@ -292,8 +291,8 @@
     Description="Only export user (non-system) headers for dependency checking."
     Category="Output Files" 
     Visible="true" 
-    Switch="MMD" 
-    ReverseSwitch="MD"
+    Switch="-MMD" 
+    ReverseSwitch="-MD"
   />
 
   <!--
@@ -305,7 +304,7 @@
     DisplayName="Generate Position-Independent Code"
     Description="Generate position-independent code (PIC) suitable for use in a shared library."
     Category="Code Generation"
-    Switch="fpic"
+    Switch="-fpic"
   />
 
   <!--
@@ -317,7 +316,7 @@
     DisplayName="Inline Function Size Limit"
     Description="By default, GCC limits the size of functions that can be inlined. This flag allows coarse control of this limit. n is the size of functions that can be inlined in number of pseudo instructions."
     Category="Optimization"
-    Switch="finline-limit="
+    Switch="-finline-limit="
   />
 
   <!--
@@ -329,7 +328,7 @@
     DisplayName="Use Function Sections"
     Description="Place each function into its own section in the output file if the target supports arbitrary sections."
     Category="Optimization"
-    Switch="ffunction-sections"
+    Switch="-ffunction-sections"
   />
 
   <!--
@@ -341,8 +340,8 @@
     DisplayName="Strict Aliasing"
     Description="Allow the compiler to assume the strictest aliasing rules applicable to the language being compiled."
     Category="Optimization"
-    Switch="fstrict-aliasing"
-    ReverseSwitch="fno-strict-aliasing"
+    Switch="-fstrict-aliasing"
+    ReverseSwitch="-fno-strict-aliasing"
   />
   
   
@@ -355,7 +354,7 @@
     DisplayName="Unswitch Loops"
     Description="Move branches with loop invariant conditions out of the loop, with duplicates of the loop on both branches (modified according to result of the condition)."
     Category="Optimization"
-    Switch="funswitch-loops"
+    Switch="-funswitch-loops"
   />
 
   <!--
@@ -367,7 +366,7 @@
     DisplayName="Unwind Tables"
     Description="Similar to -fexceptions, except that it just generates any needed static data, but does not affect the generated code in any other way."
     Category="Code Generation"
-    Switch="funwind-tables"
+    Switch="-funwind-tables"
   />
 
   <!--
@@ -382,21 +381,21 @@
 
     <EnumValue
       Name="Disabled"
-      Switch="fno-stack-protector"
+      Switch="-fno-stack-protector"
       DisplayName="Disabled"
       Description="No stack protection."
     />
 
     <EnumValue
       Name="StringProtection"
-      Switch="fstack-protector"
+      Switch="-fstack-protector"
       DisplayName="String Protection"
       Description="Enable stack protection for strings, and functions with arrays of length seven or less."
     />
 
     <EnumValue
       Name="FullProtection"
-      Switch="fstack-protector-all"
+      Switch="-fstack-protector-all"
       DisplayName="Full Protection"
       Description="Enable stack protection for all functions with no size limit."
     />
@@ -412,7 +411,7 @@
     DisplayName="Preprocessor Definitions"
     Description="Defines a preprocessing symbols for your source file."
     Category="Preprocessor"
-    Switch="D"
+    Switch="-D"
   />
 
   <!--
@@ -424,7 +423,7 @@
     DisplayName="Undefine Preprocessor Definitions"
     Description="Specifies one or more preprocessor undefines.     (-U[macro])"
     Category="Preprocessor"
-    Switch="U"
+    Switch="-U"
   />
 
   <!--
@@ -437,7 +436,7 @@
     DisplayName="Object File Name"
     Description="Specifies a name to override the default object file name; can be file or directory name.     (-o [name])"
     Category="Output Files"
-    Switch="o"
+    Switch="-o"
     Separator=" "
   />
 
@@ -450,8 +449,8 @@
     DisplayName="Enable C++ Exceptions"
     Description="Specifies the model of exception handling to be used by the compiler."
     Category="Code Generation"
-    Switch="fexceptions"
-    ReverseSwitch="fno-exceptions"
+    Switch="-fexceptions"
+    ReverseSwitch="-fno-exceptions"
   />
 
   <!--
@@ -477,7 +476,7 @@
     DisplayName="System Include Directories"
     Description="Specifies one or more directories to add to the include path; separate with semi-colons if more than one.     (-I[path])"
     Category="Advanced"
-    Switch="I"
+    Switch="-I"
   />
   
   <!-- 
@@ -490,7 +489,7 @@
     DisplayName="Additional Include Directories"
     Description="Specifies one or more directories to add to the include path; separate with semi-colons if more than one.     (-I[path])"
     Category="General"
-    Switch="I"
+    Switch="-I"
   />
 
   <!--
@@ -502,7 +501,7 @@
     DisplayName="NoExecutableStack"
     Description="??"
     Category="Advanced"
-    Switch="Wa,--noexecstack"
+    Switch="-Wa,--noexecstack"
     Visible="false"
   />
 
@@ -516,7 +515,7 @@
     DisplayName="Common System Root (SysRoot)"
     Description="Use specified folder as the logical root directory for headers and libraries.     (--sys-root=[dir])"
     Category="Advanced"
-    Switch="-sysroot="
+    Switch="--sysroot="
   />
 
   <!--
@@ -528,7 +527,7 @@
     DisplayName="No Canonical Prefixes"
     Description="Do not expand any symbolic links, resolve references to ‘/../’ or ‘/./’, or make the path absolute when generating a relative prefix."
     Category="Advanced"
-    Switch="no-canonical-prefixes"
+    Switch="-no-canonical-prefixes"
   />
 
   <!--

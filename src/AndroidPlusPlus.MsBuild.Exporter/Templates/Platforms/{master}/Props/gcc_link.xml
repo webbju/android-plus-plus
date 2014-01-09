@@ -18,7 +18,6 @@
   Name="Link" 
   PageTemplate="tool" 
   DisplayName="Linker" 
-  SwitchPrefix="-" 
   Order="20" 
   xmlns="http://schemas.microsoft.com/build/2009/properties" 
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
@@ -44,7 +43,7 @@
     Name="OutputFile"
     DisplayName="Output File"
     Category="General"
-    Switch="o"
+    Switch="-o"
     Separator=" "
   />
 
@@ -56,7 +55,7 @@
     Name="OutputSharedLibrary"
     DisplayName="Output Shared Library"
     Category="General"
-    Switch="shared"
+    Switch="-shared"
     Visible="false"
   />
 
@@ -69,8 +68,40 @@
     DisplayName="Shared Library Name"
     Description=""
     Category="General"
-    Switch="Wl,-soname,"
+    Switch="-Wl,-soname,"
   />
+
+  <!--
+    LinkLibraryDependencies
+  -->
+  
+  <BoolProperty 
+    Name="LinkLibraryDependencies" 
+    DisplayName="Link Library Dependencies" 
+    Description="Specifies whether or not library outputs from project dependencies are automatically linked in." 
+    Category="General" 
+    IncludeInCommandLine="false" 
+    F1Keyword="VC.Project.VCLibrarianTool.LinkLibraryDependencies">
+    <BoolProperty.DataSource>
+      <DataSource Persistence="ProjectFile" ItemType="ProjectReference" Label="" HasConfigurationCondition="true" />
+    </BoolProperty.DataSource>
+  </BoolProperty>
+
+  <!--
+    UseLibraryDependencyInputs
+  -->
+
+  <BoolProperty 
+    Name="UseLibraryDependencyInputs" 
+    DisplayName="Use Library Dependency Inputs" 
+    Description="Specifies whether or not the inputs to the librarian tool are used rather than the library file itself when linking in library outputs of project dependencies." 
+    Category="General" 
+    IncludeInCommandLine="false" 
+    F1Keyword="VC.Project.VCLinkerTool.UseLibraryDependencyInputs">
+    <BoolProperty.DataSource>
+      <DataSource Persistence="ProjectFile" ItemType="ProjectReference" Label="" HasConfigurationCondition="true" />
+    </BoolProperty.DataSource>
+  </BoolProperty>
 
   <!--
     SystemLibraryDirectories
@@ -81,7 +112,7 @@
     Name="SystemLibraryDirectories"
     DisplayName="System Library Directories" 
     Category="Advanced"
-    Switch="L"
+    Switch="-L"
   />
 
   <!--
@@ -93,7 +124,7 @@
     Name="AdditionalLibraryDirectories" 
     DisplayName="Additional Library Directories" 
     Category="Input" 
-    Switch="L"
+    Switch="-L"
   />
 
   <!--
@@ -105,7 +136,7 @@
     Name="SystemLibraryDependencies"
     DisplayName="System Library Dependencies"
     Category="Input"
-    Switch="l"
+    Switch="-l"
   />
 
   <!--
@@ -117,7 +148,7 @@
     Name="AdditionalDependencies" 
     DisplayName="Additional Dependencies" 
     Category="Input"
-    Switch="l"
+    Switch="-l"
   />
 
   <!--
@@ -142,7 +173,7 @@
     DisplayName="No Undefined Symbols"
     Description="Show all undefined symbols as linker errors."
     Category="Advanced"
-    Switch="Wl,--no-undefined"
+    Switch="-Wl,--no-undefined"
   />
 
   <!--
@@ -154,8 +185,8 @@
     DisplayName="Allow Shared Library Undefined Symbols"
     Description="Allows (the default) or disallows undefined symbols in shared libraries. This switch is similar to --no-un-defined except that it determines the behaviour when the undefined symbols are in a shared library rather than a regular object file."
     Category="Advanced"
-    Switch="Wl,--allow-shlib-undefined"
-    ReverseSwitch="Wl,--no-allow-shlib-undefined"
+    Switch="-Wl,--allow-shlib-undefined"
+    ReverseSwitch="-Wl,--no-allow-shlib-undefined"
   />
 
   <!--
@@ -167,7 +198,7 @@
     DisplayName="No Executable Stack"
     Description="Mark output as not requiring executable stack."
     Category="Advanced"
-    Switch="Wl,-z,noexecstack"
+    Switch="-Wl,-z,noexecstack"
   />
 
   <!--
@@ -179,7 +210,7 @@
     DisplayName="Read-Only After Relocation"
     Description="Where possible mark variables read-only after relocation."
     Category="Advanced"
-    Switch="Wl,-z,relro"
+    Switch="-Wl,-z,relro"
   />
 
   <!--
@@ -191,7 +222,7 @@
     DisplayName="Resolve Symbols At Runtime"
     Description="Tells the dynamic linker to resolve symbols on program start instead of on first use."
     Category="Advanced"
-    Switch="Wl,-z,now"
+    Switch="-Wl,-z,now"
   />
 
   <!--
@@ -204,7 +235,7 @@
     DisplayName="Common System Root (SysRoot)"
     Description="Use specified folder as the logical root directory for headers and libraries.     (--sys-root=[dir])"
     Category="Advanced"
-    Switch="-sysroot="
+    Switch="--sysroot="
   />
 
   <!--
@@ -216,7 +247,7 @@
     DisplayName="R-Dynamic"
     Description="This instructs the linker to add all symbols, not only used ones, to the dynamic symbol table. This option is needed for some uses of dlopen or to allow obtaining backtraces from within a program.     (-rdynamic)"
     Category="Advanced"
-    Switch="rdynamic"
+    Switch="-rdynamic"
   />
 
   <!--
@@ -228,7 +259,7 @@
     DisplayName="No Canonical Prefixes"
     Description="Do not expand any symbolic links, resolve references to ‘/../’ or ‘/./’, or make the path absolute when generating a relative prefix."
     Category="Advanced"
-    Switch="no-canonical-prefixes"
+    Switch="-no-canonical-prefixes"
   />
 
   <!--

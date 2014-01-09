@@ -94,7 +94,7 @@
 
       <OutputSharedLibrary Condition="'%(Link.OutputSharedLibrary)' == ''">true</OutputSharedLibrary>
 
-      <OutputSharedLibraryName Condition="'%(Link.OutputSharedLibraryName)' == ''">lib$(TargetName)</OutputSharedLibraryName>
+      <OutputSharedLibraryName Condition="'%(Link.OutputSharedLibraryName)' == ''">$(TargetName)</OutputSharedLibraryName>
 
       <OutputCommandLine Condition="'%(Link.OutputCommandLine)' == ''">false</OutputCommandLine>
 
@@ -134,7 +134,7 @@
 
     <Lib>
 
-      <OutputFile>$(TargetDir)lib$(TargetName).a</OutputFile>
+      <OutputFile>$(TargetDir)$(TargetName).a</OutputFile>
 
       <OutputCommandLine Condition="'%(Lib.OutputCommandLine)' == ''">false</OutputCommandLine>
 

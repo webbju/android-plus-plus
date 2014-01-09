@@ -123,18 +123,24 @@ namespace AndroidPlusPlus.MsBuild.Common
         // Construct list of target output files for all valid sources.
         // 
 
-        List<ITaskItem> outputFiles = new List<ITaskItem> ();
+        List<string> outputFiles = new List<string> ();
 
         foreach (ITaskItem source in OutOfDateSources)
         {
           if (!string.IsNullOrWhiteSpace (source.GetMetadata ("OutputFile")))
           {
-            outputFiles.Add (new TaskItem (Path.GetFullPath (source.GetMetadata ("OutputFile"))));
+            if (!outputFiles.Contains (source.GetMetadata ("OutputFile")))
+            {
+              outputFiles.Add (source.GetMetadata ("OutputFile"));
+            }
           }
 
           if (!string.IsNullOrWhiteSpace (source.GetMetadata ("ObjectFileName")))
           {
-            outputFiles.Add (new TaskItem (Path.GetFullPath (source.GetMetadata ("ObjectFileName"))));
+            if (!outputFiles.Contains (source.GetMetadata ("ObjectFileName")))
+            {
+              outputFiles.Add (source.GetMetadata ("ObjectFileName"));
+            }
           }
 
           if (!string.IsNullOrWhiteSpace (source.GetMetadata ("OutputFiles")))
@@ -143,12 +149,15 @@ namespace AndroidPlusPlus.MsBuild.Common
 
             foreach (string file in files)
             {
-              outputFiles.Add (new TaskItem (Path.GetFullPath (file)));
+              if (!outputFiles.Contains (file))
+              {
+                outputFiles.Add (file);
+              }
             }
           }
         }
 
-        OutputFiles = outputFiles.ToArray ();
+        OutputFiles = outputFiles.ConvertAll <ITaskItem> (element => new TaskItem (Path.GetFullPath (element))).ToArray ();
       }
       catch (Exception e)
       {

@@ -18,7 +18,6 @@
   Name="LIB" 
   PageTemplate="tool" 
   DisplayName="Librarian" 
-  SwitchPrefix="-" 
   Order="40" 
   xmlns="http://schemas.microsoft.com/build/2009/properties" 
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
@@ -35,6 +34,17 @@
   </Rule.DataSource>
 
   <!--
+    NoCanonicalPrefixes
+  -->
+
+  <BoolProperty
+    Name="NoCanonicalPrefixes"
+    DisplayName="No Canonical Prefixes"
+    Description="Do not expand any symbolic links, resolve references to ‘/../’ or ‘/./’, or make the path absolute when generating a relative prefix."
+    Category="Advanced"
+  />
+
+  <!--
     OutputFile
   -->
 
@@ -43,7 +53,24 @@
     Name="OutputFile"
     DisplayName="Output File"
     Category="General"
+    IncludeInCommandLine="false"
   />
+
+  <!--
+    LinkLibraryDependencies
+  -->
+
+  <BoolProperty 
+    Name="LinkLibraryDependencies" 
+    DisplayName="Link Library Dependencies" 
+    Description="Specifies whether or not library outputs from project dependencies are automatically linked in." 
+    Category="General" 
+    IncludeInCommandLine="false" 
+    F1Keyword="VC.Project.VCLibrarianTool.LinkLibraryDependencies">
+    <BoolProperty.DataSource>
+      <DataSource Persistence="ProjectFile" ItemType="ProjectReference" Label="" HasConfigurationCondition="true" />
+    </BoolProperty.DataSource>
+  </BoolProperty>
 
   <!--
     AdditionalOptions
@@ -56,18 +83,6 @@
     Description="Additional Options"
     Category="Command Line"
     F1Keyword="vc.project.AdditionalOptionsPage"
-  />
-
-  <!--
-    NoCanonicalPrefixes
-  -->
-
-  <BoolProperty
-    Name="NoCanonicalPrefixes"
-    DisplayName="No Canonical Prefixes"
-    Description="Do not expand any symbolic links, resolve references to ‘/../’ or ‘/./’, or make the path absolute when generating a relative prefix."
-    Category="Advanced"
-    Switch="no-canonical-prefixes"
   />
 
   <!--

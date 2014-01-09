@@ -52,14 +52,39 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
 
       StringBuilder builder = new StringBuilder (GccUtilities.CommandLineLength);
 
-      builder.Append ("crs ");
+      builder.Append ("rcs ");
 
-      foreach (ITaskItem source in Sources)
+      //builder.Append (m_parsedProperties.Parse (Sources [0]) + " ");
+
+      string outputFile = Path.GetFullPath (Sources [0].GetMetadata ("OutputFile"));
+
+      string responseFile = Path.GetFullPath (Path.Combine (TrackerLogDirectory, Path.GetFileName (outputFile) + ".rcf"));
+
+      builder.Append (GccUtilities.ConvertPathWindowsToPosix (outputFile) + " ");
+
+      using (StreamWriter writer = new StreamWriter (responseFile, false, Encoding.ASCII))
       {
-        builder.Append (m_parsedProperties.Parse (source));
+        foreach (ITaskItem source in Sources)
+        {
+          writer.Write (GccUtilities.ConvertPathWindowsToPosix (source.GetMetadata ("FullPath")) + " ");
+        }
       }
 
+      builder.Append ('@' + GccUtilities.ConvertPathWindowsToPosix (responseFile));
+
       return builder.ToString ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override bool AppendSourcesToCommandLine
+    {
+      get
+      {
+        return false;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

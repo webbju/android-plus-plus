@@ -76,7 +76,9 @@
     <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidApkSign.props" />
     <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidApkSign.targets" />
     <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidDalvik.props" />
-    <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidDalvik.targets" />
+    <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidDalvik.targets">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidJava.props">
       <SubType>Designer</SubType>
     </None>
