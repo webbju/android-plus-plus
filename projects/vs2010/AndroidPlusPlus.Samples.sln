@@ -1,7 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hello-gdbserver", "hello-gdbserver.vcxproj", "{36324E8C-BC78-4B9E-A9E4-C6DC98158C80}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hello-gdbserver", "..\..\samples\hello-gdbserver\hello-gdbserver.vcxproj", "{36324E8C-BC78-4B9E-A9E4-C6DC98158C80}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hello-jni", "..\..\samples\hello-jni\hello-jni.vcxproj", "{61092FF6-C325-4797-BDCF-E4F138E342B7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,6 +15,10 @@ Global
 		{36324E8C-BC78-4B9E-A9E4-C6DC98158C80}.Debug|Android++.Build.0 = Debug|Android++
 		{36324E8C-BC78-4B9E-A9E4-C6DC98158C80}.Release|Android++.ActiveCfg = Release|Android++
 		{36324E8C-BC78-4B9E-A9E4-C6DC98158C80}.Release|Android++.Build.0 = Release|Android++
+		{61092FF6-C325-4797-BDCF-E4F138E342B7}.Debug|Android++.ActiveCfg = Debug|Android++
+		{61092FF6-C325-4797-BDCF-E4F138E342B7}.Debug|Android++.Build.0 = Debug|Android++
+		{61092FF6-C325-4797-BDCF-E4F138E342B7}.Release|Android++.ActiveCfg = Release|Android++
+		{61092FF6-C325-4797-BDCF-E4F138E342B7}.Release|Android++.Build.0 = Release|Android++
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

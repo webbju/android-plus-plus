@@ -1,0 +1,47 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "basic-compile-dll", "..\..\tests\basic-compile-dll\basic-compile-dll.vcxproj", "{F63C7421-5AE3-445E-A344-255ECC40D329}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "basic-compile-lib", "..\..\tests\basic-compile-lib\basic-compile-lib.vcxproj", "{FC777F29-99AC-4D8B-AE49-802F2445227A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "app-lib-dependency", "..\..\tests\app-lib-dependency\app-lib-dependency.vcxproj", "{E8E3BBF0-5258-4FF0-93AB-8F7F146653DF}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FC777F29-99AC-4D8B-AE49-802F2445227A} = {FC777F29-99AC-4D8B-AE49-802F2445227A}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Android++ = Debug|Android++
+		Debug|Win32 = Debug|Win32
+		Release|Android++ = Release|Android++
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F63C7421-5AE3-445E-A344-255ECC40D329}.Debug|Android++.ActiveCfg = Debug|Android++
+		{F63C7421-5AE3-445E-A344-255ECC40D329}.Debug|Android++.Build.0 = Debug|Android++
+		{F63C7421-5AE3-445E-A344-255ECC40D329}.Debug|Win32.ActiveCfg = Debug|Win32
+		{F63C7421-5AE3-445E-A344-255ECC40D329}.Debug|Win32.Build.0 = Debug|Win32
+		{F63C7421-5AE3-445E-A344-255ECC40D329}.Release|Android++.ActiveCfg = Release|Android++
+		{F63C7421-5AE3-445E-A344-255ECC40D329}.Release|Android++.Build.0 = Release|Android++
+		{F63C7421-5AE3-445E-A344-255ECC40D329}.Release|Win32.ActiveCfg = Release|Win32
+		{F63C7421-5AE3-445E-A344-255ECC40D329}.Release|Win32.Build.0 = Release|Win32
+		{FC777F29-99AC-4D8B-AE49-802F2445227A}.Debug|Android++.ActiveCfg = Debug|Android++
+		{FC777F29-99AC-4D8B-AE49-802F2445227A}.Debug|Android++.Build.0 = Debug|Android++
+		{FC777F29-99AC-4D8B-AE49-802F2445227A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{FC777F29-99AC-4D8B-AE49-802F2445227A}.Debug|Win32.Build.0 = Debug|Win32
+		{FC777F29-99AC-4D8B-AE49-802F2445227A}.Release|Android++.ActiveCfg = Release|Android++
+		{FC777F29-99AC-4D8B-AE49-802F2445227A}.Release|Android++.Build.0 = Release|Android++
+		{FC777F29-99AC-4D8B-AE49-802F2445227A}.Release|Win32.ActiveCfg = Release|Win32
+		{FC777F29-99AC-4D8B-AE49-802F2445227A}.Release|Win32.Build.0 = Release|Win32
+		{E8E3BBF0-5258-4FF0-93AB-8F7F146653DF}.Debug|Android++.ActiveCfg = Debug|Win32
+		{E8E3BBF0-5258-4FF0-93AB-8F7F146653DF}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E8E3BBF0-5258-4FF0-93AB-8F7F146653DF}.Debug|Win32.Build.0 = Debug|Win32
+		{E8E3BBF0-5258-4FF0-93AB-8F7F146653DF}.Release|Android++.ActiveCfg = Release|Win32
+		{E8E3BBF0-5258-4FF0-93AB-8F7F146653DF}.Release|Win32.ActiveCfg = Release|Win32
+		{E8E3BBF0-5258-4FF0-93AB-8F7F146653DF}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
