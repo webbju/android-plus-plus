@@ -57,8 +57,6 @@
 
       <ResourceConstantsOutputDirectory Condition="'%(AndroidManifest.ResourceConstantsOutputDirectory)' == ''">$(IntDir)gen</ResourceConstantsOutputDirectory>
 
-      <IncludeAndroidManifest Condition="'%(AndroidManifest.IncludeAndroidManifest)' == ''">%(FullPath)</IncludeAndroidManifest>
-
       <PublicResourceDefintionsOutputFile Condition="'%(AndroidManifest.PublicResourceDefintionsOutputFile)' == ''"></PublicResourceDefintionsOutputFile>
 
       <IncludeResourceDirectories Condition="'%(AndroidManifest.IncludeResourceDirectories)' == ''">%(RelativeDir)res</IncludeResourceDirectories>

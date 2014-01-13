@@ -21,6 +21,22 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
+  <ItemDefinitionGroup Condition="'$(Configuration)' == 'Debug'">
+
+    <AndroidJava>
+
+      <GenerateDebuggingInformation Condition="'%(AndroidJava.GenerateDebuggingInformation)' == ''">true</GenerateDebuggingInformation>
+
+    </AndroidJava>
+
+  </ItemDefinitionGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+  
   <ItemDefinitionGroup>
 
     <AndroidJava>
@@ -41,37 +57,23 @@
 
       <CharacterEncoding Condition="'%(AndroidJava.CharacterEncoding)' == ''">UTF-8</CharacterEncoding>
 
+      <GenerateDebuggingInformation Condition="'%(AndroidJava.GenerateDebuggingInformation)' == ''">false</GenerateDebuggingInformation>
+
       <DeprecationUsageMessages Condition="'%(AndroidJava.DeprecationUsageMessages)' == ''">true</DeprecationUsageMessages>
 
       <DisableWarningMessages Condition="'%(AndroidJava.DisableWarningMessages)' == ''">false</DisableWarningMessages>
 
       <Verbose Condition="'%(AndroidJava.Verbose)' == ''">false</Verbose>
 
-      <AdditionalOptions Condition="'%(AndroidJava.AdditionalOptions)' == ''"></AdditionalOptions>
+      <JarOutputFile Condition="'%(AndroidJava.JarOutputFile)' == '' and '$(ConfigurationType)' != 'Application'">$(TargetDir)$(TargetName).jar</JarOutputFile>
+
+      <JarOutputFile Condition="'%(AndroidJava.JarOutputFile)' == ''"></JarOutputFile>
+
+      <JarManifestFile Condition="'%(AndroidJava.JarManifestFile)' == ''"></JarManifestFile>
 
       <TrackerLogDirectory Condition="'%(AndroidJava.TrackerLogDirectory)' == ''">$(IntDir)</TrackerLogDirectory>
 
       <OutputCommandLine Condition="'%(AndroidJava.OutputCommandLine)' == ''">false</OutputCommandLine>
-
-    </AndroidJava>
-
-  </ItemDefinitionGroup>
-
-  <ItemDefinitionGroup Condition="'$(Configuration)' == 'Debug'">
-
-    <AndroidJava>
-
-      <GenerateDebuggingInformation Condition="'%(AndroidJava.GenerateDebuggingInformation)' == ''">true</GenerateDebuggingInformation>
-
-    </AndroidJava>
-
-  </ItemDefinitionGroup>
-
-  <ItemDefinitionGroup Condition="'$(Configuration)' != 'Debug'">
-
-    <AndroidJava>
-
-      <GenerateDebuggingInformation Condition="'%(AndroidJava.GenerateDebuggingInformation)' == ''">false</GenerateDebuggingInformation>
 
     </AndroidJava>
 

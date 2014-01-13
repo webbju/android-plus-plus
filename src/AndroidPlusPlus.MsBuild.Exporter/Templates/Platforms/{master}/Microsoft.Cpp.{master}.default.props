@@ -37,6 +37,10 @@
 
   <Import Project="$(VCTargetsPath)\Platforms\{master}\{master}.Paths.default.props" />
 
+  <Import Project="$(VCTargetsPath)\Platforms\{master}\{master}.AndroidSdk.default.props" />
+
+  <Import Project="$(VCTargetsPath)\Platforms\{master}\{master}.AndroidNdk.default.props" />
+
 </Project>
 
 <!--

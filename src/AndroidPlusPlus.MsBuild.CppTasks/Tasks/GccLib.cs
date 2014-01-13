@@ -52,7 +52,7 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
 
       StringBuilder builder = new StringBuilder (GccUtilities.CommandLineLength);
 
-      builder.Append ("rcs ");
+      builder.Append ("rcsP ");
 
       //builder.Append (m_parsedProperties.Parse (Sources [0]) + " ");
 

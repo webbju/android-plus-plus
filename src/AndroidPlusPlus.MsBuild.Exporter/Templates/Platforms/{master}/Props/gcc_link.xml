@@ -157,7 +157,6 @@
 
   <StringProperty 
     Name="AdditionalOptions" 
-    Subtype="AdditionalOptions"
     DisplayName="Additional Options" 
     Description="Additional Options" 
     Category="Command Line"

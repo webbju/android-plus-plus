@@ -86,7 +86,7 @@
 
     <ClCompile>
 
-      <AdditionalOptions>-gcc-toolchain $(PlatformToolsetPrebuilt) -target $(TargetPlatformArchitectureLlvmPlatformTriple) %(ClCompile.AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-gcc-toolchain $(PlatformToolsetPrebuilt) -target $(TargetPlatformArchitectureLlvmPlatformTriple) -fdiagnostics-format=msvc -fno-caret-diagnostics %(ClCompile.AdditionalOptions)</AdditionalOptions>
 
       <NoCanonicalPrefixes Condition="'%(ClCompile.NoCanonicalPrefixes)' == ''">true</NoCanonicalPrefixes>
 

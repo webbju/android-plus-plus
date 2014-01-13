@@ -29,7 +29,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class JavaArchive : TrackedToolTask, ITask
+  public class JavaArchive : TrackedOutOfDateToolTask, ITask
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -56,6 +56,9 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
     public ITaskItem ManifestFile { get; set; }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     protected override bool Setup ()
     {
@@ -89,6 +92,22 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
       if (retCode == 0)
       {
         OutputFiles = new ITaskItem [] { OutputFile };
+
+        // 
+        // Construct a simple dependency file for tracking purposes.
+        // 
+
+        using (StreamWriter writer = new StreamWriter (OutputFile.GetMetadata ("FullPath") + ".d", false, Encoding.Unicode))
+        {
+          writer.WriteLine (string.Format ("{0}: \\", OutputFile.GetMetadata ("FullPath")));
+
+          foreach (ITaskItem source in Sources)
+          {
+            string sourceFullPath = source.GetMetadata ("FullPath");
+
+            writer.WriteLine (string.Format ("  {0} \\", sourceFullPath));
+          }
+        }
       }
 
       return retCode;
@@ -117,14 +136,14 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
       {
         responseFileArguments.Append ("m");
 
-        responseFileCommands.Append (GccUtilities.ConvertPathWindowsToPosix (Path.GetFullPath (ManifestFile.ItemSpec)) + " ");
+        responseFileCommands.Append (GccUtilities.ConvertPathWindowsToPosix (ManifestFile.GetMetadata ("FullPath")) + " ");
       }
 
       if (OutputFile != null)
       {
         responseFileArguments.Append ("f");
 
-        responseFileCommands.Append (GccUtilities.ConvertPathWindowsToPosix (Path.GetFullPath (OutputFile.ItemSpec)) + " ");
+        responseFileCommands.Append (GccUtilities.ConvertPathWindowsToPosix (OutputFile.GetMetadata ("FullPath")) + " ");
       }
 
       // 

@@ -261,12 +261,12 @@
     />
 
     <!--
-      OutputFile
+      JarOutputFile
     -->
 
     <StringProperty
       Subtype="file"
-      Name="OutputFile"
+      Name="JarOutputFile"
       DisplayName="Output File (.jar)"
       Description="Jar file to be created."
       Category="Jar"
@@ -274,12 +274,12 @@
     />
 
     <!--
-      ManifestFile
+      JarManifestFile
     -->
 
     <StringProperty
       Subtype="file"
-      Name="ManifestFile"
+      Name="JarManifestFile"
       DisplayName="Manifest File"
       Description="Pre-existing manifest file whose name: value pairs are to be included in MANIFEST.MF in the jar file."
       Category="Jar"

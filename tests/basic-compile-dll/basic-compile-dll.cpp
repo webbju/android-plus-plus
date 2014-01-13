@@ -27,4 +27,5 @@
 
 void basic_compile_dll_dummy ()
 {
+
 }

@@ -103,6 +103,8 @@
     <None Include="Templates\Platforms\{master}\PlatformToolsets\{master}.Cpp.armv7-a.default.props" />
     <None Include="Templates\Platforms\{master}\PlatformToolsets\{master}.Cpp.mips.default.props" />
     <None Include="Templates\Platforms\{master}\PlatformToolsets\{master}.Cpp.x86.default.props" />
+    <None Include="Templates\Platforms\{master}\{master}.AndroidNdk.default.props" />
+    <None Include="Templates\Platforms\{master}\{master}.AndroidSdk.default.props" />
     <None Include="Templates\Platforms\{master}\{master}.CppBuild.targets">
       <SubType>Designer</SubType>
     </None>

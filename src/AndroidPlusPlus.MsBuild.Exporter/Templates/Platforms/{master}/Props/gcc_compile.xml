@@ -103,7 +103,7 @@
     F1Keyword="VC.Project.VCCLCompilerTool.WarningLevel">
 
     <EnumValue
-      Name="DisableAllWarnings"
+      Name="TurnOffAllWarnings"
       Switch="-w"
       DisplayName="Turn Off All Warnings"
       Description="Disables all warnings."
@@ -459,7 +459,6 @@
 
   <StringProperty
     Name="AdditionalOptions"
-    Subtype="AdditionalOptions"
     DisplayName="Additional Options"
     Description="Additional Options"
     Category="Command Line"

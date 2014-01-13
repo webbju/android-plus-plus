@@ -244,20 +244,6 @@
     />
 
     <!--
-    IncludeAndroidManifest
-    -->
-
-    <StringProperty
-      Subtype="file"
-      Name="IncludeAndroidManifest"
-      DisplayName="Include AndroidManifest.xml"
-      Description="Specify full path to AndroidManifest.xml."
-      Category="General"
-      Switch="-M"
-      Separator=" "
-    />
-
-    <!--
     PublicResourceDefintionsOutputFile
     -->
 

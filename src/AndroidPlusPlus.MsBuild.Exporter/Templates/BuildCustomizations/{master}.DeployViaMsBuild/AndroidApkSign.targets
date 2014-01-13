@@ -116,8 +116,8 @@
     </AndroidZipAlign>
 
     <Message
-      Condition="'@(AndroidApkSign)' != ''"
-      Text="$(MSBuildProjectFile) -&gt; @(AndroidApkSign)"
+      Condition="'@(AndroidApkSignSignedAlignedOutputFile)' != ''"
+      Text="$(MSBuildProjectFile) -&gt; @(AndroidApkSignSignedAlignedOutputFile)"
       Importance="High"
     />
 

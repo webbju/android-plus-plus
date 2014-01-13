@@ -20,4 +20,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <AndroidJava Include="basic_compile_lib.java">
+      <Filter>Source Files</Filter>
+    </AndroidJava>
+  </ItemGroup>
 </Project>
