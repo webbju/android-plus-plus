@@ -34,7 +34,7 @@ Global
 		{FC777F29-99AC-4D8B-AE49-802F2445227A}.Release|Android++.Build.0 = Release|Android++
 		{FC777F29-99AC-4D8B-AE49-802F2445227A}.Release|Win32.ActiveCfg = Release|Win32
 		{FC777F29-99AC-4D8B-AE49-802F2445227A}.Release|Win32.Build.0 = Release|Win32
-		{E8E3BBF0-5258-4FF0-93AB-8F7F146653DF}.Debug|Android++.ActiveCfg = Debug|Win32
+		{E8E3BBF0-5258-4FF0-93AB-8F7F146653DF}.Debug|Android++.ActiveCfg = Debug|Android++
 		{E8E3BBF0-5258-4FF0-93AB-8F7F146653DF}.Debug|Win32.ActiveCfg = Debug|Win32
 		{E8E3BBF0-5258-4FF0-93AB-8F7F146653DF}.Debug|Win32.Build.0 = Debug|Win32
 		{E8E3BBF0-5258-4FF0-93AB-8F7F146653DF}.Release|Android++.ActiveCfg = Release|Win32

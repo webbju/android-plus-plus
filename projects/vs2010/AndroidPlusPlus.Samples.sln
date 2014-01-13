@@ -5,6 +5,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hello-gdbserver", "..\..\sa
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hello-jni", "..\..\samples\hello-jni\hello-jni.vcxproj", "{61092FF6-C325-4797-BDCF-E4F138E342B7}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "native-activity", "..\..\samples\native-activity\native-activity.vcxproj", "{B1BE52DA-7EB0-499C-9172-36529FD11512}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "native-audio", "..\..\samples\native-audio\native-audio.vcxproj", "{BAE12DE8-AF95-4631-AAD3-13596DDA7A71}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Android++ = Debug|Android++
@@ -19,6 +23,10 @@ Global
 		{61092FF6-C325-4797-BDCF-E4F138E342B7}.Debug|Android++.Build.0 = Debug|Android++
 		{61092FF6-C325-4797-BDCF-E4F138E342B7}.Release|Android++.ActiveCfg = Release|Android++
 		{61092FF6-C325-4797-BDCF-E4F138E342B7}.Release|Android++.Build.0 = Release|Android++
+		{B1BE52DA-7EB0-499C-9172-36529FD11512}.Debug|Android++.ActiveCfg = Debug|Android++
+		{B1BE52DA-7EB0-499C-9172-36529FD11512}.Release|Android++.ActiveCfg = Release|Android++
+		{BAE12DE8-AF95-4631-AAD3-13596DDA7A71}.Debug|Android++.ActiveCfg = Debug|Android++
+		{BAE12DE8-AF95-4631-AAD3-13596DDA7A71}.Release|Android++.ActiveCfg = Release|Android++
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
