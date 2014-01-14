@@ -3,8 +3,8 @@
   <Identifier Id="e57f7102-96b3-4d11-b153-0957bea37363">
     <Name>Android++</Name>
     <Author>Justin Webb</Author>
-    <Version>1.0</Version>
-    <Description xml:space="preserve">Native Android development and debugging for Visual Studio</Description>
+    <Version>0.0.1.0</Version>
+    <Description xml:space="preserve">Android native development and debugging extension for Visual Studio 2010.</Description>
     <Locale>1033</Locale>
     <MoreInfoUrl>http://www.android-plus-plus.com</MoreInfoUrl>
     <InstalledByMsi>false</InstalledByMsi>
@@ -25,5 +25,6 @@
   <Content>
     <VsPackage>|%CurrentProject%;PkgdefProjectOutputGroup|</VsPackage>
     <MefComponent>|%CurrentProject%|</MefComponent>
+    <MefComponent>|AndroidPlusPlus.VsDebugLauncherX.vs2010|</MefComponent>
   </Content>
 </Vsix>
