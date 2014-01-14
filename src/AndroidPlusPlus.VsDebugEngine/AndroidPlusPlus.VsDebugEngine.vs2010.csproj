@@ -19,8 +19,8 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\build\bin\$(Configuration)\</OutputPath>
-    <BaseIntermediateOutputPath>..\..\build\obj\$(Configuration)\</BaseIntermediateOutputPath>
+    <OutputPath>..\..\build\vs2010\bin\$(Configuration)\</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\vs2010\obj\$(Configuration)\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -29,8 +29,8 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\build\bin\$(Configuration)\</OutputPath>
-    <BaseIntermediateOutputPath>..\..\build\obj\$(Configuration)\</BaseIntermediateOutputPath>
+    <OutputPath>..\..\build\vs2010\bin\$(Configuration)\</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\vs2010\obj\$(Configuration)\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -93,7 +93,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AndroidPlusPlus.Common\AndroidPlusPlus.Common.csproj">
+    <ProjectReference Include="..\AndroidPlusPlus.Common\AndroidPlusPlus.Common.vs2010.csproj">
       <Project>{6D575221-37D1-4C3D-82A5-5FEB632069AA}</Project>
       <Name>AndroidPlusPlus.Common</Name>
     </ProjectReference>

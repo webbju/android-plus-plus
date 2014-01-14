@@ -18,8 +18,8 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\build\bin\$(Configuration)\</OutputPath>
-    <BaseIntermediateOutputPath>..\..\build\obj\$(Configuration)\</BaseIntermediateOutputPath>
+    <OutputPath>..\..\build\vs2010\bin\$(Configuration)\</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\vs2010\obj\$(Configuration)\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DeploymentDirectory>$(OutputPath)</DeploymentDirectory>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
@@ -30,8 +30,8 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\build\bin\$(Configuration)\</OutputPath>
-    <BaseIntermediateOutputPath>..\..\build\obj\$(Configuration)\</BaseIntermediateOutputPath>
+    <OutputPath>..\..\build\vs2010\bin\$(Configuration)\</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\vs2010\obj\$(Configuration)\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DeploymentDirectory>$(OutputPath)</DeploymentDirectory>
     <DefineConstants>TRACE</DefineConstants>
@@ -167,6 +167,7 @@
   <ItemGroup>
     <None Include="Resources\Images_24bit.bmp" />
     <None Include="Resources\Images_32bit.bmp" />
+    <Content Include="..\..\EULA.txt" />
     <Content Include="Resources\Package.ico" />
   </ItemGroup>
   <ItemGroup>
@@ -176,14 +177,18 @@
     </VSCTCompile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AndroidPlusPlus.Common\AndroidPlusPlus.Common.csproj">
+    <ProjectReference Include="..\AndroidPlusPlus.Common\AndroidPlusPlus.Common.vs2010.csproj">
       <Project>{6D575221-37D1-4C3D-82A5-5FEB632069AA}</Project>
       <Name>AndroidPlusPlus.Common</Name>
     </ProjectReference>
-    <ProjectReference Include="..\AndroidPlusPlus.VsDebugEngine\AndroidPlusPlus.VsDebugEngine.csproj">
+    <ProjectReference Include="..\AndroidPlusPlus.VsDebugEngine\AndroidPlusPlus.VsDebugEngine.vs2010.csproj">
       <Project>{52DDF087-9B2C-49AF-BD1C-EC2B9C1DD0F5}</Project>
       <Name>AndroidPlusPlus.VsDebugEngine</Name>
       <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\AndroidPlusPlus.VsDebugLauncherX\AndroidPlusPlus.VsDebugLauncherX.vs2010.csproj">
+      <Project>{7C701BB4-BAD8-40DA-AFDC-B9820A04F005}</Project>
+      <Name>AndroidPlusPlus.VsDebugLauncherX.vs2010</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

@@ -1,11 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "basic-compile-dll", "..\..\tests\basic-compile-dll\basic-compile-dll.vcxproj", "{F63C7421-5AE3-445E-A344-255ECC40D329}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "basic-compile-dll", "basic-compile-dll\basic-compile-dll.vcxproj", "{F63C7421-5AE3-445E-A344-255ECC40D329}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "basic-compile-lib", "..\..\tests\basic-compile-lib\basic-compile-lib.vcxproj", "{FC777F29-99AC-4D8B-AE49-802F2445227A}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "basic-compile-lib", "basic-compile-lib\basic-compile-lib.vcxproj", "{FC777F29-99AC-4D8B-AE49-802F2445227A}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "app-lib-dependency", "..\..\tests\app-lib-dependency\app-lib-dependency.vcxproj", "{E8E3BBF0-5258-4FF0-93AB-8F7F146653DF}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "app-lib-dependency", "app-lib-dependency\app-lib-dependency.vcxproj", "{E8E3BBF0-5258-4FF0-93AB-8F7F146653DF}"
 	ProjectSection(ProjectDependencies) = postProject
 		{FC777F29-99AC-4D8B-AE49-802F2445227A} = {FC777F29-99AC-4D8B-AE49-802F2445227A}
 	EndProjectSection

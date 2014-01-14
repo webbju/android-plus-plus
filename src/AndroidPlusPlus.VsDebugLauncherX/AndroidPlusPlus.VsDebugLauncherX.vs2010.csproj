@@ -10,6 +10,7 @@
     <NoStandardLibraries>false</NoStandardLibraries>
     <RootNamespace>AndroidPlusPlus.VsDebugLauncherX</RootNamespace>
     <AssemblyName>AndroidPlusPlus.VsDebugLauncherX</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\Key.snk</AssemblyOriginatorKeyFile>
     <GeneratePkgDefFile>false</GeneratePkgDefFile>
@@ -17,8 +18,8 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\build\bin\$(Configuration)\</OutputPath>
-    <BaseIntermediateOutputPath>..\..\build\obj\$(Configuration)\</BaseIntermediateOutputPath>
+    <OutputPath>..\..\build\vs2010\bin\$(Configuration)\</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\vs2010\obj\$(Configuration)\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DeploymentDirectory>$(OutputPath)</DeploymentDirectory>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
@@ -31,8 +32,8 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\build\bin\$(Configuration)\</OutputPath>
-    <BaseIntermediateOutputPath>..\..\build\obj\$(Configuration)\</BaseIntermediateOutputPath>
+    <OutputPath>..\..\build\vs2010\bin\$(Configuration)\</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\vs2010\obj\$(Configuration)\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DeploymentDirectory>$(OutputPath)</DeploymentDirectory>
     <DefineConstants>TRACE</DefineConstants>
@@ -85,7 +86,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AndroidPlusPlus.Common\AndroidPlusPlus.Common.csproj">
+    <ProjectReference Include="..\AndroidPlusPlus.Common\AndroidPlusPlus.Common.vs2010.csproj">
       <Project>{6D575221-37D1-4C3D-82A5-5FEB632069AA}</Project>
       <Name>AndroidMT.Common</Name>
     </ProjectReference>
@@ -95,11 +96,7 @@
       <Link>Key.snk</Link>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="source.extension.vsixmanifest" />
-  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.Targets" />
-  <Import Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v10.0\VSSDK\Microsoft.VsSDK.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
