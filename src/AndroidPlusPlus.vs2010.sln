@@ -1,32 +1,30 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.Common", "AndroidPlusPlus.Common\AndroidPlusPlus.Common.vs2010.csproj", "{6D575221-37D1-4C3D-82A5-5FEB632069AA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.Common.vs2010", "AndroidPlusPlus.Common\AndroidPlusPlus.Common.vs2010.csproj", "{6D575221-37D1-4C3D-82A5-5FEB632069AA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.MsBuild.Common", "AndroidPlusPlus.MsBuild.Common\AndroidPlusPlus.MsBuild.Common.vs2010.csproj", "{E3A93421-987E-4704-B0D8-21415453B5C9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.MsBuild.Common.vs2010", "AndroidPlusPlus.MsBuild.Common\AndroidPlusPlus.MsBuild.Common.vs2010.csproj", "{E3A93421-987E-4704-B0D8-21415453B5C9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.MsBuild.CppTasks", "AndroidPlusPlus.MsBuild.CppTasks\AndroidPlusPlus.MsBuild.CppTasks.vs2010.csproj", "{37497EC6-D3C1-4507-9262-35D7A23E9CEF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.MsBuild.CppTasks.vs2010", "AndroidPlusPlus.MsBuild.CppTasks\AndroidPlusPlus.MsBuild.CppTasks.vs2010.csproj", "{37497EC6-D3C1-4507-9262-35D7A23E9CEF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.MsBuild.DeployTasks", "AndroidPlusPlus.MsBuild.DeployTasks\AndroidPlusPlus.MsBuild.DeployTasks.vs2010.csproj", "{00671E09-F4AD-4EE4-804A-65F40FEDAB17}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.MsBuild.DeployTasks.vs2010", "AndroidPlusPlus.MsBuild.DeployTasks\AndroidPlusPlus.MsBuild.DeployTasks.vs2010.csproj", "{00671E09-F4AD-4EE4-804A-65F40FEDAB17}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.MsBuild.Exporter", "AndroidPlusPlus.MsBuild.Exporter\AndroidPlusPlus.MsBuild.Exporter.vs2010.csproj", "{3B52636E-6536-4DA7-B5DD-CD8353049CB9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.MsBuild.Exporter.vs2010", "AndroidPlusPlus.MsBuild.Exporter\AndroidPlusPlus.MsBuild.Exporter.vs2010.csproj", "{3B52636E-6536-4DA7-B5DD-CD8353049CB9}"
 	ProjectSection(ProjectDependencies) = postProject
 		{00671E09-F4AD-4EE4-804A-65F40FEDAB17} = {00671E09-F4AD-4EE4-804A-65F40FEDAB17}
 		{E3A93421-987E-4704-B0D8-21415453B5C9} = {E3A93421-987E-4704-B0D8-21415453B5C9}
 		{37497EC6-D3C1-4507-9262-35D7A23E9CEF} = {37497EC6-D3C1-4507-9262-35D7A23E9CEF}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsDebugEngine", "AndroidPlusPlus.VsDebugEngine\AndroidPlusPlus.VsDebugEngine.vs2010.csproj", "{52DDF087-9B2C-49AF-BD1C-EC2B9C1DD0F5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsDebugEngine.vs2010", "AndroidPlusPlus.VsDebugEngine\AndroidPlusPlus.VsDebugEngine.vs2010.csproj", "{52DDF087-9B2C-49AF-BD1C-EC2B9C1DD0F5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsDebugLauncherX", "AndroidPlusPlus.VsDebugLauncherX\AndroidPlusPlus.VsDebugLauncherX.vs2010.csproj", "{7C701BB4-BAD8-40DA-AFDC-B9820A04F005}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsDebugLauncherX.vs2010", "AndroidPlusPlus.VsDebugLauncherX\AndroidPlusPlus.VsDebugLauncherX.vs2010.csproj", "{7C701BB4-BAD8-40DA-AFDC-B9820A04F005}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsIntegratedPackage", "AndroidPlusPlus.VsIntegratedPackage\AndroidPlusPlus.VsIntegratedPackage.vs2010.csproj", "{14DF8540-798D-46E9-9EC0-1648D3792660}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsIntegratedPackage.vs2010", "AndroidPlusPlus.VsIntegratedPackage\AndroidPlusPlus.VsIntegratedPackage.vs2010.csproj", "{14DF8540-798D-46E9-9EC0-1648D3792660}"
 	ProjectSection(ProjectDependencies) = postProject
 		{3B52636E-6536-4DA7-B5DD-CD8353049CB9} = {3B52636E-6536-4DA7-B5DD-CD8353049CB9}
 		{7C701BB4-BAD8-40DA-AFDC-B9820A04F005} = {7C701BB4-BAD8-40DA-AFDC-B9820A04F005}
 	EndProjectSection
-EndProject
-Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "AndroidPlusPlus.WixInstaller", "AndroidPlusPlus.WixInstaller\AndroidPlusPlus.WixInstaller.vs2010.wixproj", "{3913F304-DDEE-482A-BDBA-FE25FB0171E3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -118,16 +116,6 @@ Global
 		{14DF8540-798D-46E9-9EC0-1648D3792660}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{14DF8540-798D-46E9-9EC0-1648D3792660}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{14DF8540-798D-46E9-9EC0-1648D3792660}.Release|x86.ActiveCfg = Release|Any CPU
-		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Debug|Any CPU.ActiveCfg = Debug|x86
-		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
-		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Debug|Mixed Platforms.Build.0 = Debug|x86
-		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Debug|x86.ActiveCfg = Debug|x86
-		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Debug|x86.Build.0 = Debug|x86
-		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Release|Any CPU.ActiveCfg = Release|x86
-		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Release|Mixed Platforms.ActiveCfg = Release|x86
-		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Release|Mixed Platforms.Build.0 = Release|x86
-		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Release|x86.ActiveCfg = Release|x86
-		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

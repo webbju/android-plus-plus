@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "AndroidPlusPlus.WixInstaller.vs2010", "AndroidPlusPlus.WixInstaller.vs2010.wixproj", "{3913F304-DDEE-482A-BDBA-FE25FB0171E3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Debug|x86.ActiveCfg = Debug|x86
+		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Debug|x86.Build.0 = Debug|x86
+		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Release|x86.ActiveCfg = Release|x86
+		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

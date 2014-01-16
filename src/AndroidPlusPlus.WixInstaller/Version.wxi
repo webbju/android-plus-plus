@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<Include> 
+
+  <?define ProductShortName = "Android++" ?>
+  <?define Manufacturer = "Justin Webb" ?>
+
+  <?define MajorVersion="0" ?>
+  <?define MinorVersion="0" ?>
+  <?define MicroVersion="1" ?>
+  <?define BuildVersion="0" ?>
+
+  <?define VersionNumberInternal="$(var.MajorVersion).$(var.MinorVersion).$(var.BuildVersion)" ?>
+  <?define VersionNumberUserVisible="$(var.MajorVersion).$(var.MinorVersion).$(var.MicroVersion)" ?>
+
+</Include> 
