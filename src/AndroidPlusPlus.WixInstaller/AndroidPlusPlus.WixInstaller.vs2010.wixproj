@@ -12,27 +12,17 @@
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <OutputPath>..\..\build\vs2010\bin\$(Configuration)\</OutputPath>
-    <BaseIntermediateOutputPath>..\..\build\vs2010\obj\$(Configuration)\</BaseIntermediateOutputPath>
+    <OutputPath>..\build\vs2010\bin\$(Configuration)\</OutputPath>
+    <BaseIntermediateOutputPath>..\build\vs2010\obj\$(Configuration)\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
-    <DefineConstants>Debug;$(CommonWixConstants)</DefineConstants>
+    <DefineConstants>Debug;SamplesDir=$(ProjectDir)..\Samples;MsBuildTemplatesDir=$(OutputPath)Templates</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <OutputPath>..\..\build\vs2010\bin\$(Configuration)\</OutputPath>
-    <BaseIntermediateOutputPath>..\..\build\vs2010\obj\$(Configuration)\</BaseIntermediateOutputPath>
+    <OutputPath>..\build\vs2010\bin\$(Configuration)\</OutputPath>
+    <BaseIntermediateOutputPath>..\build\vs2010\obj\$(Configuration)\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
-    <DefineConstants>$(CommonWixConstants)</DefineConstants>
+    <DefineConstants>SamplesDir=$(ProjectDir)..\Samples;MsBuildTemplatesDir=$(OutputPath)Templates;</DefineConstants>
   </PropertyGroup>
-  <ItemGroup>
-    <!-- These are needed by HarvestDirectory, one for each directory. -->
-    <WixConstant Include="SamplesDir">
-      <Value>..\..\Samples</Value>
-    </WixConstant>
-    <WixConstant Include="TemplatesDir">
-      <Value>Templates</Value>
-    </WixConstant>
-  </ItemGroup>
-
   <ItemGroup>
     <WixExtension Include="WixUIExtension">
       <HintPath>$(WixExtDir)\WixUIExtension.dll</HintPath>
@@ -48,22 +38,19 @@
     </WixExtension>
   </ItemGroup>
   <ItemGroup>
-    <HarvestDirectory Include="$(ProjectDir)\..\..\Samples">
+    <HarvestDirectory Include="$(ProjectDir)\..\Samples">
       <DirectoryRefId>ProjectSamplesFolder</DirectoryRefId>
       <ComponentGroupName>ProjectSamples</ComponentGroupName>
       <PreprocessorVariable>var.SamplesDir</PreprocessorVariable>
     </HarvestDirectory>
-    <HarvestDirectory Include="$(ProjectDir)\..\..\build\vs2010\bin\Release\Templates">
+    <HarvestDirectory Include="$(OutputPath)\Templates">
       <DirectoryRefId>ProjectMsBuildFolder</DirectoryRefId>
       <ComponentGroupName>ProjectMsBuildTemplates2010</ComponentGroupName>
-      <PreprocessorVariable></PreprocessorVariable>
+      <PreprocessorVariable>var.MsBuildTemplatesDir</PreprocessorVariable>
     </HarvestDirectory>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Product.wxs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Version.wxi" />
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" />
   <!--
