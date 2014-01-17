@@ -31,6 +31,8 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
     private static List<string> s_vsVersions = new List<string> ();
 
+    private static List<string> s_exportDirectories = new List<string> ();
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -103,6 +105,13 @@ namespace AndroidPlusPlus.MsBuild.Exporter
             break;
           }
 
+          case "--export-dir":
+          {
+            s_exportDirectories.Add (args [++i].Replace ("\"", ""));
+
+            break;
+          }
+
           case "--vs-version":
           {
             string [] versions = args [++i].Split (';');
@@ -114,13 +123,31 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
             foreach (string version in versions)
             {
+              s_vsVersions.Add (version);
+
               switch (version)
               {
                 case "2010":
                 case "2012":
                 case "2013":
                 {
-                  s_vsVersions.Add (version);
+                  // 
+                  // Lookup MSBuild platforms directory under 'Program Files' and 'Program Files (x86)'.
+                  // 
+
+                  string msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\";
+
+                  if (!Directory.Exists (msBuildInstallationDir))
+                  {
+                    msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\";
+                  }
+
+                  if (!Directory.Exists (msBuildInstallationDir))
+                  {
+                    throw new DirectoryNotFoundException ("Could not locate required MSBuild platforms directory. This should have been installed with VS2010. Tried: " + msBuildInstallationDir);
+                  }
+
+                  s_exportDirectories.Add (msBuildInstallationDir);
 
                   break;
                 }
@@ -149,6 +176,11 @@ namespace AndroidPlusPlus.MsBuild.Exporter
       if (s_templateDirs.Count () > 1)
       {
         throw new ArgumentException ("Please only specify a single target --template-dir.");
+      }
+
+      if (s_exportDirectories.Count () == 0)
+      {
+        throw new ArgumentException ("--export-dir not specified.");
       }
 
       if (s_vsVersions.Count () == 0)
@@ -186,63 +218,41 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
     private static void ExportMsBuildTemplateForVersion (string version, ref Dictionary <string, string> textSubstitution)
     {
-      string msBuildInstallationDir = string.Empty;
-
-      switch (version)
-      {
-        case "2010":
-        {
-          // 
-          // Lookup MSBuild platforms directory under 'Program Files' and 'Program Files (x86)'.
-          // 
-
-          msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\";
-
-          if (!Directory.Exists (msBuildInstallationDir))
-          {
-            msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\";
-          }
-
-          if (!Directory.Exists (msBuildInstallationDir))
-          {
-            throw new DirectoryNotFoundException ("Could not locate required MSBuild platforms directory. This should have been installed with VS2010. Tried: " + msBuildInstallationDir);
-          }
-
-          break;
-        }
-
-        default:
-        {
-          throw new NotImplementedException ("Export procedure for '" + version + "' is not implemented");
-        }
-      }
-
       // 
       // Clean any existing MsBuild deployment.
       // 
 
-      foreach (string file in Directory.GetFiles (msBuildInstallationDir + @"\BuildCustomizations", textSubstitution ["{master}"] + "*"))
+      foreach (string exportDir in s_exportDirectories)
       {
-        File.Delete (file);
-      }
-
-      foreach (string directory in Directory.GetDirectories (msBuildInstallationDir + @"\Platforms"))
-      {
-        if (directory.Contains (textSubstitution ["{master}"]))
+        if (Directory.Exists (exportDir + @"\BuildCustomizations"))
         {
-          Directory.Delete (directory, true);
+          foreach (string file in Directory.GetFiles (exportDir + @"\BuildCustomizations", textSubstitution ["{master}"] + "*"))
+          {
+            File.Delete (file);
+          }
         }
-      }
 
-      // 
-      // Copy each directory of the template directories and apply pattern processing.
-      // 
+        if (Directory.Exists (s_exportDirectories + @"\Platforms"))
+        {
+          foreach (string directory in Directory.GetDirectories (exportDir + @"\Platforms"))
+          {
+            if (directory.Contains (textSubstitution ["{master}"]))
+            {
+              Directory.Delete (directory, true);
+            }
+          }
+        }
 
-      foreach (string templateDir in s_templateDirs)
-      {
-        Console.WriteLine (string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Copying {0} to {1}", templateDir, msBuildInstallationDir));
+        // 
+        // Copy each directory of the template directories and apply pattern processing.
+        // 
 
-        CopyFoldersAndFiles (templateDir, msBuildInstallationDir, true, ref textSubstitution);
+        foreach (string templateDir in s_templateDirs)
+        {
+          Console.WriteLine (string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Copying {0} to {1}", templateDir, exportDir));
+
+          CopyFoldersAndFiles (templateDir, exportDir, true, ref textSubstitution);
+        }
       }
     }
 

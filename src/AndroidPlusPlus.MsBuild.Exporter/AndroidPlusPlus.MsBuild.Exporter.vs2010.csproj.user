@@ -12,6 +12,6 @@
     <VerifyUploadedFiles>false</VerifyUploadedFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
-    <StartArguments>--template-dir L:\dev\projects\android-plus-plus\src\AndroidPlusPlus.MsBuild.Exporter\..\..\build\bin\Debug\Templates\ --vs-version 2010</StartArguments>
+    <StartArguments>--template-dir $(ProjectDir)Templates --export-dir L:\dev\projects\android-plus-plus\src\AndroidPlusPlus.MsBuild.Exporter\..\..\build\bin\Debug\MsBuild\2010 --vs-version 2010</StartArguments>
   </PropertyGroup>
 </Project>

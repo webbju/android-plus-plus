@@ -162,15 +162,16 @@
   <PropertyGroup>
     <PreBuildEvent>copy /y /b "$(ProjectDir)\$(OutDir)AndroidPlusPlus.MsBuild.Common.dll" "$(ProjectDir)Templates\Platforms\{master}\{master-verbose}.MsBuild.Common.dll"
 copy /y /b "$(ProjectDir)\$(OutDir)AndroidPlusPlus.MsBuild.CppTasks.dll" "$(ProjectDir)Templates\Platforms\{master}\{master-verbose}.MsBuild.CppTasks.dll"
-copy /y /b "$(ProjectDir)\$(OutDir)AndroidPlusPlus.MsBuild.DeployTasks.dll" "$(ProjectDir)Templates\Platforms\{master}\{master-verbose}.MsBuild.DeployTasks.dll"</PreBuildEvent>
+copy /y /b "$(ProjectDir)\$(OutDir)AndroidPlusPlus.MsBuild.DeployTasks.dll" "$(ProjectDir)Templates\Platforms\{master}\{master-verbose}.MsBuild.DeployTasks.dll"
+cmd /c xcopy "$(ProjectDir)..\..\toolchain\bin\*" "$(ProjectDir)Templates\Platforms\{master}\Toolchain\bin\" /i /s /e /y
+cmd /c xcopy "$(ProjectDir)..\..\toolchain\include\*" "$(ProjectDir)Templates\Platforms\{master}\Toolchain\include\" /i /s /e /y
+cmd /c xcopy "$(ProjectDir)..\..\toolchain\lib\*" "$(ProjectDir)Templates\Platforms\{master}\Toolchain\lib\" /i /s /e /y
+</PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PostBuildEvent>cmd /c rmdir "$(ProjectDir)$(OutDir)Templates\" /s /q
-cmd /c xcopy "$(ProjectDir)Templates\*" "$(ProjectDir)$(OutDir)Templates\" /i /s /e /y
-cmd /c xcopy "$(ProjectDir)..\..\toolchain\bin\*" "$(ProjectDir)$(OutDir)Templates\Platforms\{master}\Toolchain\bin\" /i /s /e /y
-cmd /c xcopy "$(ProjectDir)..\..\toolchain\include\*" "$(ProjectDir)$(OutDir)Templates\Platforms\{master}\Toolchain\include\" /i /s /e /y
-cmd /c xcopy "$(ProjectDir)..\..\toolchain\lib\*" "$(ProjectDir)$(OutDir)Templates\Platforms\{master}\Toolchain\lib\" /i /s /e /y
-$(TargetPath) --template-dir $(ProjectDir)$(OutDir)Templates\ --vs-version 2010</PostBuildEvent>
+    <PostBuildEvent>cmd /c rmdir "$(ProjectDir)$(OutDir)MsBuild\" /s /q
+$(TargetPath) --template-dir $(ProjectDir)Templates --export-dir $(ProjectDir)$(OutDir)MsBuild\ --vs-version 2010
+  </PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
