@@ -86,9 +86,9 @@
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     -->
 
-    <?define OutputPathVs2010="$(sys.SOURCEFILEDIR)..\build\vs2010\bin\$(var.Configuration)\" ?>
+    <?define OutputPathVs2010="$(sys.SOURCEFILEDIR)..\..\build\vs2010\bin\$(var.Configuration)\" ?>
 
-    <?define OutputPathVs2012="$(sys.SOURCEFILEDIR)..\build\vs2012\bin\$(var.Configuration)\" ?>
+    <?define OutputPathVs2012="$(sys.SOURCEFILEDIR)..\..\build\vs2012\bin\$(var.Configuration)\" ?>
 
     <Directory Id="TARGETDIR" Name="SourceDir">
 
@@ -123,30 +123,13 @@
           </Directory>
 
           <!-- 
-            MsBuild
-          -->
-
-          <Directory Id="ProjectMsBuildFolder" Name="MsBuild">
-            <!-- Exporting MSBuild scripts to the VS2010 directory will get picked up in VS2012 (okay for now) -->
-            <Component Id="ProjectMsBuildExporter2010" Guid="0673A279-2636-464C-9C61-322C846D6BFB">
-              <File Id="AndroidPlusPlusMsBuildExporter2010" Source="$(var.OutputPathVs2010)AndroidPlusPlus.MsBuild.Exporter.exe" />
-            </Component>
-          </Directory>
-
-          <!-- 
-            Samples
-          -->
-
-          <Directory Id="ProjectSamplesFolder" Name="Samples" />
-
-          <!-- 
             Debug Symbols
           -->
 
           <Directory Id="ProjectSymbolsFolder" Name="Symbols">
 
             <!-- VS2010 -->
-            <Directory Id="ProjectSymbolsFolder2010" Name="10.0">
+            <Directory Id="ProjectSymbolsFolder2010" Name="vs2010">
               <Component Id="ProjectSymbols2010" Guid="ACC37974-52F6-4DD1-8648-7847CE339F90">
                 <Condition><![CDATA[(VS2010_IDE_VC_PROJECTSYSTEM_INSTALLED)]]></Condition>
                 <File Id="AndroidPlusPlusCommonPdb2010" Source="$(var.OutputPathVs2010)AndroidPlusPlus.Common.pdb"/>
@@ -178,6 +161,22 @@
 
         </Directory>
 
+        <!-- 
+          MsBuild
+        -->
+
+        <Directory Id="MsBuildDir" Name="MSBuild">
+
+          <Directory Id="MsBuildMicrosoftCppDir" Name="Microsoft.Cpp">
+
+            <Directory Id="MsBuildMicrosoftCppv4Dir" Name="v4.0">
+
+            </Directory>
+
+          </Directory>
+
+        </Directory>
+
       </Directory>
 
     </Directory>
@@ -191,14 +190,17 @@
     <Feature Id="FeatureCompletePackage" Title="$(var.ProductShortName) v$(var.VersionNumberUserVisible)" Display="expand" Level="1" ConfigurableDirectory="INSTALLFOLDER">
       
       <!-- 
-        Visual Studio 2010 IDE and MSBuild Integration. 
+        Visual Studio 2010
       -->
 
-      <Feature Id="FeatureVS2010" Title="VS2010 IDE &amp; MSBuild Integration" Level="0">
+      <Feature Id="FeatureVS2010" Title="Visual Studio 2010" Level="0">
         <Condition Level="1"><![CDATA[(VS2010_IDE_VC_PROJECTSYSTEM_INSTALLED)]]></Condition>
-        <ComponentRef Id="ProjectVsix2010" />
-        <ComponentRef Id="ProjectMsBuildExporter2010" />
-        <ComponentGroupRef Id="ProjectMsBuildTemplates2010" />
+        <Feature Id="FeatureVs2010Debugger" Title="Debugger" Level="1">
+          <ComponentRef Id="ProjectVsix2010" />
+        </Feature>
+        <Feature Id="FeatureVs2010MsBuild" Title="MSBuild" Level="1">
+          <ComponentGroupRef Id="ProjectMsBuildTemplates2010" />
+        </Feature>
         <Feature Id="FeatureSymbols2010" Title="Symbols" Level="1">
           <ComponentRef Id="ProjectSymbols2010" />
         </Feature>

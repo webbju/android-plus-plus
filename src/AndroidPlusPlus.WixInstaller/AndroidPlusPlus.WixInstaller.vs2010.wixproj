@@ -12,16 +12,16 @@
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <OutputPath>..\build\vs2010\bin\$(Configuration)\</OutputPath>
-    <BaseIntermediateOutputPath>..\build\vs2010\obj\$(Configuration)\</BaseIntermediateOutputPath>
+    <OutputPath>..\..\build\vs2010\bin\$(Configuration)\</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\vs2010\obj\$(Configuration)\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
-    <DefineConstants>Debug;SamplesDir=$(ProjectDir)..\Samples;MsBuildTemplatesDir=$(OutputPath)Templates</DefineConstants>
+    <DefineConstants>Debug;SamplesDir=$(ProjectDir)..\..\Samples;MsBuildTemplatesDir=$(OutputPath)MsBuild</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <OutputPath>..\build\vs2010\bin\$(Configuration)\</OutputPath>
-    <BaseIntermediateOutputPath>..\build\vs2010\obj\$(Configuration)\</BaseIntermediateOutputPath>
+    <OutputPath>..\..\build\vs2010\bin\$(Configuration)\</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\vs2010\obj\$(Configuration)\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
-    <DefineConstants>SamplesDir=$(ProjectDir)..\Samples;MsBuildTemplatesDir=$(OutputPath)Templates;</DefineConstants>
+    <DefineConstants>SamplesDir=$(ProjectDir)..\..\Samples;MsBuildTemplatesDir=$(OutputPath)MsBuild;</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <WixExtension Include="WixUIExtension">
@@ -38,15 +38,16 @@
     </WixExtension>
   </ItemGroup>
   <ItemGroup>
-    <HarvestDirectory Include="$(ProjectDir)\..\Samples">
-      <DirectoryRefId>ProjectSamplesFolder</DirectoryRefId>
+    <HarvestDirectory Include="$(ProjectDir)\..\..\Samples">
+      <DirectoryRefId>INSTALLFOLDER</DirectoryRefId>
       <ComponentGroupName>ProjectSamples</ComponentGroupName>
       <PreprocessorVariable>var.SamplesDir</PreprocessorVariable>
     </HarvestDirectory>
-    <HarvestDirectory Include="$(OutputPath)\Templates">
-      <DirectoryRefId>ProjectMsBuildFolder</DirectoryRefId>
+    <HarvestDirectory Include="$(OutputPath)\MsBuild">
+      <DirectoryRefId>MsBuildMicrosoftCppv4Dir</DirectoryRefId>
       <ComponentGroupName>ProjectMsBuildTemplates2010</ComponentGroupName>
       <PreprocessorVariable>var.MsBuildTemplatesDir</PreprocessorVariable>
+      <SuppressRootDirectory>true</SuppressRootDirectory>
     </HarvestDirectory>
   </ItemGroup>
   <ItemGroup>
