@@ -135,7 +135,7 @@
     <Compile Include="Interface\GdbConsoleControl.xaml.cs">
       <DependentUpon>GdbConsoleControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Resources.Designer.cs">
+    <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
@@ -143,7 +143,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources.resx">
+    <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
@@ -167,7 +167,10 @@
   <ItemGroup>
     <None Include="Resources\Images_24bit.bmp" />
     <None Include="Resources\Images_32bit.bmp" />
-    <Content Include="..\..\EULA.txt" />
+    <Content Include="..\..\EULA.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <Content Include="Resources\Package.ico" />
   </ItemGroup>
   <ItemGroup>
