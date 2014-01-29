@@ -85,7 +85,9 @@ namespace AndroidPlusPlus.Common
 
     public void Dispose ()
     {
-      SendCommand ("quit");
+      Trace.WriteLine (string.Format ("[JdbClient] Dispose:"));
+
+      SendAsyncCommand ("quit");
 
       if (m_jdbClientInstance != null)
       {
@@ -143,6 +145,8 @@ namespace AndroidPlusPlus.Common
 
     public bool Attach ()
     {
+      Trace.WriteLine (string.Format ("[JdbClient] Attach:"));
+
       throw new NotImplementedException ();
     }
 
@@ -152,6 +156,8 @@ namespace AndroidPlusPlus.Common
 
     public bool Detach ()
     {
+      Trace.WriteLine (string.Format ("[JdbClient] Detach:"));
+
       throw new NotImplementedException ();
     }
 
@@ -161,6 +167,8 @@ namespace AndroidPlusPlus.Common
 
     public void Stop ()
     {
+      Trace.WriteLine (string.Format ("[JdbClient] Stop:"));
+
       throw new NotImplementedException ();
     }
 
@@ -170,6 +178,8 @@ namespace AndroidPlusPlus.Common
 
     public void Continue ()
     {
+      Trace.WriteLine (string.Format ("[JdbClient] Continue:"));
+
       throw new NotImplementedException ();
     }
 
@@ -177,7 +187,18 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public MiResultRecord SendCommand (string command, int timeout = 5000)
+    public void Terminate ()
+    {
+      Trace.WriteLine (string.Format ("[JdbClient] Terminate:"));
+
+      throw new NotImplementedException ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public MiResultRecord SendCommand (string command, int timeout = 30000)
     {
       // 
       // Perform a synchronous command request; issue a standard async command and keep alive whilst still receiving output.
@@ -186,6 +207,11 @@ namespace AndroidPlusPlus.Common
       Trace.WriteLine (string.Format ("[JdbClient] SendCommand: {0}", command));
 
       MiResultRecord syncResultRecord = null;
+
+      if (m_jdbClientInstance == null)
+      {
+        return syncResultRecord;
+      }
 
       lock (this)
       {
@@ -243,6 +269,11 @@ namespace AndroidPlusPlus.Common
 
       Trace.WriteLine (string.Format ("[JdbClient] SendAsyncCommand: {0}", command));
 
+      if (m_jdbClientInstance == null)
+      {
+        return;
+      }
+
       lock (this)
       {
         m_asyncCommandCallbacks.Add (m_sessionCommandToken, asyncDelegate);
@@ -293,6 +324,10 @@ namespace AndroidPlusPlus.Common
 
       Trace.WriteLine (string.Format ("[JdbClient] ProcessExited: {0}", args));
 
+      m_jdbClientInstance.Dispose ();
+
+      m_jdbClientInstance = null;
+
       // 
       // If we're waiting on a synchronous command, signal a finish to process termination.
       // 
@@ -301,10 +336,6 @@ namespace AndroidPlusPlus.Common
       {
         m_syncCommandLock.Set ();
       }
-
-      m_jdbClientInstance.Dispose ();
-
-      m_jdbClientInstance = null;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -300,7 +300,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           Guid eventGuid = ComUtils.GuidOf (debugEvent);
 
-          LoggingUtils.RequireOk (connectionPoint.Event (null, this, process, program, debugEvent, eventGuid));
+          /*LoggingUtils.RequireOk*/ connectionPoint.Event (null, this, process, program, debugEvent, eventGuid);
         }
 
         return DebugEngineConstants.S_OK;

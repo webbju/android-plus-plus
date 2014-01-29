@@ -247,12 +247,10 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        if (AttachedEngine.NativeDebugger == null)
+        if (AttachedEngine.NativeDebugger != null)
         {
-          throw new InvalidOperationException ();
+          LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.Detach ());
         }
-
-        LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.Detach ());
 
         AttachedEngine.Broadcast (new DebugEngineEvent.ProgramDestroy (exitCode), this, null);
 

@@ -190,8 +190,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         NativeDebugger = new CLangDebugger (this, Program);
 
-        //JavaDebugger = new JavaLangDebugger (this, Program);
-
         Broadcast (new DebugEngineEvent.EngineCreate (this), Program, null);
 
         LoggingUtils.RequireOk (Program.Attach (m_sdmCallback));
@@ -840,9 +838,14 @@ namespace AndroidPlusPlus.VsDebugEngine
         // Termination controlled via IDebugProgram3.Terminate (), which has already been called on the native program object.
         // 
 
+        if (process == null)
+        {
+          throw new InvalidOperationException ();
+        }
+
         DebuggeeProcess debugProcess = (process as DebuggeeProcess);
 
-        LoggingUtils.RequireOk (debugProcess.Detach ());
+        debugProcess.Detach ();
       }
       catch (Exception e)
       {

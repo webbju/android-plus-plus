@@ -117,7 +117,9 @@ namespace AndroidPlusPlus.Common
 
     public void Dispose ()
     {
-      SendCommand ("-gdb-exit");
+      Trace.WriteLine (string.Format ("[GdbClient] Dispose:"));
+
+      SendAsyncCommand ("-gdb-exit");
 
       if (m_gdbClientInstance != null)
       {
@@ -193,7 +195,7 @@ namespace AndroidPlusPlus.Common
     {
       Trace.WriteLine (string.Format ("[GdbClient] Detach:"));
 
-      SendCommand ("-target-detach");
+      SendAsyncCommand ("-target-detach");
 
       m_gdbServer = null;
 
@@ -230,7 +232,7 @@ namespace AndroidPlusPlus.Common
     {
       Trace.WriteLine (string.Format ("[GdbClient] Terminate:"));
 
-      SendCommand ("kill");
+      SendAsyncCommand ("kill");
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -358,7 +360,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public MiResultRecord SendCommand (string command, int timeout = 5000)
+    public MiResultRecord SendCommand (string command, int timeout = 60000)
     {
       // 
       // Perform a synchronous command request; issue a standard async command and keep alive whilst still receiving output.
@@ -367,6 +369,11 @@ namespace AndroidPlusPlus.Common
       Trace.WriteLine (string.Format ("[GdbClient] SendCommand: {0}", command));
 
       MiResultRecord syncResultRecord = null;
+
+      if (m_gdbClientInstance == null)
+      {
+        return syncResultRecord;
+      }
 
       lock (this)
       {
@@ -423,6 +430,11 @@ namespace AndroidPlusPlus.Common
       // 
 
       Trace.WriteLine (string.Format ("[GdbClient] SendAsyncCommand: {0}", command));
+
+      if (m_gdbClientInstance == null)
+      {
+        return;
+      }
 
       lock (this)
       {
@@ -555,6 +567,10 @@ namespace AndroidPlusPlus.Common
 
       Trace.WriteLine (string.Format ("[GdbClient] ProcessExited: {0}", args));
 
+      m_gdbClientInstance.Dispose ();
+
+      m_gdbClientInstance = null;
+
       // 
       // If we're waiting on a synchronous command, signal a finish to process termination.
       // 
@@ -563,10 +579,6 @@ namespace AndroidPlusPlus.Common
       {
         m_syncCommandLock.Set ();
       }
-
-      m_gdbClientInstance.Dispose ();
-
-      m_gdbClientInstance = null;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -193,81 +193,82 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           CLangDebuggeeBreakpointBound breakpoint = boundBreakpoint as CLangDebuggeeBreakpointBound;
 
-          MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-break-info {0}", breakpoint.GdbBreakpoint.ID));
-
-          if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
+          m_debugger.GdbClient.SendAsyncCommand (string.Format ("-break-info {0}", breakpoint.GdbBreakpoint.ID), delegate (MiResultRecord resultRecord)
           {
-            throw new InvalidOperationException ();
-          }
-
-          string addr = resultRecord ["BreakpointTable"] ["body"] [0] ["addr"].GetString ();
-
-          if (!string.IsNullOrEmpty (addr))
-          {
-            bool pending = addr.Equals ("<PENDING>");
-
-            bool multiple = addr.Equals ("<MULTIPLE>");
-
-            m_errorBreakpoints.Clear ();
-
-            if (pending && (!breakpoint.GdbBreakpoint.IsPending ()))
+            if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
             {
-              // 
-              // Address can't be satistfied. Unsatisified likely indicates the modules or symbols associated with the context aren't loaded, yet.
-              // 
-
-              IDebugBreakpointResolution2 resolution;
-
-              LoggingUtils.RequireOk (breakpoint.GetBreakpointResolution (out resolution));
-
-              breakpoint.GdbBreakpoint.Address = MiBreakpoint.Pending;
-
-              (resolution as DebuggeeBreakpointResolution).CodeContext.Address = new DebuggeeAddress (breakpoint.GdbBreakpoint.Address);
-
-              DebuggeeBreakpointError errorBreakpoint = new DebuggeeBreakpointError (m_breakpointManager, this, (resolution as DebuggeeBreakpointResolution).CodeContext, "Bound breakpoint waiting on additional library symbols");
-
-              m_errorBreakpoints.Add (errorBreakpoint);
-
-              m_debugger.Engine.Broadcast (new DebugEngineEvent.BreakpointError (errorBreakpoint), m_debugger.NativeProgram.DebugProgram, m_debugger.NativeProgram.GetThread (m_debugger.NativeProgram.CurrentThreadId));
+              throw new InvalidOperationException ();
             }
-            else if (multiple && (breakpoint.GdbBreakpoint.IsMultiple ()))
+
+            string addr = resultRecord ["BreakpointTable"] ["body"] [0] ["addr"].GetString ();
+
+            if (!string.IsNullOrEmpty (addr))
             {
-              // 
-              // Breakpoint satisfied to multiple locations, no single memory address available.
-              // 
+              bool pending = addr.Equals ("<PENDING>");
 
-              IDebugBreakpointResolution2 resolution;
+              bool multiple = addr.Equals ("<MULTIPLE>");
 
-              LoggingUtils.RequireOk (breakpoint.GetBreakpointResolution (out resolution));
+              m_errorBreakpoints.Clear ();
 
-              breakpoint.GdbBreakpoint.Address = MiBreakpoint.Multiple;
-
-              (resolution as DebuggeeBreakpointResolution).CodeContext.Address = new DebuggeeAddress (breakpoint.GdbBreakpoint.Address);
-
-              m_debugger.Engine.Broadcast (new DebugEngineEvent.BreakpointBound (this, boundBreakpoint), m_debugger.NativeProgram.DebugProgram, m_debugger.NativeProgram.GetThread (m_debugger.NativeProgram.CurrentThreadId));
-            }
-            else 
-            {
-              // 
-              // Address satistfied, and the breakpoint is legitimately bound.
-              // 
-
-              DebuggeeAddress boundAddress = new DebuggeeAddress (addr);
-
-              if (breakpoint.GdbBreakpoint.Address != boundAddress.MemoryAddress)
+              if (pending && (!breakpoint.GdbBreakpoint.IsPending ()))
               {
-                breakpoint.GdbBreakpoint.Address = boundAddress.MemoryAddress;
+                // 
+                // Address can't be satistfied. Unsatisified likely indicates the modules or symbols associated with the context aren't loaded, yet.
+                // 
 
                 IDebugBreakpointResolution2 resolution;
 
                 LoggingUtils.RequireOk (breakpoint.GetBreakpointResolution (out resolution));
 
-                (resolution as DebuggeeBreakpointResolution).CodeContext.Address = boundAddress;
+                breakpoint.GdbBreakpoint.Address = MiBreakpoint.Pending;
+
+                (resolution as DebuggeeBreakpointResolution).CodeContext.Address = new DebuggeeAddress (breakpoint.GdbBreakpoint.Address);
+
+                DebuggeeBreakpointError errorBreakpoint = new DebuggeeBreakpointError (m_breakpointManager, this, (resolution as DebuggeeBreakpointResolution).CodeContext, "Bound breakpoint waiting on additional library symbols");
+
+                m_errorBreakpoints.Add (errorBreakpoint);
+
+                m_debugger.Engine.Broadcast (new DebugEngineEvent.BreakpointError (errorBreakpoint), m_debugger.NativeProgram.DebugProgram, m_debugger.NativeProgram.GetThread (m_debugger.NativeProgram.CurrentThreadId));
+              }
+              else if (multiple && (breakpoint.GdbBreakpoint.IsMultiple ()))
+              {
+                // 
+                // Breakpoint satisfied to multiple locations, no single memory address available.
+                // 
+
+                IDebugBreakpointResolution2 resolution;
+
+                LoggingUtils.RequireOk (breakpoint.GetBreakpointResolution (out resolution));
+
+                breakpoint.GdbBreakpoint.Address = MiBreakpoint.Multiple;
+
+                (resolution as DebuggeeBreakpointResolution).CodeContext.Address = new DebuggeeAddress (breakpoint.GdbBreakpoint.Address);
 
                 m_debugger.Engine.Broadcast (new DebugEngineEvent.BreakpointBound (this, boundBreakpoint), m_debugger.NativeProgram.DebugProgram, m_debugger.NativeProgram.GetThread (m_debugger.NativeProgram.CurrentThreadId));
               }
+              else
+              {
+                // 
+                // Address satistfied, and the breakpoint is legitimately bound.
+                // 
+
+                DebuggeeAddress boundAddress = new DebuggeeAddress (addr);
+
+                if (breakpoint.GdbBreakpoint.Address != boundAddress.MemoryAddress)
+                {
+                  breakpoint.GdbBreakpoint.Address = boundAddress.MemoryAddress;
+
+                  IDebugBreakpointResolution2 resolution;
+
+                  LoggingUtils.RequireOk (breakpoint.GetBreakpointResolution (out resolution));
+
+                  (resolution as DebuggeeBreakpointResolution).CodeContext.Address = boundAddress;
+
+                  m_debugger.Engine.Broadcast (new DebugEngineEvent.BreakpointBound (this, boundBreakpoint), m_debugger.NativeProgram.DebugProgram, m_debugger.NativeProgram.GetThread (m_debugger.NativeProgram.CurrentThreadId));
+                }
+              }
             }
-          }
+          });
         }
         else
         {

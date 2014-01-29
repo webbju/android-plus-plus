@@ -288,6 +288,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
+#if false
         if (!m_debugger.GdbServer.Start ())
         {
           throw new InvalidOperationException ("Could not start gdbserver");
@@ -296,10 +297,11 @@ namespace AndroidPlusPlus.VsDebugEngine
         m_debugger.GdbClient.SendCommand ("-list-features");
 
         m_debugger.GdbClient.Attach (m_debugger.GdbServer);
+#else
+        m_debugger.Engine.Broadcast (new CLangDebuggerEvent.StartServer (m_debugger), DebugProgram, null);
 
-        //m_debugger.Engine.Broadcast<CLangDebuggerEvent.StartServer> (new CLangDebuggerEvent.StartServer (m_debugger), DebugProgram, null);
-
-        //m_debugger.Engine.Broadcast<CLangDebuggerEvent.AttachClient> (new CLangDebuggerEvent.AttachClient (m_debugger), DebugProgram, null);
+        m_debugger.Engine.Broadcast (new CLangDebuggerEvent.AttachClient (m_debugger), DebugProgram, null);
+#endif
 
         return DebugEngineConstants.S_OK;
       }
@@ -332,9 +334,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
+#if false
         m_debugger.GdbClient.Stop ();
-
-        //m_debugger.Engine.Broadcast<CLangDebuggerEvent.StopClient> (new CLangDebuggerEvent.StopClient (m_debugger), DebugProgram, null);
+#else
+        m_debugger.Engine.Broadcast (new CLangDebuggerEvent.StopClient (m_debugger), DebugProgram, null);
+#endif
 
         return DebugEngineConstants.S_OK;
       }
@@ -358,9 +362,11 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (!IsRunning)
         {
+#if false
           m_debugger.GdbClient.Continue ();
-
-          //m_debugger.Engine.Broadcast<CLangDebuggerEvent.ContinueClient> (new CLangDebuggerEvent.ContinueClient (m_debugger), DebugProgram, null);
+#else
+          m_debugger.Engine.Broadcast (new CLangDebuggerEvent.ContinueClient (m_debugger), DebugProgram, null);
+#endif
         }
 
         return DebugEngineConstants.S_OK;
@@ -383,14 +389,15 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
+#if false
         m_debugger.GdbClient.Detach ();
 
         m_debugger.GdbServer.Stop ();
+#else
+        m_debugger.Engine.Broadcast (new CLangDebuggerEvent.DetachClient (m_debugger), DebugProgram, null);
 
-        //m_debugger.Engine.Broadcast<CLangDebuggerEvent.DetachClient> (new CLangDebuggerEvent.DetachClient (m_debugger), DebugProgram, null);
-
-        //m_debugger.Engine.Broadcast<CLangDebuggerEvent.StopServer> (new CLangDebuggerEvent.StopServer (m_debugger), DebugProgram, null);
-
+        m_debugger.Engine.Broadcast (new CLangDebuggerEvent.StopServer (m_debugger), DebugProgram, null);
+#endif
         return DebugEngineConstants.S_OK;
       }
       catch (Exception e)
@@ -774,10 +781,15 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
+#if false
         m_debugger.GdbClient.Stop ();
 
         m_debugger.GdbClient.Terminate ();
+#else
+        m_debugger.Engine.Broadcast (new CLangDebuggerEvent.DetachClient (m_debugger), DebugProgram, null);
 
+        m_debugger.Engine.Broadcast (new CLangDebuggerEvent.TerminateClient (m_debugger), DebugProgram, null);
+#endif
         return DebugEngineConstants.S_OK;
       }
       catch (Exception e)
