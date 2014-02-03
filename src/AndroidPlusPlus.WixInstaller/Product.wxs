@@ -14,8 +14,8 @@
   <?define ProductUpgradeCode="234285f1-8e22-4c3d-94a3-fa1231420695" ?>
 
   <?define MajorVersion="0" ?>
-  <?define MinorVersion="0" ?>
-  <?define MicroVersion="1" ?>
+  <?define MinorVersion="1" ?>
+  <?define MicroVersion="0" ?>
   <?define BuildVersion="0" ?>
 
   <?define VersionNumberInternal="$(var.MajorVersion).$(var.MinorVersion).$(var.BuildVersion)" ?>
@@ -58,11 +58,11 @@
     </Condition>
 
     <!-- Add and Remove Programs properties. -->
-    <Property Id="ARPCONTACT">$(var.ProductShortName) v$(var.VersionNumberUserVisible) - support@android-plus-plus.com</Property>
+    <Property Id="ARPCONTACT">webbju@android-plus-plus.com</Property>
     <Property Id="ARPURLINFOABOUT">http://www.android-plus-plus.com</Property>
     <Property Id="ARPHELPLINK">http://www.android-plus-plus.com</Property>
     <Property Id="ARPURLUPDATEINFO">http://www.android-plus-plus.com</Property>
-    <Property Id="ARPPRODUCTICON">ICON_AnkhSvn</Property>
+    <Property Id="ARPHELPTELEPHONE">http://www.android-plus-plus.com</Property>
 
     <!-- Check for installations of VS 2010 or VS 2012 (non-Express Editions) -->
     <PropertyRef Id='VS2010_IDE_VC_PROJECTSYSTEM_INSTALLED'/>
@@ -75,10 +75,10 @@
     <UIRef Id="WixUI_FeatureTree" />
     <UIRef Id="WixUI_ErrorProgressText" />
 
-    <!-- Setup license file default. 
-    <WixVariable Id="WixUILicenseRtf" Value="EULA.rtf" />
-    <WixVariable Id="WixUIBannerBmp" Value="WixUIBannerBmp.bmp" />
-    <WixVariable Id="WixUIDialogBmp" Value="WixUIDialogBmp.bmp" />-->
+    <!-- Setup license file default. -->
+    <WixVariable Id="WixUILicenseRtf" Value="Resources\EULA.rtf" />
+    <WixVariable Id="WixUIBannerBmp" Value="Resources\WixUIBannerBmp.bmp" />
+    <!-- <WixVariable Id="WixUIDialogBmp" Value="Resources\WixUIDialogBmp.bmp" /> -->
 
     <!--
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -42,6 +42,7 @@
       <DirectoryRefId>INSTALLFOLDER</DirectoryRefId>
       <ComponentGroupName>ProjectSamples</ComponentGroupName>
       <PreprocessorVariable>var.SamplesDir</PreprocessorVariable>
+      <Link>Samples</Link>
     </HarvestDirectory>
     <HarvestDirectory Include="$(OutputPath)\MsBuild">
       <DirectoryRefId>MsBuildMicrosoftCppv4Dir</DirectoryRefId>
@@ -52,6 +53,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Product.wxs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Resources\EULA.rtf" />
+    <Content Include="Resources\WixUIBannerBmp.bmp" />
+    <Content Include="Resources\WixUIDialogBmp.bmp" />
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" />
   <!--
