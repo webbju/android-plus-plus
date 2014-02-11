@@ -152,6 +152,14 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     public int OnSessionCreate (DebugEngine pEngine, DebuggeeProcess pProcess, DebuggeeProgram pProgram, DebuggeeThread pThread, IDebugEvent2 pEvent, uint dwAttrib)
     {
+      /*IDebugSessionEvent2 debugSessionEvent = (IDebugSessionEvent2)pEvent;
+
+      IDebugSession2 currentDebugSession;
+
+      debugSessionEvent.GetSession (out currentDebugSession);
+
+      debugSession.currentDebugSession = currentDebugSession;*/
+
       throw new NotImplementedException ();
     }
 

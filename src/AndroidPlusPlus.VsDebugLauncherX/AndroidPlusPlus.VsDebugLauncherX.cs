@@ -401,6 +401,26 @@ namespace AndroidPlusPlus.VsDebugLauncherX
 
         debugLaunchSettings.LaunchOptions = options | DebugLaunchOptions.Silent;
 
+        LaunchConfiguration launchConfig = new LaunchConfiguration ();
+
+        launchConfig ["TargetApk"] = debuggerTargetApk;
+
+        launchConfig ["PackageName"] = applicationPackageName;
+
+        launchConfig ["LaunchActivity"] = debuggerCustomLaunchActivity;
+
+        launchConfig ["KeepAppData"] = debuggerKeepAppData;
+
+        launchConfig ["DebugMode"] = debuggerDebugMode;
+
+        launchConfig ["OpenGlTrace"] = debuggerOpenGlTrace;
+
+        launchConfig ["GdbTool"] = debuggerGdbTool;
+
+        launchConfig ["LibraryPaths"] = StringUtils.ConvertPathWindowsToPosix (debuggerLibraryPaths);
+
+        debugLaunchSettings.Options = launchConfig.ToString ();
+
         if (shouldAttach)
         {
           debugLaunchSettings.Executable = applicationPackageName;
@@ -417,26 +437,6 @@ namespace AndroidPlusPlus.VsDebugLauncherX
           debugLaunchSettings.Executable = debuggerTargetApk;
 
           debugLaunchSettings.LaunchOperation = DebugLaunchOperation.Custom;
-
-          LaunchConfiguration launchConfig = new LaunchConfiguration ();
-
-          launchConfig ["TargetApk"] = debuggerTargetApk;
-
-          launchConfig ["PackageName"] = applicationPackageName;
-
-          launchConfig ["LaunchActivity"] = debuggerCustomLaunchActivity;
-
-          launchConfig ["KeepAppData"] = debuggerKeepAppData;
-
-          launchConfig ["DebugMode"] = debuggerDebugMode;
-
-          launchConfig ["OpenGlTrace"] = debuggerOpenGlTrace;
-
-          launchConfig ["GdbTool"] = debuggerGdbTool;
-
-          launchConfig ["LibraryPaths"] = StringUtils.ConvertPathWindowsToPosix (debuggerLibraryPaths);
-
-          debugLaunchSettings.Options = launchConfig.ToString ();
         }
       }
       catch (Exception e)

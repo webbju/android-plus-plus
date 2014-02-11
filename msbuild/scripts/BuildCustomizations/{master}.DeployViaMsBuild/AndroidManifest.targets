@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <ItemGroup>
+    <PropertyPageSchema Include="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml" />
+  </ItemGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <UsingTask TaskName="AndroidManifestMerge" AssemblyFile="$(VCTargetsPath)\Platforms\{master}\{master-verbose}.MsBuild.DeployTasks.dll" />
+
+  <UsingTask TaskName="AndroidAaptPackage" AssemblyFile="$(VCTargetsPath)\Platforms\{master}\{master-verbose}.MsBuild.DeployTasks.dll" />
+
+  <UsingTask TaskName="VCMessage" AssemblyName="Microsoft.Build.CppTasks.Common, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <PropertyGroup>
+
+    <ComputeAndroidManifestInputsTargets>$(ComputeAndroidManifestInputsTargets);</ComputeAndroidManifestInputsTargets>
+
+    <CleanDependsOn>$(CleanDependsOn);CleanAndroidManifest;</CleanDependsOn>
+
+  </PropertyGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <!-- 
+    First-pass processing of AndroidManifest.xml files and associated resources.
+    - AAPT tool exports specified asset directories to R.java sources, containing Id constants.
+  -->
+
+  <Target
+    Name="AndroidManifest"
+    Condition="'@(AndroidManifest)' != ''"
+    BeforeTargets="$(AndroidManifestBeforeTargets)"
+    AfterTargets="$(AndroidManifestAfterTargets)"
+    DependsOnTargets="ClCompile;$(ComputeAndroidManifestInputsTargets)">
+
+    <!-- 
+      Only request APK output for Application targets. 
+    -->
+
+    <ItemGroup>
+      <AndroidManifest>
+        <MinimalRebuildFromTracking Condition="'%(AndroidManifest.MinimalRebuildFromTracking)' == '' and '$(BuildType)' == 'Build' and '$(ForceRebuild)' != 'true'">true</MinimalRebuildFromTracking>
+        <ApkOutputFile Condition="'%(AndroidManifest.ApkOutputFile)' == '' AND '$(ConfigurationType)' == 'Application'">$(IntDir)bin\_AndroidManifest.apk</ApkOutputFile>
+      </AndroidManifest>
+    </ItemGroup>
+
+    <!-- 
+      Ensure required output directories exist.
+    -->
+
+    <MakeDir 
+      Directories="%(AndroidManifest.ResourceConstantsOutputDirectory);
+        $([System.IO.Path]::GetDirectoryName(%(AndroidManifest.ProguardOptionsOutputFile)));
+        %(AndroidManifest.OutputTextSymbols);
+        $([System.IO.Path]::GetDirectoryName(%(AndroidManifest.ApkOutputFile)))" 
+    />
+
+    <!-- 
+      Merge Application and Library variants. Solves a number of problems with resources and dependencies. 
+    -->
+
+    <AndroidManifestMerge Manifests="@(AndroidManifest)">
+      <Output TaskParameter="MergedManifest" ItemName="AndroidManifestMergedManifest" />
+      <Output TaskParameter="PackageName" PropertyName="AndroidManifestMergedManifestPackageName" />
+    </AndroidManifestMerge>
+
+    <!-- 
+      Invoke AAPT tool to generate resource constants, and an APK if this module is an Application. 
+    -->
+
+    <AndroidAaptPackage
+      Condition="'@(AndroidManifestMergedManifest)' != ''"
+      BuildingInIDE="$(BuildingInsideVisualStudio)"
+      Sources="@(AndroidManifestMergedManifest)"
+      TrackerLogDirectory="%(AndroidManifest.TrackerLogDirectory)"
+      TrackFileAccess="$(TrackFileAccess)"
+      MinimalRebuildFromTracking="%(AndroidManifest.MinimalRebuildFromTracking)"
+      OutputCommandLine="%(AndroidManifest.OutputCommandLine)"
+      ToolPath="$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)"
+      ToolExe="aapt.exe"
+      PropertiesFile="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml">
+      <Output TaskParameter="OutputApk" ItemName="AndroidManifestOutputApk" />
+      <Output TaskParameter="OutputFiles" ItemName="AndroidManifestOutputFiles" />
+    </AndroidAaptPackage>
+
+    <!-- 
+      Generate a 'BuildConfig.java' to identify which configuration is building 
+    -->
+
+    <PropertyGroup>
+      <Semicolon>%3B</Semicolon>
+      <Space>%20</Space>
+      <CRLF>%0D%0A</CRLF>
+      <BuildConfigIsDebug>false</BuildConfigIsDebug>
+      <BuildConfigIsRelease>false</BuildConfigIsRelease>
+      <BuildConfigIsDebug Condition="'$(Configuration)' == 'Debug'">true</BuildConfigIsDebug>
+      <BuildConfigIsRelease Condition="'$(Configuration)' == 'Release'">true</BuildConfigIsRelease>
+      <BuildConfigOutputPath>%(AndroidManifest.ResourceConstantsOutputDirectory)\$(AndroidManifestMergedManifestPackageName.Replace('.','\'))</BuildConfigOutputPath>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(BuildConfigOutputPath)" />
+
+    <WriteLinesToFile
+      File="$(BuildConfigOutputPath)\BuildConfig.java"
+      Lines="// This file is automatically generated, modifications will be overwritten.;
+      package $(AndroidManifestMergedManifestPackageName)$(Semicolon);
+      public class BuildConfig {;
+      $(Space)$(Space)public static final boolean DEBUG = $(BuildConfigIsDebug)$(Semicolon);
+      $(Space)$(Space)public static final boolean RELEASE = $(BuildConfigIsRelease)$(Semicolon);
+      };"
+      Overwrite="true"
+    />
+    <!-- and its dependency file -->
+    <WriteLinesToFile 
+      File="$(BuildConfigOutputPath)\BuildConfig.java.d" 
+      Lines="$(BuildConfigOutputPath)\BuildConfig.java: \;
+      @(AndroidManifestMergedManifest, ' \$(CRLF)')" 
+      Overwrite="true" 
+    />
+
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target
+    Name="ComputeAndroidManifestOutput"
+    DependsOnTargets="AndroidManifest">
+    <ItemGroup Condition="'@(AndroidManifest)' != ''">
+      <!-- Add R.java and BuildConfig.java outputs to the compilation list. Reorder AndroidJava so that these appear first (helps with dependencies) -->
+      <AndroidJavaReorderCache Include="@(AndroidJava)" />
+      <AndroidJava Remove="@(AndroidJava)" />
+      <AndroidJava 
+        Include="@(AndroidManifestOutputFiles->ClearMetadata()->Distinct());
+          $(BuildConfigOutputPath)\BuildConfig.java;
+          @(AndroidJavaReorderCache->ClearMetadata()->Distinct())"
+        Exclude="@(AndroidManifestOutputApk)"
+      />
+    </ItemGroup>
+
+    <Message Text="ComputeAndroidManifestOutput: @(AndroidJava)" Importance="low" />
+    
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target Name="CleanAndroidManifest">
+
+    <ItemGroup>
+      <CleanAndroidManifestCache
+        Include="
+        $(IntDir)bin\*.apk;
+        $(IntDir)bin\*.apk.d;
+        $(IntDir)bin\*.txt;
+        $(IntDir)gen\**\*.java;
+        $(IntDir)gen\**\*.java.d;"
+      />
+    </ItemGroup>
+
+    <Delete Files="@(CleanAndroidManifestCache)" />
+
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+</Project>

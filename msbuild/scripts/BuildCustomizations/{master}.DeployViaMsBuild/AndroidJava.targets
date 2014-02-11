@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <ItemGroup>
+    <PropertyPageSchema Include="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml" />
+  </ItemGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <UsingTask TaskName="JavaCompile" AssemblyFile="$(VCTargetsPath)\Platforms\{master}\{master-verbose}.MsBuild.DeployTasks.dll" />
+
+  <UsingTask TaskName="JavaArchive" AssemblyFile="$(VCTargetsPath)\Platforms\{master}\{master-verbose}.MsBuild.DeployTasks.dll" />
+
+  <UsingTask TaskName="VCMessage" AssemblyName="Microsoft.Build.CppTasks.Common, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <PropertyGroup>
+
+    <ComputeAndroidJavaInputsTargets>$(ComputeAndroidJavaInputsTargets);ComputeAndroidManifestOutput;</ComputeAndroidJavaInputsTargets>
+
+    <CleanDependsOn>$(CleanDependsOn);CleanAndroidJava;</CleanDependsOn>
+
+  </PropertyGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target
+    Name="AndroidJava"
+    BeforeTargets="$(AndroidJavaBeforeTargets)"
+    AfterTargets="$(AndroidJavaAfterTargets)"
+    DependsOnTargets="$(ComputeAndroidJavaInputsTargets)">
+
+    <!-- 
+      Ensure requested output directories exist 
+    -->
+
+    <MakeDir 
+      Condition="'@(AndroidJava)' != ''" 
+      Directories="%(AndroidJava.ClassOutputDirectory);%(AndroidJava.SourceOutputDirectory)" 
+    />
+
+    <!-- 
+      Flag sources for incremental build 
+    -->
+
+    <ItemGroup>
+      <AndroidJava Condition="'@(AndroidJava)' != ''">
+        <MinimalRebuildFromTracking Condition="'%(AndroidJava.MinimalRebuildFromTracking)' == '' and '$(BuildType)' == 'Build' and '$(ForceRebuild)' != 'true'">true</MinimalRebuildFromTracking>
+      </AndroidJava>
+    </ItemGroup>
+
+    <!-- 
+      Compile all explicit and generated .java sources. Outputs a list of absolute locations to generated .class files. 
+    -->
+
+    <ItemGroup Condition="'@(AndroidJava)' != ''">
+      <AndroidJavaJars Include="@(AndroidJava)" Condition="'%(Extension)' =='.jar'" />
+      <AndroidJava Remove="@(AndroidJavaJars)" />
+      <AndroidJava>
+        <ClassPaths>@(AndroidJavaJars->Metadata('FullPath')->Distinct());%(AndroidJava.ClassPaths);</ClassPaths>
+      </AndroidJava>
+    </ItemGroup>
+
+    <JavaCompile
+      BuildingInIDE="$(BuildingInsideVisualStudio)"
+      Condition="'@(AndroidJava)' != ''"
+      Sources="@(AndroidJava)"
+      TrackerLogDirectory="%(AndroidJava.TrackerLogDirectory)"
+      TrackFileAccess="$(TrackFileAccess)"
+      MinimalRebuildFromTracking="%(AndroidJava.MinimalRebuildFromTracking)"
+      OutputCommandLine="%(AndroidJava.OutputCommandLine)"
+      ToolPath="$(VCTargetsPath)\Platforms\{master}\Toolchain\bin"
+      ToolExe="app-javac-dependencies.exe"
+      JavaHomeDir="$(JavaHomeDir)"
+      PropertiesFile="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml">
+      <Output TaskParameter="OutputFiles" ItemName="AndroidJavaOutputClassFiles" />
+      <Output TaskParameter="OutputClassPaths" ItemName="AndroidJavaOutputClassPaths" />
+      <Output TaskParameter="SkippedExecution" PropertyName="AndroidJavaSkippedExecution" />
+    </JavaCompile>
+
+    <!--
+      When requested, archive the exported class files. This is only usually relevant for building library projects.
+    -->
+
+    <JavaArchive
+      BuildingInIDE                  ="$(BuildingInsideVisualStudio)"
+      Condition                      ="'%(AndroidJava.JarOutputFile)' != '' and '@(AndroidJavaOutputClassFiles)' != ''"
+      Sources                        ="@(AndroidJavaOutputClassFiles)"
+      TrackerLogDirectory            ="%(AndroidJava.TrackerLogDirectory)"
+      TrackFileAccess                ="$(TrackFileAccess)"
+      MinimalRebuildFromTracking     ="%(AndroidJava.MinimalRebuildFromTracking)"
+      OutputCommandLine              ="%(AndroidJava.OutputCommandLine)"
+      ToolPath                       ="$(JavaHomeDir)\bin"
+      ToolExe                        ="jar.exe"
+      OutputFile                     ="%(AndroidJava.JarOutputFile)"
+      ManifestFile                   ="%(AndroidJava.JarManifestFile)"
+      PropertiesFile                 ="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml">
+      <Output TaskParameter="OutputFiles" ItemName="AndroidJavaOutputJarFiles" />
+      <Output TaskParameter="SkippedExecution" PropertyName="AndroidJavaArchiveSkippedExecution" />
+    </JavaArchive>
+
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target
+    Name="ComputeAndroidJavaOutput"
+    DependsOnTargets="AndroidJava">
+
+    <ItemGroup Condition="'@(AndroidJavaOutputClassPaths)' != ''">
+      <AndroidDalvik Include="@(AndroidJavaOutputClassPaths->ClearMetadata()->Distinct());
+        @(AndroidJavaJars->ClearMetadata()->Distinct())" 
+      />
+    </ItemGroup>
+
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target Name="CleanAndroidJava">
+
+    <ItemGroup>
+      <CleanAndroidJavaCache 
+        Include="
+        $(IntDir)bin\classes\**\*.class;
+        $(IntDir)bin\classes\**\*.class.d;
+        $(IntDir)gen\**\*.class;
+        $(IntDir)gen\**\*.class.d;" 
+      />
+    </ItemGroup>
+
+    <Delete Files="@(CleanAndroidJavaCache)" />
+
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+</Project>

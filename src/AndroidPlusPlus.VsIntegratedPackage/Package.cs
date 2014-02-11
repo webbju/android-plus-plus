@@ -164,7 +164,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       // 
       // Sanity type checking.
       // 
-
+#if false
       try
       {
         /*if (typeof (AndroidPlusPlus.VsIntegratedPackage.Package) != System.Type.GetTypeFromCLSID (Guids.guidAndroidPlusPlusPackageCLSID))
@@ -228,6 +228,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       {
         Trace.WriteLine ("Failed to added AndroidMT to HKLM AD7Metrics.");
       }*/
+#endif
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -236,6 +237,8 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     protected override void Dispose (bool disposing)
     {
+      LoggingUtils.PrintFunction ();
+
       DisposeTraceListeners ();
     }
 
@@ -245,6 +248,8 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     void InitialiseInterfaceListeners ()
     {
+      LoggingUtils.PrintFunction ();
+
       OleMenuCommandService menuCommandService = GetService (typeof (IMenuCommandService)) as OleMenuCommandService;
 
       m_interfaceEventListener = new InterfaceEventListener (this);
@@ -258,6 +263,8 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     void InitialiseTraceListeners ()
     {
+      LoggingUtils.PrintFunction ();
+
       string traceLog = Path.ChangeExtension (Assembly.GetExecutingAssembly ().Location, ".log");
 
       Trace.WriteLine ("[Package] Trace Log: " + traceLog);
@@ -273,6 +280,10 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     void DisposeTraceListeners ()
     {
+      LoggingUtils.PrintFunction ();
+
+      Trace.Flush ();
+
       Trace.Listeners.Remove (m_traceWriterListener);
 
       m_traceWriterListener.Close ();
@@ -289,6 +300,8 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       // 
       // Aquire VisualStudio service references.
       // 
+
+      LoggingUtils.PrintFunction ();
 
       DTE dteService = GetService (typeof (SDTE)) as DTE;
 
@@ -346,7 +359,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     [Obsolete("Visual Studio 2005+ no longer calls this method.")]
     int IVsInstalledProduct.IdBmpSplash (out uint pIdBmp) 
     {
-      throw new NotImplementedException ();
+      pIdBmp = 400;
+
+      return VSConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -357,7 +372,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     {
       pbstrName = "Android++";
 
-      return 0;
+      return VSConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -366,9 +381,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     int IVsInstalledProduct.ProductID (out string pbstrPID)
     {
-      pbstrPID = "1.0";
+      pbstrPID = Assembly.GetExecutingAssembly ().GetName ().Version.ToString ();
 
-      return 0;
+      return VSConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -377,9 +392,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     int IVsInstalledProduct.ProductDetails (out string pbstrProductDetails)
     {
-      pbstrProductDetails = "Provides support for native compilation and debugging within VisualStudio.";
+      pbstrProductDetails = "Native development and debugging extension for Visual Studio.";
 
-      return 0;
+      return VSConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -390,7 +405,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     {
       pIdIco = 400;
 
-      return 0;
+      return VSConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

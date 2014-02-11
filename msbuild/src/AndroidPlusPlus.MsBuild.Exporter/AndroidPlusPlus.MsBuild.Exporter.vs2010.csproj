@@ -1,0 +1,183 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{3B52636E-6536-4DA7-B5DD-CD8353049CB9}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>AndroidPlusPlus.MsBuild.Exporter</RootNamespace>
+    <AssemblyName>AndroidPlusPlus.MsBuild.Exporter</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\build\vs2010\bin\$(Configuration)\</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\vs2010\obj\$(Configuration)\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\build\vs2010\bin\$(Configuration)\</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\vs2010\obj\$(Configuration)\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\AndroidPlusPlus.Common\Properties\SharedAssemblyInfo.cs">
+      <Link>Properties\SharedAssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild.props" />
+    <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild.targets" />
+    <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidApk.props" />
+    <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidApk.targets" />
+    <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidApkSign.props" />
+    <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidApkSign.targets" />
+    <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidDalvik.props" />
+    <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidDalvik.targets">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidJava.props">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidJava.targets" />
+    <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidManifest.props" />
+    <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidManifest.targets" />
+    <None Include="Templates\Platforms\{master}\ImportAfter\{master}.targets" />
+    <None Include="Templates\Platforms\{master}\ImportAfter\{master}Debugger.props" />
+    <None Include="Templates\Platforms\{master}\ImportBefore\{master}Debugger.props" />
+    <None Include="Templates\Platforms\{master}\Microsoft.Cpp.{master}.default.props" />
+    <None Include="Templates\Platforms\{master}\Microsoft.Cpp.{master}.props">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Templates\Platforms\{master}\Microsoft.Cpp.{master}.targets" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\4.6\{master}.Cpp.4.6.props" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\4.6\{master}.Cpp.4.6.targets" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\4.8\{master}.Cpp.4.8.props" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\4.8\{master}.Cpp.4.8.targets" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\clang3.3\{master}.Cpp.clang3.3.props" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\clang3.3\{master}.Cpp.clang3.3.targets" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\{master}.Cpp.armv5te.default.props" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\{master}.Cpp.armv7-a.default.props" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\{master}.Cpp.mips.default.props" />
+    <None Include="Templates\Platforms\{master}\PlatformToolsets\{master}.Cpp.x86.default.props" />
+    <None Include="Templates\Platforms\{master}\{master}.AndroidNdk.default.props" />
+    <None Include="Templates\Platforms\{master}\{master}.AndroidSdk.default.props" />
+    <None Include="Templates\Platforms\{master}\{master}.CppBuild.targets">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Templates\Platforms\{master}\{master}.Paths.default.props" />
+    <None Include="Templates\Platforms\{master}\{master}.Toolset.default.props" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidManifest.xml" />
+    <None Include="Templates\Platforms\{master}\ImportAfter\{master}Debugger.xml" />
+    <None Include="Templates\Platforms\{master}\Props\custom_general.xml">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Templates\Platforms\{master}\Props\custom_general_ps.xml" />
+    <None Include="Templates\Platforms\{master}\Props\custom_project_items_schema.xml" />
+    <None Include="Templates\Platforms\{master}\Props\gcc_compile.xml" />
+    <None Include="Templates\Platforms\{master}\Props\gcc_directories.xml" />
+    <None Include="Templates\Platforms\{master}\Props\gcc_lib.xml" />
+    <None Include="Templates\Platforms\{master}\Props\gcc_link.xml" />
+    <None Include="Templates\Platforms\{master}\{master-verbose}.MsBuild.Common.dll" />
+    <None Include="Templates\Platforms\{master}\{master-verbose}.MsBuild.CppTasks.dll" />
+    <None Include="Templates\Platforms\{master}\{master-verbose}.MsBuild.DeployTasks.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.0,Profile=Client">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4 Client Profile %28x86 and x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Windows.Installer.3.1">
+      <Visible>False</Visible>
+      <ProductName>Windows Installer 3.1</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidApk.xml" />
+    <Content Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidApkSign.xml" />
+    <Content Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidDalvik.xml" />
+    <Content Include="Templates\BuildCustomizations\{master}.DeployViaMsBuild\AndroidJava.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Templates\Platforms\{master}\Toolchain\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>copy /y /b "$(ProjectDir)\$(OutDir)AndroidPlusPlus.MsBuild.Common.dll" "$(ProjectDir)Templates\Platforms\{master}\{master-verbose}.MsBuild.Common.dll"
+copy /y /b "$(ProjectDir)\$(OutDir)AndroidPlusPlus.MsBuild.CppTasks.dll" "$(ProjectDir)Templates\Platforms\{master}\{master-verbose}.MsBuild.CppTasks.dll"
+copy /y /b "$(ProjectDir)\$(OutDir)AndroidPlusPlus.MsBuild.DeployTasks.dll" "$(ProjectDir)Templates\Platforms\{master}\{master-verbose}.MsBuild.DeployTasks.dll"
+cmd /c xcopy "$(ProjectDir)..\..\toolchain\bin\*" "$(ProjectDir)Templates\Platforms\{master}\Toolchain\bin\" /i /s /e /y
+cmd /c xcopy "$(ProjectDir)..\..\toolchain\include\*" "$(ProjectDir)Templates\Platforms\{master}\Toolchain\include\" /i /s /e /y
+cmd /c xcopy "$(ProjectDir)..\..\toolchain\lib\*" "$(ProjectDir)Templates\Platforms\{master}\Toolchain\lib\" /i /s /e /y
+</PreBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PostBuildEvent>cmd /c rmdir "$(ProjectDir)$(OutDir)MsBuild\" /s /q
+$(TargetPath) --template-dir $(ProjectDir)Templates --export-dir $(ProjectDir)$(OutDir)MsBuild\ --vs-version 2010
+  </PostBuildEvent>
+  </PropertyGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

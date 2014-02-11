@@ -158,7 +158,7 @@ namespace AndroidPlusPlus.Common
         {
           if (process.Name.Contains ("lib/gdbserver"))
           {
-            Trace.WriteLine (string.Format ("[GdbServer] Killing existing debugging session: ({0}.", process.Name));
+            Trace.WriteLine (string.Format ("[GdbServer] Killing existing debugging session: ({0}).", process.Name));
 
             m_gdbSetup.Process.HostDevice.Shell (string.Format ("run-as {0}", process.Name), string.Format ("kill -9 {0}", process.Pid));
           }

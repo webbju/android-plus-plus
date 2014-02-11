@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+  
+  <PropertyGroup Condition="'$(AndroidApkSignBeforeTargets)' == '' and '$(AndroidApkSignAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
+  
+    <AndroidApkSignBeforeTargets>Midl</AndroidApkSignBeforeTargets>
+    
+    <AndroidApkSignAfterTargets>CustomBuild</AndroidApkSignAfterTargets>
+    
+  </PropertyGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <ItemDefinitionGroup>
+
+    <AndroidApkSign>
+
+      <Keystore Condition="'%(AndroidApkSign.Keystore)' == ''">$(USERPROFILE)\.android\debug.keystore</Keystore>
+
+      <KeystorePass Condition="'%(AndroidApkSign.KeystorePass)' == ''">android</KeystorePass>
+
+      <KeystoreType Condition="'%(AndroidApkSign.KeystoreType)' == ''"></KeystoreType>
+
+      <PrivateKeyPassword Condition="'%(AndroidApkSign.PrivateKeyPassword)' == ''"></PrivateKeyPassword>
+
+      <SignatureFile Condition="'%(AndroidApkSign.SignatureFile)' == ''"></SignatureFile>
+
+      <DigestAlgorithm Condition="'%(AndroidApkSign.DigestAlgorithm)' == ''">SHA1</DigestAlgorithm>
+
+      <SignatureAlgorithm Condition="'%(AndroidApkSign.SignatureAlgorithm)' == ''">SHA1withRSA</SignatureAlgorithm>
+
+      <DisplayCertificates Condition="'%(AndroidApkSign.DisplayCertificates)' == ''">false</DisplayCertificates>
+
+      <SignedOutputFile Condition="'%(AndroidApkSign.SignedOutputFile)' == ''">$(IntDir)bin\$(ProjectName)-$(Configuration)-Unaligned.apk</SignedOutputFile>
+
+      <SignedAlignedOutputFile Condition="'%(AndroidApkSign.AlignedOutputFile)' == ''">$(OutDir)$(ProjectName)-$(Configuration).apk</SignedAlignedOutputFile>
+
+      <CommandLineUnsignedJar Condition="'%(AndroidApkSign.CommandLineUnsignedJar)' == ''"></CommandLineUnsignedJar>
+
+      <KeystoreAlias Condition="'%(AndroidApkSign.KeystoreAlias)' == ''">androiddebugkey</KeystoreAlias>
+
+      <OutputCommandLine Condition="'%(AndroidApkSign.OutputCommandLine)' == ''">false</OutputCommandLine>
+
+      <TrackerLogDirectory Condition="'%(AndroidApkSign.TrackerLogDirectory)' == ''">$(IntDir)</TrackerLogDirectory>
+
+    </AndroidApkSign>
+
+  </ItemDefinitionGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+</Project>

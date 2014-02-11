@@ -343,7 +343,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         pdwFlags [0] = 0;
 
-        pbstrText = "Not implemented";
+        pbstrText = "---";
       }
       catch (Exception e)
       {
