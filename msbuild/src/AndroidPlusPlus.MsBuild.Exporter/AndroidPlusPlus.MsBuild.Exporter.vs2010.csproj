@@ -98,6 +98,9 @@
   </PropertyGroup>
   <PropertyGroup>
     <PostBuildEvent>cmd /c rmdir "$(ProjectDir)$(OutDir)..\..\scripts\" /s /q
+cmd /c xcopy "$(ProjectDir)..\..\toolchain\bin\*" "$(ProjectDir)..\..\scripts\Platforms\{master}\Toolchain\bin\" /i /s /e /y
+cmd /c xcopy "$(ProjectDir)..\..\toolchain\include\*" "$(ProjectDir)..\..\scripts\Platforms\{master}\Toolchain\include\" /i /s /e /y
+cmd /c xcopy "$(ProjectDir)..\..\toolchain\lib\*" "$(ProjectDir)..\..\scripts\Platforms\{master}\Toolchain\lib\" /i /s /e /y
 $(TargetPath) --template-dir $(ProjectDir)..\..\scripts\ --export-dir $(ProjectDir)$(OutDir)..\..\scripts\ --vs-version 2010</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
