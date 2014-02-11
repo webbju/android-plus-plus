@@ -1,6 +1,0 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <StartArguments>--jdk-home "C:\Program Files (x86)\Java\jdk1.6.0_34" -bootclasspath L:\dev\buildtools\android-sdk-windows\platforms\android-16\android.jar -sourcepath L:\dev\projects\android-plus-plus\samples\hello-gdbserver\Android++\Debug\gen -classpath L:\dev\projects\android-plus-plus\samples\hello-gdbserver\Android++\Debug\gen L:\dev\projects\android-plus-plus\samples\hello-gdbserver\src\com\example\hellogdbserver\HelloGdbServer.java -verbose</StartArguments>
-  </PropertyGroup>
-</Project>
