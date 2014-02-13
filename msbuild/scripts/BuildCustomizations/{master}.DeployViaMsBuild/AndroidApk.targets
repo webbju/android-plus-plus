@@ -115,7 +115,7 @@
       Add registered files to the final APK using a 7zip deployment (significantly faster than AAPT). 
     -->
 
-    <ItemGroup Condition="'@(AndroidApk)' != ''">
+    <ItemGroup>
       <AndroidApkUnsignedOutputFile Include="%(AndroidApk.UnsignedOutputFile)"/>
     </ItemGroup>
 

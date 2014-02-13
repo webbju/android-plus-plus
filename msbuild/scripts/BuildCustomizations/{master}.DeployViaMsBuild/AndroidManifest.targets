@@ -162,9 +162,6 @@
         Exclude="@(AndroidManifestOutputApk)"
       />
     </ItemGroup>
-
-    <Message Text="ComputeAndroidManifestOutput: @(AndroidJava)" Importance="low" />
-    
   </Target>
 
   <!--
