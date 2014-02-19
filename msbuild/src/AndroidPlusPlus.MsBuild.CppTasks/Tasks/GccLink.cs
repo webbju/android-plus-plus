@@ -46,19 +46,35 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
 
     protected override string GenerateResponseFileCommands ()
     {
-      StringBuilder responseFileCommands = new StringBuilder (GccUtilities.CommandLineLength);
-
       // 
       // In *theory* linker settings are the same for all sources, so just query them from the first file.
       // 
 
-      responseFileCommands.Append (m_parsedProperties.Parse (Sources [0]));
+      StringBuilder responseFileCommands = new StringBuilder (GccUtilities.CommandLineLength);
+
+      StringBuilder sourceLibraryDependencies = new StringBuilder ();
 
       // 
-      // We want GCC to behave more like visual studio in term of library dependencies
-      // so we wrap all the inputs (libraries and object) into one group so they are
-      // searched iteratively.
+      // We require GCC to behave more like Visual Studio in terms of library dependencies.
+      // - Here we filter object file and specified libraries so that they are contained with in -Wl,--start-group/--end-group
+      // - This tends to fix cyclic dependencencies as undefined symbols are continually re-evaualted for each library in turn.
       // 
+
+      string derivedSourceProperties = m_parsedProperties.Parse (Sources [0]);
+
+      string [] responseFileArguments = derivedSourceProperties.Split (new char [] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+      foreach (string arg in responseFileArguments)
+      {
+        if (arg.StartsWith ("-l"))
+        {
+          sourceLibraryDependencies.Append (arg + " ");
+        }
+        else
+        {
+          responseFileCommands.Append (arg + " ");
+        }
+      }
 
       responseFileCommands.Append (" -Wl,--start-group ");
 
@@ -66,6 +82,8 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
       {
         responseFileCommands.Append (GccUtilities.ConvertPathWindowsToPosix (source.GetMetadata ("FullPath")) + " ");
       }
+
+      responseFileCommands.Append (sourceLibraryDependencies.ToString ());
 
       responseFileCommands.Append (" -Wl,--end-group ");
 
