@@ -73,8 +73,12 @@
     <MakeDir 
       Directories="%(AndroidManifest.ResourceConstantsOutputDirectory);
         $([System.IO.Path]::GetDirectoryName(%(AndroidManifest.ProguardOptionsOutputFile)));
-        %(AndroidManifest.OutputTextSymbols);
-        $([System.IO.Path]::GetDirectoryName(%(AndroidManifest.ApkOutputFile)))" 
+        %(AndroidManifest.OutputTextSymbols)" 
+    />
+
+    <MakeDir 
+      Condition="'%(AndroidManifest.ApkOutputFile)' != ''" 
+      Directories="$([System.IO.Path]::GetDirectoryName(%(AndroidManifest.ApkOutputFile)))" 
     />
 
     <!-- 
