@@ -78,6 +78,19 @@
 
   </EnumProperty>
 
+  <!-- 
+    AdditionalIncludeDirectories
+  -->
+
+  <StringListProperty
+    Subtype="folder"
+    Name="AdditionalIncludeDirectories"
+    DisplayName="Additional Include Directories"
+    Description="Specifies one or more directories to add to the include path; separate with semi-colons if more than one.     (-I[path])"
+    Category="General"
+    Switch="-I"
+  />
+  
   <!--
     GenerateDebuggingInformation
   -->
@@ -475,19 +488,6 @@
     DisplayName="System Include Directories"
     Description="Specifies one or more directories to add to the include path; separate with semi-colons if more than one.     (-I[path])"
     Category="Advanced"
-    Switch="-I"
-  />
-  
-  <!-- 
-    AdditionalIncludeDirectories
-  -->
-
-  <StringListProperty
-    Subtype="folder"
-    Name="AdditionalIncludeDirectories"
-    DisplayName="Additional Include Directories"
-    Description="Specifies one or more directories to add to the include path; separate with semi-colons if more than one.     (-I[path])"
-    Category="General"
     Switch="-I"
   />
 
