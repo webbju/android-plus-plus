@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{c6e6069c-9b78-4737-ac53-08fa6d52e27b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\common.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="contrib\sdl\src\main\android\SDL_android_main.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\fireworks.c">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\common.h">
+      <Filter>src</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidManifest Include="AndroidManifest.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidJava Include="src\DemoActivity.java">
+      <Filter>src</Filter>
+    </AndroidJava>
+    <AndroidJava Include="contrib\sdl\src\main\android\SDLActivity.java">
+      <Filter>src</Filter>
+    </AndroidJava>
+  </ItemGroup>
+</Project>
