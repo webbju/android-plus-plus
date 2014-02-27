@@ -56,7 +56,7 @@
 
     <ExecutablePath Condition="'$(ExecutablePath)' == ''">$(AndroidNdkRoot)\prebuilt\windows\bin;$(VCTargetsPath)\Platforms\{master}\Toolchain\bin;$(PATH);</ExecutablePath>
 
-    <IncludePath Condition="'$(IncludePath)' == ''">$(PlatformToolsetSysRoot)\usr\include;$(PlatformToolsetPrebuilt)\include;$(VCTargetsPath)\Platforms\{master}\Toolchain\include;</IncludePath>
+    <IncludePath Condition="'$(IncludePath)' == ''">$(PlatformToolsetSysRoot)\usr\include;$(PlatformToolsetPrebuilt)\include;$(PlatformToolsetPrebuilt)\lib\gcc\include;$(PlatformToolsetPrebuilt)\lib\gcc\include-fixed;$(VCTargetsPath)\Platforms\{master}\Toolchain\include;</IncludePath>
 
     <ReferencePath Condition="'$(ReferencePath)' == ''"></ReferencePath>
 
