@@ -58,6 +58,7 @@
     <Compile Include="Tasks\AndroidAidl.cs" />
     <Compile Include="Tasks\AndroidDex.cs" />
     <Compile Include="Tasks\AndroidManifestMerge.cs" />
+    <Compile Include="Tasks\AndroidNdkDepends.cs" />
     <Compile Include="Tasks\AndroidZipAlign.cs" />
     <Compile Include="Tasks\JavaArchive.cs" />
     <Compile Include="Tasks\JavaCompile.cs" />
