@@ -23,4 +23,30 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
+  <!-- 
+    Register a additional post-compile, post-link and deployment targets.
+  -->
+
+  <PropertyGroup>
+
+    <AfterBuildCompileTargets Condition="'$(ConfigurationType)'!='Utility'">$(AfterBuildCompileTargets)</AfterBuildCompileTargets>
+
+    <BuildLinkTargets Condition="'$(ConfigurationType)' == 'Application'">
+      $(BuildLinkTargets);
+      AndroidApk;
+      AndroidApkSign;
+    </BuildLinkTargets>
+
+    <BuildCompileAction>$(CommonBuildOnlyTargets);$(BeforeBuildCompileTargets);$(BuildCompileTargets);$(AfterBuildCompileTargets)</BuildCompileAction>
+
+    <BuildLinkAction>$(CommonBuildOnlyTargets);$(BeforeBuildLinkTargets);$(BuildLinkTargets);$(AfterBuildLinkTargets)</BuildLinkAction>
+
+  </PropertyGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
 </Project>
