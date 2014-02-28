@@ -26,11 +26,11 @@
 
     <PlatformToolsetPrebuilt Condition="'$(PlatformToolsetPrebuilt)' == ''">$(PlatformToolsetToolchainFolder)\prebuilt\windows</PlatformToolsetPrebuilt>
 
-    <PlatformToolsetCompileTool>$(TargetPlatformArchitectureToolchainPrefix)-g++.exe</PlatformToolsetCompileTool>
+    <PlatformToolsetCompileTool>$(TargetPlatformArchitectureToolchainToolPrefix)-g++.exe</PlatformToolsetCompileTool>
 
-    <PlatformToolsetLibTool>$(TargetPlatformArchitectureToolchainPrefix)-ar.exe</PlatformToolsetLibTool>
+    <PlatformToolsetLibTool>$(TargetPlatformArchitectureToolchainToolPrefix)-ar.exe</PlatformToolsetLibTool>
 
-    <PlatformToolsetLinkTool>$(TargetPlatformArchitectureToolchainPrefix)-g++.exe</PlatformToolsetLinkTool>
+    <PlatformToolsetLinkTool>$(TargetPlatformArchitectureToolchainToolPrefix)-g++.exe</PlatformToolsetLinkTool>
 
     <PlatformToolsetCompileToolPath>$(PlatformToolsetPrebuilt)\bin</PlatformToolsetCompileToolPath>
 

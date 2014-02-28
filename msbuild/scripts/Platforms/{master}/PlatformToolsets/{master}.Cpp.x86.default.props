@@ -20,9 +20,11 @@
 
     <TargetPlatformArchitectureInstructionSet>x86</TargetPlatformArchitectureInstructionSet>
 
-    <TargetPlatformArchitectureToolchainPrefix>i686-linux-android</TargetPlatformArchitectureToolchainPrefix>
+    <TargetPlatformArchitectureToolchainPrefix>x86</TargetPlatformArchitectureToolchainPrefix>
 
-    <TargetPlatformArchitectureLlvmPlatformTriple>>i686-none-linux-android</TargetPlatformArchitectureLlvmPlatformTriple>
+    <TargetPlatformArchitectureToolchainToolPrefix>i686-linux-android</TargetPlatformArchitectureToolchainToolPrefix>
+
+    <TargetPlatformArchitectureLlvmPlatformTriple>i686-none-linux-android</TargetPlatformArchitectureLlvmPlatformTriple>
 
   </PropertyGroup>
 

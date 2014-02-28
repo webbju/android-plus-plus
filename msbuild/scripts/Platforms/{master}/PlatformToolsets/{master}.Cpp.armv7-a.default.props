@@ -22,6 +22,8 @@
 
     <TargetPlatformArchitectureToolchainPrefix>arm-linux-androideabi</TargetPlatformArchitectureToolchainPrefix>
 
+    <TargetPlatformArchitectureToolchainToolPrefix>arm-linux-androideabi</TargetPlatformArchitectureToolchainToolPrefix>
+
     <TargetPlatformArchitectureLlvmPlatformTriple>$(TargetPlatformArchitectureInstructionSet)-none-linux-androideabi</TargetPlatformArchitectureLlvmPlatformTriple>
 
   </PropertyGroup>

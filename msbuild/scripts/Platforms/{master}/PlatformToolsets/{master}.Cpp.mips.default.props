@@ -22,7 +22,9 @@
 
     <TargetPlatformArchitectureToolchainPrefix>mipsel-linux-android</TargetPlatformArchitectureToolchainPrefix>
 
-    <TargetPlatformArchitectureLlvmPlatformTriple>>mipsel-none-linux-android</TargetPlatformArchitectureLlvmPlatformTriple>
+    <TargetPlatformArchitectureToolchainToolPrefix>mipsel-linux-android</TargetPlatformArchitectureToolchainToolPrefix>
+
+    <TargetPlatformArchitectureLlvmPlatformTriple>mipsel-none-linux-android</TargetPlatformArchitectureLlvmPlatformTriple>
 
   </PropertyGroup>
 

@@ -38,9 +38,9 @@
 
     <PlatformToolsetCompileTool>clang++.exe</PlatformToolsetCompileTool>
 
-    <PlatformToolsetLibTool>$(TargetPlatformArchitectureToolchainPrefix)-ar.exe</PlatformToolsetLibTool>
+    <PlatformToolsetLibTool>$(TargetPlatformArchitectureToolchainToolPrefix)-ar.exe</PlatformToolsetLibTool>
 
-    <PlatformToolsetLinkTool>$(TargetPlatformArchitectureToolchainPrefix)-g++.exe</PlatformToolsetLinkTool>
+    <PlatformToolsetLinkTool>$(TargetPlatformArchitectureToolchainToolPrefix)-g++.exe</PlatformToolsetLinkTool>
 
     <PlatformToolsetCompileToolPath>$(LlvmToolsetPrebuilt)\bin</PlatformToolsetCompileToolPath>
 
