@@ -67,7 +67,7 @@
         $(VCTargetsPath)$(LangID)\custom_build_step.xml;
     "/>
 
-    <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}\Props\gcc_link.xml" Condition="'$(ConfigurationType)' == 'Application' or '$(ConfigurationType)' == 'DynamicLibrary'" />
+    <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}\Props\gcc_link.xml" Condition="('$(ConfigurationType)' == 'Application' or '$(ConfigurationType)' == 'DynamicLibrary')" />
     <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}\Props\gcc_lib.xml" Condition="'$(ConfigurationType)' == 'StaticLibrary'" />
 
   </ItemGroup>
@@ -81,11 +81,13 @@
     </PropertyPageSchema>
   </ItemGroup>
 
+  <!-- Tools that show up in the IDE property pages for .so projects -->
   <ItemGroup Condition="('$(ConfigurationType)' == 'Application' or '$(ConfigurationType)' == 'DynamicLibrary')">
     <ProjectTools Include="Link"/>
     <ProjectTools Include="CustomBuildStep"/>
   </ItemGroup>
 
+  <!-- Tools that show up in the IDE property pages for .a projects -->
   <ItemGroup Condition="'$(ConfigurationType)' == 'StaticLibrary'">
     <ProjectTools Include="Lib"/>
     <ProjectTools Include="CustomBuildStep"/>

@@ -46,6 +46,12 @@
 
     <TrackFileAccess Condition="'$(TrackFileAccess)' == ''">true</TrackFileAccess>
 
+    <!--
+      Adjust target path to incorporate target architecture.
+    -->
+
+    <TargetPath>$([System.IO.Path]::Combine($(ProjectDir),$(OutDir)$(TargetPlatformArchitectureEabi)\$(TargetName)$(TargetExt)))</TargetPath>
+
   </PropertyGroup>
 
   <!--
@@ -134,16 +140,6 @@
     </GccLink>
 
     <Message Condition="'$(LinkSkippedExecution)' == 'false'" Text="$(MSBuildProjectFile) -&gt; @(LinkOutputFiles)" Importance="High" />
-
-    <!--
-      Copy native libraries (for active configuration) and 'gdbserver', if required.
-    -->
-
-    <MakeDir Directories="$(IntDir)libs\$(TargetPlatformArchitectureEabi)" Condition="!exists('$(IntDir)libs\$(TargetPlatformArchitectureEabi)')" />
-
-    <Copy SourceFiles="@(LinkOutputFiles)" DestinationFolder="$(IntDir)libs\$(TargetPlatformArchitectureEabi)" />
-
-    <Copy Condition="'$(Configuration)' == 'Debug'" SourceFiles="$(AndroidNdkRoot)\prebuilt\android-$(TargetPlatformArchitecture)\gdbserver\gdbserver"  DestinationFolder="$(IntDir)libs\$(TargetPlatformArchitectureEabi)" />
 
   </Target>
 

@@ -90,11 +90,11 @@
 
     <Link>
 
-      <OutputFile>$(TargetDir)$(TargetName).so</OutputFile>
+      <OutputFile>$(TargetDir)$(TargetPlatformArchitectureEabi)\$(TargetName).so</OutputFile>
 
       <OutputSharedLibrary Condition="'%(Link.OutputSharedLibrary)' == ''">true</OutputSharedLibrary>
 
-      <OutputSharedLibraryName Condition="'%(Link.OutputSharedLibraryName)' == ''">$(TargetName)</OutputSharedLibraryName>
+      <OutputSharedLibraryName Condition="'%(Link.OutputSharedLibraryName)' == ''">$(TargetName).so</OutputSharedLibraryName>
 
       <OutputCommandLine Condition="'%(Link.OutputCommandLine)' == ''">false</OutputCommandLine>
 
