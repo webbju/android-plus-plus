@@ -9,9 +9,9 @@
   
   <PropertyGroup Condition="'$(AndroidManifestBeforeTargets)' == '' and '$(AndroidManifestAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
   
-    <AndroidManifestBeforeTargets>Midl</AndroidManifestBeforeTargets>
+    <AndroidManifestBeforeTargets></AndroidManifestBeforeTargets>
     
-    <AndroidManifestAfterTargets>CustomBuild</AndroidManifestAfterTargets>
+    <AndroidManifestAfterTargets></AndroidManifestAfterTargets>
     
   </PropertyGroup>
 

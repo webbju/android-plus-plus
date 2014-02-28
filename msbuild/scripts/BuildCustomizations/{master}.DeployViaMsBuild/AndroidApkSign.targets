@@ -59,7 +59,7 @@
     Name="AndroidApkSign"
     BeforeTargets="$(AndroidApkSignBeforeTargets)"
     AfterTargets="$(AndroidApkSignAfterTargets)"
-    DependsOnTargets="AndroidManifest;_Link;_AndroidApkSign;">
+    DependsOnTargets="AndroidApk;_AndroidApkSign;">
 
     <!--
       Duplicate and sign the APK with specified credentials.

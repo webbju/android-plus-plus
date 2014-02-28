@@ -131,9 +131,12 @@
     DependsOnTargets="AndroidJava">
 
     <ItemGroup Condition="'@(AndroidJavaOutputClassPaths)' != ''">
-      <AndroidDalvik Include="@(AndroidJavaOutputClassPaths->ClearMetadata()->Distinct());
-        @(AndroidJavaJars->ClearMetadata()->Distinct())" 
+      <AndroidJavaInputClassPaths Include="%(AndroidJava.ClassPaths)" />
+      <AndroidJavaDistinctClassPaths Include="@(AndroidJavaInputClassPaths->ClearMetadata()->Distinct());
+        @(AndroidJavaOutputClassPaths->ClearMetadata()->Distinct());
+        @(AndroidJavaJars->ClearMetadata()->Distinct());"
       />
+      <AndroidDalvik Include="@(AndroidJavaDistinctClassPaths->ClearMetadata()->Distinct())" />
     </ItemGroup>
 
   </Target>
@@ -147,7 +150,7 @@
   <Target Name="CleanAndroidJava">
 
     <ItemGroup>
-      <CleanAndroidJavaCache 
+      <CleanAndroidJavaCacheFiles 
         Include="
         $(IntDir)bin\classes\**\*.class;
         $(IntDir)bin\classes\**\*.class.d;
@@ -156,7 +159,9 @@
       />
     </ItemGroup>
 
-    <Delete Files="@(CleanAndroidJavaCache)" />
+    <Delete Files="@(CleanAndroidJavaCacheFiles)" />
+
+    <RemoveDir Directories="%(CleanAndroidJavaCacheFiles.RecursiveDir)" />
 
   </Target>
 

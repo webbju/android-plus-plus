@@ -9,9 +9,9 @@
   
   <PropertyGroup Condition="'$(AndroidApkSignBeforeTargets)' == '' and '$(AndroidApkSignAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
   
-    <AndroidApkSignBeforeTargets>Midl</AndroidApkSignBeforeTargets>
+    <AndroidApkSignBeforeTargets></AndroidApkSignBeforeTargets>
     
-    <AndroidApkSignAfterTargets>CustomBuild</AndroidApkSignAfterTargets>
+    <AndroidApkSignAfterTargets>AndroidApk</AndroidApkSignAfterTargets>
     
   </PropertyGroup>
 

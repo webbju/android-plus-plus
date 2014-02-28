@@ -183,7 +183,8 @@
         $(IntDir)bin\*.apk.d;
         $(IntDir)bin\*.txt;
         $(IntDir)gen\**\*.java;
-        $(IntDir)gen\**\*.java.d;"
+        $(IntDir)gen\**\*.java.d;
+        $(IntDir)gen\*.java.d;"
       />
     </ItemGroup>
 

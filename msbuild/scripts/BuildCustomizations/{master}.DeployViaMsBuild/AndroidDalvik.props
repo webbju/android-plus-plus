@@ -9,9 +9,9 @@
   
   <PropertyGroup Condition="'$(AndroidDalvikBeforeTargets)' == '' and '$(AndroidDalvikAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
   
-    <AndroidDalvikBeforeTargets>Midl</AndroidDalvikBeforeTargets>
+    <AndroidDalvikBeforeTargets></AndroidDalvikBeforeTargets>
     
-    <AndroidDalvikAfterTargets>CustomBuild</AndroidDalvikAfterTargets>
+    <AndroidDalvikAfterTargets>AndroidJava</AndroidDalvikAfterTargets>
     
   </PropertyGroup>
 

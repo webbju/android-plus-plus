@@ -9,9 +9,9 @@
   
   <PropertyGroup Condition="'$(AndroidJavaBeforeTargets)' == '' and '$(AndroidJavaAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
   
-    <AndroidJavaBeforeTargets>Midl</AndroidJavaBeforeTargets>
+    <AndroidJavaBeforeTargets></AndroidJavaBeforeTargets>
     
-    <AndroidJavaAfterTargets>CustomBuild</AndroidJavaAfterTargets>
+    <AndroidJavaAfterTargets>AndroidManifest</AndroidJavaAfterTargets>
     
   </PropertyGroup>
 
