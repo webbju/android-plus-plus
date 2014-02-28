@@ -17,6 +17,8 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
+  <UsingTask TaskName="AndroidNdkDepends" AssemblyFile="$(VCTargetsPath)\Platforms\{master}\{master-verbose}.MsBuild.DeployTasks.dll" />
+
   <UsingTask TaskName="VCMessage" AssemblyName="Microsoft.Build.CppTasks.Common, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
 
   <!--
@@ -55,31 +57,66 @@
     Name="AndroidApk"
     BeforeTargets="$(AndroidApkBeforeTargets)"
     AfterTargets="$(AndroidApkAfterTargets)"
-    DependsOnTargets="AndroidManifest;_Link;_AndroidApk;">
+    DependsOnTargets="AndroidManifest;_AndroidApk;">
 
-    <!-- 
-      To ensure old [required] content is not accidentally included, we delete the intermediate dir in order to 'refresh' everything.
-    -->
-
-    <RemoveDir 
-      Condition="'@(AndroidApk)' != '' and exists('%(AndroidApk.IntermediateDirectory)')" 
-      Directories="%(AndroidApk.IntermediateDirectory)"
-    />
-
-    <!-- 
-      Recursively copy native libraries and gdbserver to appropriate architecture paths. 
+    <!--
+      Register first-party (linker output) application library for copying to target architecture libs path.
     -->
 
     <ItemGroup Condition="'@(AndroidApk)' != ''">
-      <_NativeLibs Include="$(IntDir)libs\**\*">
+      <CopyToNativeTargetArchLibs Include="@(LinkOutputFiles)">
         <IntermediateDirectory>%(AndroidApk.IntermediateDirectory)</IntermediateDirectory>
-      </_NativeLibs>
+      </CopyToNativeTargetArchLibs>
     </ItemGroup>
 
+    <!--
+      Register third-party libraries provided through a project .\libs\ directory.
+    -->
+
+    <ItemGroup Condition="'@(AndroidApk)' != ''">
+      <ProjectRelativeNativeLibs Include="$(ProjectDir)libs\$(TargetPlatformArchitectureEabi)\*.so" />
+      <CopyToNativeTargetArchLibs Include="@(ProjectRelativeNativeLibs)" >
+        <IntermediateDirectory>%(AndroidApk.IntermediateDirectory)</IntermediateDirectory>
+      </CopyToNativeTargetArchLibs>
+    </ItemGroup>
+
+    <!--
+      Search for application library (ELF) dependencies. Use 'ndk-depends' to help evaluate this.
+    -->
+
+    <AndroidNdkDepends 
+      Condition="'@(LinkOutputFiles)' != ''" 
+      NdkDependsTool="$(AndroidNdkRoot)\ndk-depends.exe"
+      TargetElfFiles="@(LinkOutputFiles)"
+      LibrarySearchPaths="%(Link.AdditionalLibraryDirectories);"
+      Verbose="false">
+      <Output TaskParameter="DependentLibraries" ItemName="AndroidApkDepedentLibraries" />
+    </AndroidNdkDepends>
+
+    <ItemGroup Condition="'@(AndroidApk)' != ''">
+      <CopyToNativeTargetArchLibs Include="@(AndroidApkDepedentLibraries->Distinct())">
+        <IntermediateDirectory>%(AndroidApk.IntermediateDirectory)</IntermediateDirectory>
+      </CopyToNativeTargetArchLibs>
+    </ItemGroup>
+
+    <!--
+      Copy appropriate target architecture 'gdbserver' instance.
+    -->
+
+    <ItemGroup Condition="'$(Configuration)' != 'Release' and '@(AndroidApk)' != ''">
+      <CopyToNativeTargetArchLibs Include="$(AndroidNdkRoot)\prebuilt\android-$(TargetPlatformArchitecture)\gdbserver\gdbserver">
+        <IntermediateDirectory>%(AndroidApk.IntermediateDirectory)</IntermediateDirectory>
+      </CopyToNativeTargetArchLibs>
+    </ItemGroup>
+
+    <!-- 
+      Recursively copy registered native libraries/tools to appropriate architecture paths. 
+    -->
+
     <Copy 
-      Condition="'@(_NativeLibs)' != ''" 
-      SourceFiles="@(_NativeLibs)" 
-      DestinationFiles="@(_NativeLibs->'%(IntermediateDirectory)\lib\%(RecursiveDir)%(Filename)%(Extension)')" 
+      Condition="'@(CopyToNativeTargetArchLibs)' != ''" 
+      SourceFiles="@(CopyToNativeTargetArchLibs)" 
+      DestinationFiles="@(CopyToNativeTargetArchLibs->'%(IntermediateDirectory)\lib\$(TargetPlatformArchitectureEabi)\%(Filename)%(Extension)')" 
     />
 
     <!-- 
@@ -152,17 +189,24 @@
   <Target Name="CleanAndroidApk">
 
     <ItemGroup>
-      <CleanAndroidApkCache
+      <CleanAndroidApkCacheFiles
         Include="
         $(IntDir)*.apk;
-        $(IntDir)libs\**\gdbserver;
-        $(IntDir)libs\**\*.a;
-        $(IntDir)libs\**\*.so;
+        $(IntDir)raw\lib\$(TargetPlatformArchitectureEabi)\gdbserver;
+        $(IntDir)raw\lib\$(TargetPlatformArchitectureEabi)\*.a;
+        $(IntDir)raw\lib\$(TargetPlatformArchitectureEabi)\*.so;
         $(IntDir)raw\**\*;"
+      />
+      <CleanAndroidApkCacheDirectories
+        Include="
+        $(IntDir)raw\lib\$(TargetPlatformArchitectureEabi);
+        "
       />
     </ItemGroup>
 
-    <Delete Files="@(CleanAndroidApkCache)" />
+    <Delete Files="@(CleanAndroidApkCacheFiles)" />
+
+    <RemoveDir Directories="@(CleanAndroidApkCacheDirectories)" />
 
   </Target>
 
