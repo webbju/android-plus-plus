@@ -23,14 +23,18 @@ Global
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{36324E8C-BC78-4B9E-A9E4-C6DC98158C80}.Debug|Android++.ActiveCfg = Debug|Android++
+		{36324E8C-BC78-4B9E-A9E4-C6DC98158C80}.Debug|Android++.Build.0 = Debug|Android++
 		{36324E8C-BC78-4B9E-A9E4-C6DC98158C80}.Release|Android++.ActiveCfg = Release|Android++
 		{36324E8C-BC78-4B9E-A9E4-C6DC98158C80}.Release|Android++.Build.0 = Release|Android++
 		{61092FF6-C325-4797-BDCF-E4F138E342B7}.Debug|Android++.ActiveCfg = Debug|Android++
+		{61092FF6-C325-4797-BDCF-E4F138E342B7}.Debug|Android++.Build.0 = Debug|Android++
 		{61092FF6-C325-4797-BDCF-E4F138E342B7}.Release|Android++.ActiveCfg = Release|Android++
 		{61092FF6-C325-4797-BDCF-E4F138E342B7}.Release|Android++.Build.0 = Release|Android++
 		{B1BE52DA-7EB0-499C-9172-36529FD11512}.Debug|Android++.ActiveCfg = Debug|Android++
+		{B1BE52DA-7EB0-499C-9172-36529FD11512}.Debug|Android++.Build.0 = Debug|Android++
 		{B1BE52DA-7EB0-499C-9172-36529FD11512}.Release|Android++.ActiveCfg = Release|Android++
 		{BAE12DE8-AF95-4631-AAD3-13596DDA7A71}.Debug|Android++.ActiveCfg = Debug|Android++
+		{BAE12DE8-AF95-4631-AAD3-13596DDA7A71}.Debug|Android++.Build.0 = Debug|Android++
 		{BAE12DE8-AF95-4631-AAD3-13596DDA7A71}.Release|Android++.ActiveCfg = Release|Android++
 		{10672DF8-45F5-48DE-B903-5B8DDFCCFE16}.Debug|Android++.ActiveCfg = Debug|Android++
 		{10672DF8-45F5-48DE-B903-5B8DDFCCFE16}.Debug|Android++.Build.0 = Debug|Android++
