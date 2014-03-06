@@ -76,9 +76,9 @@ namespace AndroidPlusPlus.Common
             }
           }
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-          Trace.WriteLine ("Failed retrieving JDB install location: {0}", ex.Message);
+          LoggingUtils.HandleException (e);
         }
 
         return string.Empty;

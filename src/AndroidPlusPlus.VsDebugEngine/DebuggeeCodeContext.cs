@@ -291,21 +291,21 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         infoArray [0].dwFields = 0;
 
-        if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS) != 0)
+        if ((Address != null) && (requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS) != 0)
         {
           infoArray [0].bstrAddress = Address.ToString ();
 
           infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS;
         }
 
-        if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSOFFSET) != 0)
+        if ((Address != null) && (requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSOFFSET) != 0)
         {
           infoArray [0].bstrAddressOffset = Address.ToString ();
 
           infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSOFFSET;
         }
 
-        if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSABSOLUTE) != 0)
+        if ((Address != null) && (requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSABSOLUTE) != 0)
         {
           infoArray [0].bstrAddressAbsolute = Address.ToString ();
 

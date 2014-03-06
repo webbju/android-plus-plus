@@ -136,7 +136,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     public Package ()
     {
-      Trace.WriteLine (string.Format(CultureInfo.CurrentCulture, "Entering constructor for: {0}", this.ToString ()));
+      LoggingUtils.PrintFunction ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -226,7 +226,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       }
       catch (Exception e)
       {
-        Trace.WriteLine ("Failed to added AndroidMT to HKLM AD7Metrics.");
+        LoggingUtils.HandleException (e);
       }*/
 #endif
     }
@@ -317,15 +317,30 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       // Register service listeners.
       // 
 
-      Trace.Assert (dteService != null);
+      if (dteService == null)
+      {
+        throw new InvalidOperationException ("Failed to aquire 'DTE' service");
+      }
 
-      Trace.Assert (shellService != null);
+      if (shellService == null)
+      {
+        throw new InvalidOperationException ("Failed to aquire 'IVsShell' service");
+      }
 
-      Trace.Assert (debuggerService != null);
+      if (debuggerService == null)
+      {
+        throw new InvalidOperationException ("Failed to aquire 'IVsDebugger' service");
+      }
 
-      Trace.Assert (solutionService != null);
+      if (solutionService == null)
+      {
+        throw new InvalidOperationException ("Failed to aquire 'SVsSolution' service");
+      }
 
-      Trace.Assert (monitorSelectionService != null);
+      if (monitorSelectionService == null)
+      {
+        throw new InvalidOperationException ("Failed to aquire 'IVsMonitorSelection' service");
+      }
 
       m_propertyEventListener = new PropertyEventListener (shellService);
 

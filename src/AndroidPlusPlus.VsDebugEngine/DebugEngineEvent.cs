@@ -129,7 +129,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     [InheritGuid (typeof (IDebugEngineCreateEvent2))]
-    public sealed class EngineCreate : SynchronousDebugEvent, IDebugEngineCreateEvent2
+    public sealed class EngineCreate : AsynchronousDebugEvent, IDebugEngineCreateEvent2
     {
       private readonly IDebugEngine2 m_engine;
 
@@ -169,7 +169,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     [InheritGuid (typeof (IDebugProgramCreateEvent2))]
-    public sealed class ProgramCreate : SynchronousDebugEvent, IDebugProgramCreateEvent2
+    public sealed class ProgramCreate : AsynchronousDebugEvent, IDebugProgramCreateEvent2
     {
     }
 

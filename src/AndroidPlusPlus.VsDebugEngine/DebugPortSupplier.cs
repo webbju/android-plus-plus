@@ -134,14 +134,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       AndroidAdb.Refresh ();
 
-      lock (m_registeredPorts)
+      foreach (AndroidDevice device in AndroidAdb.GetConnectedDevices ())
       {
-        foreach (AndroidDevice device in AndroidAdb.GetConnectedDevices ())
-        {
-          DebuggeePort debugPort = new DebuggeePort (this, device);
+        DebuggeePort debugPort = new DebuggeePort (this, device);
 
-          m_registeredPorts.Add (debugPort);
-        }
+        m_registeredPorts.Add (debugPort);
       }
 
       ppEnum = new DebugPortEnumerator (m_registeredPorts);
@@ -165,20 +162,17 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        lock (m_registeredPorts)
+        foreach (DebuggeePort registeredPort in m_registeredPorts)
         {
-          foreach (DebuggeePort registeredPort in m_registeredPorts)
+          Guid portGuid;
+
+          LoggingUtils.RequireOk (registeredPort.GetPortId (out portGuid));
+
+          if (portGuid.Equals (guidPort))
           {
-            Guid portGuid;
+            ppPort = registeredPort;
 
-            LoggingUtils.RequireOk (registeredPort.GetPortId (out portGuid));
-
-            if (portGuid.Equals (guidPort))
-            {
-              ppPort = registeredPort;
-
-              return DebugEngineConstants.S_OK;
-            }
+            return DebugEngineConstants.S_OK;
           }
         }
       }
@@ -245,10 +239,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new ArgumentException ();
         }
 
-        lock (m_registeredPorts)
-        {
-          m_registeredPorts.Remove (pPort as DebuggeePort);
-        }
+        m_registeredPorts.Remove (pPort as DebuggeePort);
 
         return DebugEngineConstants.S_OK;
       }

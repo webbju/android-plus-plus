@@ -191,7 +191,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       }
       catch (Exception e)
       {
-        LoggingUtils.HandleException (e);;
+        LoggingUtils.HandleException (e);
       }
     }
 
@@ -236,6 +236,7 @@ namespace AndroidPlusPlus.VsDebugEngine
             }
             else
             {
+              // Unrecognised breakpoint type.
               throw new NotImplementedException ();
             }
           }

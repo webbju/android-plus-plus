@@ -121,6 +121,33 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    public virtual Dictionary<string, DebuggeeProperty> GetArguments ()
+    {
+      throw new NotImplementedException ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public virtual Dictionary<string, DebuggeeProperty> GetLocals ()
+    {
+      throw new NotImplementedException ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public virtual Dictionary<string, DebuggeeProperty> GetRegisters ()
+    {
+      throw new NotImplementedException ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     #region IDebugStackFrame2 Members
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -141,6 +168,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((guidFilter == DebuggeeProperty.Filters.guidFilterArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
         {
+          GetArguments ();
+
           lock (m_stackArguments)
           {
             foreach (KeyValuePair<string, DebuggeeProperty> argument in m_stackArguments)
@@ -156,6 +185,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocals) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
         {
+          GetLocals ();
+
           lock (m_stackLocals)
           {
             foreach (KeyValuePair<string, DebuggeeProperty> local in m_stackLocals)
@@ -171,13 +202,15 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((guidFilter == DebuggeeProperty.Filters.guidFilterRegisters) || (guidFilter == DebuggeeProperty.Filters.guidFilterAutoRegisters))
         {
+          // 
+          // Registers must be specified in a collection/list as children of a 'CPU' property.
+          // 
+
+          GetRegisters ();
+
           lock (m_stackRegisters)
           {
-            // 
-            // Registers must be specified in a collection/list as children of a 'CPU' property.
-            // 
-
-            List <DebuggeeProperty> registers = new List<DebuggeeProperty> (m_stackRegisters.Values);
+            List<DebuggeeProperty> registers = new List<DebuggeeProperty> (m_stackRegisters.Values);
 
             DebuggeeProperty registersPropertyList = new DebuggeeProperty (m_debugEngine, this, "CPU", registers.ToArray ());
 

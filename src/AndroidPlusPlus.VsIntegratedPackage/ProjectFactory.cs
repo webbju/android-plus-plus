@@ -34,7 +34,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     public ProjectFactory ()
     {
-      Trace.WriteLine (string.Format ("Entering constructor for: ProjectFactory"));
+      LoggingUtils.PrintFunction ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

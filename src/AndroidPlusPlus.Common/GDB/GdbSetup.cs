@@ -29,6 +29,8 @@ namespace AndroidPlusPlus.Common
 
     public GdbSetup (AndroidProcess process, string gdbToolPath, string [] libraryPaths)
     {
+      LoggingUtils.PrintFunction ();
+
       Process = process;
 
       Socket = "debug-socket";
@@ -54,6 +56,11 @@ namespace AndroidPlusPlus.Common
       // Evaluate a compound list of explicit native library locations on the host machine.
       // 
 
+      if (libraryPaths == null)
+      {
+        throw new ArgumentNullException ();
+      }
+
       LibraryPaths = new List<string> (libraryPaths);
     }
 
@@ -63,6 +70,7 @@ namespace AndroidPlusPlus.Common
 
     public void Dispose ()
     {
+      LoggingUtils.PrintFunction ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -95,7 +103,7 @@ namespace AndroidPlusPlus.Common
       // Setup network redirection.
       // 
 
-      Trace.WriteLine (string.Format ("[GdbSetup] Setup network redirection."));
+      LoggingUtils.PrintFunction ();
 
       using (SyncRedirectProcess adbPortForward = AndroidAdb.AdbCommand (Process.HostDevice, "forward", string.Format ("tcp:{0} tcp:{1}", Port, Port)))
       {
@@ -113,7 +121,7 @@ namespace AndroidPlusPlus.Common
       // Clear network redirection.
       // 
 
-      Trace.WriteLine (string.Format ("[GdbSetup] Clear network redirection."));
+      LoggingUtils.PrintFunction ();
 
       using (SyncRedirectProcess adbPortForward = AndroidAdb.AdbCommand (Process.HostDevice, "forward", "--remove-all"))
       {
@@ -131,9 +139,9 @@ namespace AndroidPlusPlus.Common
       // Pull the required binaries from the device.
       // 
 
-      List<string> deviceBinaries = new List<string> ();
+      LoggingUtils.PrintFunction ();
 
-      Trace.WriteLine (string.Format ("[GdbSetup] CacheDeviceBinaries: "));
+      List<string> deviceBinaries = new List<string> ();
 
       string [] remoteBinaries = 
       {
@@ -146,21 +154,30 @@ namespace AndroidPlusPlus.Common
 
       foreach (string binary in remoteBinaries)
       {
-        if (Process.HostDevice.Pull (binary, Path.Combine (CacheDirectory, Path.GetFileName (binary))))
-        {
-          Trace.WriteLine (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", Path.GetFileName (binary)));
+        string cachedBinary = Path.Combine (CacheDirectory, Path.GetFileName (binary));
 
-          deviceBinaries.Add (Path.Combine (CacheDirectory, Path.GetFileName (binary)));
+        if (File.Exists (cachedBinary))
+        {
+          LoggingUtils.Print (string.Format ("[GdbSetup] Using cached {0}.", Path.GetFileName (binary)));
+
+          deviceBinaries.Add (cachedBinary);
+        }
+        else if (Process.HostDevice.Pull (binary, cachedBinary))
+        {
+          LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", Path.GetFileName (binary)));
+
+          deviceBinaries.Add (cachedBinary);
         }
       }
 
       // 
       // Application binaries (those under /lib/ of an installed application).
+      // TODO: Consider improving this. Pulling libraries ensures consistency, but takes time (ADB is a slow protocol).
       // 
 
       if (Process.HostDevice.Pull (string.Format ("{0}/lib/", Process.InternalCacheDirectory), CacheDirectory))
       {
-        Trace.WriteLine (string.Format ("[GdbSetup] Pulled application libraries from device/emulator."));
+        LoggingUtils.Print (string.Format ("[GdbSetup] Pulled application libraries from device/emulator."));
 
         string [] additionalLibraries = Directory.GetFiles (CacheDirectory, "lib*.so", SearchOption.AllDirectories);
 
@@ -182,13 +199,15 @@ namespace AndroidPlusPlus.Common
 
     public string [] CreateGdbExecutionScript ()
     {
+      LoggingUtils.PrintFunction ();
+
       List<string> gdbExecutionCommands = new List<string> ();
 
       gdbExecutionCommands.Add ("set target-async on");
 
       gdbExecutionCommands.Add ("set breakpoint pending on");
 
-#if FALSE
+#if DEBUG
       gdbExecutionCommands.Add ("set debug remote 1");
 
       gdbExecutionCommands.Add ("set debug infrun 1");

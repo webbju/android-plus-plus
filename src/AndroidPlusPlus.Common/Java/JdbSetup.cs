@@ -29,6 +29,8 @@ namespace AndroidPlusPlus.Common
 
     public JdbSetup (AndroidProcess process)
     {
+      LoggingUtils.PrintFunction ();
+
       Process = process;
 
       Host = "localhost";
@@ -46,7 +48,7 @@ namespace AndroidPlusPlus.Common
 
     public void Dispose ()
     {
-      
+      LoggingUtils.PrintFunction ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -71,7 +73,7 @@ namespace AndroidPlusPlus.Common
       // Setup network redirection.
       // 
 
-      Trace.WriteLine (string.Format ("[JdbSetup] Setup network redirection."));
+      LoggingUtils.PrintFunction ();
 
       using (SyncRedirectProcess adbPortForward = AndroidAdb.AdbCommand (Process.HostDevice, "forward", string.Format ("tcp:{0} jdwp:{1}", Port, Process.Pid)))
       {
@@ -85,6 +87,8 @@ namespace AndroidPlusPlus.Common
 
     public string [] CreateJdbExecutionScript ()
     {
+      LoggingUtils.PrintFunction ();
+
       List<string> jdbExecutionCommands = new List<string> ();
 
       return jdbExecutionCommands.ToArray ();

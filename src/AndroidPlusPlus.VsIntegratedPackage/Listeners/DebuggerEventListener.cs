@@ -10,6 +10,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.Debugger.Interop;
 using Microsoft.VisualStudio.Shell.Interop;
+
+using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugEngine;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -32,6 +34,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
   interface DebuggerEventListenerInterface
   {
     int OnSessionCreate (DebugEngine pEngine, DebuggeeProcess pProcess, DebuggeeProgram pProgram, DebuggeeThread pThread, IDebugEvent2 pEvent, uint dwAttrib);
+
     int OnSessionDestroy (DebugEngine pEngine, DebuggeeProcess pProcess, DebuggeeProgram pProgram, DebuggeeThread pThread, IDebugEvent2 pEvent, uint dwAttrib);
   }
 
@@ -93,7 +96,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     public int OnModeChange (DBGMODE dbgmodeNew)
     {
-      Debug.WriteLine ("[DebuggerEventListener] OnModeChange: " + dbgmodeNew.ToString ());
+      LoggingUtils.Print ("[DebuggerEventListener] OnModeChange: " + dbgmodeNew.ToString ());
 
       return 0;
     }
@@ -116,7 +119,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     public int Event (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
-      Debug.WriteLine ("[DebuggerEventListener] Event: " + riidEvent.ToString ());
+      LoggingUtils.Print ("[DebuggerEventListener] Event: " + riidEvent.ToString ());
 
       DebugEngine debugEngine = pEngine as DebugEngine;
 

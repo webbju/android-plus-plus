@@ -55,9 +55,19 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       string gdbToolPath = Engine.LaunchConfiguration ["GdbTool"];
 
-      string [] libraryPaths = Engine.LaunchConfiguration ["LibraryPaths"].Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+      List<string> libraryPaths = new List<string> ();
 
-      m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, gdbToolPath, libraryPaths);
+      if (Engine.LaunchConfiguration.ContainsKey ("LibraryPaths"))
+      {
+        string [] paths = Engine.LaunchConfiguration ["LibraryPaths"].Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (string path in paths)
+        {
+          libraryPaths.Add (StringUtils.ConvertPathWindowsToPosix (path));
+        }
+      }
+
+      m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, gdbToolPath, libraryPaths.ToArray ());
 
       GdbServer = new GdbServer (m_gdbSetup);
 
@@ -144,30 +154,27 @@ namespace AndroidPlusPlus.VsDebugEngine
       // Interrupt the GDB session in order to execute the provided delegate in a 'stopped' state.
       // 
 
-      lock (this)
+      if (m_interruptOperationCounter++ == 0)
       {
-        if (m_interruptOperationCounter++ == 0)
+        m_interruptOperationWasRunning = NativeProgram.IsRunning;
+
+        if (m_interruptOperationWasRunning)
         {
-          m_interruptOperationWasRunning = NativeProgram.IsRunning;
+          // 
+          // GDB 'stopped' events usually don't provide a token to which they are associated (only get ^done confirmation).
+          // This should block until the requested interrupt has been received and completely handled by VS.
+          // 
 
-          if (m_interruptOperationWasRunning)
+          m_interruptOperationCompleted = new ManualResetEvent (false);
+
+          GdbClient.Stop ();
+
+          while (!m_interruptOperationCompleted.WaitOne (0))
           {
-            // 
-            // GDB 'stopped' events usually don't provide a token to which they are associated (only get ^done confirmation).
-            // This should block until the requested interrupt has been received and completely handled by VS.
-            // 
-
-            m_interruptOperationCompleted = new ManualResetEvent (false);
-
-            GdbClient.Stop ();
-
-            while (!m_interruptOperationCompleted.WaitOne (0))
-            {
-              Thread.Yield ();
-            }
-
-            m_interruptOperationCompleted = null;
+            Thread.Yield ();
           }
+
+          m_interruptOperationCompleted = null;
         }
       }
 
@@ -186,12 +193,9 @@ namespace AndroidPlusPlus.VsDebugEngine
       }
       finally
       {
-        lock (this)
+        if ((--m_interruptOperationCounter == 0) && m_interruptOperationWasRunning)
         {
-          if ((--m_interruptOperationCounter == 0) && m_interruptOperationWasRunning)
-          {
-            GdbClient.Continue ();
-          }
+          GdbClient.Continue ();
         }
       }
     }
@@ -257,7 +261,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           // The console output stream contains text that should be displayed in the CLI console window. It contains the textual responses to CLI commands. 
 
-          Debug.WriteLine (string.Format ("[CLangDebugger] Console: {0}", streamRecord.Stream));
+          LoggingUtils.Print (string.Format ("[CLangDebugger] Console: {0}", streamRecord.Stream));
 
           break;
         }
@@ -266,7 +270,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           // The console output stream contains text that should be displayed in the CLI console window. It contains the textual responses to CLI commands. 
 
-          Debug.WriteLine (string.Format ("[CLangDebugger] Target: {0}", streamRecord.Stream));
+          LoggingUtils.Print (string.Format ("[CLangDebugger] Target: {0}", streamRecord.Stream));
 
           break;
         }
@@ -275,7 +279,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           // The log stream contains debugging messages being produced by gdb's internals.
 
-          Debug.WriteLine (string.Format ("[CLangDebugger] Log: {0}", streamRecord.Stream));
+          LoggingUtils.Print (string.Format ("[CLangDebugger] Log: {0}", streamRecord.Stream));
 
           break;
         }
@@ -472,19 +476,10 @@ namespace AndroidPlusPlus.VsDebugEngine
                       break;
                     }
 
-                    case "exited-signalled":
-                    {
-                      Engine.TerminateProcess (NativeProgram.DebugProgram.DebugProcess);
-
-                      break;
-                    }
-
                     case "read-watchpoint-trigger":
                     case "access-watchpoint-trigger":
                     case "location-reached":
                     case "watchpoint-scope":
-                    case "exited":
-                    case "exited-normally":
                     case "solib-event":
                     case "fork":
                     case "vfork":
@@ -492,6 +487,19 @@ namespace AndroidPlusPlus.VsDebugEngine
                     case "exec":
                     {
                       Engine.Broadcast (new DebugEngineEvent.Break (), NativeProgram.DebugProgram, NativeProgram.GetThread (NativeProgram.CurrentThreadId));
+
+                      break;
+                    }
+
+                    case "exited":
+                    case "exited-normally":
+                    case "exited-signalled":
+                    {
+                      Engine.Broadcast (new DebugEngineEvent.Break (), NativeProgram.DebugProgram, NativeProgram.GetThread (NativeProgram.CurrentThreadId));
+
+                      //uint exitCode = 0;
+
+                      //Engine.Broadcast (new DebugEngineEvent.ProgramDestroy (exitCode), NativeProgram.DebugProgram, null);
 
                       break;
                     }
@@ -597,20 +605,30 @@ namespace AndroidPlusPlus.VsDebugEngine
               // Reports that a new library file was loaded by the program.
               // 
 
-              CLangDebuggeeModule module = new CLangDebuggeeModule (Engine, asyncRecord);
-
-              NativeProgram.AddModule (module);
-
-              Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, true), NativeProgram.DebugProgram, null);
-
-              if (module.SymbolsLoaded)
+              try
               {
-                Engine.Broadcast (new DebugEngineEvent.BeforeSymbolSearch (module as IDebugModule3), NativeProgram.DebugProgram, null);
+                ThreadPool.QueueUserWorkItem (delegate (object state)
+                {
+                  CLangDebuggeeModule module = new CLangDebuggeeModule (Engine, asyncRecord);
 
-                Engine.Broadcast (new DebugEngineEvent.SymbolSearch (module as IDebugModule3, module.Name), NativeProgram.DebugProgram, null);
+                  NativeProgram.AddModule (module);
+
+                  Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, true), NativeProgram.DebugProgram, null);
+
+                  if (module.SymbolsLoaded)
+                  {
+                    Engine.Broadcast (new DebugEngineEvent.BeforeSymbolSearch (module as IDebugModule3), NativeProgram.DebugProgram, null);
+
+                    Engine.Broadcast (new DebugEngineEvent.SymbolSearch (module as IDebugModule3, module.Name), NativeProgram.DebugProgram, null);
+                  }
+
+                  Engine.BreakpointManager.RefreshBoundBreakpoints ();
+                });
               }
-
-              Engine.BreakpointManager.RefreshBoundBreakpoints ();
+              catch (Exception e)
+              {
+                LoggingUtils.HandleException (e);
+              }
 
               break;
             }
@@ -621,13 +639,23 @@ namespace AndroidPlusPlus.VsDebugEngine
               // Reports that a library was unloaded by the program.
               // 
 
-              string moduleName = asyncRecord ["id"].GetString ();
+              try
+              {
+                ThreadPool.QueueUserWorkItem (delegate (object state)
+                {
+                  string moduleName = asyncRecord ["id"].GetString ();
 
-              CLangDebuggeeModule module = NativeProgram.GetModule (moduleName);
+                  CLangDebuggeeModule module = NativeProgram.GetModule (moduleName);
 
-              Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, false), NativeProgram.DebugProgram, null);
+                  Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, false), NativeProgram.DebugProgram, null);
 
-              NativeProgram.RemoveModule (module);
+                  NativeProgram.RemoveModule (module);
+                });
+              }
+              catch (Exception e)
+              {
+                LoggingUtils.HandleException (e);
+              }
 
               break;
             }

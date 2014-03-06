@@ -49,21 +49,25 @@ namespace AndroidPlusPlus.VsDebugEngine
       // Each thread maintains an internal cache of the last reported stacktrace. This is only cleared when threads are resumed via 'SetRunning(true)'.
       // 
 
+      LoggingUtils.PrintFunction ();
+
       try
       {
         if (m_threadStackFrames.Count == 0)
         {
           NativeProgram.SelectThread (this);
 
-          MiResultRecord resultRecord = m_debugProgram.AttachedEngine.NativeDebugger.GdbClient.SendCommand ("-stack-info-depth");
+          MiResultRecord resultRecord = m_debugProgram.AttachedEngine.NativeDebugger.GdbClient.SendCommand ("-stack-list-frames");
 
-          if ((resultRecord != null) && (!resultRecord.IsError ()) && resultRecord.HasField ("depth"))
+          if ((resultRecord != null) && (!resultRecord.IsError ()) && (resultRecord.HasField ("stack")))
           {
-            uint stackDepth = resultRecord ["depth"].GetUnsignedInt ();
+            MiResultValue stackRecord = resultRecord ["stack"];
 
-            for (uint i = 0; i < stackDepth; ++i)
+            for (int i = 0; i < stackRecord.Count; ++i)
             {
-              CLangDebuggeeStackFrame stackFrame = new CLangDebuggeeStackFrame (m_debugProgram.AttachedEngine.NativeDebugger, this, i);
+              MiResultValueTuple frameTuple = stackRecord [i] as MiResultValueTuple;
+
+              CLangDebuggeeStackFrame stackFrame = new CLangDebuggeeStackFrame (m_debugProgram.AttachedEngine.NativeDebugger, this, frameTuple);
 
               lock (m_threadStackFrames)
               {

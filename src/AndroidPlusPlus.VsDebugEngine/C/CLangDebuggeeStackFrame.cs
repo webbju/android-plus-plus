@@ -39,20 +39,16 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public CLangDebuggeeStackFrame (CLangDebugger debugger, CLangDebuggeeThread thread, uint level)
+    public CLangDebuggeeStackFrame (CLangDebugger debugger, CLangDebuggeeThread thread, MiResultValueTuple frameTuple)
       : base (debugger.Engine, thread as DebuggeeThread)
     {
       m_debugger = debugger;
 
-      Level = level;
-
-      GetInfoFromCurrentLevel ();
+      GetInfoFromCurrentLevel (frameTuple);
 
       GetArguments ();
 
       GetLocals ();
-
-      GetRegisters ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -65,75 +61,70 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void GetInfoFromCurrentLevel ()
+    public void GetInfoFromCurrentLevel (MiResultValueTuple frameTuple)
     {
+      LoggingUtils.PrintFunction ();
+
       try
       {
-        m_debugger.NativeProgram.SelectThread (m_thread as CLangDebuggeeThread);
-
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-stack-list-frames {0} {0}", Level));
-
-        if ((resultRecord != null) && (!resultRecord.IsError ()) && (resultRecord.HasField ("stack")))
+        if (frameTuple == null)
         {
-          MiResultValueTuple frameTuple = resultRecord ["stack"] [0] as MiResultValueTuple;
+          throw new ArgumentNullException ();
+        }
 
-          if (frameTuple != null)
-          {
-            /*if (frameTuple.HasField ("level"))
-            {
-              Level = frameTuple ["level"].GetUnsignedInt ();
-            }*/
+        if (frameTuple.HasField ("level"))
+        {
+          Level = frameTuple ["level"].GetUnsignedInt ();
+        }
 
-            m_memoryAddress = new DebuggeeAddress (frameTuple ["addr"].GetString ());
+        m_memoryAddress = new DebuggeeAddress (frameTuple ["addr"].GetString ());
 
-            // 
-            // Discover the function or shared library location.
-            // 
+        // 
+        // Discover the function or shared library location.
+        // 
 
-            if (frameTuple.HasField ("func"))
-            {
-              m_location = frameTuple ["func"].GetString ();
+        if (frameTuple.HasField ("func"))
+        {
+          m_location = frameTuple ["func"].GetString ();
 
-              m_locationIsFunction = (m_location != "??") ? true : false;
-            }
-            else if (frameTuple.HasField ("from"))
-            {
-              // The shared library where this function is defined. This is only given if the frame's function is not known.
+          m_locationIsFunction = (m_location != "??") ? true : false;
+        }
+        else if (frameTuple.HasField ("from"))
+        {
+          // The shared library where this function is defined. This is only given if the frame's function is not known.
 
-              m_location = frameTuple ["from"].GetString ();
+          m_location = frameTuple ["from"].GetString ();
 
-              m_locationIsFunction = false;
-            }
-            else
-            {
-              m_location = "<unknown>";
+          m_locationIsFunction = false;
+        }
+        else
+        {
+          m_location = "<unknown>";
 
-              m_locationIsFunction = false;
-            }
+          m_locationIsFunction = false;
+        }
 
-            // 
-            // Generate code and document contexts for this frame location.
-            // 
+        // 
+        // Generate code and document contexts for this frame location.
+        // 
 
-            if (frameTuple.HasField ("fullname") && frameTuple.HasField ("line"))
-            {
-              TEXT_POSITION [] textPositions = new TEXT_POSITION [2];
+        if (frameTuple.HasField ("fullname") && frameTuple.HasField ("line"))
+        {
+          TEXT_POSITION [] textPositions = new TEXT_POSITION [2];
 
-              textPositions [0].dwLine = frameTuple ["line"].GetUnsignedInt () - 1;
+          textPositions [0].dwLine = frameTuple ["line"].GetUnsignedInt () - 1;
 
-              textPositions [0].dwColumn = 0;
+          textPositions [0].dwColumn = 0;
 
-              textPositions [1].dwLine = textPositions [0].dwLine;
+          textPositions [1].dwLine = textPositions [0].dwLine;
 
-              textPositions [1].dwColumn = textPositions [0].dwColumn;
+          textPositions [1].dwColumn = textPositions [0].dwColumn;
 
-              string filename = StringUtils.ConvertPathPosixToWindows (frameTuple ["fullname"].GetString ());
+          string filename = StringUtils.ConvertPathPosixToWindows (frameTuple ["fullname"].GetString ());
 
-              m_documentContext = new DebuggeeDocumentContext (m_debugger.Engine, filename, textPositions [0], textPositions [1], DebugEngineGuids.guidLanguageCpp, m_memoryAddress);
+          m_documentContext = new DebuggeeDocumentContext (m_debugger.Engine, filename, textPositions [0], textPositions [1], DebugEngineGuids.guidLanguageCpp, m_memoryAddress);
 
-              m_codeContext = m_documentContext.GetCodeContext ();
-            }
-          }
+          m_codeContext = m_documentContext.GetCodeContext ();
         }
       }
       catch (Exception e)
@@ -146,11 +137,13 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public Dictionary<string, DebuggeeProperty> GetArguments ()
+    public override Dictionary<string, DebuggeeProperty> GetArguments ()
     {
       // 
       // Returns a list of arguments for the current stack level. Caches results for faster lookup.
       // 
+
+      LoggingUtils.PrintFunction ();
 
       try
       {
@@ -191,11 +184,13 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public Dictionary<string, DebuggeeProperty> GetLocals ()
+    public override Dictionary<string, DebuggeeProperty> GetLocals ()
     {
       // 
       // Returns a list of local variables for the current stack level. Caches results for faster lookup.
       // 
+
+      LoggingUtils.PrintFunction ();
 
       try
       {
@@ -238,11 +233,13 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public Dictionary<string, DebuggeeProperty> GetRegisters ()
+    public override Dictionary<string, DebuggeeProperty> GetRegisters ()
     {
       // 
       // Returns a list of registers for the current stack level. Caches results for faster lookup.
       // 
+
+      LoggingUtils.PrintFunction ();
 
       try
       {
@@ -309,6 +306,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       // 
       // Evaluates a custom property lookup, and registers a new entry for this expression if one can't be found.
       // 
+
+      LoggingUtils.PrintFunction ();
 
       DebuggeeProperty property = null;
 

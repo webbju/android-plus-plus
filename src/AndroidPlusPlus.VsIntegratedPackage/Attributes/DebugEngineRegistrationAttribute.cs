@@ -13,6 +13,8 @@ using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.Win32;
 
+using AndroidPlusPlus.Common;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -97,9 +99,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
           RegisterWithKey (regKey, regKey.GetType ());
         }
       }
-      catch (Exception ex)
+      catch (Exception e)
       {
-        Trace.WriteLine ("Couldn't create or access '" + EngineKey + "' data. " + ex.ToString ());
+        LoggingUtils.HandleException (e);
       }
     }
 
@@ -120,7 +122,10 @@ namespace AndroidPlusPlus.VsIntegratedPackage
           regKeyCreateSubKey = regKeyType.GetMethod ("CreateSubKey", new [] {typeof (string), typeof (RegistryKeyPermissionCheck)}),
           regKeyClose = regKeyType.GetMethod ("Close");
 
-        Trace.Assert (regKeySetValue != null);
+        if (regKeySetValue == null)
+        {
+          throw new InvalidOperationException ();
+        }
 
         bool createSubKeyRequiresPermission = true;
 
@@ -129,11 +134,17 @@ namespace AndroidPlusPlus.VsIntegratedPackage
           regKeyCreateSubKey = regKeyType.GetMethod ("CreateSubkey");
 
           createSubKeyRequiresPermission = false;
-
-          Trace.Assert (regKeyCreateSubKey != null);
         }
 
-        Trace.Assert (regKeyClose != null);
+        if (regKeyCreateSubKey == null)
+        {
+          throw new InvalidOperationException ();
+        }
+
+        if (regKeyClose == null)
+        {
+          throw new InvalidOperationException ();
+        }
 
         regKeySetValue.Invoke (regKey, new object [] { string.Empty, m_engineType.AssemblyQualifiedName });
 
@@ -237,9 +248,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
         regKeyClose.Invoke (regKey, null);
       }
-      catch (Exception ex)
+      catch (Exception e)
       {
-        Trace.WriteLine ("Failed writing to '" + EngineKey + "'. " + ex.ToString ());
+        LoggingUtils.HandleException (e);
       }
     }
 
@@ -323,9 +334,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       get
       {
         object val = m_engineOptions["AddressBP"];
+
         return (null == val) ? false : (bool)val;
       }
-      set { m_engineOptions["AddressBP"] = value; }
+      set 
+      {
+        m_engineOptions["AddressBP"] = value; 
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -338,9 +353,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       get
       {
         object val = m_engineOptions["AlwaysLoadLocal"];
+
         return (null == val) ? false : (bool)val;
       }
-      set { m_engineOptions["AlwaysLoadLocal"] = value; }
+      set 
+      {
+        m_engineOptions["AlwaysLoadLocal"] = value; 
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -353,9 +372,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       get
       {
         object val = m_engineOptions["LoadedByDebuggee"];
+
         return (null == val) ? false : (bool)val;
       }
-      set { m_engineOptions["LoadedByDebuggee"] = value; }
+      set
+      {
+        m_engineOptions["LoadedByDebuggee"] = value; 
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -368,9 +391,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       get
       {
         object val = m_engineOptions["Attach"];
+
         return (null == val) ? false : (bool)val;
       }
-      set { m_engineOptions["Attach"] = value; }
+      set
+      {
+        m_engineOptions["Attach"] = value;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -383,9 +410,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
         get
         {
           object val = m_engineOptions["CallStackBP"];
+
           return (null == val) ? false : (bool)val;
         }
-        set { m_engineOptions["CallStackBP"] = value; }
+        set
+        {
+          m_engineOptions["CallStackBP"] = value;
+        }
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -398,9 +429,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
         get
         {
           object val = m_engineOptions["ConditionalBP"];
+
           return (null == val) ? false : (bool)val;
         }
-        set { m_engineOptions["ConditionalBP"] = value; }
+        set
+        {
+          m_engineOptions["ConditionalBP"] = value;
+        }
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -413,9 +448,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
         get
         {
           object val = m_engineOptions["DataBP"];
+
           return (null == val) ? false : (bool)val;
         }
-        set { m_engineOptions["DataBP"] = value; }
+        set
+        {
+          m_engineOptions["DataBP"] = value;
+        }
       }
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -428,9 +467,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
         get
         {
           object val = m_engineOptions["Disassembly"];
+
           return (null == val) ? false : (bool)val;
         }
-        set { m_engineOptions["Disassembly"] = value; }
+        set
+        {
+          m_engineOptions["Disassembly"] = value;
+        }
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -443,9 +486,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
         get
         {
           object val = m_engineOptions["DumpWriting"];
+
           return (null == val) ? false : (bool)val;
         }
-        set { m_engineOptions["DumpWriting"] = value; }
+        set
+        {
+          m_engineOptions["DumpWriting"] = value;
+        }
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -458,9 +505,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       get
       {
         object val = m_engineOptions["Exceptions"];
+
         return (null == val) ? false : (bool)val;
       }
-      set { m_engineOptions["Exceptions"] = value; }
+      set
+      {
+        m_engineOptions["Exceptions"] = value;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -473,9 +524,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       get
       {
         object val = m_engineOptions["FunctionBP"];
+
         return (null == val) ? false : (bool)val;
       }
-      set { m_engineOptions["FunctionBP"] = value; }
+      set
+      {
+        m_engineOptions["FunctionBP"] = value;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -488,6 +543,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       get
       {
         object val = m_engineOptions["HitCountBP"];
+
         return (null == val) ? false : (bool)val;
       }
       set { m_engineOptions["HitCountBP"] = value; }
@@ -503,9 +559,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       get
       {
         object val = m_engineOptions["JITDebug"];
+
         return (null == val) ? false : (bool)val;
       }
-      set { m_engineOptions["JITDebug"] = value; }
+      set
+      {
+        m_engineOptions["JITDebug"] = value;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -518,9 +578,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       get
       {
         object val = m_engineOptions["SetNextStatement"];
+
         return (null == val) ? false : (bool)val;
       }
-      set { m_engineOptions["SetNextStatement"] = value; }
+      set
+      {
+        m_engineOptions["SetNextStatement"] = value;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -533,9 +597,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       get
       {
         object val = m_engineOptions["SuspendThread"];
+
         return (null == val) ? false : (bool)val;
       }
-      set { m_engineOptions["SuspendThread"] = value; }
+      set
+      {
+        m_engineOptions["SuspendThread"] = value;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -548,9 +616,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       get
       {
         object val = m_engineOptions["WarnIfNoSymbols"];
+
         return (null == val) ? false : (bool)val;
       }
-      set { m_engineOptions["WarnIfNoSymbols"] = value; }
+      set
+      {
+        m_engineOptions["WarnIfNoSymbols"] = value;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -563,9 +635,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       get
       {
         object val = m_engineOptions["ProgramProvider"];
+
         return (null == val) ? null : (Type)val;
       }
-      set { m_engineOptions["ProgramProvider"] = value; }
+      set
+      {
+        m_engineOptions["ProgramProvider"] = value;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -578,9 +654,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       get
       {
         object val = m_engineOptions["AlwaysLoadProgramProviderLocal"];
+
         return (null == val) ? false : (bool)val;
       }
-      set { m_engineOptions["AlwaysLoadProgramProviderLocal"] = value; }
+      set
+      {
+        m_engineOptions["AlwaysLoadProgramProviderLocal"] = value;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -593,9 +673,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       get
       {
         object val = m_engineOptions["EngineCanWatchProcess"];
+
         return (null == val) ? false : (bool)val;
       }
-      set { m_engineOptions["EngineCanWatchProcess"] = value; }
+      set
+      {
+        m_engineOptions["EngineCanWatchProcess"] = value;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -608,9 +692,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       get
       {
         object val = m_engineOptions["RemoteDebugging"];
+
         return (null == val) ? false : (bool)val;
       }
-      set { m_engineOptions["RemoteDebugging"] = value; }
+      set
+      {
+        m_engineOptions["RemoteDebugging"] = value;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -623,9 +711,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       get
       {
         object val = m_engineOptions["LoadUnderWOW64"];
+
         return (null == val) ? false : (bool)val;
       }
-      set { m_engineOptions["LoadUnderWOW64"] = value; }
+      set
+      {
+        m_engineOptions["LoadUnderWOW64"] = value;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -638,9 +730,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
         get
         {
             object val = m_engineOptions["LoadProgramProviderUnderWOW64"];
+
             return (null == val) ? false : (bool)val;
         }
-        set { m_engineOptions["LoadProgramProviderUnderWOW64"] = value; }
+        set
+        {
+          m_engineOptions ["LoadProgramProviderUnderWOW64"] = value;
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -653,9 +749,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       get
       {
         object val = m_engineOptions["StopOnExceptionCrossingManagedBoundary"];
+
         return (null == val) ? false : (bool)val;
       }
-      set { m_engineOptions["StopOnExceptionCrossingManagedBoundary"] = value; }
+      set
+      {
+        m_engineOptions["StopOnExceptionCrossingManagedBoundary"] = value;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -668,9 +768,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       get
       {
         object val = m_engineOptions["AutoSelectPriority"];
+
         return (null == val) ? 0 : (int)val;
       }
-      set { m_engineOptions["AutoSelectPriority"] = value; }
+      set
+      {
+        m_engineOptions["AutoSelectPriority"] = value;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -683,9 +787,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       get
       {
         object val = m_engineOptions["DisableJITOptimization"];
+
         return (null == val) ? false : (bool)val;
       }
-      set { m_engineOptions["DisableJITOptimization"] = value; }
+      set
+      {
+        m_engineOptions["DisableJITOptimization"] = value;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

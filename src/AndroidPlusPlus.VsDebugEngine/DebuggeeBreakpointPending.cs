@@ -268,7 +268,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public virtual DebuggeeBreakpointBound CreateBoundBreakpoint (string location, DebuggeeDocumentContext documentContext, DebuggeeCodeContext codeContext, out DebuggeeBreakpointError errorBreakpoint)
+    public virtual int CreateBoundBreakpoint (string location, DebuggeeDocumentContext documentContext, DebuggeeCodeContext codeContext)
     {
       throw new NotImplementedException ();
     }
@@ -304,13 +304,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       DebuggeeCodeContext codeContext = null;
 
-      DebuggeeBreakpointError errorBreakpoint = null;
-
       string bindLocation = string.Empty;
 
       try
       {
-        m_errorBreakpoints.Clear ();
+        lock (m_errorBreakpoints)
+        {
+          m_errorBreakpoints.Clear ();
+        }
 
         if (m_breakpointDeleted)
         {
@@ -319,23 +320,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         LoggingUtils.RequireOk (EvaluateBreakpointLocation (out documentContext, out codeContext, out bindLocation));
 
-        DebuggeeBreakpointBound boundBreakpoint = CreateBoundBreakpoint (bindLocation, documentContext, codeContext, out errorBreakpoint);
-
-        if (boundBreakpoint != null)
-        {
-          lock (m_boundBreakpoints)
-          {
-            m_boundBreakpoints.Add (boundBreakpoint);
-          }
-        }
-
-        if (errorBreakpoint != null)
-        {
-          lock (m_errorBreakpoints)
-          {
-            m_errorBreakpoints.Add (errorBreakpoint);
-          }
-        }
+        LoggingUtils.RequireOk (CreateBoundBreakpoint (bindLocation, documentContext, codeContext));
 
         return DebugEngineConstants.S_OK;
       }

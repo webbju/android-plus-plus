@@ -17,7 +17,7 @@ namespace AndroidPlusPlus.Common
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class AsyncRedirectProcess : RedirectProcess
+  public class AsyncRedirectProcess : IDisposable
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -37,52 +37,109 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private TextWriter m_stdInputWriter;
+    protected int m_startTicks = 0;
+
+    protected int m_exitCode = 0;
+
+    protected ManualResetEvent m_exitMutex = null;
+
+    protected int m_lastOutputTimestamp = 0;
+
+    protected TextWriter m_stdInputWriter = null;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public AsyncRedirectProcess (string filename, string arguments, string workingDirectory = null)
-      : base (filename, arguments, workingDirectory)
     {
-      m_stdInputWriter = null;
+      if (string.IsNullOrEmpty (filename))
+      {
+        throw new ArgumentNullException ();
+      }
+
+      if (!File.Exists (filename))
+      {
+        throw new ArgumentException ();
+      }
 
       Listener = null;
+
+      StartInfo = CreateDefaultStartInfo ();
+
+      StartInfo.FileName = filename;
+
+      StartInfo.Arguments = arguments;
+
+      StartInfo.WorkingDirectory = workingDirectory ?? Path.GetDirectoryName (filename);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public EventListener Listener { get; set; }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public override void Start ()
+    public void Dispose ()
     {
-      base.Start ();
+      LoggingUtils.PrintFunction ();
 
-      Trace.WriteLine (string.Format ("[AsyncRedirectProcess] Start: "));
-
-      if (Listener != null)
+      try
       {
-        Process.OutputDataReceived += new DataReceivedEventHandler (Listener.ProcessStdout);
-
-        Process.ErrorDataReceived += new DataReceivedEventHandler (Listener.ProcessStderr);
-
-        Process.Exited += new EventHandler (Listener.ProcessExited);
+        Process.Dispose ();
       }
-      else
+      catch (Exception e)
       {
-        Process.OutputDataReceived += new DataReceivedEventHandler (ProcessStdout);
-
-        Process.ErrorDataReceived += new DataReceivedEventHandler (ProcessStderr);
-
-        Process.Exited += new EventHandler (ProcessExited);
+        LoggingUtils.HandleException (e);
       }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected static ProcessStartInfo CreateDefaultStartInfo ()
+    {
+      LoggingUtils.PrintFunction ();
+
+      ProcessStartInfo startInfo = new ProcessStartInfo ();
+
+      startInfo.CreateNoWindow = true;
+
+      startInfo.UseShellExecute = false;
+
+      startInfo.LoadUserProfile = false;
+
+      startInfo.ErrorDialog = false;
+
+      startInfo.RedirectStandardOutput = true;
+
+      startInfo.RedirectStandardError = true;
+
+      startInfo.RedirectStandardInput = true;
+
+      return startInfo;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public void Start ()
+    {
+      LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] Start: {0} (Args=\"{1}\" Pwd=\"{2}\")", StartInfo.FileName, StartInfo.Arguments, StartInfo.WorkingDirectory));
+
+      m_startTicks = Environment.TickCount;
+
+      m_lastOutputTimestamp = m_startTicks;
+
+      m_exitMutex = new ManualResetEvent (false);
+
+      Process = Process.Start (StartInfo);
+
+      Process.OutputDataReceived += new DataReceivedEventHandler (ProcessStdout);
+
+      Process.ErrorDataReceived += new DataReceivedEventHandler (ProcessStderr);
+
+      Process.Exited += new EventHandler (ProcessExited);
 
       Process.BeginOutputReadLine ();
 
@@ -97,11 +154,18 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public override void Kill ()
+    public void Kill ()
     {
-      base.Kill ();
+      LoggingUtils.PrintFunction ();
 
-      Trace.WriteLine (string.Format ("[AsyncRedirectProcess] Kill: "));
+      try
+      {
+        Process.Kill ();
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -110,15 +174,9 @@ namespace AndroidPlusPlus.Common
 
     public virtual void SendCommand (string command)
     {
-      lock (this)
-      {
-        if (Process != null)
-        {
-          Trace.WriteLine (string.Format ("[AsyncRedirectProcess] SendCommand: {0}", command));
+      LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] SendCommand: {0}", command));
 
-          m_stdInputWriter.WriteLine (command);
-        }
-      }
+      m_stdInputWriter.WriteLine (command);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -127,14 +185,16 @@ namespace AndroidPlusPlus.Common
 
     protected void ProcessStdout (object sendingProcess, DataReceivedEventArgs args)
     {
-      if (!string.IsNullOrEmpty (args.Data))
-      {
-        Trace.WriteLine (string.Format ("[AsyncRedirectProcess] ProcessStdout: {0}", args.Data));
+      m_lastOutputTimestamp = Environment.TickCount;
 
-        if (Listener != null)
-        {
-          Listener.ProcessStdout (sendingProcess, args);
-        }
+      /*if (!string.IsNullOrWhiteSpace (args.Data))
+      {
+        LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessStdout: {0}", args.Data));
+      }*/
+
+      if (Listener != null)
+      {
+        Listener.ProcessStdout (sendingProcess, args);
       }
     }
 
@@ -144,14 +204,16 @@ namespace AndroidPlusPlus.Common
 
     protected void ProcessStderr (object sendingProcess, DataReceivedEventArgs args)
     {
-      if (!string.IsNullOrEmpty (args.Data))
-      {
-        Trace.WriteLine (string.Format ("[AsyncRedirectProcess] ProcessStdout: {0}", args.Data));
+      m_lastOutputTimestamp = Environment.TickCount;
 
-        if (Listener != null)
-        {
-          Listener.ProcessStderr (sendingProcess, args);
-        }
+      /*if (!string.IsNullOrWhiteSpace (args.Data))
+      {
+        LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessStdout: {0}", args.Data));
+      }*/
+
+      if (Listener != null)
+      {
+        Listener.ProcessStderr (sendingProcess, args);
       }
     }
 
@@ -161,13 +223,37 @@ namespace AndroidPlusPlus.Common
 
     protected void ProcessExited (object sendingProcess, EventArgs args)
     {
-      Trace.WriteLine (string.Format ("[AsyncRedirectProcess] ProcessExited: {0}", args));
+      LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessExited: {0}", args));
+
+      m_exitCode = ((Process)sendingProcess).ExitCode;
+
+      LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] exited ({0}) in {1} ms", m_exitCode, Environment.TickCount - m_startTicks));
 
       if (Listener != null)
       {
         Listener.ProcessExited (sendingProcess, args);
       }
+
+      m_exitMutex.Set ();
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public Process Process { get; protected set; }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public ProcessStartInfo StartInfo { get; protected set; }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public EventListener Listener { get; set; }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

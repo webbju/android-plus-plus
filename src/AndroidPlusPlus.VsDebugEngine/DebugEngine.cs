@@ -135,7 +135,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if ((eventAttributes & (uint)enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS) != 0)
       {
-        m_broadcastHandleLock.WaitOne (5000);
+        try
+        {
+          m_broadcastHandleLock.WaitOne (5000);
+        }
+        catch (Exception e)
+        {
+          LoggingUtils.HandleException (e);
+        }
       }
     }
 
@@ -176,6 +183,24 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new ApplicationException ("Attach failed. Already attached to " + Program.ToString ());
         }
 
+        AndroidAdb.Refresh ();
+
+        Program = rgpPrograms [0] as DebuggeeProgram;
+
+        Program.AttachedEngine = this;
+
+        NativeDebugger = new CLangDebugger (this, Program);
+
+        LoggingUtils.RequireOk (Program.Attach (m_sdmCallback));
+
+        CLangDebuggeeThread currentThread = NativeDebugger.NativeProgram.GetThread (NativeDebugger.NativeProgram.CurrentThreadId);
+
+        if (currentThread == null)
+        {
+          // Lack of current thread is usually a good indication that connection/attaching failed.
+          throw new InvalidOperationException ("Failed to retrieve program's current thread.");
+        }
+
         // 
         // When this method is called, the DE needs to send these events in sequence:
         // 1. IDebugEngineCreate2
@@ -184,26 +209,18 @@ namespace AndroidPlusPlus.VsDebugEngine
         // 4. (if enum_ATTACH_REASON.ATTACH_REASON_LAUNCH), IDebugEntryPointEvent2
         // 
 
-        Program = rgpPrograms [0] as DebuggeeProgram;
-
-        Program.AttachedEngine = this;
-
-        NativeDebugger = new CLangDebugger (this, Program);
-
         Broadcast (new DebugEngineEvent.EngineCreate (this), Program, null);
-
-        LoggingUtils.RequireOk (Program.Attach (m_sdmCallback));
 
         Broadcast (new DebugEngineEvent.ProgramCreate (), Program, null);
 
-        Broadcast (new DebugEngineEvent.LoadComplete (), Program, NativeDebugger.NativeProgram.GetThread (NativeDebugger.NativeProgram.CurrentThreadId));
+        JavaDebugger = new JavaLangDebugger (this, Program);
+
+        Broadcast (new DebugEngineEvent.LoadComplete (), Program, currentThread);
 
         if (dwReason == enum_ATTACH_REASON.ATTACH_REASON_LAUNCH)
         {
-          Broadcast (new DebugEngineEvent.EntryPoint (), Program, NativeDebugger.NativeProgram.GetThread (NativeDebugger.NativeProgram.CurrentThreadId));
+          Broadcast (new DebugEngineEvent.EntryPoint (), Program, currentThread);
         }
-
-        JavaDebugger = new JavaLangDebugger (this, Program);
 
         //Broadcast (new DebugEngineEvent.AttachComplete (), Program, null);
 
@@ -679,34 +696,38 @@ namespace AndroidPlusPlus.VsDebugEngine
         // Launch application on device in a 'suspended' state.
         // 
 
-        if (!appIsRunning)
+        try
         {
-          StringBuilder launchArgumentsBuilder = new StringBuilder ();
-
-          launchArgumentsBuilder.Append ("start ");
-
-          if (debugMode)
+          if (!appIsRunning)
           {
-            launchArgumentsBuilder.Append ("-D "); // debug
-          }
-          else
-          {
-            launchArgumentsBuilder.Append ("-W "); // wait
-          }
+            StringBuilder launchArgumentsBuilder = new StringBuilder ();
 
-          launchArgumentsBuilder.Append (packageName + "/" + launchActivity);
+            launchArgumentsBuilder.Append ("start ");
 
-          string launchResponse = debuggeePort.PortDevice.Shell ("am", launchArgumentsBuilder.ToString (), 5000);
+            if (debugMode)
+            {
+              launchArgumentsBuilder.Append ("-D "); // debug
+            }
+            /*else
+            {
+              launchArgumentsBuilder.Append ("-W "); // wait
+            }*/
 
-          if (string.IsNullOrEmpty (launchResponse))
-          {
-            throw new InvalidOperationException ("Launch activity attempt returned invalid or empty response");
+            launchArgumentsBuilder.Append (packageName + "/" + launchActivity);
+
+            string launchResponse = debuggeePort.PortDevice.Shell ("am", launchArgumentsBuilder.ToString (), 5000);
+
+            if (string.IsNullOrEmpty (launchResponse) || launchResponse.Contains ("Error:"))
+            {
+              throw new InvalidOperationException ("Launch intent failed. Response: " + launchResponse);
+            }
           }
+        }
+        catch (Exception e)
+        {
+          LoggingUtils.HandleException (e);
 
-          if (launchResponse.Contains ("Error:"))
-          {
-            throw new InvalidOperationException ("Launch activity attempt failed. " + launchResponse);
-          }
+          throw e;
         }
 
         // 
@@ -751,7 +772,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           if (!appIsRunning)
           {
-            Thread.Sleep (100);
+            Thread.Yield ();
           }
         }
 
@@ -761,7 +782,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (debugProcess == null)
         {
-          throw new InvalidOperationException ("Invalid process. Could not continue.");
+          throw new InvalidOperationException ("Process failed to launch. Could not continue.");
         }
 
         process = debugProcess;
@@ -845,7 +866,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         DebuggeeProcess debugProcess = (process as DebuggeeProcess);
 
-        debugProcess.Detach ();
+        Broadcast (new DebugEngineEvent.ProgramDestroy (0), debugProcess.DebuggeeProgram, null);
+
+        debugProcess.Terminate ();
       }
       catch (Exception e)
       {

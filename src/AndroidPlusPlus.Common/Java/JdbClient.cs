@@ -56,7 +56,7 @@ namespace AndroidPlusPlus.Common
 
     private ManualResetEvent m_syncCommandLock;
 
-    private int m_sessionLastActivityTick;
+    private int m_lastOperationTimestamp;
 
     private uint m_sessionCommandToken;
 
@@ -66,6 +66,8 @@ namespace AndroidPlusPlus.Common
 
     public JdbClient (JdbSetup jdbSetup)
     {
+      LoggingUtils.PrintFunction ();
+
       m_jdbSetup = jdbSetup;
 
       m_jdbClientInstance = null;
@@ -73,8 +75,6 @@ namespace AndroidPlusPlus.Common
       m_asyncCommandCallbacks = new Dictionary<uint, OnResultRecordDelegate> ();
 
       m_syncCommandLock = null;
-
-      m_sessionLastActivityTick = Environment.TickCount;
 
       m_sessionCommandToken = 1; // Start at 1 so 0 can represent an invalid token.
     }
@@ -85,7 +85,7 @@ namespace AndroidPlusPlus.Common
 
     public void Dispose ()
     {
-      Trace.WriteLine (string.Format ("[JdbClient] Dispose:"));
+      LoggingUtils.PrintFunction ();
 
       SendAsyncCommand ("quit");
 
@@ -110,7 +110,7 @@ namespace AndroidPlusPlus.Common
 
     public bool Start ()
     {
-      Trace.WriteLine (string.Format ("[JdbClient] Start:"));
+      LoggingUtils.PrintFunction ();
 
       m_jdbSetup.SetupPortForwarding ();
 
@@ -134,6 +134,8 @@ namespace AndroidPlusPlus.Common
 
       m_jdbClientInstance.Listener = this;
 
+      m_lastOperationTimestamp = Environment.TickCount;
+
       m_jdbClientInstance.Start ();
 
       return true;
@@ -145,7 +147,7 @@ namespace AndroidPlusPlus.Common
 
     public bool Attach ()
     {
-      Trace.WriteLine (string.Format ("[JdbClient] Attach:"));
+      LoggingUtils.PrintFunction ();
 
       throw new NotImplementedException ();
     }
@@ -156,7 +158,7 @@ namespace AndroidPlusPlus.Common
 
     public bool Detach ()
     {
-      Trace.WriteLine (string.Format ("[JdbClient] Detach:"));
+      LoggingUtils.PrintFunction ();
 
       throw new NotImplementedException ();
     }
@@ -167,7 +169,7 @@ namespace AndroidPlusPlus.Common
 
     public void Stop ()
     {
-      Trace.WriteLine (string.Format ("[JdbClient] Stop:"));
+      LoggingUtils.PrintFunction ();
 
       throw new NotImplementedException ();
     }
@@ -178,9 +180,9 @@ namespace AndroidPlusPlus.Common
 
     public void Continue ()
     {
-      Trace.WriteLine (string.Format ("[JdbClient] Continue:"));
+      LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      SendAsyncCommand ("cont");
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -189,7 +191,7 @@ namespace AndroidPlusPlus.Common
 
     public void Terminate ()
     {
-      Trace.WriteLine (string.Format ("[JdbClient] Terminate:"));
+      LoggingUtils.PrintFunction ();
 
       throw new NotImplementedException ();
     }
@@ -204,7 +206,7 @@ namespace AndroidPlusPlus.Common
       // Perform a synchronous command request; issue a standard async command and keep alive whilst still receiving output.
       // 
 
-      Trace.WriteLine (string.Format ("[JdbClient] SendCommand: {0}", command));
+      LoggingUtils.Print (string.Format ("[JdbClient] SendCommand: {0}", command));
 
       MiResultRecord syncResultRecord = null;
 
@@ -213,7 +215,7 @@ namespace AndroidPlusPlus.Common
         return syncResultRecord;
       }
 
-      lock (this)
+      //lock (this)
       {
         m_syncCommandLock = new ManualResetEvent (false);
 
@@ -227,13 +229,11 @@ namespace AndroidPlusPlus.Common
           }
         });
 
-        Thread.Yield ();
-
         // 
         // Wait for asynchronous record response (or exit), reset timeout each time new activity occurs.
         // 
 
-        int timeoutFromCurrentTick = timeout;
+        int timeoutFromCurrentTick = (timeout + m_lastOperationTimestamp) - Environment.TickCount;
 
         bool responseSignaled = false;
 
@@ -241,9 +241,12 @@ namespace AndroidPlusPlus.Common
         {
           responseSignaled = m_syncCommandLock.WaitOne (timeoutFromCurrentTick);
 
-          timeoutFromCurrentTick = (timeout + m_sessionLastActivityTick) - Environment.TickCount;
+          if (!responseSignaled)
+          {
+            timeoutFromCurrentTick = (timeout + m_lastOperationTimestamp) - Environment.TickCount;
 
-          Thread.Yield ();
+            Thread.Yield ();
+          }
         }
 
         if (!responseSignaled)
@@ -267,14 +270,14 @@ namespace AndroidPlusPlus.Common
       // Keep track of this command, and associated token-id, so results can be tracked asynchronously.
       // 
 
-      Trace.WriteLine (string.Format ("[JdbClient] SendAsyncCommand: {0}", command));
+      LoggingUtils.Print (string.Format ("[JdbClient] SendAsyncCommand: {0}", command));
 
       if (m_jdbClientInstance == null)
       {
         return;
       }
 
-      lock (this)
+      //lock (this)
       {
         m_asyncCommandCallbacks.Add (m_sessionCommandToken, asyncDelegate);
 
@@ -292,11 +295,20 @@ namespace AndroidPlusPlus.Common
 
     public void ProcessStdout (object sendingProcess, DataReceivedEventArgs args)
     {
+      m_lastOperationTimestamp = Environment.TickCount;
+
       if (!string.IsNullOrEmpty (args.Data))
       {
-        m_sessionLastActivityTick = Environment.TickCount;
+        LoggingUtils.Print (string.Format ("[JdbClient] ProcessStdout: {0}", args.Data));
 
-        Trace.WriteLine (string.Format ("[JdbClient] ProcessStdout: {0}", args.Data));
+        // 
+        // Simplistic exception handling.
+        // 
+
+        if (args.Data.Contains ("Exception occurred:"))
+        {
+          Continue ();
+        }
       }
     }
 
@@ -306,11 +318,11 @@ namespace AndroidPlusPlus.Common
 
     public void ProcessStderr (object sendingProcess, DataReceivedEventArgs args)
     {
+      m_lastOperationTimestamp = Environment.TickCount;
+
       if (!string.IsNullOrEmpty (args.Data))
       {
-        m_sessionLastActivityTick = Environment.TickCount;
-
-        Trace.WriteLine (string.Format ("[JdbClient] ProcessStderr: {0}", args.Data));
+        LoggingUtils.Print (string.Format ("[JdbClient] ProcessStderr: {0}", args.Data));
       }
     }
 
@@ -320,13 +332,9 @@ namespace AndroidPlusPlus.Common
 
     public void ProcessExited (object sendingProcess, EventArgs args)
     {
-      m_sessionLastActivityTick = Environment.TickCount;
+      m_lastOperationTimestamp = Environment.TickCount;
 
-      Trace.WriteLine (string.Format ("[JdbClient] ProcessExited: {0}", args));
-
-      m_jdbClientInstance.Dispose ();
-
-      m_jdbClientInstance = null;
+      LoggingUtils.Print (string.Format ("[JdbClient] ProcessExited: {0}", args));
 
       // 
       // If we're waiting on a synchronous command, signal a finish to process termination.

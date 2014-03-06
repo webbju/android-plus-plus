@@ -565,7 +565,18 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      try
+      {
+        LoggingUtils.RequireOk (DebuggeeProgram.Terminate ());
+
+        return DebugEngineConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return DebugEngineConstants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -95,18 +95,15 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        AndroidAdb.Refresh ();
+        m_portDevice.Refresh ();
 
         AndroidProcess [] activeDeviceProcesses = m_portDevice.GetProcesses ();
 
-        lock (m_debugProcesses)
-        {
-          m_debugProcesses.Clear ();
+        m_debugProcesses.Clear ();
 
-          foreach (AndroidProcess process in activeDeviceProcesses)
-          {
-            m_debugProcesses.Add (new DebuggeeProcess (this, process));
-          }
+        foreach (AndroidProcess process in activeDeviceProcesses)
+        {
+          m_debugProcesses.Add (new DebuggeeProcess (this, process));
         }
 
         return DebugEngineConstants.S_OK;

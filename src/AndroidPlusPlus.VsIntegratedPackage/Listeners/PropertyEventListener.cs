@@ -8,6 +8,8 @@ using System.Runtime.InteropServices;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell.Interop;
 
+using AndroidPlusPlus.Common;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -56,7 +58,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       // Unregister listener when the VS instance is not a 'zombie'.
       // 
 
-      Debug.WriteLine ("[PropertyEventListener] OnShellPropertyChange: " + propId.ToString () + ", " + var.ToString ());
+      LoggingUtils.Print ("[PropertyEventListener] OnShellPropertyChange: " + propId.ToString () + ", " + var.ToString ());
 
       if ((propId == (int)__VSSPROPID.VSSPROPID_Zombie) && !((bool)var))
       {

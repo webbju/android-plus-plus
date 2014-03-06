@@ -89,11 +89,20 @@ namespace AndroidPlusPlus.VsDebugLauncherX
     /// </remarks>
     public bool CanLaunch (DebugLaunchOptions launchOptions, IDictionary <string, string> projectProperties)
     {
-      AndroidAdb.Refresh ();
+      try
+      {
+        AndroidAdb.Refresh ();
 
-      AndroidDevice [] connectedDevices = AndroidAdb.GetConnectedDevices ();
+        AndroidDevice [] connectedDevices = AndroidAdb.GetConnectedDevices ();
 
-      return (connectedDevices.Length > 0);
+        return (connectedDevices.Length > 0);
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+      }
+
+      return false;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -127,7 +136,7 @@ namespace AndroidPlusPlus.VsDebugLauncherX
     /// </remarks>
     public IEnumerable<IDebugLaunchSettings> PrepareLaunch (DebugLaunchOptions options, IDictionary<string, string> projectProperties)
     {
-      Trace.WriteLine ("[DebugLauncher] PrepareLaunch: " + options);
+      LoggingUtils.Print ("[DebugLauncher] PrepareLaunch: " + options);
 
 #if FALSE
       // 
@@ -136,7 +145,7 @@ namespace AndroidPlusPlus.VsDebugLauncherX
 
       foreach (KeyValuePair <string, string> projectPropsPair in projectProperties)
       {
-        Trace.WriteLine ("[DebugLauncher] Project property: '" + projectPropsPair.Key + "': '" + projectPropsPair.Value + "'");
+        LoggingUtils.Print ("[DebugLauncher] Project property: '" + projectPropsPair.Key + "': '" + projectPropsPair.Value + "'");
       }
 #endif
 
@@ -155,7 +164,7 @@ namespace AndroidPlusPlus.VsDebugLauncherX
             throw new InvalidOperationException ("Could not find solution startup project.");
           }
 
-          Trace.WriteLine ("Launcher startup project: " + startupProject.Name + " (" + startupProject.FullName + ")");
+          LoggingUtils.Print ("Launcher startup project: " + startupProject.Name + " (" + startupProject.FullName + ")");
 
           if (options.HasFlag (DebugLaunchOptions.NoDebug))
           {
@@ -171,6 +180,8 @@ namespace AndroidPlusPlus.VsDebugLauncherX
       }
       catch (Exception e)
       {
+        LoggingUtils.HandleException (e);
+
         ShowErrorDialog (string.Format ("Debugging failed to launch, encountered exception: {0}", e.Message));
       }
 
@@ -289,7 +300,7 @@ namespace AndroidPlusPlus.VsDebugLauncherX
 
         using (SyncRedirectProcess getApkDetails = new SyncRedirectProcess (Path.Combine (androidSdkBuildToolsPath, "aapt.exe"), "dump --values badging " + debuggerTargetApk))
         {
-          getApkDetails.StartAndWaitForExit ();
+          getApkDetails.StartAndWaitForExit (5000);
 
           string [] apkDetails = getApkDetails.StandardOutput.Replace ("\r", "").Split (new char [] { '\n' });
 
@@ -417,7 +428,7 @@ namespace AndroidPlusPlus.VsDebugLauncherX
 
         launchConfig ["GdbTool"] = debuggerGdbTool;
 
-        launchConfig ["LibraryPaths"] = StringUtils.ConvertPathWindowsToPosix (debuggerLibraryPaths);
+        launchConfig ["LibraryPaths"] = debuggerLibraryPaths;
 
         debugLaunchSettings.Options = launchConfig.ToString ();
 
@@ -441,11 +452,9 @@ namespace AndroidPlusPlus.VsDebugLauncherX
       }
       catch (Exception e)
       {
-#if DEBUG
-        ShowErrorDialog (string.Format ("Debugging failed to launch, encountered exception: {0}\n\nStack trace:\n", e.Message, e.StackTrace));
-#else
+        LoggingUtils.HandleException (e);
+
         ShowErrorDialog (string.Format ("Debugging failed to launch, encountered exception: {0}", e.Message));
-#endif
       }
 
       return debugLaunchSettings;
@@ -457,8 +466,6 @@ namespace AndroidPlusPlus.VsDebugLauncherX
 
     private void ShowErrorDialog (string message)
     {
-      Debug.WriteLine (message);
-
       VsShellUtilities.ShowMessageBox (ServiceProvider, message, "Android++ Debugger", OLEMSGICON.OLEMSGICON_CRITICAL, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
     }
 

@@ -36,6 +36,7 @@ namespace AndroidPlusPlus.Common
 
     public static void PrintFunction ()
     {
+#if DEBUG
       // 
       // Print the class, method name, and attributes of the caller function.
       // 
@@ -47,6 +48,7 @@ namespace AndroidPlusPlus.Common
       MethodBase method = stackFrame.GetMethod ();
 
       Print (string.Format ("[{0}] {1}", method.DeclaringType.Name, method.Name));
+#endif
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -76,7 +78,7 @@ namespace AndroidPlusPlus.Common
 
     public static void HandleException (Exception e)
     {
-      Print (string.Format ("[Exception] {0} {1}", e.Message, e.StackTrace));
+      Print (string.Format ("[Exception] {0}\n{1}", e.Message, e.StackTrace));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

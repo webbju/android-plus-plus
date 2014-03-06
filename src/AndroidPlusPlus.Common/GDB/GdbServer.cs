@@ -35,6 +35,8 @@ namespace AndroidPlusPlus.Common
 
     public GdbServer (GdbSetup gdbSetup)
     {
+      LoggingUtils.PrintFunction ();
+
       m_gdbSetup = gdbSetup;
 
       m_gdbServerInstance = null;
@@ -46,6 +48,8 @@ namespace AndroidPlusPlus.Common
 
     public void Dispose ()
     {
+      LoggingUtils.PrintFunction ();
+
       if (m_gdbServerInstance != null)
       {
         m_gdbServerInstance.Dispose ();
@@ -60,9 +64,7 @@ namespace AndroidPlusPlus.Common
 
     public bool Start ()
     {
-      Trace.WriteLine (string.Format ("[GdbServer] Start:"));
-
-      AndroidAdb.Refresh ();
+      LoggingUtils.PrintFunction ();
 
       if (CheckGdbServerTarget ())
       {
@@ -78,7 +80,7 @@ namespace AndroidPlusPlus.Common
 
         m_gdbServerInstance.Start ();
 
-        Trace.WriteLine (string.Format ("[GdbServer] Launched gdbserver succesfully."));
+        LoggingUtils.Print (string.Format ("[GdbServer] Launched gdbserver succesfully."));
 
         return true;
       }
@@ -92,7 +94,7 @@ namespace AndroidPlusPlus.Common
 
     public bool Stop ()
     {
-      Trace.WriteLine (string.Format ("[GdbServer] Stop:"));
+      LoggingUtils.PrintFunction ();
 
       bool stopped = false;
 
@@ -105,8 +107,6 @@ namespace AndroidPlusPlus.Common
         stopped = true;
       }
 
-      AndroidAdb.Refresh ();
-
       KillActiveGdbServerSessions ();
 
       return stopped;
@@ -118,7 +118,7 @@ namespace AndroidPlusPlus.Common
 
     private bool CheckGdbServerTarget ()
     {
-      Trace.WriteLine (string.Format ("[GdbServer] CheckGdbServerTarget:"));
+      LoggingUtils.PrintFunction ();
 
       if (AndroidAdb.IsDeviceConnected (m_gdbSetup.Process.HostDevice))
       {
@@ -126,17 +126,25 @@ namespace AndroidPlusPlus.Common
         // Check the target 'gdbserver' exits.
         // 
 
-        using (SyncRedirectProcess checkGdbServer = AndroidAdb.AdbCommand (m_gdbSetup.Process.HostDevice, "shell", string.Format ("ls {0}/lib/gdbserver", m_gdbSetup.Process.InternalCacheDirectory)))
+        try
         {
-          checkGdbServer.StartAndWaitForExit (1000);
-
-          if (checkGdbServer.StandardOutput.ToLower ().Contains ("no such file"))
+          using (SyncRedirectProcess checkGdbServer = AndroidAdb.AdbCommand (m_gdbSetup.Process.HostDevice, "shell", string.Format ("ls {0}/lib/gdbserver", m_gdbSetup.Process.InternalCacheDirectory)))
           {
-            return false;
+            if (checkGdbServer.StartAndWaitForExit (1000) != 0)
+            {
+              throw new InvalidOperationException ("Could not locate 'gdbserver' target.");
+            }
+
+            if (!checkGdbServer.StandardOutput.ToLower ().Contains ("no such file"))
+            {
+              return true;
+            }
           }
         }
-
-        return true;
+        catch (Exception e)
+        {
+          LoggingUtils.HandleException (e);
+        }
       }
 
       return false;
@@ -148,17 +156,19 @@ namespace AndroidPlusPlus.Common
 
     private void KillActiveGdbServerSessions ()
     {
-      Trace.WriteLine (string.Format ("[GdbServer] KillActiveGdbServerSessions:"));
+      LoggingUtils.PrintFunction ();
 
       if (AndroidAdb.IsDeviceConnected (m_gdbSetup.Process.HostDevice))
       {
+        m_gdbSetup.Process.HostDevice.Refresh ();
+
         AndroidProcess [] activeProcesses = m_gdbSetup.Process.HostDevice.GetProcesses ();
 
         foreach (AndroidProcess process in activeProcesses)
         {
           if (process.Name.Contains ("lib/gdbserver"))
           {
-            Trace.WriteLine (string.Format ("[GdbServer] Killing existing debugging session: ({0}).", process.Name));
+            LoggingUtils.Print (string.Format ("[GdbServer] Killing existing debugging session: ({0}).", process.Name));
 
             m_gdbSetup.Process.HostDevice.Shell (string.Format ("run-as {0}", process.Name), string.Format ("kill -9 {0}", process.Pid));
           }
@@ -174,7 +184,7 @@ namespace AndroidPlusPlus.Common
     {
       if (!string.IsNullOrEmpty (args.Data))
       {
-        Trace.WriteLine (string.Format ("[GdbServer] ProcessStdout: {0}", args.Data));
+        LoggingUtils.Print (string.Format ("[GdbServer] ProcessStdout: {0}", args.Data));
       }
     }
 
@@ -186,7 +196,7 @@ namespace AndroidPlusPlus.Common
     {
       if (!string.IsNullOrEmpty (args.Data))
       {
-        Trace.WriteLine (string.Format ("[GdbServer] ProcessStderr: {0}", args.Data));
+        LoggingUtils.Print (string.Format ("[GdbServer] ProcessStderr: {0}", args.Data));
       }
     }
 
@@ -196,7 +206,7 @@ namespace AndroidPlusPlus.Common
 
     public void ProcessExited (object sendingProcess, EventArgs args)
     {
-      Trace.WriteLine (string.Format ("[GdbServer] ProcessExited: {0}", args));
+      LoggingUtils.Print (string.Format ("[GdbServer] ProcessExited: {0}", args));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

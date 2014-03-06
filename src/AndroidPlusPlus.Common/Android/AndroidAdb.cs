@@ -51,6 +51,8 @@ namespace AndroidPlusPlus.Common
 
     public static void Refresh ()
     {
+      LoggingUtils.PrintFunction ();
+
       lock (m_updateLockMutex)
       {
         // 
@@ -59,12 +61,12 @@ namespace AndroidPlusPlus.Common
 
         using (SyncRedirectProcess adbStartServer = new SyncRedirectProcess (AndroidSettings.SdkRoot + @"\platform-tools\adb.exe", "start-server"))
         {
-          adbStartServer.StartAndWaitForExit ();
+          adbStartServer.StartAndWaitForExit (10000);
         }
 
         using (SyncRedirectProcess adbDevices = new SyncRedirectProcess (AndroidSettings.SdkRoot + @"\platform-tools\adb.exe", "devices"))
         {
-          adbDevices.StartAndWaitForExit (1000);
+          adbDevices.StartAndWaitForExit (5000);
 
           // 
           // Parse 'devices' output, skipping headers and potential 'start-server' output.
@@ -72,7 +74,7 @@ namespace AndroidPlusPlus.Common
 
           Dictionary<string, string> currentConnectedDevices = new Dictionary<string, string> ();
 
-          Trace.WriteLine (string.Format ("[AndroidAdb] Refresh: {0}", adbDevices.StandardOutput));
+          LoggingUtils.Print (string.Format ("[AndroidAdb] Devices output: {0}", adbDevices.StandardOutput));
 
           if (!String.IsNullOrEmpty (adbDevices.StandardOutput))
           {
@@ -109,7 +111,7 @@ namespace AndroidPlusPlus.Common
               // Device is pervasive. Refresh internal properties.
               // 
 
-              Trace.WriteLine (string.Format ("[AndroidAdb] Device pervaded: {0} - {1}", deviceName, deviceType));
+              LoggingUtils.Print (string.Format ("[AndroidAdb] Device pervaded: {0} - {1}", deviceName, deviceType));
 
               AndroidDevice pervasiveDevice = (m_connectedDevices [connectedDevicePair.Key] as AndroidDevice);
 
@@ -126,7 +128,7 @@ namespace AndroidPlusPlus.Common
               // Device connected.
               // 
 
-              Trace.WriteLine (string.Format ("[AndroidAdb] Device connected: {0} - {1}", deviceName, deviceType));
+              LoggingUtils.Print (string.Format ("[AndroidAdb] Device connected: {0} - {1}", deviceName, deviceType));
 
               AndroidDevice connectedDevice = new AndroidDevice (deviceName);
 
@@ -165,7 +167,7 @@ namespace AndroidPlusPlus.Common
 
             AndroidDevice disconnectedDevice = (AndroidDevice)m_connectedDevices [deviceName];
 
-            Trace.WriteLine (string.Format ("[AndroidAdb] Device disconnected: {0}", deviceName));
+            LoggingUtils.Print (string.Format ("[AndroidAdb] Device disconnected: {0}", deviceName));
 
             m_connectedDevices.Remove (deviceName);
 
@@ -197,8 +199,6 @@ namespace AndroidPlusPlus.Common
           deviceArray [i++] = device;
         }
 
-        Trace.Assert (i == m_connectedDevices.Count);
-
         return deviceArray;
       }
     }
@@ -209,9 +209,9 @@ namespace AndroidPlusPlus.Common
 
     public static SyncRedirectProcess AdbCommand (string command, string arguments)
     {
-      Trace.WriteLine (string.Format ("[AndroidDevice] AdbCommand: Cmd={0} Args={1}", command, arguments));
+      LoggingUtils.Print (string.Format ("[AndroidDevice] AdbCommand: Cmd={0} Args={1}", command, arguments));
 
-      SyncRedirectProcess adbCommand = new SyncRedirectProcess (AndroidSettings.SdkRoot + @"\platform-tools\adb.exe", string.Format ("-s {0} {1}", command, arguments));
+      SyncRedirectProcess adbCommand = new SyncRedirectProcess (AndroidSettings.SdkRoot + @"\platform-tools\adb.exe", string.Format ("{0} {1}", command, arguments));
 
       return adbCommand;
     }
@@ -222,7 +222,7 @@ namespace AndroidPlusPlus.Common
 
     public static SyncRedirectProcess AdbCommand (AndroidDevice target, string command, string arguments)
     {
-      Trace.WriteLine (string.Format ("[AndroidDevice] AdbCommand: Target={0} Cmd={1} Args={2}", target.ID, command, arguments));
+      LoggingUtils.Print (string.Format ("[AndroidDevice] AdbCommand: Target={0} Cmd={1} Args={2}", target.ID, command, arguments));
 
       SyncRedirectProcess adbCommand = new SyncRedirectProcess (AndroidSettings.SdkRoot + @"\platform-tools\adb.exe", string.Format ("-s {0} {1} {2}", target.ID, command, arguments));
 
@@ -235,7 +235,7 @@ namespace AndroidPlusPlus.Common
 
     public static AsyncRedirectProcess AdbCommandAsync (AndroidDevice target, string command, string arguments)
     {
-      Trace.WriteLine (string.Format ("[AndroidDevice] AdbCommandAsync: Target={0} Cmd={1} Args={2}", target.ID, command, arguments));
+      LoggingUtils.Print (string.Format ("[AndroidDevice] AdbCommandAsync: Target={0} Cmd={1} Args={2}", target.ID, command, arguments));
 
       AsyncRedirectProcess adbCommand = new AsyncRedirectProcess (AndroidSettings.SdkRoot + @"\platform-tools\adb.exe", string.Format ("-s {0} {1} {2}", target.ID, command, arguments));
 
@@ -248,6 +248,8 @@ namespace AndroidPlusPlus.Common
 
     public static bool IsDeviceConnected (AndroidDevice queryDevice)
     {
+      LoggingUtils.PrintFunction ();
+
       lock (m_connectedDevices)
       {
         foreach (object key in m_connectedDevices.Keys)
@@ -270,6 +272,8 @@ namespace AndroidPlusPlus.Common
 
     public static void RegisterDeviceStateListener (StateListener listner)
     {
+      LoggingUtils.PrintFunction ();
+
       lock (m_registeredDeviceStateListeners)
       {
         m_registeredDeviceStateListeners.Add (listner);

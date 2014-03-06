@@ -73,6 +73,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void SelectThread (CLangDebuggeeThread thread)
     {
+      LoggingUtils.PrintFunction ();
+
       uint requestedThreadId;
 
       LoggingUtils.RequireOk (thread.GetThreadId (out requestedThreadId));
@@ -782,14 +784,11 @@ namespace AndroidPlusPlus.VsDebugEngine
       try
       {
 #if false
-        m_debugger.GdbClient.Stop ();
-
         m_debugger.GdbClient.Terminate ();
 #else
-        m_debugger.Engine.Broadcast (new CLangDebuggerEvent.DetachClient (m_debugger), DebugProgram, null);
-
         m_debugger.Engine.Broadcast (new CLangDebuggerEvent.TerminateClient (m_debugger), DebugProgram, null);
 #endif
+
         return DebugEngineConstants.S_OK;
       }
       catch (Exception e)

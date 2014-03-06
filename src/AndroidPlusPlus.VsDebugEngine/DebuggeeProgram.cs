@@ -238,8 +238,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      uint exitCode = 0;
-
       try
       {
         if (AttachedEngine == null)
@@ -251,8 +249,6 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.Detach ());
         }
-
-        AttachedEngine.Broadcast (new DebugEngineEvent.ProgramDestroy (exitCode), this, null);
 
         return DebugEngineConstants.S_OK;
       }

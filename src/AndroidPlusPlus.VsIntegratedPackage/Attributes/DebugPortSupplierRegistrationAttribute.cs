@@ -12,6 +12,8 @@ using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.Win32;
 
+using AndroidPlusPlus.Common;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -90,9 +92,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
           RegisterWithKey (regKey, regKey.GetType ());
         }
       }
-      catch (Exception ex)
+      catch (Exception e)
       {
-        Trace.WriteLine ("Couldn't create or access '" + PortSupplierKey + "' data. " + ex.ToString ());
+        LoggingUtils.HandleException (e);
       }
     }
 
@@ -112,9 +114,15 @@ namespace AndroidPlusPlus.VsIntegratedPackage
           regKeySetValue = regKeyType.GetMethod ("SetValue", new [] { typeof (string), typeof (object) }),
           regKeyClose = regKeyType.GetMethod("Close");
 
-        Trace.Assert (regKeySetValue != null);
+        if (regKeySetValue == null)
+        {
+          throw new InvalidOperationException ();
+        }
 
-        Trace.Assert (regKeyClose != null);
+        if (regKeyClose == null)
+        {
+          throw new InvalidOperationException ();
+        }
 
         regKeySetValue.Invoke (regKey, new object [] { string.Empty, m_portSupplierType.AssemblyQualifiedName });
 
@@ -124,9 +132,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
         regKeyClose.Invoke (regKey, null);
       }
-      catch (Exception ex)
+      catch (Exception e)
       {
-        Trace.WriteLine ("Failed writing to '" + PortSupplierKey + "'. " + ex.ToString ());
+        LoggingUtils.HandleException (e);
       }
     }
 

@@ -78,17 +78,17 @@ namespace AndroidPlusPlus.Common
 
     private readonly GdbSetup m_gdbSetup;
 
-    private GdbServer m_gdbServer;
+    private GdbServer m_gdbServer = null;
 
-    private AsyncRedirectProcess m_gdbClientInstance;
+    private AsyncRedirectProcess m_gdbClientInstance = null;
 
-    private Dictionary<uint, AsyncCommandData> m_asyncCommandData;
+    private Dictionary<uint, AsyncCommandData> m_asyncCommandData = new Dictionary<uint,AsyncCommandData> ();
 
-    private ManualResetEvent m_syncCommandLock;
+    private ManualResetEvent m_syncCommandLock = null;
 
-    private int m_sessionLastActivityTick;
+    private int m_lastOperationTimestamp = 0;
 
-    private uint m_sessionCommandToken;
+    private uint m_sessionCommandToken = 1; // Start at 1 so 0 can represent an invalid token.
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -97,18 +97,6 @@ namespace AndroidPlusPlus.Common
     public GdbClient (GdbSetup gdbSetup)
     {
       m_gdbSetup = gdbSetup;
-
-      m_gdbServer = null;
-
-      m_gdbClientInstance = null;
-
-      m_asyncCommandData = new Dictionary<uint, AsyncCommandData> ();
-
-      m_syncCommandLock = null;
-
-      m_sessionLastActivityTick = Environment.TickCount;
-
-      m_sessionCommandToken = 1; // Start at 1 so 0 can represent an invalid token.
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -117,7 +105,7 @@ namespace AndroidPlusPlus.Common
 
     public void Dispose ()
     {
-      Trace.WriteLine (string.Format ("[GdbClient] Dispose:"));
+      LoggingUtils.PrintFunction ();
 
       SendAsyncCommand ("-gdb-exit");
 
@@ -142,7 +130,7 @@ namespace AndroidPlusPlus.Common
 
     public void Start ()
     {
-      Trace.WriteLine (string.Format ("[GdbClient] Start:"));
+      LoggingUtils.PrintFunction ();
 
       m_gdbClientInstance = new AsyncRedirectProcess (m_gdbSetup.GdbToolPath, m_gdbSetup.GdbToolArguments);
 
@@ -153,6 +141,10 @@ namespace AndroidPlusPlus.Common
         m_gdbClientInstance.StartInfo.Arguments += string.Format (@" -x {0}\gdb.setup", StringUtils.ConvertPathWindowsToPosix (m_gdbSetup.CacheDirectory));
       }
 
+      m_syncCommandLock = new ManualResetEvent (false);
+
+      m_lastOperationTimestamp = Environment.TickCount;
+
       m_gdbClientInstance.Start ();
     }
 
@@ -162,9 +154,11 @@ namespace AndroidPlusPlus.Common
 
     public void Attach (GdbServer gdbServer)
     {
-      Trace.WriteLine (string.Format ("[GdbClient] Attach:"));
+      LoggingUtils.PrintFunction ();
 
       m_gdbServer = gdbServer;
+
+      m_gdbSetup.ClearPortForwarding ();
 
       m_gdbSetup.SetupPortForwarding ();
 
@@ -193,9 +187,9 @@ namespace AndroidPlusPlus.Common
 
     public void Detach ()
     {
-      Trace.WriteLine (string.Format ("[GdbClient] Detach:"));
+      LoggingUtils.PrintFunction ();
 
-      SendAsyncCommand ("-target-detach");
+      SendCommand ("-target-detach");
 
       m_gdbServer = null;
 
@@ -208,7 +202,7 @@ namespace AndroidPlusPlus.Common
 
     public void Stop ()
     {
-      Trace.WriteLine (string.Format ("[GdbClient] Stop:"));
+      LoggingUtils.PrintFunction ();
 
       SendCommand ("-exec-interrupt");
     }
@@ -219,7 +213,7 @@ namespace AndroidPlusPlus.Common
 
     public void Continue ()
     {
-      Trace.WriteLine (string.Format ("[GdbClient] Continue:"));
+      LoggingUtils.PrintFunction ();
 
       SendCommand ("-exec-continue");
     }
@@ -230,9 +224,11 @@ namespace AndroidPlusPlus.Common
 
     public void Terminate ()
     {
-      Trace.WriteLine (string.Format ("[GdbClient] Terminate:"));
+      LoggingUtils.PrintFunction ();
 
-      SendAsyncCommand ("kill");
+      SendCommand ("-exec-interrupt");
+
+      SendCommand ("kill");
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -241,6 +237,8 @@ namespace AndroidPlusPlus.Common
 
     public void StepInto (StepType stepType, bool reverse)
     {
+      LoggingUtils.PrintFunction ();
+
       switch (stepType)
       {
         case StepType.Statement:
@@ -275,6 +273,8 @@ namespace AndroidPlusPlus.Common
 
     public void StepOut (StepType stepType, bool reverse)
     {
+      LoggingUtils.PrintFunction ();
+
       switch (stepType)
       {
         case StepType.Statement:
@@ -299,6 +299,8 @@ namespace AndroidPlusPlus.Common
 
     public void StepOver (StepType stepType, bool reverse)
     {
+      LoggingUtils.PrintFunction ();
+
       switch (stepType)
       {
         case StepType.Statement:
@@ -333,7 +335,7 @@ namespace AndroidPlusPlus.Common
 
     public string GetSetting (string setting)
     {
-      Trace.WriteLine (string.Format ("[GdbClient] GetSetting: " + setting));
+      LoggingUtils.Print (string.Format ("[GdbClient] GetSetting: " + setting));
 
       MiResultRecord result = SendCommand (string.Format ("-gdb-show {0}", setting));
 
@@ -351,7 +353,7 @@ namespace AndroidPlusPlus.Common
 
     public void SetSetting (string setting, string value)
     {
-      Trace.WriteLine (string.Format ("[GdbClient] SetSetting: " + setting + ", " + value));
+      LoggingUtils.Print (string.Format ("[GdbClient] SetSetting: " + setting + ", " + value));
 
       SendCommand (string.Format ("-gdb-set {0} {1}", setting, value));
     }
@@ -366,7 +368,7 @@ namespace AndroidPlusPlus.Common
       // Perform a synchronous command request; issue a standard async command and keep alive whilst still receiving output.
       // 
 
-      Trace.WriteLine (string.Format ("[GdbClient] SendCommand: {0}", command));
+      LoggingUtils.Print (string.Format ("[GdbClient] SendCommand: {0}", command));
 
       MiResultRecord syncResultRecord = null;
 
@@ -375,45 +377,38 @@ namespace AndroidPlusPlus.Common
         return syncResultRecord;
       }
 
-      lock (this)
+      m_syncCommandLock.Reset ();
+
+      SendAsyncCommand (command, delegate (MiResultRecord record) 
       {
-        m_syncCommandLock = new ManualResetEvent (false);
+        syncResultRecord = record;
 
-        SendAsyncCommand (command, delegate (MiResultRecord record) 
-        {
-          syncResultRecord = record;
+        m_syncCommandLock.Set ();
+      });
 
-          if (m_syncCommandLock != null)
-          {
-            m_syncCommandLock.Set ();
-          }
-        });
+      // 
+      // Wait for asynchronous record response (or exit), reset timeout each time new activity occurs.
+      // 
 
-        Thread.Yield ();
+      int timeoutFromCurrentTick = (timeout + m_lastOperationTimestamp) - Environment.TickCount;
 
-        // 
-        // Wait for asynchronous record response (or exit), reset timeout each time new activity occurs.
-        // 
+      bool responseSignaled = false;
 
-        int timeoutFromCurrentTick = timeout;
-
-        bool responseSignaled = false;
-
-        while ((!responseSignaled) && (timeoutFromCurrentTick > 0))
-        {
-          responseSignaled = m_syncCommandLock.WaitOne (timeoutFromCurrentTick);
-
-          timeoutFromCurrentTick = (timeout + m_sessionLastActivityTick) - Environment.TickCount;
-
-          Thread.Yield ();
-        }
+      while ((!responseSignaled) && (timeoutFromCurrentTick > 0))
+      {
+        responseSignaled = m_syncCommandLock.WaitOne (0);
 
         if (!responseSignaled)
         {
-          throw new TimeoutException ("Timed out waiting for synchronous SendCommand response.");
-        }
+          timeoutFromCurrentTick = (timeout + m_lastOperationTimestamp) - Environment.TickCount;
 
-        m_syncCommandLock = null;
+          Thread.Yield ();
+        }
+      }
+
+      if (!responseSignaled)
+      {
+        throw new TimeoutException ("Timed out waiting for synchronous SendCommand response.");
       }
 
       return syncResultRecord;
@@ -429,14 +424,14 @@ namespace AndroidPlusPlus.Common
       // Keep track of this command, and associated token-id, so results can be tracked asynchronously.
       // 
 
-      Trace.WriteLine (string.Format ("[GdbClient] SendAsyncCommand: {0}", command));
+      LoggingUtils.PrintFunction ();
 
       if (m_gdbClientInstance == null)
       {
         return;
       }
 
-      lock (this)
+      ThreadPool.QueueUserWorkItem (delegate (object state)
       {
         AsyncCommandData commandData = new AsyncCommandData ();
 
@@ -455,7 +450,9 @@ namespace AndroidPlusPlus.Common
         ++m_sessionCommandToken;
 
         m_gdbClientInstance.SendCommand (command);
-      }
+
+        LoggingUtils.Print (string.Format ("[GdbClient] SendAsyncCommand: {0}", command));
+      });
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -464,11 +461,11 @@ namespace AndroidPlusPlus.Common
 
     public void ProcessStdout (object sendingProcess, DataReceivedEventArgs args)
     {
+      m_lastOperationTimestamp = Environment.TickCount;
+
       if (!string.IsNullOrEmpty (args.Data))
       {
-        m_sessionLastActivityTick = Environment.TickCount;
-
-        Trace.WriteLine (string.Format ("[GdbClient] ProcessStdout: {0}", args.Data));
+        LoggingUtils.Print (string.Format ("[GdbClient] ProcessStdout: {0}", args.Data));
 
         // 
         // Distribute result records to registered delegate callbacks.
@@ -503,14 +500,11 @@ namespace AndroidPlusPlus.Common
           // We cache these outputs for any active CLI commands, identifiable as the commands don't start with '-'.
           // 
 
-          lock (m_asyncCommandData)
+          foreach (KeyValuePair<uint, AsyncCommandData> asyncCommand in m_asyncCommandData)
           {
-            foreach (KeyValuePair<uint, AsyncCommandData> asyncCommand in m_asyncCommandData)
+            if (!asyncCommand.Value.Command.StartsWith ("-"))
             {
-              if (!asyncCommand.Value.Command.StartsWith ("-"))
-              {
-                asyncCommand.Value.StreamRecords.Add (streamRecord);
-              }
+              asyncCommand.Value.StreamRecords.Add (streamRecord);
             }
           }
         }
@@ -525,17 +519,17 @@ namespace AndroidPlusPlus.Common
         {
           AsyncCommandData callbackCommandData = null;
 
-          lock (m_asyncCommandData)
+          if (m_asyncCommandData.TryGetValue (callbackRecord.Token, out callbackCommandData))
           {
-            if (m_asyncCommandData.TryGetValue (callbackRecord.Token, out callbackCommandData))
+            callbackRecord.Records.AddRange (callbackCommandData.StreamRecords);
+
+            if (callbackCommandData.ResultDelegate != null)
             {
-              callbackRecord.Records.AddRange (callbackCommandData.StreamRecords);
+              callbackCommandData.ResultDelegate (callbackRecord);
+            }
 
-              if (callbackCommandData.ResultDelegate != null)
-              {
-                callbackCommandData.ResultDelegate (callbackRecord);
-              }
-
+            lock (m_asyncCommandData)
+            {
               m_asyncCommandData.Remove (callbackRecord.Token);
             }
           }
@@ -549,11 +543,11 @@ namespace AndroidPlusPlus.Common
 
     public void ProcessStderr (object sendingProcess, DataReceivedEventArgs args)
     {
-      if (!string.IsNullOrEmpty (args.Data))
-      {
-        m_sessionLastActivityTick = Environment.TickCount;
+      m_lastOperationTimestamp = Environment.TickCount;
 
-        Trace.WriteLine (string.Format ("[GdbClient] ProcessStderr: {0}", args.Data));
+      if (!string.IsNullOrWhiteSpace (args.Data))
+      {
+        LoggingUtils.Print (string.Format ("[GdbClient] ProcessStderr: {0}", args.Data));
       }
     }
 
@@ -563,11 +557,9 @@ namespace AndroidPlusPlus.Common
 
     public void ProcessExited (object sendingProcess, EventArgs args)
     {
-      m_sessionLastActivityTick = Environment.TickCount;
+      m_lastOperationTimestamp = Environment.TickCount;
 
-      Trace.WriteLine (string.Format ("[GdbClient] ProcessExited: {0}", args));
-
-      m_gdbClientInstance.Dispose ();
+      LoggingUtils.Print (string.Format ("[GdbClient] ProcessExited: {0}", args));
 
       m_gdbClientInstance = null;
 
@@ -575,10 +567,7 @@ namespace AndroidPlusPlus.Common
       // If we're waiting on a synchronous command, signal a finish to process termination.
       // 
 
-      if (m_syncCommandLock != null)
-      {
-        m_syncCommandLock.Set ();
-      }
+      m_syncCommandLock.Set ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

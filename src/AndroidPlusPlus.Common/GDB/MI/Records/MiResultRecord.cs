@@ -53,7 +53,17 @@ namespace AndroidPlusPlus.Common
 
       foreach (MiResultValue value in Results)
       {
-        m_fieldDictionary.Add (value.Variable, value);
+        // GDB 7.3.1 has a bug where the reason field can be provided twice for locations with a breakpoint, when already stepping.
+        // This is potentially fixed in GDB 7.4. But workaround exceptions here.
+
+        try
+        {
+          m_fieldDictionary.Add (value.Variable, value);
+        }
+        catch (Exception e)
+        {
+          LoggingUtils.HandleException (e);
+        }
       }
     }
 

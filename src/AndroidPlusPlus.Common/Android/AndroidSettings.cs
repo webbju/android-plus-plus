@@ -112,9 +112,11 @@ namespace AndroidPlusPlus.Common
 
           androidSdkPossibleLocations.Add (Environment.GetEnvironmentVariable ("ANDROID_SDK_ROOT"));
         }
-        catch (SecurityException ex)
+        catch (SecurityException e)
         {
-          Trace.WriteLine ("Failed retrieving ANDROID_SDK_* environment variables: {0}", ex.Message);
+          LoggingUtils.Print (string.Format ("Failed retrieving ANDROID_SDK_* environment variables: {0}", e.Message));
+
+          LoggingUtils.HandleException (e);
         }
 
         using (RegistryKey localMachineAndroidSdkTools = Registry.LocalMachine.OpenSubKey (@"SOFTWARE\Android SDK Tools\"))
@@ -183,7 +185,10 @@ namespace AndroidPlusPlus.Common
           }
         }
 
-        Trace.Assert (installedSdkPlatforms.Count > 0);
+        if (installedSdkPlatforms.Count == 0)
+        {
+          throw new InvalidOperationException ();
+        }
 
         return installedSdkPlatforms;
       }
@@ -218,9 +223,11 @@ namespace AndroidPlusPlus.Common
 
           androidNdkPossibleLocations.Add (Environment.GetEnvironmentVariable ("ANDROID_NDK_ROOT"));
         }
-        catch (SecurityException ex)
+        catch (SecurityException e)
         {
-          Trace.WriteLine ("Failed retrieving ANDROID_NDK_* environment variables: {0}", ex.Message);
+          LoggingUtils.Print (string.Format ("Failed retrieving ANDROID_NDK_* environment variables: {0}", e.Message));
+
+          LoggingUtils.HandleException (e);
         }
 
         // 
@@ -273,7 +280,10 @@ namespace AndroidPlusPlus.Common
           }
         }
 
-        Trace.Assert (installedNdkPlatforms.Count > 0);
+        if (installedNdkPlatforms.Count == 0)
+        {
+          throw new InvalidOperationException ();
+        }
 
         return installedNdkPlatforms;
       }

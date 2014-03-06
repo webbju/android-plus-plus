@@ -91,9 +91,9 @@ namespace AndroidPlusPlus.VsDebugEngine
       // Custom event handler.
       // 
 
-      LoggingUtils.PrintFunction ();
-
       CLangDebuggerEventDelegate eventCallback;
+
+      LoggingUtils.Print ("[CLangDebuggerCallback] Event: " + riidEvent.ToString ());
 
       if (m_debuggerCallback.TryGetValue (riidEvent, out eventCallback))
       {
@@ -170,7 +170,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       CLangDebuggerEvent.DetachClient debuggeeEvent = (pEvent as CLangDebuggerEvent.DetachClient);
 
-      debuggeeEvent.Debugger.GdbClient.Detach ();
+      debuggeeEvent.Debugger.RunInterruptOperation (delegate ()
+      {
+        debuggeeEvent.Debugger.GdbClient.Detach ();
+      });
 
       return DebugEngineConstants.S_OK;
     }
