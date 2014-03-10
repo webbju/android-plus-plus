@@ -101,7 +101,7 @@
 cmd /c xcopy "$(ProjectDir)..\..\toolchain\bin\*" "$(ProjectDir)..\..\scripts\Platforms\{master}\Toolchain\bin\" /i /s /e /y
 cmd /c xcopy "$(ProjectDir)..\..\toolchain\include\*" "$(ProjectDir)..\..\scripts\Platforms\{master}\Toolchain\include\" /i /s /e /y
 cmd /c xcopy "$(ProjectDir)..\..\toolchain\lib\*" "$(ProjectDir)..\..\scripts\Platforms\{master}\Toolchain\lib\" /i /s /e /y
-$(TargetPath) --template-dir $(ProjectDir)..\..\scripts\ --export-dir $(ProjectDir)$(OutDir)..\..\scripts\ --vs-version 2010</PostBuildEvent>
+$(TargetPath) --template-dir $(ProjectDir)..\..\scripts\ --export-dir $(ProjectDir)$(OutDir)..\..\scripts\ --vs-version 2010 --vs-version 2013</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

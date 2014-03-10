@@ -14,10 +14,6 @@
 
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <Import Condition="(exists('$(VCTargetsPath)\Platforms\{master}-{config}\PlatformToolsets\{toolset}\ImportBefore'))" Project="$(VCTargetsPath)\Platforms\{master}\PlatformToolsets\{toolset}\ImportBefore\*.targets" />
-
-  <Import Condition="(exists('$(VCTargetsPath)\Platforms\{master}-{config}\PlatformToolsets\{toolset}\ImportAfter'))" Project="$(VCTargetsPath)\Platforms\{master}\PlatformToolsets\{toolset}\ImportAfter\*.targets" />
-
 </Project>
 
 <!--

@@ -20,6 +20,8 @@
 
   <PropertyGroup>
 
+    <PlatformToolsetVersion>4.6</PlatformToolsetVersion>
+
     <PlatformToolsetToolchainFolder>$(AndroidNdkRoot)\toolchains\$(TargetPlatformArchitectureToolchainPrefix)-$(PlatformToolset)</PlatformToolsetToolchainFolder>
 
     <PlatformToolsetPrebuilt Condition="'$(SixtyFourBit)' == 'true' AND Exists('$(PlatformToolsetToolchainFolder)\prebuilt\windows-x86_64')">$(PlatformToolsetToolchainFolder)\prebuilt\windows-x86_64</PlatformToolsetPrebuilt>

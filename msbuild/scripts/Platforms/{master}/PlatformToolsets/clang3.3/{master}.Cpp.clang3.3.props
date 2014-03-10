@@ -20,6 +20,8 @@
 
   <PropertyGroup>
 
+    <PlatformToolsetVersion>clang3.3</PlatformToolsetVersion>
+
     <GccToolchainVersion>4.8</GccToolchainVersion>
 
     <LlvmVersion>3.3</LlvmVersion>

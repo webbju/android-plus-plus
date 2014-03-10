@@ -29,7 +29,7 @@
     <!-- Property pages that always apply -->
     <PropertyPageSchema 
       Include="
-        $(VCTargetsPath)\Platforms\{master}\Props\custom_project_items_schema.xml;
+        $(VCTargetsPath)\Platforms\{master}\$(LangID)\custom_project_items_schema.xml;
         $(VCTargetsPath)$(LangID)\debugger_*.xml;
         $(VCTargetsPath)$(LangID)\build_events.xml;
         $(VCTargetsPath)$(LangID)\custom_build_tool.xml;
@@ -57,26 +57,26 @@
     </PropertyPageSchema>
 
     <!-- Switch view between project property based directories and environment variables -->
-    <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}\Props\gcc_directories.xml" />
+    <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}\$(LangID)\gcc_directories.xml" />
 
     <!-- Non-Utility project property pages -->
     <PropertyPageSchema 
       Condition="'$(ConfigurationType)' != 'Utility'" 
       Include="
-        $(VCTargetsPath)\Platforms\{master}\Props\gcc_compile.xml;
+        $(VCTargetsPath)\Platforms\{master}\$(LangID)\gcc_compile.xml;
         $(VCTargetsPath)$(LangID)\custom_build_step.xml;
     "/>
 
-    <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}\Props\gcc_link.xml" Condition="('$(ConfigurationType)' == 'Application' or '$(ConfigurationType)' == 'DynamicLibrary')" />
-    <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}\Props\gcc_lib.xml" Condition="'$(ConfigurationType)' == 'StaticLibrary'" />
+    <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}\$(LangID)\gcc_link.xml" Condition="('$(ConfigurationType)' == 'Application' or '$(ConfigurationType)' == 'DynamicLibrary')" />
+    <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}\$(LangID)\gcc_lib.xml" Condition="'$(ConfigurationType)' == 'StaticLibrary'" />
 
   </ItemGroup>
 
   <ItemGroup>
-    <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}\Props\custom_general.xml">
+    <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}\$(LangID)\custom_general.xml">
       <Context>Project</Context>
     </PropertyPageSchema>
-    <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}\Props\custom_general_ps.xml">
+    <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}\$(LangID)\custom_general_ps.xml">
       <Context>PropertySheet</Context>
     </PropertyPageSchema>
   </ItemGroup>

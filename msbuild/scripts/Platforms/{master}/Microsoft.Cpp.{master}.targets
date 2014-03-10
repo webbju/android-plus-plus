@@ -92,7 +92,7 @@
       OutputCommandLine                  ="%(ClCompile.OutputCommandLine)"
       ToolPath                           ="$(PlatformToolsetCompileToolPath)"
       ToolExe                            ="$(PlatformToolsetCompileTool)"
-      PropertiesFile                     ="$(VCTargetsPath)\Platforms\{master}\Props\gcc_compile.xml">
+      PropertiesFile                     ="$(VCTargetsPath)\Platforms\{master}\$(LangID)\gcc_compile.xml">
 
     </GccCompile>
 
@@ -131,7 +131,7 @@
       OutputCommandLine              ="%(Link.OutputCommandLine)"
       ToolPath                       ="$(PlatformToolsetLinkToolPath)"
       ToolExe                        ="$(PlatformToolsetLinkTool)"
-      PropertiesFile                 ="$(VCTargetsPath)\Platforms\{master}\Props\gcc_link.xml">
+      PropertiesFile                 ="$(VCTargetsPath)\Platforms\{master}\$(LangID)\gcc_link.xml">
 
       <Output TaskParameter="OutputFiles" ItemName="LinkOutputFiles" />
 
@@ -176,7 +176,7 @@
       OutputCommandLine              ="%(Lib.OutputCommandLine)"
       ToolPath                       ="$(PlatformToolsetLibToolPath)"
       ToolExe                        ="$(PlatformToolsetLibTool)"
-      PropertiesFile                 ="$(VCTargetsPath)\Platforms\{master}\Props\gcc_lib.xml">
+      PropertiesFile                 ="$(VCTargetsPath)\Platforms\{master}\$(LangID)\gcc_lib.xml">
 
       <Output TaskParameter="OutputFiles" ItemName="LibOutputFiles" />
 
