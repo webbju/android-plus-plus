@@ -1,0 +1,98 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{6D575221-37D1-4C3D-82A5-5FEB632069AA}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>AndroidPlusPlus.Common</RootNamespace>
+    <AssemblyName>AndroidPlusPlus.Common</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\Key.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\build\vs2013\bin\$(Configuration)\</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\vs2013\obj\$(Configuration)\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <RegisterForComInterop>false</RegisterForComInterop>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\build\vs2013\bin\$(Configuration)\</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\vs2013\obj\$(Configuration)\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Android\AndroidAdb.cs" />
+    <Compile Include="Android\AndroidDevice.cs" />
+    <Compile Include="Android\AndroidDex.cs" />
+    <Compile Include="Android\AndroidProcess.cs" />
+    <Compile Include="Android\AndroidAnt.cs" />
+    <Compile Include="Android\AndroidApk.cs" />
+    <Compile Include="Android\AndroidManifest.cs" />
+    <Compile Include="Android\AndroidSettings.cs" />
+    <Compile Include="Android\AndroidAapt.cs" />
+    <Compile Include="DebugEngineConstants.cs" />
+    <Compile Include="Java\JdbClient.cs" />
+    <Compile Include="Java\JdbSetup.cs" />
+    <Compile Include="LaunchConfiguration.cs" />
+    <Compile Include="LoggingUtils.cs" />
+    <Compile Include="Processes\AsyncRedirectProcess.cs" />
+    <Compile Include="ComUtils.cs" />
+    <Compile Include="GDB\GdbClient.cs" />
+    <Compile Include="GDB\MI\MiBreakpoint.cs" />
+    <Compile Include="GDB\MI\MiVariable.cs" />
+    <Compile Include="GDB\MI\Records\MiPromptRecord.cs" />
+    <Compile Include="GDB\MI\Records\MiRecord.cs" />
+    <Compile Include="GDB\MI\Records\MiAsyncRecord.cs" />
+    <Compile Include="GDB\MI\MiInterpreter.cs" />
+    <Compile Include="GDB\GdbServer.cs" />
+    <Compile Include="GDB\GdbSetup.cs" />
+    <Compile Include="GDB\MI\Records\MiResultRecord.cs" />
+    <Compile Include="GDB\MI\Records\MiStreamRecord.cs" />
+    <Compile Include="GDB\MI\MiResultValue.cs" />
+    <Compile Include="GDB\MI\MiResultValueConst.cs" />
+    <Compile Include="GDB\MI\MiResultValueList.cs" />
+    <Compile Include="GDB\MI\MiResultValueTuple.cs" />
+    <Compile Include="Java\JavaSettings.cs" />
+    <Compile Include="Properties\SharedAssemblyInfo.cs" />
+    <Compile Include="StringUtils.cs" />
+    <Compile Include="Processes\SyncRedirectProcess.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Key.snk">
+      <Link>Key.snk</Link>
+    </None>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

@@ -15,16 +15,16 @@
         defining some of the constants that we will use inside the file. -->
 
   <!--This is the file that defines the IDs for all the commands exposed by VisualStudio. -->
-  <Extern href="stdidcmd.h"/>
+  <Extern href="stdidcmd.h" />
 
   <!--This header contains the command ids for the menus provided by the shell. -->
-  <Extern href="vsshlids.h"/>
+  <Extern href="vsshlids.h" />
 
   <!--Definition of some VSCT specific constants. In this sample we use it for the IDs inside the guidOfficeIcon group. -->
-  <Extern href="msobtnid.h"/>
+  <!--<Extern href="msobtnid.h" xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable" />-->
 
   <!--Defines VK_INSERT -->
-  <Extern href="virtkeys.h"/>
+  <Extern href="virtkeys.h" />
 
   <!--The Commands section is where we the commands, menus and menu groups are defined.
       This section uses a Guid to identify the package that provides the command defined inside it. -->
@@ -45,7 +45,7 @@
             a menu type, a name and a default text. -->
       <!-- Editor Toolbar -->
       <Menu guid="guidAndroidPlusPlusCommandSetID" id="IDM_TLB_RTF" priority="0x0000" type="Toolbar">
-        <Parent guid="guidAndroidPlusPlusCommandSetID" id="0"/>
+        <Parent guid="guidAndroidPlusPlusCommandSetID" id="0" />
         <Strings>
           <ButtonText>VSPackage1 Toolbar</ButtonText>
           <CommandName>VSPackage1Toolbar</CommandName>
@@ -53,7 +53,7 @@
       </Menu>
       <!-- Editor Context Menu -->
       <Menu guid="guidAndroidPlusPlusCommandSetID" id="IDMX_RTF" priority="0x0000" type="Context">
-        <Parent guid="guidAndroidPlusPlusCommandSetID" id="0"/>
+        <Parent guid="guidAndroidPlusPlusCommandSetID" id="0" />
         <Strings>
           <ButtonText>VSPackage1 Context Menu</ButtonText>
           <CommandName>VSPackage1ContextMenu</CommandName>
@@ -68,42 +68,42 @@
     <Groups>
 
       <Group guid="guidAndroidPlusPlusCommandSetID" id="MyMenuGroup" priority="0x0600">
-        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS"/>
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS" />
       </Group>
 
 
 
       <!--Editor menu group -->
       <Group guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_EDITOR_CMDS" priority="0xFE00">
-        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_EDIT"/>
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_EDIT" />
       </Group>
 
       <!-- Toolbar groups -->
       <Group guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_FONT1" priority="0x0100">
-        <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDM_TLB_RTF"/>
+        <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDM_TLB_RTF" />
       </Group>
       <Group guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_FONT2" priority="0x0200">
-        <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDM_TLB_RTF"/>
+        <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDM_TLB_RTF" />
       </Group>
       <Group guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_INDENT" priority="0x0300">
-        <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDM_TLB_RTF"/>
+        <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDM_TLB_RTF" />
       </Group>
       <Group guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_BULLET" priority="0x0400">
-        <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDM_TLB_RTF"/>
+        <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDM_TLB_RTF" />
       </Group>
       <Group guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_FONT_COMBOS" priority="0x0040">
-        <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDM_TLB_RTF"/>
+        <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDM_TLB_RTF" />
       </Group>
 
       <!--Context menu groups -->
       <Group guid="guidSHLMainMenu" id="IDG_VS_EDIT_CUTCOPY" priority="0x0100">
-        <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDMX_RTF"/>
+        <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDMX_RTF" />
       </Group>
       <Group guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_CTX_PROPS" priority="0x0200">
-        <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDMX_RTF"/>
+        <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDMX_RTF" />
       </Group>
       <Group guid="guidSharedMenuGroup" id="IDG_VS_FORMAT_FONTFACE" priority="0x0300">
-        <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDMX_RTF"/>
+        <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDMX_RTF" />
       </Group>
 
     </Groups>
@@ -131,7 +131,7 @@
 
 
       <Button guid="guidAndroidPlusPlusCommandSetID" id="cmdIdGdbConsole" priority="0x0100" type="Button">
-        <Parent guid="guidSHLMainMenu" id="IDG_VS_WNDO_OTRWNDWS1"/>
+        <Parent guid="guidSHLMainMenu" id="IDG_VS_WNDO_OTRWNDWS1" />
         <Icon guid="guidImages" id="bmpPic2" />
         <Strings>
           <CommandName>cmdIdGdbConsole</CommandName>
@@ -140,9 +140,9 @@
       </Button>
 
 
-      <Button guid="guidAndroidPlusPlusCommandSetID" id="commandIDStrike" priority="0x0400" type="Button">
-        <Parent guid="guidSharedMenuGroup" id="IDG_VS_FORMAT_FONTFACE"/>
-        <Icon guid="guidOfficeIcon" id="msotcidStrikethrough"/>
+      <!--<Button guid="guidAndroidPlusPlusCommandSetID" id="commandIDStrike" priority="0x0400" type="Button">
+        <Parent guid="guidSharedMenuGroup" id="IDG_VS_FORMAT_FONTFACE" />
+        <Icon guid="guidOfficeIcon" id="msotcidStrikethrough" />
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DefaultDisabled</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
@@ -152,7 +152,7 @@
           <ButtonText>&amp;Strike-through</ButtonText>
           <ToolTipText>Strikes through text</ToolTipText>
         </Strings>
-      </Button>
+      </Button>-->
 
     </Buttons>
 
@@ -163,7 +163,7 @@
             bitmap strip containing the bitmaps and then there are the numeric ids of the elements used 
             inside a button definition. An important aspect of this declaration is that the element id 
             must be the actual index (1-based) of the bitmap inside the bitmap strip. -->
-      <Bitmap guid="guidImages" href="Resources\Images_32bit.bmp" usedList="bmpPic1, bmpPic2, bmpPicSearch, bmpPicX, bmpPicArrows"/>
+      <Bitmap guid="guidImages" href="Resources\Images_32bit.bmp" usedList="bmpPic1, bmpPic2, bmpPicSearch, bmpPicX, bmpPicArrows" />
 
     </Bitmaps>
 
@@ -193,20 +193,20 @@
        Finally, note that placement for the combo boxes is defined in the combo 
        section below by the priority and not in the CommandPlacements section. -->
   <UsedCommands>
-    <UsedCommand guid="guidVSStd97" id="cmdidBold"/>
-    <UsedCommand guid="guidVSStd97" id="cmdidItalic"/>
-    <UsedCommand guid="guidVSStd97" id="cmdidUnderline"/>
-    <UsedCommand guid="guidVSStd97" id="cmdidJustifyLeft"/>
-    <UsedCommand guid="guidVSStd97" id="cmdidJustifyCenter"/>
-    <UsedCommand guid="guidVSStd97" id="cmdidJustifyRight"/>
-    <UsedCommand guid="guidVSStd97" id="cmdidFontName"/>
-    <UsedCommand guid="guidVSStd97" id="cmdidFontSize"/>
-    <UsedCommand guid="guidVSStd97" id="cmdidCut"/>
-    <UsedCommand guid="guidVSStd97" id="cmdidCopy"/>
-    <UsedCommand guid="guidVSStd97" id="cmdidPaste"/>
-    <UsedCommand guid="guidVSStd97" id="cmdidDelete"/>
-    <UsedCommand guid="guidVSStd2K" id="ECMD_INSERT"/>
-    <UsedCommand guid="guidVSStd2K" id="ECMD_BULLETEDLIST"/>
+    <UsedCommand guid="guidVSStd97" id="cmdidBold" />
+    <UsedCommand guid="guidVSStd97" id="cmdidItalic" />
+    <UsedCommand guid="guidVSStd97" id="cmdidUnderline" />
+    <UsedCommand guid="guidVSStd97" id="cmdidJustifyLeft" />
+    <UsedCommand guid="guidVSStd97" id="cmdidJustifyCenter" />
+    <UsedCommand guid="guidVSStd97" id="cmdidJustifyRight" />
+    <UsedCommand guid="guidVSStd97" id="cmdidFontName" />
+    <UsedCommand guid="guidVSStd97" id="cmdidFontSize" />
+    <UsedCommand guid="guidVSStd97" id="cmdidCut" />
+    <UsedCommand guid="guidVSStd97" id="cmdidCopy" />
+    <UsedCommand guid="guidVSStd97" id="cmdidPaste" />
+    <UsedCommand guid="guidVSStd97" id="cmdidDelete" />
+    <UsedCommand guid="guidVSStd2K" id="ECMD_INSERT" />
+    <UsedCommand guid="guidVSStd2K" id="ECMD_BULLETEDLIST" />
   </UsedCommands>
 
   <!--Inside this section, we have the ability to place menu groups inside some other menu or 
@@ -216,39 +216,39 @@
   <CommandPlacements>
     <!--Editor Toolbar -->
     <CommandPlacement guid="guidVSStd97" id="cmdidFontName" priority="0x0100">
-      <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_FONT_COMBOS"/>
+      <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_FONT_COMBOS" />
     </CommandPlacement>
     <CommandPlacement guid="guidVSStd97" id="cmdidFontSize" priority="0x0200">
-      <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_FONT_COMBOS"/>
+      <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_FONT_COMBOS" />
     </CommandPlacement>
     <CommandPlacement guid="guidVSStd97" id="cmdidBold" priority="0x0100">
-      <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_FONT1"/>
+      <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_FONT1" />
     </CommandPlacement>
     <CommandPlacement guid="guidVSStd97" id="cmdidItalic" priority="0x0200">
-      <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_FONT1"/>
+      <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_FONT1" />
     </CommandPlacement>
     <CommandPlacement guid="guidVSStd97" id="cmdidUnderline" priority="0x0300">
-      <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_FONT1"/>
+      <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_FONT1" />
     </CommandPlacement>
     <CommandPlacement guid="guidAndroidPlusPlusCommandSetID" id="commandIDStrike" priority="0x0400">
-      <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_FONT1"/>
+      <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_FONT1" />
     </CommandPlacement>
     <CommandPlacement guid="guidVSStd97" id="cmdidJustifyLeft" priority="0x0100">
-      <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_INDENT"/>
+      <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_INDENT" />
     </CommandPlacement>
     <CommandPlacement guid="guidVSStd97" id="cmdidJustifyCenter" priority="0x0200">
-      <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_INDENT"/>
+      <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_INDENT" />
     </CommandPlacement>
     <CommandPlacement guid="guidVSStd97" id="cmdidJustifyRight" priority="0x0300">
-      <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_INDENT"/>
+      <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_INDENT" />
     </CommandPlacement>
     <CommandPlacement guid="guidVSStd2K" id="ECMD_BULLETEDLIST" priority="0x0100">
-      <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_BULLET"/>
+      <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_TLB_BULLET" />
     </CommandPlacement>
 
     <!-- Editor context menu -->
     <CommandPlacement guid="guidVSStd2K" id="ECMD_BULLETEDLIST" priority="0x0100">
-      <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_CTX_PROPS"/>
+      <Parent guid="guidAndroidPlusPlusCommandSetID" id="IDG_RTF_CTX_PROPS" />
     </CommandPlacement>
   </CommandPlacements>
 
@@ -272,13 +272,13 @@
        and one problem is that the shell will not inform the user that a conflict was found. The only  
        way to detect the problem is to start Visual Studio under debugger, try to execute any command  
        and look if there is a message in the output window about a duplicated accelerator found.-->
-    <KeyBinding guid="guidVSStd97" id="cmdidBold" editor="guidVSPackage1EditorFactory" key1="B" mod1="Control"/>
-    <KeyBinding guid="guidVSStd97" id="cmdidItalic" editor="guidVSPackage1EditorFactory" key1="I" mod1="Control"/>
-    <KeyBinding guid="guidVSStd97" id="cmdidUnderline" editor="guidVSPackage1EditorFactory" key1="U" mod1="Control"/>
-    <KeyBinding guid="guidVSStd97" id="cmdidJustifyLeft" editor="guidVSPackage1EditorFactory" key1="L" mod1="Control"/>
-    <KeyBinding guid="guidVSStd97" id="cmdidJustifyCenter" editor="guidVSPackage1EditorFactory" key1="E" mod1="Control"/>
-    <KeyBinding guid="guidVSStd97" id="cmdidJustifyRight" editor="guidVSPackage1EditorFactory" key1="R" mod1="Control"/>
-    <KeyBinding guid="guidVSStd2K" id="ECMD_INSERT" editor="guidVSPackage1EditorFactory" key1="VK_INSERT"/>
+    <KeyBinding guid="guidVSStd97" id="cmdidBold" editor="guidVSPackage1EditorFactory" key1="B" mod1="Control" />
+    <KeyBinding guid="guidVSStd97" id="cmdidItalic" editor="guidVSPackage1EditorFactory" key1="I" mod1="Control" />
+    <KeyBinding guid="guidVSStd97" id="cmdidUnderline" editor="guidVSPackage1EditorFactory" key1="U" mod1="Control" />
+    <KeyBinding guid="guidVSStd97" id="cmdidJustifyLeft" editor="guidVSPackage1EditorFactory" key1="L" mod1="Control" />
+    <KeyBinding guid="guidVSStd97" id="cmdidJustifyCenter" editor="guidVSPackage1EditorFactory" key1="E" mod1="Control" />
+    <KeyBinding guid="guidVSStd97" id="cmdidJustifyRight" editor="guidVSPackage1EditorFactory" key1="R" mod1="Control" />
+    <KeyBinding guid="guidVSStd2K" id="ECMD_INSERT" editor="guidVSPackage1EditorFactory" key1="VK_INSERT" />
   </KeyBindings>
 
   <Symbols>
@@ -314,7 +314,7 @@
 
     <GuidSymbol name="guidVSPackage1EditorFactory" value="{cd89a08e-e3df-4727-856a-add63eef408a}" />
 
-    <GuidSymbol name="guidImages" value="{ab38a4f3-ae76-4e83-905d-d6defb2dfb3a}" >
+    <GuidSymbol name="guidImages" value="{ab38a4f3-ae76-4e83-905d-d6defb2dfb3a}">
       <IDSymbol name="bmpPic1" value="1" />
       <IDSymbol name="bmpPic2" value="2" />
       <IDSymbol name="bmpPicSearch" value="3" />

@@ -155,7 +155,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <None Include="source.extension.vsixmanifest">
+    <None Include="Manifests\vs2010\source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>
   </ItemGroup>
