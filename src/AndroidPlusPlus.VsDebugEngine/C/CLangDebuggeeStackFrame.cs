@@ -137,7 +137,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public override Dictionary<string, DebuggeeProperty> GetArguments ()
+    public override void GetArguments ()
     {
       // 
       // Returns a list of arguments for the current stack level. Caches results for faster lookup.
@@ -155,18 +155,15 @@ namespace AndroidPlusPlus.VsDebugEngine
           {
             MiResultValue stackLevelArguments = resultRecord ["stack-args"] [0] ["args"];
 
-            lock (m_stackArguments)
+            for (int i = 0; i < stackLevelArguments.Count; ++i)
             {
-              for (int i = 0; i < stackLevelArguments.Count; ++i)
+              string argument = stackLevelArguments [i] ["name"].GetString ();
+
+              if (!string.IsNullOrEmpty (argument))
               {
-                string argument = stackLevelArguments [i] ["name"].GetString ();
+                CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, argument, null);
 
-                if (!string.IsNullOrEmpty (argument))
-                {
-                  CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, argument, null);
-
-                  m_stackArguments.Add (argument, property);
-                }
+                m_stackArguments.TryAdd (argument, property);
               }
             }
           }
@@ -176,15 +173,13 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
       }
-
-      return m_stackArguments;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public override Dictionary<string, DebuggeeProperty> GetLocals ()
+    public override void GetLocals ()
     {
       // 
       // Returns a list of local variables for the current stack level. Caches results for faster lookup.
@@ -204,18 +199,15 @@ namespace AndroidPlusPlus.VsDebugEngine
           {
             MiResultValue localVariables = resultRecord ["locals"];
 
-            lock (m_stackLocals)
+            for (int i = 0; i < localVariables.Count; ++i)
             {
-              for (int i = 0; i < localVariables.Count; ++i)
+              string variable = localVariables [i] ["name"].GetString ();
+
+              if (!string.IsNullOrEmpty (variable))
               {
-                string variable = localVariables [i] ["name"].GetString ();
+                CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, variable, null);
 
-                if (!string.IsNullOrEmpty (variable))
-                {
-                  CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, variable, null);
-
-                  m_stackLocals.Add (variable, property);
-                }
+                m_stackLocals.TryAdd (variable, property);
               }
             }
           }
@@ -225,15 +217,13 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
       }
-
-      return m_stackLocals;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public override Dictionary<string, DebuggeeProperty> GetRegisters ()
+    public override void GetRegisters ()
     {
       // 
       // Returns a list of registers for the current stack level. Caches results for faster lookup.
@@ -265,26 +255,23 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           MiResultValue registerNames = registerNamesRecord ["register-names"];
 
-          lock (m_stackRegisters)
+          for (int i = 0; i < registerValues.Count; ++i)
           {
-            for (int i = 0; i < registerValues.Count; ++i)
+            int number = registerValues [i] ["number"].GetInt ();
+
+            string value = registerValues [i] ["value"].GetString ();
+
+            string register = registerNames [number].GetString ();
+
+            if (!string.IsNullOrEmpty (register))
             {
-              int number = registerValues [i] ["number"].GetInt ();
+              string prettified = "$" + register;
 
-              string value = registerValues [i] ["value"].GetString ();
+              CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, prettified, null);
 
-              string register = registerNames [number].GetString ();
+              property.Value = value;
 
-              if (!string.IsNullOrEmpty (register))
-              {
-                string prettified = "$" + register;
-
-                CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, prettified, null);
-
-                property.Value = value;
-
-                m_stackRegisters.Add (prettified, property);
-              }
+              m_stackRegisters.TryAdd (prettified, property);
             }
           }
         }
@@ -293,8 +280,6 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
       }
-
-      return m_stackRegisters;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -335,7 +320,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         property = new CLangDebuggeeProperty (m_debugger, this, expression, null);
 
-        m_customExpressions.Add (expression, property);
+        m_customExpressions.TryAdd (expression, property);
       }
       catch (Exception e)
       {

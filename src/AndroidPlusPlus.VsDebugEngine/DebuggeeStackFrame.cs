@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 
 using Microsoft.VisualStudio.Debugger.Interop;
@@ -49,13 +50,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     protected DebuggeeDocumentContext m_documentContext;
 
-    protected Dictionary<string, DebuggeeProperty> m_stackArguments;
+    protected ConcurrentDictionary<string, DebuggeeProperty> m_stackArguments;
 
-    protected Dictionary<string, DebuggeeProperty> m_stackLocals;
+    protected ConcurrentDictionary<string, DebuggeeProperty> m_stackLocals;
 
-    protected Dictionary<string, DebuggeeProperty> m_stackRegisters;
+    protected ConcurrentDictionary<string, DebuggeeProperty> m_stackRegisters;
 
-    protected Dictionary<string, DebuggeeProperty> m_customExpressions;
+    protected ConcurrentDictionary<string, DebuggeeProperty> m_customExpressions;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -71,13 +72,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       m_documentContext = null;
 
-      m_stackArguments = new Dictionary<string, DebuggeeProperty> ();
+      m_stackArguments = new ConcurrentDictionary<string, DebuggeeProperty> ();
 
-      m_stackLocals = new Dictionary<string, DebuggeeProperty> ();
+      m_stackLocals = new ConcurrentDictionary<string, DebuggeeProperty> ();
 
-      m_stackRegisters = new Dictionary<string, DebuggeeProperty> ();
+      m_stackRegisters = new ConcurrentDictionary<string, DebuggeeProperty> ();
 
-      m_customExpressions = new Dictionary<string, DebuggeeProperty> ();
+      m_customExpressions = new ConcurrentDictionary<string, DebuggeeProperty> ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -121,7 +122,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public virtual Dictionary<string, DebuggeeProperty> GetArguments ()
+    public virtual void GetArguments ()
     {
       throw new NotImplementedException ();
     }
@@ -130,7 +131,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public virtual Dictionary<string, DebuggeeProperty> GetLocals ()
+    public virtual void GetLocals ()
     {
       throw new NotImplementedException ();
     }
@@ -139,7 +140,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public virtual Dictionary<string, DebuggeeProperty> GetRegisters ()
+    public virtual void GetRegisters ()
     {
       throw new NotImplementedException ();
     }
@@ -170,16 +171,13 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           GetArguments ();
 
-          lock (m_stackArguments)
+          foreach (KeyValuePair<string, DebuggeeProperty> argument in m_stackArguments)
           {
-            foreach (KeyValuePair<string, DebuggeeProperty> argument in m_stackArguments)
-            {
-              DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
+            DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
 
-              LoggingUtils.RequireOk (argument.Value.GetPropertyInfo (requestedFields, radix, timeout, null, 0, infoArray));
+            LoggingUtils.RequireOk (argument.Value.GetPropertyInfo (requestedFields, radix, timeout, null, 0, infoArray));
 
-              filteredProperties.Add (infoArray [0]);
-            }
+            filteredProperties.Add (infoArray [0]);
           }
         }
 
@@ -187,16 +185,13 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           GetLocals ();
 
-          lock (m_stackLocals)
+          foreach (KeyValuePair<string, DebuggeeProperty> local in m_stackLocals)
           {
-            foreach (KeyValuePair<string, DebuggeeProperty> local in m_stackLocals)
-            {
-              DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
+            DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
 
-              LoggingUtils.RequireOk (local.Value.GetPropertyInfo (requestedFields, radix, timeout, null, 0, infoArray));
+            LoggingUtils.RequireOk (local.Value.GetPropertyInfo (requestedFields, radix, timeout, null, 0, infoArray));
 
-              filteredProperties.Add (infoArray [0]);
-            }
+            filteredProperties.Add (infoArray [0]);
           }
         }
 
@@ -208,18 +203,15 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           GetRegisters ();
 
-          lock (m_stackRegisters)
-          {
-            List<DebuggeeProperty> registers = new List<DebuggeeProperty> (m_stackRegisters.Values);
+          List<DebuggeeProperty> registers = new List<DebuggeeProperty> (m_stackRegisters.Values);
 
-            DebuggeeProperty registersPropertyList = new DebuggeeProperty (m_debugEngine, this, "CPU", registers.ToArray ());
+          DebuggeeProperty registersPropertyList = new DebuggeeProperty (m_debugEngine, this, "CPU", registers.ToArray ());
 
-            DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
+          DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
 
-            LoggingUtils.RequireOk (registersPropertyList.GetPropertyInfo (requestedFields, radix, timeout, null, 0, infoArray));
+          LoggingUtils.RequireOk (registersPropertyList.GetPropertyInfo (requestedFields, radix, timeout, null, 0, infoArray));
 
-            filteredProperties.Add (infoArray [0]);
-          }
+          filteredProperties.Add (infoArray [0]);
         }
 
         elementsReturned = (uint)filteredProperties.Count;

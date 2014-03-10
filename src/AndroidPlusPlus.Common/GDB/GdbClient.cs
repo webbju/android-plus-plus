@@ -353,7 +353,7 @@ namespace AndroidPlusPlus.Common
 
     public void SetSetting (string setting, string value)
     {
-      LoggingUtils.Print (string.Format ("[GdbClient] SetSetting: " + setting + ", " + value));
+      LoggingUtils.Print (string.Format ("[GdbClient] SetSetting: " + setting + "=" + value));
 
       SendCommand (string.Format ("-gdb-set {0} {1}", setting, value));
     }
