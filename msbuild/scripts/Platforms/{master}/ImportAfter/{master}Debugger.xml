@@ -19,7 +19,7 @@
 -->
 
 <Rule 
-  Name="{master}Debugger"
+  Name="{master-verbose}Debugger"
   DisplayName="{master} Debugger"
   PageTemplate="debugger"
   Description="{master} Debugger options"

@@ -6,7 +6,7 @@
       Default methodology for debugging applications. {master} debugger is configured here.
     -->
 
-    <DebuggerFlavor>{master}Debugger</DebuggerFlavor>
+    <DebuggerFlavor>{master-verbose}Debugger</DebuggerFlavor>
 
   </PropertyGroup>
 
