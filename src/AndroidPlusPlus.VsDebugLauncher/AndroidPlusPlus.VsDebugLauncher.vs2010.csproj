@@ -22,7 +22,7 @@
     <BaseIntermediateOutputPath>..\..\build\vs2010\obj\$(Configuration)\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DeploymentDirectory>$(OutputPath)</DeploymentDirectory>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;VS2010</DefineConstants>
     <WarningLevel>4</WarningLevel>
     <IncrementalBuild>false</IncrementalBuild>
     <RegisterForComInterop>false</RegisterForComInterop>
@@ -36,7 +36,7 @@
     <BaseIntermediateOutputPath>..\..\build\vs2010\obj\$(Configuration)\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DeploymentDirectory>$(OutputPath)</DeploymentDirectory>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;VS2010</DefineConstants>
     <WarningLevel>4</WarningLevel>
     <IncrementalBuild>false</IncrementalBuild>
     <DebugType>pdbonly</DebugType>
@@ -88,7 +88,8 @@
     <Compile Include="..\AndroidPlusPlus.Common\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="AndroidPlusPlus.VsDebugLauncherX.cs" />
+    <Compile Include="DebugLauncher.cs" />
+    <Compile Include="DebugLauncherX.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
