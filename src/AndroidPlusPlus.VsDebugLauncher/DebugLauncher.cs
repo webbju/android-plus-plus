@@ -8,13 +8,14 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 
-using EnvDTE;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.VCProjectEngine;
 
 #if VS2010
+using EnvDTE;
 using Microsoft.VisualStudio.Project.Contracts.VS2010ONLY;
 using Microsoft.VisualStudio.Project.Framework;
 using Microsoft.VisualStudio.Project.Utilities.DebuggerProviders;
@@ -74,7 +75,11 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#if VS2010
     public static object StartWithoutDebugging (int launchOptionsFlags, Dictionary <string, string> projectProperties, Project startupProject)
+#else
+    public static object StartWithoutDebugging (int launchOptionsFlags, Dictionary <string, string> projectProperties)
+#endif
     {
       LoggingUtils.PrintFunction ();
 
@@ -85,58 +90,76 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#if VS2010
     public static object StartWithDebugging (int launchOptionsFlags, Dictionary<string, string> projectProperties, Project startupProject)
+#else
+    public static object StartWithDebugging (int launchOptionsFlags, Dictionary<string, string> projectProperties)
+#endif
     {
       LoggingUtils.PrintFunction ();
 
       DebugLaunchSettings debugLaunchSettings = new DebugLaunchSettings ((DebugLaunchOptions)launchOptionsFlags);
 
       // 
-      // Retrieve standard project macro values, and determine the prefere debugger configuration.
+      // Retrieve standard project macro values, and determine the preferred debugger configuration.
       // 
 
-      string projectTargetName = string.Empty;
+      string projectTargetName = EvaluateProjectProperty (projectProperties, "ConfigurationGeneral", "TargetName");
 
-      string projectProjectDir = string.Empty;
+      string projectProjectDir = EvaluateProjectProperty (projectProperties, "ConfigurationGeneral", "ProjectDir");
 
-      string debuggerConfiguration = string.Empty;
+      string debuggerConfiguration = EvaluateProjectProperty (projectProperties, "AndroidPlusPlusDebugger", "DebuggerConfiguration");
 
-      string debuggerTargetApk = string.Empty;
+      string debuggerTargetApk = EvaluateProjectProperty (projectProperties, "AndroidPlusPlusDebugger", "DebuggerTargetApk");
 
-      string debuggerCustomLaunchActivity = string.Empty;
+      string debuggerCustomLaunchActivity = EvaluateProjectProperty (projectProperties, "AndroidPlusPlusDebugger", "DebuggerCustomLaunchActivity");
 
-      string debuggerDebugMode = string.Empty;
+      string debuggerDebugMode = EvaluateProjectProperty (projectProperties, "AndroidPlusPlusDebugger", "DebuggerDebugMode");
 
-      string debuggerOpenGlTrace = string.Empty;
+      string debuggerOpenGlTrace = EvaluateProjectProperty (projectProperties, "AndroidPlusPlusDebugger", "DebuggerOpenGlTrace");
 
-      string debuggerKeepAppData = string.Empty;
+      string debuggerKeepAppData = EvaluateProjectProperty (projectProperties, "AndroidPlusPlusDebugger", "DebuggerKeepAppData");
 
-      string debuggerGdbTool = string.Empty;
+      string debuggerGdbTool = EvaluateProjectProperty (projectProperties, "AndroidPlusPlusDebugger", "DebuggerGdbTool");
 
-      string debuggerLibraryPaths = string.Empty;
+      string debuggerLibraryPaths = EvaluateProjectProperty (projectProperties, "AndroidPlusPlusDebugger", "DebuggerLibraryPaths");
 
-      projectProperties.TryGetValue ("TargetName", out projectTargetName);
-
-      projectProperties.TryGetValue ("ProjectDir", out projectProjectDir);
-
-      if (!projectProperties.TryGetValue ("DebuggerConfiguration", out debuggerConfiguration))
+      if (string.IsNullOrEmpty (debuggerTargetApk))
       {
         debuggerConfiguration = "Custom";
       }
 
-      projectProperties.TryGetValue ("DebuggerTargetApk", out debuggerTargetApk);
+      // 
+      // Additional support for vs-android. Rather hacky for VS2010.
+      // 
 
-      projectProperties.TryGetValue ("DebuggerCustomLaunchActivity", out debuggerCustomLaunchActivity);
+      if (debuggerConfiguration.Equals ("vs-android"))
+      {
+#if VS2010
+        VCConfiguration activeConfiguration = GetActiveConfiguration (startupProject);
 
-      projectProperties.TryGetValue ("DebuggerDebugMode", out debuggerDebugMode);
+        IVCRulePropertyStorage rulesAntBuild = activeConfiguration.Rules.Item ("AntBuild");
 
-      projectProperties.TryGetValue ("DebuggerOpenGlTrace", out debuggerOpenGlTrace);
+        string antBuildPath = rulesAntBuild.GetEvaluatedPropertyValue ("AntBuildPath");
 
-      projectProperties.TryGetValue ("DebuggerKeepAppData", out debuggerKeepAppData);
+        string antBuildType = rulesAntBuild.GetEvaluatedPropertyValue ("AntBuildType");
+#else
+        string antBuildPath = EvaluateProjectProperty (projectProperties, "AntBuild", "AntBuildPath");
 
-      projectProperties.TryGetValue ("DebuggerGdbTool", out debuggerGdbTool);
+        string antBuildType = EvaluateProjectProperty (projectProperties, "AntBuild", "AntBuildType");
+#endif
 
-      projectProperties.TryGetValue ("DebuggerLibraryPaths", out debuggerLibraryPaths);
+        string antBuildXml = Path.Combine (antBuildPath, "build.xml");
+
+        XmlDocument buildXmlDocument = new XmlDocument ();
+
+        buildXmlDocument.Load (antBuildXml);
+
+        string antBuildXmlProjectName = buildXmlDocument.DocumentElement.GetAttribute ("name");
+
+        debuggerTargetApk = Path.Combine (antBuildPath, "bin", antBuildXmlProjectName + "-" + antBuildType.ToLower () + ".apk");
+      }
+
 
       if (!File.Exists (debuggerGdbTool))
       {
@@ -147,13 +170,9 @@ namespace AndroidPlusPlus.VsDebugLauncher
       // Validate project properties.
       // 
 
-      string androidSdkRoot = string.Empty;
+      string androidSdkRoot = EvaluateProjectProperty (projectProperties, "ConfigurationGeneral", "AndroidSdkRoot");
 
-      string androidSdkBuildToolsVersion = string.Empty;
-
-      projectProperties.TryGetValue ("AndroidSdkRoot", out androidSdkRoot);
-
-      projectProperties.TryGetValue ("AndroidSdkBuildToolsVersion", out androidSdkBuildToolsVersion);
+      string androidSdkBuildToolsVersion = EvaluateProjectProperty (projectProperties, "ConfigurationGeneral", "AndroidSdkBuildToolsVersion");
 
       if (string.IsNullOrWhiteSpace (androidSdkRoot))
       {
@@ -227,35 +246,6 @@ namespace AndroidPlusPlus.VsDebugLauncher
       {
         debuggerCustomLaunchActivity = applicationLaunchActivity;
       }
-
-#if FALSE
-      // 
-      // Override provided debugger properties with those evaluated from active build configurations.
-      // 
-
-      VCConfiguration activeConfiguration = GetActiveConfiguration (startupProject);
-
-      if (debuggerConfiguration.Equals ("vs-android"))
-      {
-        IVCRulePropertyStorage rulesAntBuild = activeConfiguration.Rules.Item ("AntBuild");
-
-        string antBuildPath = rulesAntBuild.GetEvaluatedPropertyValue ("AntBuildPath");
-
-        string antBuildType = rulesAntBuild.GetEvaluatedPropertyValue ("AntBuildType");
-
-        string antBuildXml = Path.Combine (antBuildPath, "build.xml");
-
-        XmlDocument buildXmlDocument = new XmlDocument ();
-
-        buildXmlDocument.Load (antBuildXml);
-
-        string antBuildXmlProjectName = buildXmlDocument.DocumentElement.GetAttribute ("name");
-
-        debuggerTargetApk = Path.Combine (antBuildPath, "bin", antBuildXmlProjectName + "-" + antBuildType.ToLower () + ".apk");
-
-        debuggerAndroidManifest = Path.Combine (antBuildPath, "AndroidManifest.xml");
-      }
-#endif
 
       // 
       // Check for any currently connected devices, and determine whether the target application is already installed/running.
@@ -335,11 +325,38 @@ namespace AndroidPlusPlus.VsDebugLauncher
       return debugLaunchSettings;
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private static string EvaluateProjectProperty (Dictionary <string, string> projectProperties, string schema, string property)
+    {
+      // 
+      // VS2010 provides a pre-processed list of project properties. We have to evaluate these manually for VS2012+.
+      // - In order to avoid duplicates from similar properties under different schemas, they are prefixed in the list.
+      // 
+
+      string evaluatedProperty = string.Empty;
+
+#if VS2013
+      string schemaGroupedKey = schema + "." + property;
+
+      if (projectProperties.TryGetValue (schemaGroupedKey, out evaluatedProperty))
+      {
+        return evaluatedProperty;
+      }
+#endif
+
+      projectProperties.TryGetValue (property, out evaluatedProperty);
+
+      return evaluatedProperty;
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#if VS2010
     public static Project GetStartupSolutionProject (IServiceProvider serviceProvider, Dictionary<string, string> projectProperties)
     {
       LoggingUtils.PrintFunction ();
@@ -375,11 +392,13 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       return startupProject;
     }
+#endif
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#if VS2010
     public static VCConfiguration GetActiveConfiguration (Project project)
     {
       LoggingUtils.PrintFunction ();
@@ -405,6 +424,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       return null;
     }
+#endif
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

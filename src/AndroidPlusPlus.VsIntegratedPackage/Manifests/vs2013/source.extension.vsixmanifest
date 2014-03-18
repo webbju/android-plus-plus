@@ -6,7 +6,7 @@
     <Description xml:space="preserve">Native development and debugging extension for Visual Studio.</Description>
     <MoreInfo>http://www.android-plus-plus.com</MoreInfo>
   </Metadata>
-  <Installation InstalledByMsi="true">
+  <Installation>
     <InstallationTarget Version="[13.0)" Id="Microsoft.VisualStudio.Premium" />
     <InstallationTarget Version="[13.0)" Id="Microsoft.VisualStudio.Pro" />
     <InstallationTarget Version="[13.0)" Id="Microsoft.VisualStudio.Ultimate" />

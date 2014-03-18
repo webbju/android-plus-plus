@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using EnvDTE;
+using Microsoft.Build.Framework.XamlTypes;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.VCProjectEngine;
@@ -42,9 +43,8 @@ namespace AndroidPlusPlus.VsDebugLauncher
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class DebugLauncherXII : DebugLaunchProviderBase
+  public class DebugLauncherXII : DebugLaunchProviderBase 
   {
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -75,24 +75,15 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       try
       {
-        Dictionary <string, string> projectProperties = new Dictionary<string,string> ();
-
-        Project startupProject = DebugLauncher.GetStartupSolutionProject ((IServiceProvider)ServiceProvider, projectProperties);
-
-        if (startupProject == null)
-        {
-          throw new InvalidOperationException ("Could not find solution startup project.");
-        }
-
-        LoggingUtils.Print ("Launcher startup project: " + startupProject.Name + " (" + startupProject.FullName + ")");
+        Dictionary<string, string> projectProperties = await DebuggerProperties.ProjectPropertiesToDictionary ();
 
         if (launchOptions.HasFlag (DebugLaunchOptions.NoDebug))
         {
-          debugLaunchSettings = (DebugLaunchSettings) DebugLauncher.StartWithoutDebugging ((int) launchOptions, projectProperties, startupProject);
+          debugLaunchSettings = (DebugLaunchSettings) DebugLauncher.StartWithoutDebugging ((int) launchOptions, projectProperties);
         }
         else
         {
-          debugLaunchSettings = (DebugLaunchSettings) DebugLauncher.StartWithDebugging ((int) launchOptions, projectProperties, startupProject);
+          debugLaunchSettings = (DebugLaunchSettings) DebugLauncher.StartWithDebugging ((int) launchOptions, projectProperties);
         }
       }
       catch (Exception e)
@@ -103,30 +94,6 @@ namespace AndroidPlusPlus.VsDebugLauncher
       }
 
       return new IDebugLaunchSettings [] { debugLaunchSettings };
-
-      /*var settings = new DebugLaunchSettings(launchOptions);
-
-      // The properties that are available via DebuggerProperties are determined by the property XAML files in your project.
-      var debuggerProperties = await this.DebuggerProperties.GetAndroidPlusPlusDebuggerPropertiesAsync();
-      //settings.Executable = await debuggerProperties.LocalDebuggerCommand.GetEvaluatedValueAtEndAsync();
-      if (settings.Executable == null)
-      {
-        var generalProperties = await this.DebuggerProperties.GetConfigurationGeneralPropertiesAsync();
-        settings.Executable = await generalProperties.TargetPath.GetEvaluatedValueAtEndAsync();
-      }
-
-      var test = DebuggerProperties.GetConfigurationGeneralPropertiesAsync ();
-
-      test.
-      //settings.Arguments = await debuggerProperties.LocalDebuggerCommandArguments.GetEvaluatedValueAtEndAsync();
-
-      //settings.CurrentDirectory = await debuggerProperties.LocalDebuggerWorkingDirectory.GetEvaluatedValueAtEndAsync();
-
-      settings.LaunchOperation = DebugLaunchOperation.CreateProcess;
-
-      settings.LaunchDebugEngineGuid = DebuggerEngines.NativeOnlyEngine;
-
-      return new IDebugLaunchSettings[] { settings };*/
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

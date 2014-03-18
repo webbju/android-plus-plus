@@ -46,13 +46,13 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="EnvDTE, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <EmbedInteropTypes>True</EmbedInteropTypes>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
     <Reference Include="EnvDTE100, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <EmbedInteropTypes>True</EmbedInteropTypes>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
     <Reference Include="EnvDTE90, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <EmbedInteropTypes>True</EmbedInteropTypes>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
     <Reference Include="Microsoft.Build" />
     <Reference Include="Microsoft.Build.Framework" />
@@ -107,19 +107,9 @@
     <None Include="..\Key.snk">
       <Link>Key.snk</Link>
     </None>
-    <None Include="Tools\CommonProjectSystemExtension.props" />
-    <None Include="Tools\CommonProjectSystemExtension.targets" />
-    <None Include="Tools\Xaml2Cs.exe" />
   </ItemGroup>
-  <ItemGroup>
-    <XamlPropertyRule Include="Xaml\Android++Debugger.xml" />
-    <!-- Fix this path to use $(MSBuildProgramFiles32).  New Project expansion breaks this so it has to be manually fixed. -->
-    <XamlPropertyRule Include="$(MSBuildProgramFiles32)\MSBuild\Microsoft.Cpp\v4.0\V120\1033\general.xml">
-      <Link>StandardRules\general.xml</Link>
-    </XamlPropertyRule>
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.Targets" />
-  <Import Project="Tools\CommonProjectSystemExtension.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
