@@ -116,10 +116,10 @@ namespace AndroidPlusPlus.VsDebugEngine
                 if (pending)
                 {
                   // 
-                  // Address can't be satistfied. Unsatisified likely indicates the modules or symbols associated with the context aren't loaded, yet.
+                  // Address can't be satisfied. Unsatisfied likely indicates the modules or symbols associated with the context aren't loaded, yet.
                   // 
 
-                  MiBreakpoint boundGdbBreakpoint = boundGdbBreakpoint = new MiBreakpoint (number, MiBreakpoint.Pending);
+                  MiBreakpoint boundGdbBreakpoint = new MiBreakpoint (number, MiBreakpoint.Pending);
 
                   boundBreakpoint = new CLangDebuggeeBreakpointBound (m_debugger, m_breakpointManager, this, documentContext.GetCodeContext (), boundGdbBreakpoint);
 
@@ -131,21 +131,21 @@ namespace AndroidPlusPlus.VsDebugEngine
                   // Breakpoint satisfied to multiple locations, no single memory address available.
                   // 
 
-                  MiBreakpoint boundGdbBreakpoint = boundGdbBreakpoint = new MiBreakpoint (number, MiBreakpoint.Multiple);
+                  MiBreakpoint boundGdbBreakpoint = new MiBreakpoint (number, MiBreakpoint.Multiple);
 
                   boundBreakpoint = new CLangDebuggeeBreakpointBound (m_debugger, m_breakpointManager, this, documentContext.GetCodeContext (), boundGdbBreakpoint);
                 }
                 else
                 {
                   // 
-                  // Address satistfied, and the breakpoint is legitimately bound.
+                  // Address satisfied, and the breakpoint is legitimately bound.
                   // 
 
                   DebuggeeAddress boundAddress = new DebuggeeAddress (addr);
 
                   DebuggeeCodeContext addressContext = new DebuggeeCodeContext (m_debugger.Engine, documentContext, boundAddress);
 
-                  MiBreakpoint boundGdbBreakpoint = boundGdbBreakpoint = new MiBreakpoint (number, boundAddress.MemoryAddress);
+                  MiBreakpoint boundGdbBreakpoint = new MiBreakpoint (number, boundAddress.MemoryAddress);
 
                   boundBreakpoint = new CLangDebuggeeBreakpointBound (m_debugger, m_breakpointManager, this, addressContext, boundGdbBreakpoint);
                 }

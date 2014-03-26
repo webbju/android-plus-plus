@@ -47,7 +47,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         SymbolsPath = asyncRecord ["host-name"].GetString ();
 
         // 
-        // The symbols-loaded field is emitted only for backward compatibility and should not be relied on to convey any useful information.
+        // The 'symbols-loaded' field is emitted only for backward compatibility and should not be relied on to convey any useful information.
         // 
 
         if ((!string.IsNullOrEmpty (SymbolsPath)) && File.Exists (SymbolsPath))

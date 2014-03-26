@@ -252,7 +252,20 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      try
+      {
+        LoggingUtils.RequireOk (DebuggeeProgram.EnumThreads (out ppEnum));
+
+        return DebugEngineConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        ppEnum = null;
+
+        return DebugEngineConstants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -277,9 +290,13 @@ namespace AndroidPlusPlus.VsDebugEngine
     [Obsolete ("These methods are not called by the Visual Studio debugger.")]
     public int GetAttachedSessionName (out string pbstrSessionName)
     {
+      // 
+      // Gets the name of the session that is debugging the process. [DEPRECATED. SHOULD ALWAYS RETURN E_NOTIMPL.]
+      // 
+
       LoggingUtils.PrintFunction ();
 
-      pbstrSessionName = string.Empty;
+      pbstrSessionName = null;
 
       return DebugEngineConstants.E_NOTIMPL;
     }
@@ -296,7 +313,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      pReason [0] = enum_DEBUG_REASON.DEBUG_REASON_USER_LAUNCHED;
+
+      return DebugEngineConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -356,7 +375,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        infoArray [0].Fields = 0;
+        infoArray [0] = new PROCESS_INFO ();
 
         if ((Fields & enum_PROCESS_INFO_FIELDS.PIF_FILE_NAME) != 0)
         {
@@ -381,13 +400,19 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((Fields & enum_PROCESS_INFO_FIELDS.PIF_PROCESS_ID) != 0)
         {
-          LoggingUtils.RequireOk (GetPhysicalProcessId (new AD_PROCESS_ID [] { infoArray [0].ProcessId }));
+          AD_PROCESS_ID [] processId = new AD_PROCESS_ID [1];
+
+          LoggingUtils.RequireOk (GetPhysicalProcessId (processId));
+
+          infoArray [0].ProcessId = processId [0];
 
           infoArray [0].Fields |= enum_PROCESS_INFO_FIELDS.PIF_PROCESS_ID;
         }
 
         if ((Fields & enum_PROCESS_INFO_FIELDS.PIF_SESSION_ID) != 0)
         {
+          // We currently don't support multiple sessions, so all processes are in session 1.
+
           infoArray [0].dwSessionId = 1;
 
           infoArray [0].Fields |= enum_PROCESS_INFO_FIELDS.PIF_SESSION_ID;
@@ -395,7 +420,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((Fields & enum_PROCESS_INFO_FIELDS.PIF_ATTACHED_SESSION_NAME) != 0)
         {
-          infoArray [0].bstrAttachedSessionName = NativeProcess.Name;
+          // Oddly enough, SESSION_NAME is requested... even though the docs clearly state that it's deprecated.
+
+          infoArray [0].bstrAttachedSessionName = "[Attached session name is deprecated]";
 
           infoArray [0].Fields |= enum_PROCESS_INFO_FIELDS.PIF_ATTACHED_SESSION_NAME;
         }
@@ -403,6 +430,12 @@ namespace AndroidPlusPlus.VsDebugEngine
         if ((Fields & enum_PROCESS_INFO_FIELDS.PIF_CREATION_TIME) != 0)
         {
           // Not entirely clear how this should be implemented.
+
+          /*Microsoft.VisualStudio.OLE.Interop.FILETIME filetime;
+
+          infoArray [0].CreationTime = filetime;
+
+          infoArray [0].Fields |= enum_PROCESS_INFO_FIELDS.PIF_CREATION_TIME;*/
         }
 
         if ((Fields & enum_PROCESS_INFO_FIELDS.PIF_FLAGS) != 0)
@@ -467,7 +500,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
+      pProcessId [0] = new AD_PROCESS_ID ();
+
       pProcessId [0].dwProcessId = NativeProcess.Pid;
+
+      pProcessId [0].guidProcessId = Guid;
 
       pProcessId [0].ProcessIdType = 0;
 
@@ -594,7 +631,6 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

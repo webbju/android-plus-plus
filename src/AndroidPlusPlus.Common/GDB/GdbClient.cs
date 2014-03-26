@@ -408,7 +408,7 @@ namespace AndroidPlusPlus.Common
 
       if (!responseSignaled)
       {
-        throw new TimeoutException ("Timed out waiting for synchronous SendCommand response.");
+        throw new TimeoutException ("Timed out waiting for synchronous response (" + command + ").");
       }
 
       return syncResultRecord;
@@ -450,6 +450,8 @@ namespace AndroidPlusPlus.Common
         ++m_sessionCommandToken;
 
         m_gdbClientInstance.SendCommand (command);
+
+        m_lastOperationTimestamp = Environment.TickCount;
 
         LoggingUtils.Print (string.Format ("[GdbClient] SendAsyncCommand: {0}", command));
       });

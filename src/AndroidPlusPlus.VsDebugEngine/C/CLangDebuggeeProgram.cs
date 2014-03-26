@@ -208,7 +208,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           if ((thread.GetThreadId (out currThreadId) == DebugEngineConstants.S_OK) && (currThreadId == threadId))
           {
-            return thread as CLangDebuggeeThread;
+            return thread as CLangDebuggeeThread; 
           }
         }
       }

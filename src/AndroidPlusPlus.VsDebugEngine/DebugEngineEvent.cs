@@ -378,6 +378,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         try
         {
+          pExceptionInfo [0] = new EXCEPTION_INFO ();
+
           pExceptionInfo [0].bstrExceptionName = m_exceptionName;
 
           pExceptionInfo [0].pProgram = m_debugProgram as IDebugProgram2;

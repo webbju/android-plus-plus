@@ -40,11 +40,11 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       if (hexAddress.ToLower ().StartsWith ("0x"))
       {
-        MemoryAddress = uint.Parse (hexAddress.Substring (2), NumberStyles.HexNumber);
+        MemoryAddress = ulong.Parse (hexAddress.Substring (2), NumberStyles.HexNumber);
       }
       else
       {
-        MemoryAddress = uint.Parse (hexAddress);
+        MemoryAddress = ulong.Parse (hexAddress, NumberStyles.HexNumber);
       }
     }
 

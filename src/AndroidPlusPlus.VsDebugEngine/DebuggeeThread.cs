@@ -22,7 +22,7 @@ namespace AndroidPlusPlus.VsDebugEngine
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class DebuggeeThread : IDebugThread3, IDebugThread100
+  public class DebuggeeThread : IDebugThread2, IDebugThread100
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -251,7 +251,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        propertiesArray [0].dwFields = 0;
+        propertiesArray [0] = new THREADPROPERTIES ();
 
         if ((requestedFields & enum_THREADPROPERTY_FIELDS.TPF_ID) != 0)
         {
@@ -301,19 +301,24 @@ namespace AndroidPlusPlus.VsDebugEngine
           // The thread location (usually the topmost stack frame), typically expressed as the name of the method where execution is currently halted.
           // 
 
-          propertiesArray [0].bstrLocation = "(unknown)";
+          propertiesArray [0].bstrLocation = "[External Code]";
 
           StackTrace ();
 
           lock (m_threadStackFrames)
           {
-            if (m_threadStackFrames.Count > 0)
+            foreach (DebuggeeStackFrame stackFrame in m_threadStackFrames)
             {
               FRAMEINFO frameInfo = new FRAMEINFO ();
 
-              LoggingUtils.RequireOk (m_threadStackFrames [0].SetFrameInfo (enum_FRAMEINFO_FLAGS.FIF_FUNCNAME, 0, ref frameInfo));
+              LoggingUtils.RequireOk (stackFrame.SetFrameInfo (enum_FRAMEINFO_FLAGS.FIF_FUNCNAME, 0, ref frameInfo));
 
-              propertiesArray [0].bstrLocation = frameInfo.m_bstrFuncName;
+              if (!string.IsNullOrEmpty (frameInfo.m_bstrFuncName))
+              {
+                propertiesArray [0].bstrLocation = frameInfo.m_bstrFuncName;
+
+                break;
+              }
             }
           }
 
@@ -343,7 +348,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      suspendCount = m_threadSuspendCount;
+      suspendCount = --m_threadSuspendCount;
 
       return DebugEngineConstants.E_NOTIMPL;
     }
@@ -361,9 +366,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      suspendCount = m_threadSuspendCount;
+      suspendCount = ++m_threadSuspendCount;
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return DebugEngineConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -378,16 +383,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      try
-      {
-        throw new NotImplementedException ();
-      }
-      catch (NotImplementedException e)
-      {
-        LoggingUtils.HandleException (e);
-
-        return DebugEngineConstants.E_NOTIMPL;
-      }
+      return DebugEngineConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -397,23 +393,14 @@ namespace AndroidPlusPlus.VsDebugEngine
     public int GetLogicalThread (IDebugStackFrame2 stackFrame, out IDebugLogicalThread2 logicalThread)
     {
       // 
-      // Debug engines do not implement this method.
+      // Gets the logical thread associated with this physical thread. Not implemented.
       // 
 
       LoggingUtils.PrintFunction ();
 
       logicalThread = null;
 
-      try
-      {
-        throw new NotImplementedException ();
-      }
-      catch (NotImplementedException e)
-      {
-        LoggingUtils.HandleException (e);
-
-        return DebugEngineConstants.E_NOTIMPL;
-      }
+      return DebugEngineConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -443,78 +430,6 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    #region IDebugThread3 Members
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    int IDebugThread3.CanRemapLeafFrame ()
-    {
-      LoggingUtils.PrintFunction ();
-
-      try
-      {
-        throw new NotImplementedException ();
-      }
-      catch (NotImplementedException e)
-      {
-        LoggingUtils.HandleException (e);
-
-        return DebugEngineConstants.E_NOTIMPL;
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    int IDebugThread3.IsCurrentException ()
-    {
-      LoggingUtils.PrintFunction ();
-
-      try
-      {
-        throw new NotImplementedException ();
-      }
-      catch (NotImplementedException e)
-      {
-        LoggingUtils.HandleException (e);
-
-        return DebugEngineConstants.E_NOTIMPL;
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    int IDebugThread3.RemapLeafFrame ()
-    {
-      LoggingUtils.PrintFunction ();
-
-      try
-      {
-        throw new NotImplementedException ();
-      }
-      catch (NotImplementedException e)
-      {
-        LoggingUtils.HandleException (e);
-
-        return DebugEngineConstants.E_NOTIMPL;
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    #endregion
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     #region IDebugThread100 Members
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -526,11 +441,6 @@ namespace AndroidPlusPlus.VsDebugEngine
       LoggingUtils.PrintFunction ();
 
       name = m_threadDisplayName;
-
-      if (string.IsNullOrEmpty (name))
-      {
-        return DebugEngineConstants.E_FAIL;
-      }
 
       return DebugEngineConstants.S_OK;
     }
@@ -569,20 +479,15 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     int IDebugThread100.GetFlags (out uint flags)
     {
+      // 
+      // Get flags. Not implemented.
+      // 
+
       LoggingUtils.PrintFunction ();
 
       flags = 0;
 
-      try
-      {
-        throw new NotImplementedException ();
-      }
-      catch (NotImplementedException e)
-      {
-        LoggingUtils.HandleException (e);
-
-        return DebugEngineConstants.E_NOTIMPL;
-      }
+      return DebugEngineConstants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -591,18 +496,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     int IDebugThread100.SetFlags (uint flags)
     {
+      // 
+      // Set flags. Not implemented.
+      // 
+
       LoggingUtils.PrintFunction ();
 
-      try
-      {
-        throw new NotImplementedException ();
-      }
-      catch (NotImplementedException e)
-      {
-        LoggingUtils.HandleException (e);
-
-        return DebugEngineConstants.E_NOTIMPL;
-      }
+      return DebugEngineConstants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -619,8 +519,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        propertiesArray [0].dwFields = 0;
-
         // 
         // 9.0 (2008) thread properties.
         // 
@@ -630,6 +528,8 @@ namespace AndroidPlusPlus.VsDebugEngine
         enum_THREADPROPERTY_FIELDS requestedFields90 = ((enum_THREADPROPERTY_FIELDS)requestedFields) & (enum_THREADPROPERTY_FIELDS.TPF_LOCATION | enum_THREADPROPERTY_FIELDS.TPF_NAME | enum_THREADPROPERTY_FIELDS.TPF_PRIORITY | enum_THREADPROPERTY_FIELDS.TPF_STATE | enum_THREADPROPERTY_FIELDS.TPF_SUSPENDCOUNT | enum_THREADPROPERTY_FIELDS.TPF_ID);
 
         LoggingUtils.RequireOk (GetThreadProperties (requestedFields90, threadProperties9));
+
+        propertiesArray [0] = new THREADPROPERTIES100 ();
 
         propertiesArray [0].bstrLocation = threadProperties9 [0].bstrLocation;
 

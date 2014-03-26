@@ -117,7 +117,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        resolutionInfo [0].dwFields = 0;
+        resolutionInfo [0] = new BP_RESOLUTION_INFO ();
 
         if ((requestedFields & enum_BPRESI_FIELDS.BPRESI_BPRESLOCATION) != 0)
         {
@@ -194,7 +194,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        resolutionInfo [0].dwFields = 0;
+        resolutionInfo [0] = new BP_ERROR_RESOLUTION_INFO ();
 
         if ((requestedFields & enum_BPERESI_FIELDS.BPERESI_BPRESLOCATION) != 0)
         {

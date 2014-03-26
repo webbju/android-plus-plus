@@ -76,12 +76,15 @@ namespace AndroidPlusPlus.VsDebugEngine
     public int GetProviderProgramNode (enum_PROVIDER_FLAGS Flags, IDebugDefaultPort2 pPort, AD_PROCESS_ID ProcessId, ref Guid guidEngine, ulong programId, out IDebugProgramNode2 ppProgramNode)
     {
       // 
-      // Retrieves the program node for a specific program.
+      // Retrieves the program node for a specific program. Not implemented. 
       // 
 
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      ppProgramNode = null;
+
+      // This method is used for Just-In-Time debugging support, which this program provider does not support
+      return DebugEngineConstants.E_NOTIMPL; 
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -124,7 +127,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      return DebugEngineConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

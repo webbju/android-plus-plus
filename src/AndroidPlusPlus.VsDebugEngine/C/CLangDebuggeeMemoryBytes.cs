@@ -91,7 +91,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         for (int i = 0; i < dwCount; ++i)
         {
-          rgbMemory [i] = Convert.ToByte (uint.Parse (hexValue.Substring (i * 2, 2), NumberStyles.HexNumber));
+          rgbMemory [i] = byte.Parse (hexValue.Substring (i * 2, 2), NumberStyles.HexNumber);
         }
 
         pdwRead = dwCount;

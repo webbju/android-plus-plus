@@ -279,6 +279,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
+        propertyInfoArray [0] = new DEBUG_PROPERTY_INFO ();
+
         propertyInfoArray [0].dwFields = enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NONE;
 
         if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_FULLNAME) != 0)

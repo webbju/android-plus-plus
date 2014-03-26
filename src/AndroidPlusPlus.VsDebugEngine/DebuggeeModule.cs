@@ -116,7 +116,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        infoArray [0].dwValidFields = 0;
+        infoArray [0] = new MODULE_INFO ();
 
         if ((requestedFields & enum_MODULE_INFO_FIELDS.MIF_NAME) != 0)
         {
@@ -141,6 +141,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFields & enum_MODULE_INFO_FIELDS.MIF_DEBUGMESSAGE) != 0)
         {
+          infoArray [0].m_bstrDebugMessage = "";
+
+          infoArray [0].dwValidFields |= enum_MODULE_INFO_FIELDS.MIF_DEBUGMESSAGE;
         }
 
         if ((requestedFields & enum_MODULE_INFO_FIELDS.MIF_LOADADDRESS) != 0)
@@ -152,6 +155,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFields & enum_MODULE_INFO_FIELDS.MIF_PREFFEREDADDRESS) != 0)
         {
+          // Assume the module loaded where it was suppose to.
+
+          infoArray [0].m_addrPreferredLoadAddress = RemoteLoadAddress;
+
+          infoArray [0].dwValidFields |= enum_MODULE_INFO_FIELDS.MIF_PREFFEREDADDRESS;
         }
 
         if ((requestedFields & enum_MODULE_INFO_FIELDS.MIF_SIZE) != 0)
@@ -163,6 +171,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFields & enum_MODULE_INFO_FIELDS.MIF_LOADORDER) != 0)
         {
+          infoArray [0].m_dwLoadOrder = 0;
+
+          infoArray [0].dwValidFields |= enum_MODULE_INFO_FIELDS.MIF_LOADORDER;
         }
 
         if ((requestedFields & enum_MODULE_INFO_FIELDS.MIF_TIMESTAMP) != 0)
@@ -238,7 +249,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        infoArray [0].dwValidFields = (uint)enum_SYMBOL_SEARCH_INFO_FIELDS.SSIF_NONE;
+        infoArray [0] = new MODULE_SYMBOL_SEARCH_INFO ();
 
         if ((requestedFields & enum_SYMBOL_SEARCH_INFO_FIELDS.SSIF_VERBOSE_SEARCH_INFO) != 0)
         {

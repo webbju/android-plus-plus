@@ -88,15 +88,22 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         ThreadPool.QueueUserWorkItem (delegate (object state)
         {
-          IDebugProperty2 result;
+          try
+          {
+            IDebugProperty2 result;
 
-          IDebugThread2 thread;
+            IDebugThread2 thread;
 
-          LoggingUtils.RequireOk (EvaluateSync (evaluateFlags, 0, eventCallback, out result));
+            LoggingUtils.RequireOk (EvaluateSync (evaluateFlags, 0, eventCallback, out result));
 
-          LoggingUtils.RequireOk (m_stackFrame.GetThread (out thread));
+            LoggingUtils.RequireOk (m_stackFrame.GetThread (out thread));
 
-          m_debugEngine.Broadcast (new DebugEngineEvent.ExpressionEvaluationComplete (this, result), m_debugEngine.Program, thread);
+            m_debugEngine.Broadcast (new DebugEngineEvent.ExpressionEvaluationComplete (this, result), m_debugEngine.Program, thread);
+          }
+          catch (Exception e)
+          {
+            LoggingUtils.HandleException (e);
+          }
         });
 
         return DebugEngineConstants.S_OK;

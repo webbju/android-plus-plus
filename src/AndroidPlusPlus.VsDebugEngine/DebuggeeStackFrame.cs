@@ -122,27 +122,54 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public virtual void GetArguments ()
+    public virtual int GetArguments ()
     {
-      throw new NotImplementedException ();
+      try
+      {
+        throw new NotImplementedException ();
+      }
+      catch (NotImplementedException e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return DebugEngineConstants.E_NOTIMPL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public virtual void GetLocals ()
+    public virtual int GetLocals ()
     {
-      throw new NotImplementedException ();
+      try
+      {
+        throw new NotImplementedException ();
+      }
+      catch (NotImplementedException e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return DebugEngineConstants.E_NOTIMPL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public virtual void GetRegisters ()
+    public virtual int GetRegisters ()
     {
-      throw new NotImplementedException ();
+      try
+      {
+        throw new NotImplementedException ();
+      }
+      catch (NotImplementedException e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return DebugEngineConstants.E_NOTIMPL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -169,7 +196,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((guidFilter == DebuggeeProperty.Filters.guidFilterArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
         {
-          GetArguments ();
+          LoggingUtils.RequireOk (GetArguments ());
 
           foreach (KeyValuePair<string, DebuggeeProperty> argument in m_stackArguments)
           {
@@ -183,7 +210,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocals) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
         {
-          GetLocals ();
+          LoggingUtils.RequireOk (GetLocals ());
 
           foreach (KeyValuePair<string, DebuggeeProperty> local in m_stackLocals)
           {
@@ -201,7 +228,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           // Registers must be specified in a collection/list as children of a 'CPU' property.
           // 
 
-          GetRegisters ();
+          LoggingUtils.RequireOk (GetRegisters ());
 
           List<DebuggeeProperty> registers = new List<DebuggeeProperty> (m_stackRegisters.Values);
 
@@ -269,9 +296,28 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      property = null;
+      List <DebuggeeProperty> propertyChildren = new List <DebuggeeProperty> ();
 
-      return DebugEngineConstants.S_FALSE;
+      propertyChildren.AddRange (m_stackArguments.Values);
+
+      propertyChildren.AddRange (m_stackLocals.Values);
+
+      propertyChildren.AddRange (m_customExpressions.Values);
+
+      string propertyName;
+
+      if (m_codeContext != null)
+      {
+        propertyName = m_codeContext.Address.ToString ();
+      }
+      else
+      {
+        LoggingUtils.RequireOk (GetName (out propertyName));
+      }
+
+      property = new DebuggeeProperty (m_debugEngine, this, propertyName, propertyChildren.ToArray ());
+
+      return DebugEngineConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -312,11 +358,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       expressionContext = this;
 
-      if (expressionContext == null)
-      {
-        return DebugEngineConstants.E_FAIL;
-      }
-
       return DebugEngineConstants.S_OK;
     }
 
@@ -334,6 +375,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
+        frameInfoArray [0] = new FRAMEINFO ();
+
         LoggingUtils.RequireOk (SetFrameInfo (requestedFields, radix, ref frameInfoArray [0]));
 
         return DebugEngineConstants.S_OK;

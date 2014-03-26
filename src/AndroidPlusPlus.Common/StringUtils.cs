@@ -45,12 +45,23 @@ namespace AndroidPlusPlus.Common
     public static string ConvertPathWindowsToPosix (string path)
     {
       // 
-      // Convert Windows path in to a Cygwin path suitable for passing to GCC command line.
+      // Convert Windows path in to a Unix path suitable for passing to GCC command line.
       // 
 
-      string rtn = path.Replace ('\\', '/');
+      string expandedPath;
 
-      return QuotePathIfNeeded (rtn);
+      if (path.Contains ("~"))
+      {
+        expandedPath = GetLongPathName (path);
+      }
+      else
+      {
+        expandedPath = path;
+      }
+
+      expandedPath = expandedPath.Replace ('\\', '/');
+
+      return QuotePathIfNeeded (expandedPath);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -60,7 +71,7 @@ namespace AndroidPlusPlus.Common
     public static string ConvertPathPosixToWindows (string path)
     {
       // 
-      // Convert a Cygwin path in to a Windows path.
+      // Convert a Unix path in to a Windows path.
       // 
 
       StringBuilder workingBuffer = new StringBuilder (path);
@@ -111,6 +122,26 @@ namespace AndroidPlusPlus.Common
 
     [DllImport ("kernel32.dll", CharSet = CharSet.Auto)]
     private static extern int GetShortPathName ([MarshalAs (UnmanagedType.LPTStr)] string path, [MarshalAs (UnmanagedType.LPTStr)] StringBuilder shortPath, int shortPathLength);
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public static string GetLongPathName (string path)
+    {
+      StringBuilder longPath = new StringBuilder (1024);
+
+      GetLongPathName (path, longPath, longPath.Capacity);
+
+      return longPath.ToString ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    [DllImport ("kernel32.dll", CharSet = CharSet.Auto)]
+    public static extern int GetLongPathName ([MarshalAs (UnmanagedType.LPTStr)] string path, [MarshalAs (UnmanagedType.LPTStr)] StringBuilder longPath, int longPathLength);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

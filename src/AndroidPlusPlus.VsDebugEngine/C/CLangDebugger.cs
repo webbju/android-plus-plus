@@ -495,11 +495,11 @@ namespace AndroidPlusPlus.VsDebugEngine
                     case "exited-normally":
                     case "exited-signalled":
                     {
-                      Engine.Broadcast (new DebugEngineEvent.Break (), NativeProgram.DebugProgram, NativeProgram.GetThread (NativeProgram.CurrentThreadId));
+                      //Engine.Broadcast (new DebugEngineEvent.Break (), NativeProgram.DebugProgram, NativeProgram.GetThread (NativeProgram.CurrentThreadId));
 
-                      //uint exitCode = 0;
+                      uint exitCode = 0;
 
-                      //Engine.Broadcast (new DebugEngineEvent.ProgramDestroy (exitCode), NativeProgram.DebugProgram, null);
+                      Engine.Broadcast (new DebugEngineEvent.ProgramDestroy (exitCode), NativeProgram.DebugProgram, null);
 
                       break;
                     }
@@ -582,6 +582,8 @@ namespace AndroidPlusPlus.VsDebugEngine
               CLangDebuggeeThread thread = NativeProgram.GetThread (threadId);
 
               Engine.Broadcast (new DebugEngineEvent.ThreadDestroy (exitCode), NativeProgram.DebugProgram, thread);
+
+              NativeProgram.RemoveThread (thread);
 
               break;
             }

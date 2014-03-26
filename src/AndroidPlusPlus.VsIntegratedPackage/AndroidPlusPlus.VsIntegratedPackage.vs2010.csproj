@@ -191,7 +191,7 @@
     </ProjectReference>
     <ProjectReference Include="..\AndroidPlusPlus.VsDebugLauncher\AndroidPlusPlus.VsDebugLauncher.vs2010.csproj">
       <Project>{7C701BB4-BAD8-40DA-AFDC-B9820A04F005}</Project>
-      <Name>AndroidPlusPlus.VsDebugLauncherX.vs2010</Name>
+      <Name>AndroidPlusPlus.VsDebugLauncher.vs2010</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

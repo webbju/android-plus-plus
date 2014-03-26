@@ -46,9 +46,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       GetInfoFromCurrentLevel (frameTuple);
 
-      GetArguments ();
+      LoggingUtils.RequireOk (GetArguments ());
 
-      GetLocals ();
+      LoggingUtils.RequireOk (GetLocals ());
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -79,6 +79,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         m_memoryAddress = new DebuggeeAddress (frameTuple ["addr"].GetString ());
 
+        m_codeContext = new DebuggeeCodeContext (m_debugger.Engine, null, m_memoryAddress);
+
         // 
         // Discover the function or shared library location.
         // 
@@ -99,7 +101,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         }
         else
         {
-          m_location = "<unknown>";
+          m_location = frameTuple ["addr"].GetString ();
 
           m_locationIsFunction = false;
         }
@@ -137,7 +139,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public override void GetArguments ()
+    public override int GetArguments ()
     {
       // 
       // Returns a list of arguments for the current stack level. Caches results for faster lookup.
@@ -168,10 +170,14 @@ namespace AndroidPlusPlus.VsDebugEngine
             }
           }
         }
+
+        return DebugEngineConstants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
+
+        return DebugEngineConstants.E_FAIL;
       }
     }
 
@@ -179,7 +185,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public override void GetLocals ()
+    public override int GetLocals ()
     {
       // 
       // Returns a list of local variables for the current stack level. Caches results for faster lookup.
@@ -212,10 +218,14 @@ namespace AndroidPlusPlus.VsDebugEngine
             }
           }
         }
+
+        return DebugEngineConstants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
+
+        return DebugEngineConstants.E_FAIL;
       }
     }
 
@@ -223,7 +233,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public override void GetRegisters ()
+    public override int GetRegisters ()
     {
       // 
       // Returns a list of registers for the current stack level. Caches results for faster lookup.
@@ -275,10 +285,14 @@ namespace AndroidPlusPlus.VsDebugEngine
             }
           }
         }
+
+        return DebugEngineConstants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
+
+        return DebugEngineConstants.E_FAIL;
       }
     }
 

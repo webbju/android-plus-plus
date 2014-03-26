@@ -98,7 +98,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        DebuggeeAddress offsetAddress = Address.Add ((uint)count);
+        DebuggeeAddress offsetAddress = Address.Add (count);
 
         offsetAddressContext = new DebuggeeCodeContext (m_engine, DocumentContext, offsetAddress);
       }
@@ -128,7 +128,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        DebuggeeAddress offsetAddress = Address.Subtract ((uint)count);
+        DebuggeeAddress offsetAddress = Address.Subtract (count);
 
         offsetAddressContext = new DebuggeeCodeContext (m_engine, DocumentContext, offsetAddress);
       }
@@ -284,12 +284,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        if (infoArray.Length == 0)
-        {
-          throw new ArgumentException ();
-        }
-
-        infoArray [0].dwFields = 0;
+        infoArray [0] = new CONTEXT_INFO ();
 
         if ((Address != null) && (requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS) != 0)
         {
@@ -321,7 +316,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION) != 0)
         {
-          infoArray [0].bstrFunction = "";
+          infoArray [0].bstrFunction = "<not implemented>";
 
           infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION;
         }
