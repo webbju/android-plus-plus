@@ -388,8 +388,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      ppEnum = null;
-
       try
       {
         if (AttachedEngine == null)
@@ -409,6 +407,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
+
+        ppEnum = null;
 
         return DebugEngineConstants.E_FAIL;
       }

@@ -506,7 +506,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       pProcessId [0].guidProcessId = Guid;
 
-      pProcessId [0].ProcessIdType = 0;
+      pProcessId [0].ProcessIdType = (uint)enum_AD_PROCESS_ID.AD_PROCESS_ID_SYSTEM;
 
       return DebugEngineConstants.S_OK;
     }

@@ -104,15 +104,18 @@ namespace AndroidPlusPlus.VsDebugEngine
         ++m_threadSuspendCount;
 
         // 
-        // Invalidate the current stacktrace.
+        // Invalidate the current stack-trace.
         // 
 
-        foreach (DebuggeeStackFrame frame in m_threadStackFrames)
+        lock (m_threadStackFrames)
         {
-          frame.Delete ();
-        }
+          foreach (DebuggeeStackFrame frame in m_threadStackFrames)
+          {
+            frame.Delete ();
+          }
 
-        m_threadStackFrames.Clear ();
+          m_threadStackFrames.Clear ();
+        }
       }
     }
 
@@ -155,7 +158,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       // 
       // Retrieves a list of the stack frames for this thread.
       // For the sample engine, enumerating the stack frames requires walking the callstack in the debuggee for this thread
-      // and coverting that to an implementation of IEnumDebugFrameInfo2. 
+      // and converting that to an implementation of IEnumDebugFrameInfo2. 
       // Real engines will most likely want to cache this information to avoid recomputing it each time it is asked for,
       // and or construct it on demand instead of walking the entire stack.
       // 
@@ -400,7 +403,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       logicalThread = null;
 
-      return DebugEngineConstants.S_OK;
+      return DebugEngineConstants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -410,14 +413,12 @@ namespace AndroidPlusPlus.VsDebugEngine
     public int SetThreadName (string name)
     {
       // 
-      // Sets the name of the thread.
+      // Sets the name of the thread. Not implemented.
       // 
 
       LoggingUtils.PrintFunction ();
 
-      m_threadName = name;
-
-      return DebugEngineConstants.S_OK;
+      return DebugEngineConstants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -525,7 +526,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         THREADPROPERTIES [] threadProperties9 = new THREADPROPERTIES [1];
 
-        enum_THREADPROPERTY_FIELDS requestedFields90 = ((enum_THREADPROPERTY_FIELDS)requestedFields) & (enum_THREADPROPERTY_FIELDS.TPF_LOCATION | enum_THREADPROPERTY_FIELDS.TPF_NAME | enum_THREADPROPERTY_FIELDS.TPF_PRIORITY | enum_THREADPROPERTY_FIELDS.TPF_STATE | enum_THREADPROPERTY_FIELDS.TPF_SUSPENDCOUNT | enum_THREADPROPERTY_FIELDS.TPF_ID);
+        enum_THREADPROPERTY_FIELDS requestedFields90 = (enum_THREADPROPERTY_FIELDS)(requestedFields & 0x3f);
 
         LoggingUtils.RequireOk (GetThreadProperties (requestedFields90, threadProperties9));
 
@@ -543,7 +544,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         propertiesArray [0].dwThreadState = threadProperties9 [0].dwThreadState;
 
-        propertiesArray [0].dwFields |= (uint)threadProperties9 [0].dwFields;
+        propertiesArray [0].dwFields = (uint)threadProperties9 [0].dwFields;
 
         // 
         // 10.0 (2010) thread properties.
@@ -551,13 +552,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (requestedFields != (uint)threadProperties9 [0].dwFields)
         {
-          if ((requestedFields & (uint)enum_THREADPROPERTY_FIELDS100.TPF100_ID) != 0)
-          {
-            propertiesArray [0].dwManagedThreadId = m_threadId;
-
-            propertiesArray [0].dwFields |= (uint)enum_THREADPROPERTY_FIELDS100.TPF100_ID;
-          }
-
           if ((requestedFields & (uint)enum_THREADPROPERTY_FIELDS100.TPF100_DISPLAY_NAME) != 0)
           {
             propertiesArray [0].bstrDisplayName = m_threadName;
@@ -565,21 +559,28 @@ namespace AndroidPlusPlus.VsDebugEngine
             propertiesArray [0].dwFields |= (uint)enum_THREADPROPERTY_FIELDS100.TPF100_DISPLAY_NAME;
 
             // Give this display name a higher priority than the default (0) so that it will actually be displayed
-            propertiesArray [0].DisplayNamePriority = (uint)enum_DISPLAY_NAME_PRIORITY100.DISPLAY_NAME_PRI_NORMAL_100;
+            propertiesArray [0].DisplayNamePriority = 10;// (uint)enum_DISPLAY_NAME_PRIORITY100.DISPLAY_NAME_PRI_NORMAL_100;
 
             propertiesArray [0].dwFields |= (uint)enum_THREADPROPERTY_FIELDS100.TPF100_DISPLAY_NAME_PRIORITY;
           }
 
           if ((requestedFields & (uint)enum_THREADPROPERTY_FIELDS100.TPF100_CATEGORY) != 0)
           {
-            propertiesArray [0].dwThreadCategory = (uint)enum_THREADCATEGORY.THREADCATEGORY_Main;
+            if (m_threadId == 1)
+            {
+              propertiesArray [0].dwThreadCategory = (uint)enum_THREADCATEGORY.THREADCATEGORY_Main;
+            }
+            else
+            {
+              propertiesArray [0].dwThreadCategory = (uint)enum_THREADCATEGORY.THREADCATEGORY_Worker;
+            }
 
             propertiesArray [0].dwFields |= (uint)enum_THREADPROPERTY_FIELDS100.TPF100_CATEGORY;
           }
 
           if ((requestedFields & (uint)enum_THREADPROPERTY_FIELDS100.TPF100_AFFINITY) != 0)
           {
-            propertiesArray [0].AffinityMask = 0L;
+            propertiesArray [0].AffinityMask = 0;
 
             propertiesArray [0].dwFields |= (uint)enum_THREADPROPERTY_FIELDS100.TPF100_AFFINITY;
           }

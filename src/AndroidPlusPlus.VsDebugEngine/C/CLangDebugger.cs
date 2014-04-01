@@ -41,6 +41,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private ManualResetEvent m_interruptOperationCompleted = null;
 
+    private Dictionary<string, uint> m_threadGroupStatus = new Dictionary<string, uint> ();
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -310,16 +312,21 @@ namespace AndroidPlusPlus.VsDebugEngine
               // The target is now running. The thread field tells which specific thread is now running, can be 'all' if every thread is running.
               // 
 
+              NativeProgram.SetRunning (true);
+
               string threadId = asyncRecord ["thread-id"].GetString ();
 
               if (threadId.Equals ("all"))
               {
-                NativeProgram.SetRunning (true, true);
+                List<IDebugThread2> programThreads = NativeProgram.GetThreads ();
+
+                foreach (IDebugThread2 thread in programThreads)
+                {
+                  (thread as CLangDebuggeeThread).SetRunning (true);
+                }
               }
               else
               {
-                NativeProgram.SetRunning (true, false);
-
                 uint numericThreadId = uint.Parse (threadId);
 
                 NativeProgram.CurrentThreadId = numericThreadId;
@@ -341,38 +348,61 @@ namespace AndroidPlusPlus.VsDebugEngine
               // The target has stopped.
               // 
 
-              CLangDebuggeeThread thread = null;
+              NativeProgram.SetRunning (false);
+
+              CLangDebuggeeThread stoppedThread = null;
 
               if (asyncRecord.HasField ("thread-id"))
               {
                 uint threadId = asyncRecord ["thread-id"].GetUnsignedInt ();
 
-                thread = NativeProgram.GetThread (threadId);
+                stoppedThread = NativeProgram.GetThread (threadId);
+
+                stoppedThread.SetRunning (false);
 
                 NativeProgram.CurrentThreadId = threadId;
               }
-
-              bool hasStoppedThreads = asyncRecord.HasField ("stopped-threads");
 
               // 
               // Flag some or all of the program's threads as stopped, directed by 'stopped-threads' field.
               // 
 
-              if (hasStoppedThreads && (asyncRecord ["stopped-threads"] is MiResultValueList))
+              bool hasStoppedThreads = asyncRecord.HasField ("stopped-threads");
+
+              if (hasStoppedThreads)
               {
-                MiResultValueList stoppedThreads = asyncRecord ["stopped-threads"] as MiResultValueList;
+                // 
+                // If all threads are stopped, the stopped field will have the value of "all". 
+                // Otherwise, the value of the stopped field will be a list of thread identifiers.
+                // 
 
-                //Engine.Broadcast (new DebugEngineEvent.StopComplete (), NativeProgram.DebugProgram, NativeProgram.GetThread (NativeProgram.CurrentThreadId));
+                MiResultValue stoppedThreadsRecord = asyncRecord ["stopped-threads"];
 
-                NativeProgram.SetRunning (true, false);
+                if (asyncRecord ["stopped-threads"] is MiResultValueList)
+                {
+                  MiResultValueList stoppedThreads = asyncRecord ["stopped-threads"] as MiResultValueList;
 
-                throw new NotImplementedException ();
-              }
-              else 
-              {
-                NativeProgram.SetRunning (false, true);
+                  foreach (MiResultValue stoppedThreadValue in stoppedThreads.List)
+                  {
+                    uint stoppedThreadId = stoppedThreadValue.GetUnsignedInt ();
 
-                //Engine.Broadcast (new DebugEngineEvent.StopComplete (), NativeProgram.DebugProgram, NativeProgram.GetThread (NativeProgram.CurrentThreadId));
+                    CLangDebuggeeThread thread = NativeProgram.GetThread (stoppedThreadId);
+
+                    if (thread != null)
+                    {
+                      thread.SetRunning (false);
+                    }
+                  }
+                }
+                else
+                {
+                  List<IDebugThread2> programThreads = NativeProgram.GetThreads ();
+
+                  foreach (IDebugThread2 thread in programThreads)
+                  {
+                    (thread as CLangDebuggeeThread).SetRunning (false);
+                  }
+                }
               }
 
               if (m_interruptOperationCompleted != null)
@@ -419,7 +449,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                         DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, "Breakpoint #" + breakpointId, asyncRecord ["reason"].GetString (), 0x80000000, canContinue);
 
-                        Engine.Broadcast (exception, NativeProgram.DebugProgram, NativeProgram.GetThread (NativeProgram.CurrentThreadId));
+                        Engine.Broadcast (exception, NativeProgram.DebugProgram, stoppedThread);
                       }
                       else
                       {
@@ -429,7 +459,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                         IEnumDebugBoundBreakpoints2 enumeratedBoundBreakpoint = new DebuggeeBreakpointBound.Enumerator (new List<IDebugBoundBreakpoint2> { boundBreakpoint });
 
-                        Engine.Broadcast (new DebugEngineEvent.BreakpointHit (enumeratedBoundBreakpoint), NativeProgram.DebugProgram, NativeProgram.GetThread (NativeProgram.CurrentThreadId));
+                        Engine.Broadcast (new DebugEngineEvent.BreakpointHit (enumeratedBoundBreakpoint), NativeProgram.DebugProgram, stoppedThread);
                       }
 
                       break;
@@ -438,7 +468,7 @@ namespace AndroidPlusPlus.VsDebugEngine
                     case "end-stepping-range":
                     case "function-finished":
                     {
-                      Engine.Broadcast (new DebugEngineEvent.StepComplete (), NativeProgram.DebugProgram, NativeProgram.GetThread (NativeProgram.CurrentThreadId));
+                      Engine.Broadcast (new DebugEngineEvent.StepComplete (), NativeProgram.DebugProgram, stoppedThread);
 
                       break;
                     }
@@ -454,7 +484,7 @@ namespace AndroidPlusPlus.VsDebugEngine
                         case null:
                         case "SIGINT":
                         {
-                          Engine.Broadcast (new DebugEngineEvent.Break (), NativeProgram.DebugProgram, NativeProgram.GetThread (NativeProgram.CurrentThreadId));
+                          Engine.Broadcast (new DebugEngineEvent.Break (), NativeProgram.DebugProgram, stoppedThread);
 
                           break;
                         }
@@ -467,7 +497,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                           DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, signalName, signalDescription, 0x80000000, canContinue);
 
-                          Engine.Broadcast (exception, NativeProgram.DebugProgram, NativeProgram.GetThread (NativeProgram.CurrentThreadId));
+                          Engine.Broadcast (exception, NativeProgram.DebugProgram, stoppedThread);
 
                           break;
                         }
@@ -486,7 +516,7 @@ namespace AndroidPlusPlus.VsDebugEngine
                     case "syscall-entry":
                     case "exec":
                     {
-                      Engine.Broadcast (new DebugEngineEvent.Break (), NativeProgram.DebugProgram, NativeProgram.GetThread (NativeProgram.CurrentThreadId));
+                      Engine.Broadcast (new DebugEngineEvent.Break (), NativeProgram.DebugProgram, stoppedThread);
 
                       break;
                     }
@@ -533,22 +563,33 @@ namespace AndroidPlusPlus.VsDebugEngine
           switch (asyncRecord.Class)
           {
             case "thread-group-added":
-            {
-              break;
-            }
+            case "thread-group-started":
+              {
+                // 
+                // A thread group became associated with a running program, either because the program was just started or the thread group was attached to a program.
+                // 
+
+                string threadGroupId = asyncRecord ["id"].GetString ();
+
+                m_threadGroupStatus [threadGroupId] = 0;
+
+                break;
+              }
 
             case "thread-group-removed":
-            {
-              break;
-            }
-
-            case "thread-group-started":
-            {
-              break;
-            }
-
             case "thread-group-exited":
             {
+              // 
+              // A thread group is no longer associated with a running program, either because the program has exited, or because it was detached from.
+              // 
+
+              string threadGroupId = asyncRecord ["id"].GetString ();
+
+              if (asyncRecord.HasField ("exit-code"))
+              {
+                m_threadGroupStatus [threadGroupId] = asyncRecord ["exit-code"].GetUnsignedInt ();
+              }
+
               break;
             }
 
@@ -560,11 +601,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
               uint threadId = asyncRecord ["id"].GetUnsignedInt ();
 
-              CLangDebuggeeThread thread = new CLangDebuggeeThread (NativeProgram, threadId);
+              string threadGroupId = asyncRecord ["group-id"].GetString ();
 
-              NativeProgram.AddThread (thread);
+              CLangDebuggeeThread createdThread = new CLangDebuggeeThread (NativeProgram, threadId, threadGroupId);
 
-              Engine.Broadcast (new DebugEngineEvent.ThreadCreate (), NativeProgram.DebugProgram, thread);
+              NativeProgram.AddThread (createdThread);
+
+              Engine.Broadcast (new DebugEngineEvent.ThreadCreate (), NativeProgram.DebugProgram, createdThread);
 
               break;
             }
@@ -572,18 +615,20 @@ namespace AndroidPlusPlus.VsDebugEngine
             case "thread-exited":
             {
               // 
-              // A thread has exited. The id field contains the gdb identifier of the thread. The gid field identifies the thread group this thread belongs to. 
+              // A thread has exited. The 'id' field contains the GDB identifier of the thread. The 'group-id' field identifies the thread group this thread belongs to. 
               // 
-
-              uint exitCode = 0;
 
               uint threadId = asyncRecord ["id"].GetUnsignedInt ();
 
-              CLangDebuggeeThread thread = NativeProgram.GetThread (threadId);
+              string threadGroupId = asyncRecord ["group-id"].GetString ();
 
-              Engine.Broadcast (new DebugEngineEvent.ThreadDestroy (exitCode), NativeProgram.DebugProgram, thread);
+              uint exitCode = m_threadGroupStatus [threadGroupId];
 
-              NativeProgram.RemoveThread (thread);
+              CLangDebuggeeThread exitedThread = NativeProgram.GetThread (threadId);
+
+              Engine.Broadcast (new DebugEngineEvent.ThreadDestroy (exitCode), NativeProgram.DebugProgram, exitedThread);
+
+              NativeProgram.RemoveThread (exitedThread);
 
               break;
             }
@@ -611,20 +656,27 @@ namespace AndroidPlusPlus.VsDebugEngine
               {
                 ThreadPool.QueueUserWorkItem (delegate (object state)
                 {
-                  CLangDebuggeeModule module = new CLangDebuggeeModule (Engine, asyncRecord);
-
-                  NativeProgram.AddModule (module);
-
-                  Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, true), NativeProgram.DebugProgram, null);
-
-                  if (module.SymbolsLoaded)
+                  try
                   {
-                    Engine.Broadcast (new DebugEngineEvent.BeforeSymbolSearch (module as IDebugModule3), NativeProgram.DebugProgram, null);
+                    CLangDebuggeeModule module = new CLangDebuggeeModule (Engine, asyncRecord);
 
-                    Engine.Broadcast (new DebugEngineEvent.SymbolSearch (module as IDebugModule3, module.Name), NativeProgram.DebugProgram, null);
+                    NativeProgram.AddModule (module);
+
+                    Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, true), NativeProgram.DebugProgram, null);
+
+                    if (module.SymbolsLoaded)
+                    {
+                      Engine.Broadcast (new DebugEngineEvent.BeforeSymbolSearch (module as IDebugModule3), NativeProgram.DebugProgram, null);
+
+                      Engine.Broadcast (new DebugEngineEvent.SymbolSearch (module as IDebugModule3, module.Name), NativeProgram.DebugProgram, null);
+                    }
+
+                    Engine.BreakpointManager.RefreshBoundBreakpoints ();
                   }
-
-                  Engine.BreakpointManager.RefreshBoundBreakpoints ();
+                  catch (Exception e)
+                  {
+                    LoggingUtils.HandleException (e);
+                  }
                 });
               }
               catch (Exception e)

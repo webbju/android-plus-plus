@@ -431,6 +431,8 @@ namespace AndroidPlusPlus.Common
         return;
       }
 
+      m_lastOperationTimestamp = Environment.TickCount;
+
       ThreadPool.QueueUserWorkItem (delegate (object state)
       {
         AsyncCommandData commandData = new AsyncCommandData ();

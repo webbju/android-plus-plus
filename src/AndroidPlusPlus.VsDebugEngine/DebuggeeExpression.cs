@@ -94,9 +94,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             IDebugThread2 thread;
 
-            LoggingUtils.RequireOk (EvaluateSync (evaluateFlags, 0, eventCallback, out result));
-
             LoggingUtils.RequireOk (m_stackFrame.GetThread (out thread));
+
+            LoggingUtils.RequireOk (EvaluateSync (evaluateFlags, 0, eventCallback, out result));
 
             m_debugEngine.Broadcast (new DebugEngineEvent.ExpressionEvaluationComplete (this, result), m_debugEngine.Program, thread);
           }

@@ -38,27 +38,13 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private ushort m_langLocale = 1033;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public DebugProgramProvider ()
-    {
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     #region IDebugProgramProvider2 Members
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int GetProviderProcessData (enum_PROVIDER_FLAGS Flags, IDebugDefaultPort2 pPort, AD_PROCESS_ID ProcessId, CONST_GUID_ARRAY EngineFilter, PROVIDER_PROCESS_DATA [] pProcess)
+    int IDebugProgramProvider2.GetProviderProcessData (enum_PROVIDER_FLAGS Flags, IDebugDefaultPort2 port, AD_PROCESS_ID ProcessId, CONST_GUID_ARRAY EngineFilter, PROVIDER_PROCESS_DATA [] processArray)
     {
       // 
       // Retrieves a list of running programs from a specified process.
@@ -66,7 +52,42 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      try
+      {
+        processArray [0] = new PROVIDER_PROCESS_DATA ();
+
+        if ((Flags & enum_PROVIDER_FLAGS.PFLAG_GET_PROGRAM_NODES) != 0)
+        {
+          // The debugger is asking the engine to return the program nodes it can debug. The 
+          // sample engine claims that it can debug all processes, and returns exactly one
+          // program node for each process. A full-featured debugger may wish to examine the
+          // target process and determine if it understands how to debug it.
+
+          IDebugProgramNode2 node = (IDebugProgramNode2)(new DebuggeeProgram (null));
+
+          IntPtr [] programNodes = { Marshal.GetComInterfaceForObject (node, typeof (IDebugProgramNode2)) };
+
+          IntPtr destinationArray = Marshal.AllocCoTaskMem (IntPtr.Size * programNodes.Length);
+
+          Marshal.Copy (programNodes, 0, destinationArray, programNodes.Length);
+
+          processArray [0].Fields = enum_PROVIDER_FIELDS.PFIELD_PROGRAM_NODES;
+
+          processArray [0].ProgramNodes.Members = destinationArray;
+
+          processArray [0].ProgramNodes.dwCount = (uint)programNodes.Length;
+
+          return DebugEngineConstants.S_OK;
+        }
+
+        return DebugEngineConstants.S_FALSE;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return DebugEngineConstants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -98,8 +119,6 @@ namespace AndroidPlusPlus.VsDebugEngine
       // 
 
       LoggingUtils.PrintFunction ();
-
-      m_langLocale = wLangID;
 
       return DebugEngineConstants.S_OK;
     }

@@ -217,14 +217,19 @@ namespace AndroidPlusPlus.VsDebugEngine
               break;
             }
 
-            case enum_CONTEXT_COMPARE.CONTEXT_SAME_SCOPE:
-            // Fallthrough.
-            case enum_CONTEXT_COMPARE.CONTEXT_SAME_FUNCTION:
-            // Fallthrough.
-            case enum_CONTEXT_COMPARE.CONTEXT_SAME_MODULE:
-            // Fallthrough.
             case enum_CONTEXT_COMPARE.CONTEXT_SAME_PROCESS:
-            // Fallthrough.
+            {
+              comparisonResult = true;
+
+              break;
+            }
+
+            case enum_CONTEXT_COMPARE.CONTEXT_SAME_SCOPE:
+              // Fallthrough.
+            case enum_CONTEXT_COMPARE.CONTEXT_SAME_FUNCTION:
+              // Fallthrough.
+            case enum_CONTEXT_COMPARE.CONTEXT_SAME_MODULE:
+              // Fallthrough.
             default:
             {
               throw new NotImplementedException ();
@@ -238,6 +243,14 @@ namespace AndroidPlusPlus.VsDebugEngine
             return DebugEngineConstants.S_OK;
           }
         }
+      }
+      catch (NotImplementedException e)
+      {
+        LoggingUtils.HandleException (e);
+
+        foundIndex = uint.MaxValue;
+
+        return DebugEngineConstants.E_NOTIMPL;
       }
       catch (Exception e)
       {
@@ -309,7 +322,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_MODULEURL) != 0)
         {
-          infoArray [0].bstrModuleUrl = "";
+          infoArray [0].bstrModuleUrl = "file://";
 
           infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_MODULEURL;
         }
@@ -374,8 +387,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (documentContext == null)
         {
-          throw new InvalidOperationException ();
+          return DebugEngineConstants.S_FALSE;
         }
+
+        return DebugEngineConstants.S_OK;
       }
       catch (Exception e)
       {
@@ -385,8 +400,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         return DebugEngineConstants.E_FAIL;
       }
-
-      return DebugEngineConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -409,11 +422,11 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         IDebugDocumentContext2 documentContext = null;
 
-        LoggingUtils.RequireOk (GetDocumentContext (out documentContext));
+        GetDocumentContext (out documentContext);
 
         if (documentContext == null)
         {
-          throw new InvalidOperationException ();
+          return DebugEngineConstants.S_FALSE;
         }
 
         return documentContext.GetLanguageInfo (ref languageName, ref languageGuid);

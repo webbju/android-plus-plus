@@ -182,7 +182,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFields & enum_MODULE_INFO_FIELDS.MIF_URLSYMBOLLOCATION) != 0)
         {
-          infoArray [0].m_bstrUrlSymbolLocation = SymbolsPath;
+          infoArray [0].m_bstrUrlSymbolLocation = "file://" + StringUtils.ConvertPathWindowsToPosix (SymbolsPath);
 
           infoArray [0].dwValidFields |= enum_MODULE_INFO_FIELDS.MIF_URLSYMBOLLOCATION;
         }

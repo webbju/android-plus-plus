@@ -86,13 +86,14 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       VsDebugEngine.DebugEngineGuids.guidDebugPortSupplierStringID,
       "708C1ECA-FF48-11D2-904F-00C04FA302A1"
     },
-    //ProgramProvider = typeof(AndroidMT.VsDebugEngine.DebugProgramProvider),
+    //ProgramProvider = typeof(VsDebugEngine.DebugProgramProvider),
     Attach = true,
     Disassembly = true, 
     RemoteDebugging = true, 
     AlwaysLoadLocal = true, 
     AutoSelectPriority = 4, 
     AddressBP = true, 
+    SetNextStatement = true,
     Exceptions = true,
     DataBP = true)]
 

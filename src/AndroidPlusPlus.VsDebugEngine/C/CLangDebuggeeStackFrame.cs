@@ -39,8 +39,8 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public CLangDebuggeeStackFrame (CLangDebugger debugger, CLangDebuggeeThread thread, MiResultValueTuple frameTuple)
-      : base (debugger.Engine, thread as DebuggeeThread)
+    public CLangDebuggeeStackFrame (CLangDebugger debugger, CLangDebuggeeThread thread, MiResultValueTuple frameTuple, string frameName)
+      : base (debugger.Engine, thread as DebuggeeThread, frameName)
     {
       m_debugger = debugger;
 
@@ -363,6 +363,20 @@ namespace AndroidPlusPlus.VsDebugEngine
           frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_FUNCNAME;
         }
 
+        if ((requestedFlags & enum_FRAMEINFO_FLAGS.FIF_RETURNTYPE) != 0)
+        {
+          frameInfo.m_bstrReturnType = "<return type>";
+
+          frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_RETURNTYPE;
+        }
+
+        if ((requestedFlags & enum_FRAMEINFO_FLAGS.FIF_ARGS) != 0)
+        {
+          frameInfo.m_bstrArgs = "<args>";
+
+          frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_ARGS;
+        }
+
         if (((requestedFlags & enum_FRAMEINFO_FLAGS.FIF_LANGUAGE) != 0) && (m_documentContext != null))
         {
           string languageName = string.Empty;
@@ -376,11 +390,11 @@ namespace AndroidPlusPlus.VsDebugEngine
           frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_LANGUAGE;
         }
 
-        if ((requestedFlags & enum_FRAMEINFO_FLAGS.FIF_FRAME) != 0)
+        if ((requestedFlags & enum_FRAMEINFO_FLAGS.FIF_MODULE) != 0)
         {
-          frameInfo.m_pFrame = this;
+          frameInfo.m_bstrModule = "<unknown module>";
 
-          frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_FRAME;
+          frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_MODULE;
         }
 
         if ((requestedFlags & enum_FRAMEINFO_FLAGS.FIF_STACKRANGE) != 0)
@@ -390,6 +404,13 @@ namespace AndroidPlusPlus.VsDebugEngine
           frameInfo.m_addrMax = 0L;
 
           frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_STACKRANGE;
+        }
+
+        if ((requestedFlags & enum_FRAMEINFO_FLAGS.FIF_FRAME) != 0)
+        {
+          frameInfo.m_pFrame = this;
+
+          frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_FRAME;
         }
 
         if ((requestedFlags & enum_FRAMEINFO_FLAGS.FIF_DEBUGINFO) != 0)
@@ -405,7 +426,28 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_STALECODE;
         }
-        
+
+        if ((requestedFlags & enum_FRAMEINFO_FLAGS.FIF_DEBUG_MODULEP) != 0)
+        {
+          IDebugProgram2 debugProgram;
+
+          IEnumDebugModules2 debugProgramModules;
+
+          uint debugModulesCount = 1;
+
+          DebuggeeModule [] debugModules = new DebuggeeModule [debugModulesCount];
+
+          LoggingUtils.RequireOk (m_thread.GetProgram (out debugProgram));
+
+          LoggingUtils.RequireOk (debugProgram.EnumModules (out debugProgramModules));
+
+          LoggingUtils.RequireOk (debugProgramModules.Next (1, debugModules, ref debugModulesCount));
+
+          frameInfo.m_pModule = debugModules [0];
+
+          frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_DEBUG_MODULEP;
+        }
+
         return DebugEngineConstants.S_OK;
       }
       catch (Exception e)
