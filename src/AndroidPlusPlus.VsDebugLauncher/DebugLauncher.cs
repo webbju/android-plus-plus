@@ -120,8 +120,6 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       string debuggerKeepAppData = EvaluateProjectProperty (projectProperties, "AndroidPlusPlusDebugger", "DebuggerKeepAppData");
 
-      string debuggerGdbTool = EvaluateProjectProperty (projectProperties, "AndroidPlusPlusDebugger", "DebuggerGdbTool");
-
       string debuggerLibraryPaths = EvaluateProjectProperty (projectProperties, "AndroidPlusPlusDebugger", "DebuggerLibraryPaths");
 
       if (string.IsNullOrEmpty (debuggerTargetApk))
@@ -158,12 +156,6 @@ namespace AndroidPlusPlus.VsDebugLauncher
         string antBuildXmlProjectName = buildXmlDocument.DocumentElement.GetAttribute ("name");
 
         debuggerTargetApk = Path.Combine (antBuildPath, "bin", antBuildXmlProjectName + "-" + antBuildType.ToLower () + ".apk");
-      }
-
-
-      if (!File.Exists (debuggerGdbTool))
-      {
-        throw new FileNotFoundException ("Could not locate an instance of GDB. Expected: " + debuggerGdbTool);
       }
 
       // 
@@ -297,8 +289,6 @@ namespace AndroidPlusPlus.VsDebugLauncher
       launchConfig ["DebugMode"] = debuggerDebugMode;
 
       launchConfig ["OpenGlTrace"] = debuggerOpenGlTrace;
-
-      launchConfig ["GdbTool"] = debuggerGdbTool;
 
       launchConfig ["LibraryPaths"] = debuggerLibraryPaths;
 

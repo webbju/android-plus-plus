@@ -56,6 +56,29 @@ namespace AndroidPlusPlus.VsDebugEngine
           location = "*" + location;
         }
 
+        // 
+        // Now we know the exact location (i.e. source:line) of the breakpoint, see if GDB can evaluate an address.
+        // 
+
+        try
+        {
+          switch (m_breakpointRequestInfo.bpLocation.bpLocationType)
+          {
+            case (uint)enum_BP_LOCATION_TYPE.BPLT_CODE_FILE_LINE:
+            {
+              codeContext = m_debugger.GetCodeContextForLocation (location);
+
+              documentContext = codeContext.DocumentContext;
+
+              break;
+            }
+          }
+        }
+        catch (Exception e)
+        {
+          LoggingUtils.HandleException (e);
+        }
+
         return DebugEngineConstants.S_OK;
       }
       catch (Exception e)

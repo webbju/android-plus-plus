@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
+using System.Text.RegularExpressions;
+using System.IO;
 using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
 
@@ -33,7 +35,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private GdbSetup m_gdbSetup;
+    private GdbSetup m_gdbSetup = null;
 
     private uint m_interruptOperationCounter = 0;
 
@@ -55,8 +57,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       NativeMemoryBytes = new CLangDebuggeeMemoryBytes (this);
 
-      string gdbToolPath = Engine.LaunchConfiguration ["GdbTool"];
-
       List<string> libraryPaths = new List<string> ();
 
       if (Engine.LaunchConfiguration.ContainsKey ("LibraryPaths"))
@@ -69,7 +69,66 @@ namespace AndroidPlusPlus.VsDebugEngine
         }
       }
 
-      m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, gdbToolPath, libraryPaths.ToArray ());
+      // 
+      // Evaluate the most up-to-date deployment of GDB provided in the registered SDK. Look at the target device and determine architecture.
+      // 
+
+      string androidNdkRoot = AndroidSettings.NdkRoot;
+
+      string androidNdkToolchains = Path.Combine (androidNdkRoot, "toolchains");
+
+      string archGdbToolPrefix = string.Empty;
+
+      switch (debugProgram.DebugProcess.NativeProcess.HostDevice.GetProperty ("ro.product.cpu.abi"))
+      {
+        case "armeabi":
+        case "armeabi-v7a":
+        {
+          archGdbToolPrefix = "arm-linux-androideabi";
+
+          break;
+        }
+
+        case "x86":
+        {
+          archGdbToolPrefix = "i686";
+
+          break;
+        }
+
+        case "mips":
+        {
+          archGdbToolPrefix = "mipsel-linux-android";
+
+          break;
+        }
+      }
+
+      string gdbExecutablePattern = string.Format ("{0}-gdb.exe", archGdbToolPrefix);
+
+      string [] gdbMatches = Directory.GetFiles (androidNdkToolchains, gdbExecutablePattern, SearchOption.AllDirectories);
+
+      if (gdbMatches.Length == 0)
+      {
+        throw new FileNotFoundException ("Could not find location for GDB: " + gdbExecutablePattern);
+      }
+
+      for (int i = gdbMatches.Length - 1; i >= 0; --i)
+      {
+        if (gdbMatches [i].Contains ("_x86_64") && !Environment.Is64BitOperatingSystem)
+        {
+          continue;
+        }
+
+        m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, gdbMatches [i], libraryPaths.ToArray ());
+
+        break;
+      }
+
+      if (m_gdbSetup == null)
+      {
+        throw new InvalidOperationException ("Could not evaluate GDB instance.");
+      }
 
       GdbServer = new GdbServer (m_gdbSetup);
 
@@ -318,11 +377,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
               if (threadId.Equals ("all"))
               {
-                List<IDebugThread2> programThreads = NativeProgram.GetThreads ();
+                List<DebuggeeThread> programThreads = NativeProgram.GetThreads ();
 
-                foreach (IDebugThread2 thread in programThreads)
+                foreach (DebuggeeThread thread in programThreads)
                 {
-                  (thread as CLangDebuggeeThread).SetRunning (true);
+                  thread.SetRunning (true);
                 }
               }
               else
@@ -396,11 +455,11 @@ namespace AndroidPlusPlus.VsDebugEngine
                 }
                 else
                 {
-                  List<IDebugThread2> programThreads = NativeProgram.GetThreads ();
+                  List<DebuggeeThread> programThreads = NativeProgram.GetThreads ();
 
-                  foreach (IDebugThread2 thread in programThreads)
+                  foreach (DebuggeeThread thread in programThreads)
                   {
-                    (thread as CLangDebuggeeThread).SetRunning (false);
+                    thread.SetRunning (false);
                   }
                 }
               }
@@ -733,6 +792,61 @@ namespace AndroidPlusPlus.VsDebugEngine
           break;
         }
       }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public DebuggeeCodeContext GetCodeContextForLocation (string location)
+    {
+      if (location.StartsWith ("0x"))
+      {
+        location = "*" + location;
+      }
+
+      MiResultRecord resultInfoLine = GdbClient.SendCommand ("info line " + location);
+
+      if ((resultInfoLine == null) || ((resultInfoLine != null) && resultInfoLine.IsError ()))
+      {
+        throw new InvalidOperationException ();
+      }
+
+      string infoRegExPattern = "Line (?<line>[0-9]+) of \\\\\"(?<file>[^\"]+)\\\\\" starts at address (?<start>[^ ]+) (?<startsym>[^ ]+) and ends at (?<end>[^ ]+) (?<endsym>[^ .]+).";
+
+      Regex regExMatcher = new Regex (infoRegExPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+      foreach (MiStreamRecord record in resultInfoLine.Records)
+      {
+        Match regExLineMatch = regExMatcher.Match (record.Stream);
+
+        if (regExLineMatch.Success)
+        {
+          uint line = uint.Parse (regExLineMatch.Result ("${line}"));
+
+          string filename = regExLineMatch.Result ("${file}");
+
+          DebuggeeAddress startAddress = new DebuggeeAddress (regExLineMatch.Result ("${start}"));
+
+          DebuggeeAddress endAddress = new DebuggeeAddress (regExLineMatch.Result ("${end}"));
+
+          TEXT_POSITION [] documentPositions = new TEXT_POSITION [2];
+
+          documentPositions [0].dwLine = line - 1;
+
+          documentPositions [0].dwColumn = 0;
+
+          documentPositions [1].dwLine = documentPositions [0].dwLine;
+
+          documentPositions [1].dwColumn = uint.MaxValue;
+
+          DebuggeeDocumentContext documentContext = new DebuggeeDocumentContext (Engine, filename, documentPositions [0], documentPositions [1], DebugEngineGuids.guidLanguageCpp, startAddress);
+
+          return new DebuggeeCodeContext (Engine, documentContext, startAddress);
+        }
+      }
+
+      return null;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

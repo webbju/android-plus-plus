@@ -23,7 +23,7 @@ namespace AndroidPlusPlus.VsDebugEngine
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class DebuggeeStackFrame : DebuggeeProperty, IDebugStackFrame3, IDebugExpressionContext2
+  public class DebuggeeStackFrame : IDebugStackFrame3, IDebugExpressionContext2
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -42,13 +42,15 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    //protected readonly DebugEngine m_debugEngine;
+    protected readonly DebugEngine m_debugEngine;
 
     protected readonly DebuggeeThread m_thread;
 
     protected DebuggeeCodeContext m_codeContext;
 
     protected DebuggeeDocumentContext m_documentContext;
+
+    protected DebuggeeProperty m_property;
 
     protected ConcurrentDictionary<string, DebuggeeProperty> m_stackArguments;
 
@@ -63,17 +65,16 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public DebuggeeStackFrame (DebugEngine engine, DebuggeeThread thread, string frameName)
-      : base (engine, null, frameName, new DebuggeeProperty [] { })
     {
-      //m_debugEngine = engine;
-
-      m_stackFrame = this;
+      m_debugEngine = engine;
 
       m_thread = thread;
 
       m_codeContext = null;
 
       m_documentContext = null;
+
+      m_property = new DebuggeeProperty (engine, this, frameName, new DebuggeeProperty [] { });
 
       m_stackArguments = new ConcurrentDictionary<string, DebuggeeProperty> ();
 
@@ -297,7 +298,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      property = this;
+      property = m_property;
 
       return DebugEngineConstants.S_OK;
     }
@@ -641,7 +642,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public override int EnumChildren (enum_DEBUGPROP_INFO_FLAGS dwFields, uint dwRadix, ref Guid guidFilter, enum_DBG_ATTRIB_FLAGS dwAttribFilter, string pszNameFilter, uint dwTimeout, out IEnumDebugPropertyInfo2 ppEnum)
+    public int EnumChildren (enum_DEBUGPROP_INFO_FLAGS dwFields, uint dwRadix, ref Guid guidFilter, enum_DBG_ATTRIB_FLAGS dwAttribFilter, string pszNameFilter, uint dwTimeout, out IEnumDebugPropertyInfo2 ppEnum)
     {
       // 
       // Enumerates the children of a property. This provides support for dereferencing pointers, displaying members of an array, or fields of a class or struct.

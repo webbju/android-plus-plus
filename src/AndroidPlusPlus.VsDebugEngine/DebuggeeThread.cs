@@ -526,7 +526,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         THREADPROPERTIES [] threadProperties9 = new THREADPROPERTIES [1];
 
-        enum_THREADPROPERTY_FIELDS requestedFields90 = (enum_THREADPROPERTY_FIELDS)(requestedFields & 0x3f);
+        enum_THREADPROPERTY_FIELDS requestedFields90 = (enum_THREADPROPERTY_FIELDS)0x3f;// (requestedFields & 0x3f);
 
         LoggingUtils.RequireOk (GetThreadProperties (requestedFields90, threadProperties9));
 
@@ -559,7 +559,7 @@ namespace AndroidPlusPlus.VsDebugEngine
             propertiesArray [0].dwFields |= (uint)enum_THREADPROPERTY_FIELDS100.TPF100_DISPLAY_NAME;
 
             // Give this display name a higher priority than the default (0) so that it will actually be displayed
-            propertiesArray [0].DisplayNamePriority = 10;// (uint)enum_DISPLAY_NAME_PRIORITY100.DISPLAY_NAME_PRI_NORMAL_100;
+            propertiesArray [0].DisplayNamePriority = (uint)enum_DISPLAY_NAME_PRIORITY100.DISPLAY_NAME_PRI_NORMAL_100;
 
             propertiesArray [0].dwFields |= (uint)enum_THREADPROPERTY_FIELDS100.TPF100_DISPLAY_NAME_PRIORITY;
           }

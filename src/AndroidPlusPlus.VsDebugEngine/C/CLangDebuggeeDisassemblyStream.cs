@@ -7,7 +7,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
-using System.Text.RegularExpressions;
 using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
 
@@ -70,7 +69,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         LoggingUtils.RequireOk (m_codeContext.GetDocumentContext (out documentContext));
 
-        ppCodeContext = new DebuggeeCodeContext (m_debugger.Engine, documentContext as DebuggeeDocumentContext, new DebuggeeAddress ((uint)uCodeLocationId));
+        ppCodeContext = new DebuggeeCodeContext (m_debugger.Engine, documentContext as DebuggeeDocumentContext, new DebuggeeAddress (uCodeLocationId));
       }
       catch (Exception e)
       {
@@ -96,7 +95,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      puCodeLocationId = (ulong)((pCodeContext as DebuggeeCodeContext).Address.MemoryAddress);
+      puCodeLocationId = (pCodeContext as DebuggeeCodeContext).Address.MemoryAddress;
 
       return DebugEngineConstants.S_OK;
     }
@@ -182,56 +181,6 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public DebuggeeCodeContext GetCodeContextForAddress (DebuggeeAddress address)
-    {
-      MiResultRecord resultInfoLine = m_debugger.GdbClient.SendCommand ("info line *" + address.ToString ());
-
-      if ((resultInfoLine == null) || ((resultInfoLine != null) && resultInfoLine.IsError ()))
-      {
-        throw new InvalidOperationException ();
-      }
-
-      string infoRegExPattern = "Line (?<line>[0-9]+) of \\\\\"(?<file>[^\"]+)\\\\\" starts at address (?<start>[^ ]+) (?<startsym>[^ ]+) and ends at (?<end>[^ ]+) (?<endsym>[^ .]+).";
-
-      Regex regExMatcher = new Regex (infoRegExPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-      foreach (MiStreamRecord record in resultInfoLine.Records)
-      {
-        Match regExLineMatch = regExMatcher.Match (record.Stream);
-
-        if (regExLineMatch.Success)
-        {
-          uint line = uint.Parse (regExLineMatch.Result ("${line}"));
-
-          string filename = regExLineMatch.Result ("${file}");
-
-          DebuggeeAddress startAddress = new DebuggeeAddress (regExLineMatch.Result ("${start}"));
-
-          DebuggeeAddress endAddress = new DebuggeeAddress (regExLineMatch.Result ("${end}"));
-
-          TEXT_POSITION [] documentPositions = new TEXT_POSITION [2];
-
-          documentPositions [0].dwLine = line - 1;
-
-          documentPositions [0].dwColumn = 0;
-
-          documentPositions [1].dwLine = documentPositions [0].dwLine;
-
-          documentPositions [1].dwColumn = uint.MaxValue;
-
-          DebuggeeDocumentContext documentContext = new DebuggeeDocumentContext (m_debugger.Engine, filename, documentPositions [0], documentPositions [1], DebugEngineGuids.guidLanguageCpp, startAddress);
-
-          return new DebuggeeCodeContext (m_debugger.Engine, documentContext, startAddress);
-        }
-      }
-
-      return null;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     public int Read (uint dwInstructions, enum_DISASSEMBLY_STREAM_FIELDS dwFields, out uint pdwInstructionsRead, DisassemblyData [] prgDisassembly)
     {
       // 
@@ -242,7 +191,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        DebuggeeCodeContext addressCodeContext = GetCodeContextForAddress (m_currentPosition);
+        DebuggeeCodeContext addressCodeContext = m_debugger.GetCodeContextForLocation (m_currentPosition.ToString ());
 
         if (addressCodeContext == null)
         {

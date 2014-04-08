@@ -46,7 +46,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private readonly Guid m_portGuid;
 
-    private List<IDebugProcess2> m_debugProcesses;
+    private List<DebuggeeProcess> m_debugProcesses;
 
     private Dictionary<int, IDebugPortEvents2> m_eventConnectionPoints;
 
@@ -64,7 +64,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       m_portGuid = Guid.NewGuid ();
 
-      m_debugProcesses = new List<IDebugProcess2> ();
+      m_debugProcesses = new List<DebuggeeProcess> ();
 
       m_eventConnectionPoints = new Dictionary<int, IDebugPortEvents2> ();
     }
@@ -138,7 +138,14 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.RequireOk (RefreshProcesses ());
 
-        ppEnum = new DebuggeeProcess.Enumerator (m_debugProcesses);
+        List<IDebugProcess2> processes = new List<IDebugProcess2> ();
+
+        foreach (DebuggeeProcess process in m_debugProcesses)
+        {
+          processes.Add (process);
+        }
+
+        ppEnum = new DebuggeeProcess.Enumerator (processes);
 
         return DebugEngineConstants.S_OK;
       }

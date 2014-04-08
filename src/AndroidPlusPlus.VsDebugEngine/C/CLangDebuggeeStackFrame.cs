@@ -77,9 +77,11 @@ namespace AndroidPlusPlus.VsDebugEngine
           Level = frameTuple ["level"].GetUnsignedInt ();
         }
 
-        m_memoryAddress = new DebuggeeAddress (frameTuple ["addr"].GetString ());
+        string memoryAddress = frameTuple ["addr"].GetString ();
 
-        m_codeContext = new DebuggeeCodeContext (m_debugger.Engine, null, m_memoryAddress);
+        m_property = new CLangDebuggeeProperty (m_debugger, this, "*" + memoryAddress, new CLangDebuggeeProperty [] { });
+
+        m_memoryAddress = new DebuggeeAddress (memoryAddress);
 
         // 
         // Discover the function or shared library location.
@@ -127,6 +129,15 @@ namespace AndroidPlusPlus.VsDebugEngine
           m_documentContext = new DebuggeeDocumentContext (m_debugger.Engine, filename, textPositions [0], textPositions [1], DebugEngineGuids.guidLanguageCpp, m_memoryAddress);
 
           m_codeContext = m_documentContext.GetCodeContext ();
+        }
+        else
+        {
+          m_codeContext = m_debugger.GetCodeContextForLocation ("*" + m_memoryAddress.ToString ());
+
+          if (m_codeContext != null)
+          {
+            m_documentContext = m_codeContext.DocumentContext;
+          }
         }
       }
       catch (Exception e)

@@ -320,27 +320,27 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
       if (dteService == null)
       {
-        throw new InvalidOperationException ("Failed to aquire 'DTE' service");
+        throw new InvalidOperationException ("Failed to acquire 'DTE' service");
       }
 
       if (shellService == null)
       {
-        throw new InvalidOperationException ("Failed to aquire 'IVsShell' service");
+        throw new InvalidOperationException ("Failed to acquire 'IVsShell' service");
       }
 
       if (debuggerService == null)
       {
-        throw new InvalidOperationException ("Failed to aquire 'IVsDebugger' service");
+        throw new InvalidOperationException ("Failed to acquire 'IVsDebugger' service");
       }
 
       if (solutionService == null)
       {
-        throw new InvalidOperationException ("Failed to aquire 'SVsSolution' service");
+        throw new InvalidOperationException ("Failed to acquire 'SVsSolution' service");
       }
 
       if (monitorSelectionService == null)
       {
-        throw new InvalidOperationException ("Failed to aquire 'IVsMonitorSelection' service");
+        throw new InvalidOperationException ("Failed to acquire 'IVsMonitorSelection' service");
       }
 
       m_propertyEventListener = new PropertyEventListener (shellService);
