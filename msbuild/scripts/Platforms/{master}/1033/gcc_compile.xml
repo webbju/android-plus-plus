@@ -91,6 +91,19 @@
     Switch="-I"
   />
   
+  <!-- 
+    AdditionalQuotationIncludeDirectories
+  -->
+
+  <StringListProperty
+    Subtype="folder"
+    Name="AdditionalQuotationIncludeDirectories"
+    DisplayName="Additional Quotation Include Directories"
+    Description="Specifies one or more directories to be searched for header files only for the case of #include &quot;file&quot; separate with semi-colons if more than one.     (-iquote[path])"
+    Category="General"
+    Switch="-iquote"
+  />
+  
   <!--
     GenerateDebuggingInformation
   -->
@@ -411,6 +424,63 @@
       Switch="-fstack-protector-all"
       DisplayName="Full Protection"
       Description="Enable stack protection for all functions with no size limit."
+    />
+
+  </EnumProperty>
+  
+  <!--
+    ArmFloatingPointAbi
+  -->
+  
+  <EnumProperty
+    Name="ArmFloatingPointAbi"
+    DisplayName="Floating-point ABI (ARM Only)"
+    Description="Specifies which floating-point ABI to use."
+    Category="Code Generation">
+
+    <EnumValue
+      Name="Soft"
+      Switch="-mfloat-abi=soft"
+      DisplayName="Soft"
+      Description="Specifying 'soft' causes GCC to generate output containing library calls for floating-point operations.     (-mfloat-abi=soft)"
+    />
+
+    <EnumValue
+      Name="SoftFp"
+      Switch="-mfloat-abi=softfp"
+      DisplayName="SoftFp"
+      Description="'softfp' allows the generation of code using hardware floating-point instructions, but still uses the soft-float calling conventions.     (-mfloat-abi=softfp)"
+    />
+
+    <EnumValue
+      Name="Hard"
+      Switch="-mfloat-abi=hard"
+      DisplayName="Hard"
+      Description="'hard' allows generation of floating-point instructions and uses FPU-specific calling conventions.     (-mfloat-abi=hard)"
+    />
+
+  </EnumProperty>
+
+  <!--
+    ArmFloatingPointHardware
+  -->
+
+  <EnumProperty
+    Name="ArmFloatingPointHardware"
+    DisplayName="Floating-point Hardware (ARM Only)"
+    Description="This specifies what floating-point hardware (or hardware emulation) is available on the target."
+    Category="Code Generation">
+
+    <EnumValue
+      Name="vfpv3-d16"
+      Switch="-mfpu=vfpv3-d16"
+      DisplayName="VFPv3-D16"
+    />
+
+    <EnumValue
+      Name="neon"
+      Switch="-mfpu=neon"
+      DisplayName="NEON"
     />
 
   </EnumProperty>

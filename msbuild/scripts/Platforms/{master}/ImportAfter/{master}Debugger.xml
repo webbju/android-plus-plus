@@ -80,11 +80,6 @@
     Description="Ensures that existing data remains for if the Application is re-installed."
   />
 
-  <StringProperty
-    Name="DebuggerGdbTool"
-    Subtype="file"
-  />
-
   <StringListProperty
     Name="DebuggerLibraryPaths"
     DisplayName="Library Paths"

@@ -38,7 +38,7 @@
 
       <PreprocessorDefinitions>__x86__;%(ClCompile.PreprocessorDefinitions)</PreprocessorDefinitions>
 
-      <AdditionalOptions>-finline-functions -fmessage-length=0 -fno-inline-functions-called-once -fgcse-after-reload -frerun-cse-after-loop -frename-registers %(ClCompile.AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>%(ClCompile.AdditionalOptions)</AdditionalOptions>
 
       <SysRoot Condition="'%(ClCompile.SysRoot)' == ''">$(PlatformToolsetSysRoot)</SysRoot>
 
@@ -62,6 +62,8 @@
 
     <ClCompile>
 
+      <OmitFramePointers Condition="'%(ClCompile.OmitFramePointers)' == ''">false</OmitFramePointers>
+
       <StrictAliasing Condition="'%(ClCompile.StrictAliasing)' == ''">false</StrictAliasing>
 
     </ClCompile>
@@ -71,6 +73,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)' != 'Debug'">
 
     <ClCompile>
+
+      <OmitFramePointers Condition="'%(ClCompile.OmitFramePointers)' == ''">true</OmitFramePointers>
 
       <StrictAliasing Condition="'%(ClCompile.StrictAliasing)' == ''">true</StrictAliasing>
 

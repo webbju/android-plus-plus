@@ -60,6 +60,8 @@
 
     <ClCompile>
 
+      <OmitFramePointers Condition="'%(ClCompile.OmitFramePointers)' == ''">false</OmitFramePointers>
+
     </ClCompile>
 
   </ItemDefinitionGroup>
@@ -67,6 +69,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)' != 'Debug'">
 
     <ClCompile>
+
+      <OmitFramePointers Condition="'%(ClCompile.OmitFramePointers)' == ''">true</OmitFramePointers>
 
       <UnswitchLoops Condition="'%(ClCompile.UnswitchLoops)' == ''">true</UnswitchLoops>
 

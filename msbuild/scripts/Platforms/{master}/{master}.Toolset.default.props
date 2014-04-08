@@ -30,6 +30,8 @@
 
       <AdditionalIncludeDirectories Condition="'%(ClCompile.AdditionalIncludeDirectories)' == ''"></AdditionalIncludeDirectories>
 
+      <AdditionalQuotationIncludeDirectories Condition="'%(ClCompile.AdditionalQuotationIncludeDirectories)' == ''"></AdditionalQuotationIncludeDirectories>
+
       <OutputCommandLine Condition="'%(ClCompile.OutputCommandLine)' == ''">false</OutputCommandLine>
 
       <MultiProcessorCompilation Condition="'%(ClCompile.MultiProcessorCompilation)' == ''">true</MultiProcessorCompilation>

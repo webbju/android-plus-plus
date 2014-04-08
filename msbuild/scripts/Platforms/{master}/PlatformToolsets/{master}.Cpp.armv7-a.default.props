@@ -38,7 +38,11 @@
 
       <PreprocessorDefinitions>__arm__;__ARM_ARCH_5__;__ARM_ARCH_5T__;__ARM_ARCH_5E__;__ARM_ARCH_5TE__;__ARM_ARCH_7__;__ARM_ARCH_7A__;__ARM_EABI__;%(ClCompile.PreprocessorDefinitions)</PreprocessorDefinitions>
 
-      <AdditionalOptions>-marm -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 %(ClCompile.AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-marm -march=armv7-a %(ClCompile.AdditionalOptions)</AdditionalOptions>
+
+      <ArmFloatingPointAbi Condition="'%(ClCompile.ArmFloatingPointAbi)' == ''">SoftFp</ArmFloatingPointAbi>
+
+      <ArmFloatingPointHardware Condition="'%(ClCompile.ArmFloatingPointHardware)' == ''">vfpv3-d16</ArmFloatingPointHardware>
 
       <SysRoot Condition="'%(ClCompile.SysRoot)' == ''">$(PlatformToolsetSysRoot)</SysRoot>
 
@@ -63,6 +67,8 @@
 
     <ClCompile>
 
+      <OmitFramePointers Condition="'%(ClCompile.OmitFramePointers)' == ''">false</OmitFramePointers>
+
       <StrictAliasing Condition="'%(ClCompile.StrictAliasing)' == ''">false</StrictAliasing>
 
     </ClCompile>
@@ -72,6 +78,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)' != 'Debug'">
 
     <ClCompile>
+
+      <OmitFramePointers Condition="'%(ClCompile.OmitFramePointers)' == ''">true</OmitFramePointers>
 
       <StrictAliasing Condition="'%(ClCompile.StrictAliasing)' == ''">true</StrictAliasing>
 
