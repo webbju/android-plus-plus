@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration ("")]
 [assembly: AssemblyCompany ("Justin Webb")]
 [assembly: AssemblyProduct ("Android++")]
-[assembly: AssemblyCopyright ("Copyright © 2013 NaturalMotion Limited")]
+[assembly: AssemblyCopyright ("Copyright © 2014 NaturalMotion Limited")]
 [assembly: AssemblyTrademark ("")]
 
 [assembly: NeutralResourcesLanguage ("en-US")]

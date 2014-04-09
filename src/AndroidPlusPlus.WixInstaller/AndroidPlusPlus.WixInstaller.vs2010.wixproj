@@ -15,13 +15,40 @@
     <OutputPath>..\..\build\vs2010\bin\$(Configuration)\</OutputPath>
     <BaseIntermediateOutputPath>..\..\build\vs2010\obj\$(Configuration)\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
-    <DefineConstants>Debug;SamplesDir=$(ProjectDir)..\..\Samples;MsBuildTemplatesDir=$(OutputPath)MsBuild</DefineConstants>
+    <DefineConstants>
+      Debug;
+      OutputPathVsExtension2010=$(ProjectDir)..\..\build\vs2010\bin\$(Configuration);
+      OutputPathVsExtension2012=$(ProjectDir)..\..\build\vs2012\bin\$(Configuration);
+      OutputPathVsExtension2013=$(ProjectDir)..\..\build\vs2013\bin\$(Configuration);
+      OutputPathMsBuildBin2010=$(ProjectDir)..\..\msbuild\build\vs2010\bin\$(Configuration);
+      OutputPathMsBuildBin2012=$(ProjectDir)..\..\msbuild\build\vs2012\bin\$(Configuration);
+      OutputPathMsBuildBin2013=$(ProjectDir)..\..\msbuild\build\vs2013\bin\$(Configuration);
+      OutputPathMsBuildScripts2010=$(ProjectDir)..\..\msbuild\build\vs2010\scripts;
+      OutputPathMsBuildScripts2012=$(ProjectDir)..\..\msbuild\build\vs2012\scripts;
+      OutputPathMsBuildScripts2013=$(ProjectDir)..\..\msbuild\build\vs2013\scripts;
+      ProjectDocumentationDir=$(ProjectDir)..\..\docs;
+      ProjectSamplesDir=$(ProjectDir)..\..\msbuild\samples;
+      ProjectTestsDir=$(ProjectDir)..\..\msbuild\tests;
+    </DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>..\..\build\vs2010\bin\$(Configuration)\</OutputPath>
     <BaseIntermediateOutputPath>..\..\build\vs2010\obj\$(Configuration)\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
-    <DefineConstants>SamplesDir=$(ProjectDir)..\..\Samples;MsBuildTemplatesDir=$(OutputPath)MsBuild;</DefineConstants>
+    <DefineConstants>
+      OutputPathVsExtension2010=$(ProjectDir)..\..\build\vs2010\bin\$(Configuration);
+      OutputPathVsExtension2012=$(ProjectDir)..\..\build\vs2012\bin\$(Configuration);
+      OutputPathVsExtension2013=$(ProjectDir)..\..\build\vs2013\bin\$(Configuration);
+      OutputPathMsBuildBin2010=$(ProjectDir)..\..\msbuild\build\vs2010\bin\$(Configuration);
+      OutputPathMsBuildBin2012=$(ProjectDir)..\..\msbuild\build\vs2012\bin\$(Configuration);
+      OutputPathMsBuildBin2013=$(ProjectDir)..\..\msbuild\build\vs2013\bin\$(Configuration);
+      OutputPathMsBuildScripts2010=$(ProjectDir)..\..\msbuild\build\vs2010\scripts;
+      OutputPathMsBuildScripts2012=$(ProjectDir)..\..\msbuild\build\vs2012\scripts;
+      OutputPathMsBuildScripts2013=$(ProjectDir)..\..\msbuild\build\vs2013\scripts;
+      ProjectDocumentationDir=$(ProjectDir)..\..\docs;
+      ProjectSamplesDir=$(ProjectDir)..\..\msbuild\samples;
+      ProjectTestsDir=$(ProjectDir)..\..\msbuild\tests;
+    </DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <WixExtension Include="WixUIExtension">
@@ -38,17 +65,44 @@
     </WixExtension>
   </ItemGroup>
   <ItemGroup>
-    <HarvestDirectory Include="$(ProjectDir)\..\..\Samples">
-      <DirectoryRefId>INSTALLFOLDER</DirectoryRefId>
-      <ComponentGroupName>ProjectSamples</ComponentGroupName>
-      <PreprocessorVariable>var.SamplesDir</PreprocessorVariable>
+    <HarvestDirectory Include="$(ProjectDir)..\..\msbuild\build\vs2010\scripts">
+      <DirectoryRefId>ProjectMsBuildScriptsFolder2010</DirectoryRefId>
+      <ComponentGroupName>ProjectMsBuildScripts2010</ComponentGroupName>
+      <PreprocessorVariable>var.OutputPathMsBuildScripts2010</PreprocessorVariable>
+      <SuppressRootDirectory>true</SuppressRootDirectory>
+      <Link>MsBuildScripts2010</Link>
+    </HarvestDirectory>
+    <HarvestDirectory Include="$(ProjectDir)..\..\msbuild\build\vs2012\scripts">
+      <DirectoryRefId>ProjectMsBuildScriptsFolder2012</DirectoryRefId>
+      <ComponentGroupName>ProjectMsBuildScripts2012</ComponentGroupName>
+      <PreprocessorVariable>var.OutputPathMsBuildScripts2012</PreprocessorVariable>
+      <SuppressRootDirectory>true</SuppressRootDirectory>
+      <Link>MsBuildScripts2012</Link>
+    </HarvestDirectory>
+    <HarvestDirectory Include="$(ProjectDir)..\..\msbuild\build\vs2013\scripts">
+      <DirectoryRefId>ProjectMsBuildScriptsFolder2013</DirectoryRefId>
+      <ComponentGroupName>ProjectMsBuildScripts2013</ComponentGroupName>
+      <PreprocessorVariable>var.OutputPathMsBuildScripts2013</PreprocessorVariable>
+      <SuppressRootDirectory>true</SuppressRootDirectory>
+      <Link>MsBuildScripts2013</Link>
+    </HarvestDirectory>
+    <HarvestDirectory Include="$(ProjectDir)\..\..\docs">
+      <DirectoryRefId>ProjectDocumentationFolder</DirectoryRefId>
+      <ComponentGroupName>ProjectDocumentation</ComponentGroupName>
+      <PreprocessorVariable>var.ProjectDocumentationDir</PreprocessorVariable>
       <Link>Samples</Link>
     </HarvestDirectory>
-    <HarvestDirectory Include="$(OutputPath)\MsBuild">
-      <DirectoryRefId>MsBuildMicrosoftCppv4Dir</DirectoryRefId>
-      <ComponentGroupName>ProjectMsBuildTemplates2010</ComponentGroupName>
-      <PreprocessorVariable>var.MsBuildTemplatesDir</PreprocessorVariable>
-      <SuppressRootDirectory>true</SuppressRootDirectory>
+    <HarvestDirectory Include="$(ProjectDir)\..\..\msbuild\samples">
+      <DirectoryRefId>ProjectSamplesFolder</DirectoryRefId>
+      <ComponentGroupName>ProjectSamples</ComponentGroupName>
+      <PreprocessorVariable>var.ProjectSamplesDir</PreprocessorVariable>
+      <Link>Samples</Link>
+    </HarvestDirectory>
+    <HarvestDirectory Include="$(ProjectDir)\..\..\msbuild\tests">
+      <DirectoryRefId>ProjectTestsFolder</DirectoryRefId>
+      <ComponentGroupName>ProjectTests</ComponentGroupName>
+      <PreprocessorVariable>var.ProjectTestsDir</PreprocessorVariable>
+      <Link>Tests</Link>
     </HarvestDirectory>
   </ItemGroup>
   <ItemGroup>
@@ -63,12 +117,12 @@
     <Content Include="Resources\WixUIDialogBmp.bmp" />
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" />
-  <!--
-	To modify your build process, add your task inside one of the targets below and uncomment it.
-	Other similar extension points exist, see Wix.targets.
-	<Target Name="BeforeBuild">
-	</Target>
-	<Target Name="AfterBuild">
-	</Target>
-	-->
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+    <GetAssemblyIdentity AssemblyFiles="$(OutputPath)\AndroidPlusPlus.Common.dll">
+      <Output TaskParameter="Assemblies" ItemName="AssemblyVersion"/>
+    </GetAssemblyIdentity>
+    <Copy SourceFiles="$(OutputPath)\$(OutputName).msi" DestinationFiles="$(OutputPath)$(OutputName).%(AssemblyVersion.Version).msi" />
+  </Target>
 </Project>

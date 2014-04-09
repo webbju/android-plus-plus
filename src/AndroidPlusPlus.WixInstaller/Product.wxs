@@ -13,13 +13,22 @@
   <?define ProductManufacturer="Justin Webb" ?>
   <?define ProductUpgradeCode="5444daf1-5354-41a9-babd-2ad2ab4179cd" ?>
 
+  <!--
+    Version information for an assembly consists of the following four values:
+    
+          Major Version
+          Minor Version 
+          Build Number
+          Revision
+  -->
+  
   <?define MajorVersion="0" ?>
   <?define MinorVersion="1" ?>
-  <?define MicroVersion="0" ?>
   <?define BuildVersion="0" ?>
+  <?define RevisionVersion="0" ?>
 
-  <?define VersionNumberInternal="$(var.MajorVersion).$(var.MinorVersion).$(var.BuildVersion)" ?>
-  <?define VersionNumberUserVisible="$(var.MajorVersion).$(var.MinorVersion).$(var.MicroVersion)" ?>
+  <?define VersionNumberInternal="$(var.MajorVersion).$(var.BuildVersion).$(var.RevisionVersion)" ?>
+  <?define VersionNumberUserVisible="$(var.MajorVersion).$(var.MinorVersion).$(var.BuildVersion)" ?>
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -49,6 +58,7 @@
     <Media Id="1" Cabinet="AndroidPlusPlus.cab" EmbedCab="yes" CompressionLevel="high" />
 
     <!-- Check current user has Administrator permissions.-->
+    <Property Id="MSIUSEREALADMINDETECTION" Value="1" />
     <Condition Message="Administrator permissions are required to install this product.">Privileged</Condition>
 
     <!--  Check for .NET Framework 4.0 -->
@@ -57,28 +67,33 @@
       <![CDATA[Installed OR (NETFRAMEWORK40FULL)]]>
     </Condition>
 
-    <!-- Add and Remove Programs properties. -->
-    <Property Id="ARPCONTACT">webbju@android-plus-plus.com</Property>
-    <Property Id="ARPURLINFOABOUT">http://www.android-plus-plus.com</Property>
-    <Property Id="ARPHELPLINK">http://www.android-plus-plus.com</Property>
-    <Property Id="ARPURLUPDATEINFO">http://www.android-plus-plus.com</Property>
-    <Property Id="ARPHELPTELEPHONE">http://www.android-plus-plus.com</Property>
-
     <!-- Check for installations of VS 2010 or VS 2012 (non-Express Editions) -->
     <PropertyRef Id='VS2010_IDE_VC_PROJECTSYSTEM_INSTALLED'/>
     <PropertyRef Id='VS2012_IDE_VC_PROJECTSYSTEM_INSTALLED'/>
-    <Condition Message="This application requires a commercial (non-Express) installation of Visual Studio 2010 or 2012.">
-      <![CDATA[(VS2010_IDE_VC_PROJECTSYSTEM_INSTALLED) OR (VS2012_IDE_VC_PROJECTSYSTEM_INSTALLED)]]>
+    <PropertyRef Id='VS2013_IDE_VC_PROJECTSYSTEM_INSTALLED'/>
+    <Condition Message="This application requires a commercial (non-express) installation of Visual Studio 2010, 2012 or 2013.">
+      <![CDATA[(VS2010_IDE_VC_PROJECTSYSTEM_INSTALLED) OR (VS2012_IDE_VC_PROJECTSYSTEM_INSTALLED) OR (VS2013_IDE_VC_PROJECTSYSTEM_INSTALLED)]]>
     </Condition>
 
     <!-- Displays a selectable component list. Not enough choices to justify this yet. -->
     <UIRef Id="WixUI_FeatureTree" />
     <UIRef Id="WixUI_ErrorProgressText" />
 
+    <!-- Add and Remove Programs (ARP) properties. -->
+    <Property Id="ARPCONTACT">webbju@android-plus-plus.com</Property>
+    <Property Id="ARPURLINFOABOUT">http://www.android-plus-plus.com</Property>
+    <Property Id="ARPHELPLINK">http://www.android-plus-plus.com</Property>
+    <Property Id="ARPURLUPDATEINFO">http://www.android-plus-plus.com</Property>
+    <Property Id="ARPHELPTELEPHONE">http://www.android-plus-plus.com</Property>
+    <!-- 
+    <Icon Id="ApplicationIcon" SourceFile="Mingle.ico" />
+    <Property Id="ARPPRODUCTICON" Value="ApplicationIcon" />
+    -->
+
     <!-- Setup license file default. -->
     <WixVariable Id="WixUILicenseRtf" Value="Resources\EULA.rtf" />
-    <WixVariable Id="WixUIBannerBmp" Value="Resources\WixUIBannerBmp.bmp" />
-    <!-- <WixVariable Id="WixUIDialogBmp" Value="Resources\WixUIDialogBmp.bmp" /> -->
+    <!-- <WixVariable Id="WixUIBannerBmp" Value="Resources\WixUIBannerBmp.bmp" />
+    <WixVariable Id="WixUIDialogBmp" Value="Resources\WixUIDialogBmp.bmp" /> -->
 
     <!--
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -86,91 +101,163 @@
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     -->
 
-    <?define OutputPathVs2010="$(sys.SOURCEFILEDIR)..\..\build\vs2010\bin\$(var.Configuration)\" ?>
-
-    <?define OutputPathVs2012="$(sys.SOURCEFILEDIR)..\..\build\vs2012\bin\$(var.Configuration)\" ?>
-
     <Directory Id="TARGETDIR" Name="SourceDir">
 
       <Directory Id="ProgramFilesFolder">
 
-        <Directory Id="INSTALLFOLDER" Name="$(var.ProductShortName)">
+        <Directory Id="ProgramFilesAndroidPlusPlus" Name="$(var.ProductShortName)">
 
-          <!-- 
-            Extensions 
-          -->
+          <Directory Id="INSTALLFOLDER" Name="$(var.VersionNumberUserVisible)">
 
-          <Directory Id="ProjectVsixFolder" Name="Extensions">
-
-            <!-- VS2010 -->
-            <Component Id="ProjectVsix2010" Guid="1AC3729C-42D9-4C1C-AF38-CC73D4DFA2EB">
-              <Condition><![CDATA[(VS2010_IDE_VC_PROJECTSYSTEM_INSTALLED)]]></Condition>
-              <File Id="AndroidPlusPlusVsIntegratedPackage2010" Name="AndroidPlusPlus.VsIntegratedPackage.vs2010.vsix" Source="$(var.OutputPathVs2010)AndroidPlusPlus.VsIntegratedPackage.vsix" KeyPath="yes">
-                <vs:VsixPackage PackageId="e57f7102-96b3-4d11-b153-0957bea37363" Vital="yes" Permanent="no" />
-              </File>
-            </Component>
-
-            <!-- VS2012 -->
             <!-- 
-            <Component Id="ProjectVsix2012" Guid="F5FF814D-B273-49E1-9EA6-FE06B3625DBC">
-              <Condition><![CDATA[(VS2012_IDE_VC_PROJECTSYSTEM_INSTALLED)]]></Condition>
-              <File Id="AndroidPlusPlusVsIntegratedPackage2012" Name="AndroidPlusPlus.VsIntegratedPackage.vs2012.vsix" Source="$(var.OutputPathVs2012)AndroidPlusPlus.VsIntegratedPackage.vsix" KeyPath="yes">
-                <vs:VsixPackage PackageId="e57f7102-96b3-4d11-b153-0957bea37363" Vital="yes" Permanent="no" />
-              </File> 
-            </Component>
+              Extensions (inc. debug symbols)
             -->
 
-          </Directory>
+            <Directory Id="ProjectVsixFolder" Name="Extensions">
 
-          <!-- 
-            Debug Symbols
-          -->
+              <!-- VS2010 -->
+              <Directory Id="ProjectVsixFolder2010" Name="VS2010">
+                <Component Id="ProjectVsix2010" Guid="1AC3729C-42D9-4C1C-AF38-CC73D4DFA2EB">
+                  <Condition><![CDATA[(VS2010_IDE_VC_PROJECTSYSTEM_INSTALLED)]]></Condition>
+                  <File Id="AndroidPlusPlusVsIntegratedPackage2010" Name="AndroidPlusPlus.VsIntegratedPackage.vsix" Source="$(var.OutputPathVsExtension2010)\AndroidPlusPlus.VsIntegratedPackage.vsix" KeyPath="yes">
+                    <vs:VsixPackage 
+                      PackageId="AndroidPlusPlus.VsIntegratedPackage.e57f7102-96b3-4d11-b153-0957bea37363"
+                      VsixInstallerPathProperty="VS2010_VSIX_INSTALLER_PATH"
+                      Vital="yes" 
+                      Permanent="no"
+                    />
+                  </File>
+                </Component>
 
-          <Directory Id="ProjectSymbolsFolder" Name="Symbols">
+                <Component Id="ProjectVsixSymbols2010" Guid="ACC37974-52F6-4DD1-8648-7847CE339F90">
+                  <Condition><![CDATA[(VS2010_IDE_VC_PROJECTSYSTEM_INSTALLED)]]></Condition>
+                  <File Id="AndroidPlusPlusCommonPdb2010" Source="$(var.OutputPathVsExtension2010)\AndroidPlusPlus.Common.pdb"/>
+                  <File Id="AndroidPlusPlusVsDebugEnginePdb2010" Source="$(var.OutputPathVsExtension2010)\AndroidPlusPlus.VsDebugEngine.pdb"/>
+                  <File Id="AndroidPlusPlusVsDebugLauncherPdb2010" Source="$(var.OutputPathVsExtension2010)\AndroidPlusPlus.VsDebugLauncher.pdb"/>
+                  <File Id="AndroidPlusPlusVsIntegratedPackagePdb2010" Source="$(var.OutputPathVsExtension2010)\AndroidPlusPlus.VsIntegratedPackage.pdb"/>
+                </Component>
+              </Directory>
 
-            <!-- VS2010 -->
-            <Directory Id="ProjectSymbolsFolder2010" Name="vs2010">
-              <Component Id="ProjectSymbols2010" Guid="ACC37974-52F6-4DD1-8648-7847CE339F90">
-                <Condition><![CDATA[(VS2010_IDE_VC_PROJECTSYSTEM_INSTALLED)]]></Condition>
-                <File Id="AndroidPlusPlusCommonPdb2010" Source="$(var.OutputPathVs2010)AndroidPlusPlus.Common.pdb"/>
-                <File Id="AndroidPlusPlusMsBuildCommonPdb2010" Source="$(var.OutputPathVs2010)AndroidPlusPlus.MsBuild.Common.pdb"/>
-                <File Id="AndroidPlusPlusMsBuildCppTasksPdb2010" Source="$(var.OutputPathVs2010)AndroidPlusPlus.MsBuild.CppTasks.pdb"/>
-                <File Id="AndroidPlusPlusMsBuildDeployTasksPdb2010" Source="$(var.OutputPathVs2010)AndroidPlusPlus.MsBuild.DeployTasks.pdb"/>
-                <File Id="AndroidPlusPlusVsDebugEnginePdb2010" Source="$(var.OutputPathVs2010)AndroidPlusPlus.VsDebugEngine.pdb"/>
-                <File Id="AndroidPlusPlusVsDebugLauncherXPdb2010" Source="$(var.OutputPathVs2010)AndroidPlusPlus.VsDebugLauncherX.pdb"/>
-                <File Id="AndroidPlusPlusVsIntegratedPackagePdb2010" Source="$(var.OutputPathVs2010)AndroidPlusPlus.VsIntegratedPackage.pdb"/>
-              </Component>
+              <!-- VS2012 -->
+              <!--
+              <Directory Id="ProjectVsixFolder2012" Name="VS2012">
+                <Component Id="ProjectVsix2012" Guid="F10BE334-3B40-428D-9FDE-FC798AB6FE4F">
+                  <Condition><![CDATA[(VS2012_IDE_VC_PROJECTSYSTEM_INSTALLED)]]></Condition>
+                  <File Id="AndroidPlusPlusVsIntegratedPackage2012" Name="AndroidPlusPlus.VsIntegratedPackage.vsix" Source="$(var.OutputPathVsExtension2012)\AndroidPlusPlus.VsIntegratedPackage.vsix" KeyPath="yes">
+                    <vs:VsixPackage 
+                      PackageId="AndroidPlusPlus.VsIntegratedPackage..d48adef5-97c8-44b1-b15a-0b1224bb3190"
+                      VsixInstallerPathProperty="VS2012_VSIX_INSTALLER_PATH"
+                      Vital="yes" 
+                      Permanent="no"
+                    />
+                  </File>
+                </Component>
+
+                <Component Id="ProjectVsixSymbols2012" Guid="65F72A42-A767-464A-8130-83D9F34F1D4B">
+                  <Condition><![CDATA[(VS2012_IDE_VC_PROJECTSYSTEM_INSTALLED)]]></Condition>
+                  <File Id="AndroidPlusPlusCommonPdb2012" Source="$(var.OutputPathVsExtension2012)\AndroidPlusPlus.Common.pdb"/>
+                  <File Id="AndroidPlusPlusVsDebugEnginePdb2012" Source="$(var.OutputPathVsExtension2012)\AndroidPlusPlus.VsDebugEngine.pdb"/>
+                  <File Id="AndroidPlusPlusVsDebugLauncherPdb2012" Source="$(var.OutputPathVsExtension2012)\AndroidPlusPlus.VsDebugLauncher.pdb"/>
+                  <File Id="AndroidPlusPlusVsIntegratedPackagePdb2012" Source="$(var.OutputPathVsExtension2012)\AndroidPlusPlus.VsIntegratedPackage.pdb"/>
+                </Component>
+              </Directory>
+              -->
+            
+              <!-- VS2013 -->
+              <!--
+              <Directory Id="ProjectVsixFolder2013" Name="VS2013">
+                <Component Id="ProjectVsix2013" Guid="AED05AFD-5A55-4B24-ABC7-8398717B3DA1">
+                  <Condition><![CDATA[(VS2013_IDE_VC_PROJECTSYSTEM_INSTALLED)]]></Condition>
+                  <File Id="AndroidPlusPlusVsIntegratedPackage2013" Name="AndroidPlusPlus.VsIntegratedPackage.vsix" Source="$(var.OutputPathVsExtension2013)\AndroidPlusPlus.VsIntegratedPackage.vsix" KeyPath="yes">
+                    <vs:VsixPackage 
+                      PackageId="AndroidPlusPlus.VsIntegratedPackage..d48adef5-97c8-44b1-b15a-0b1224bb3190"
+                      VsixInstallerPathProperty="VS_VSIX_INSTALLER_PATH"
+                      Vital="yes" 
+                      Permanent="no"
+                    />
+                  </File>
+                </Component>
+
+                <Component Id="ProjectVsixSymbols2013" Guid="0A05D4B9-E6DD-4C5F-B522-C432F4F26EF2">
+                  <Condition><![CDATA[(VS2013_IDE_VC_PROJECTSYSTEM_INSTALLED)]]></Condition>
+                  <File Id="AndroidPlusPlusCommonPdb2013" Source="$(var.OutputPathVsExtension2013)\AndroidPlusPlus.Common.pdb"/>
+                  <File Id="AndroidPlusPlusVsDebugEnginePdb2013" Source="$(var.OutputPathVsExtension2013)\AndroidPlusPlus.VsDebugEngine.pdb"/>
+                  <File Id="AndroidPlusPlusVsDebugLauncherPdb2013" Source="$(var.OutputPathVsExtension2013)\AndroidPlusPlus.VsDebugLauncher.pdb"/>
+                  <File Id="AndroidPlusPlusVsIntegratedPackagePdb2013" Source="$(var.OutputPathVsExtension2013)\AndroidPlusPlus.VsIntegratedPackage.pdb"/>
+                </Component>
+              </Directory>
+              -->
+
             </Directory>
 
-            <!-- VS2012 -->
             <!-- 
-            <Directory Id="ProjectSymbolsFolder2012" Name="11.0">
-              <Component Id="ProjectSymbols2012" Guid="3BE9F1D8-BA3F-4523-8518-3160DC146DED">
-                <Condition><![CDATA[(VS2012_IDE_VC_PROJECTSYSTEM_INSTALLED)]]></Condition>
-                <File Id="AndroidPlusPlusCommonPdb2012" Source="$(var.OutputPathVs2012)AndroidPlusPlus.Common.pdb"/>
-                <File Id="AndroidPlusPlusMsBuildCommonPdb2012" Source="$(var.OutputPathVs2012)AndroidPlusPlus.MsBuild.Common.pdb"/>
-                <File Id="AndroidPlusPlusMsBuildCppTasksPdb2012" Source="$(var.OutputPathVs2012)AndroidPlusPlus.MsBuild.CppTasks.pdb"/>
-                <File Id="AndroidPlusPlusMsBuildDeployTasksPdb2012" Source="$(var.OutputPathVs2012)AndroidPlusPlus.MsBuild.DeployTasks.pdb"/>
-                <File Id="AndroidPlusPlusVsDebugEnginePdb2012" Source="$(var.OutputPathVs2012)AndroidPlusPlus.VsDebugEngine.pdb"/>
-                <File Id="AndroidPlusPlusVsDebugLauncherXIPdb2012" Source="$(var.OutputPathVs2012)AndroidPlusPlus.VsDebugLauncherXI.pdb"/>
-                <File Id="AndroidPlusPlusVsIntegratedPackagePdb2012" Source="$(var.OutputPathVs2012)AndroidPlusPlus.VsIntegratedPackage.pdb"/>
-              </Component>
-            </Directory>
+              MsBuild (inc. debug symbols)
             -->
-          </Directory>
 
-        </Directory>
+            <Directory Id="ProjectMsBuildFolder" Name="MSBuild">
 
-        <!-- 
-          MsBuild
-        -->
+              <!-- VS2010 -->
+              <Directory Id="ProjectMsBuildFolder2010" Name="VS2010">
+                <Component Id="ProjectMsBuildSymbols2010" Guid="C6C33CBE-F98F-49DE-A24C-D991078321BD">
+                  <Condition><![CDATA[(VS2010_IDE_VC_PROJECTSYSTEM_INSTALLED)]]></Condition>
+                  <File Id="AndroidPlusPlusMsBuildCommonPdb2010" Source="$(var.OutputPathMsBuildBin2010)\AndroidPlusPlus.MsBuild.Common.pdb"/>
+                  <File Id="AndroidPlusPlusMsBuildCppTasksPdb2010" Source="$(var.OutputPathMsBuildBin2010)\AndroidPlusPlus.MsBuild.CppTasks.pdb"/>
+                  <File Id="AndroidPlusPlusMsBuildDeployTasksPdb2010" Source="$(var.OutputPathMsBuildBin2010)\AndroidPlusPlus.MsBuild.DeployTasks.pdb"/>
+                </Component>
+                <Directory Id="ProjectMsBuildScriptsFolder2010" Name="Scripts">
+                  <!-- populated by .wixproj -->
+                </Directory>
+              </Directory>
 
-        <Directory Id="MsBuildDir" Name="MSBuild">
+              <!-- VS2012 -->
+              <!--
+              <Directory Id="ProjectMsBuildFolder2012" Name="VS2012">
+                <Component Id="ProjectMsBuildSymbols2012" Guid="FA4CC910-BA27-47D7-9F71-23C811D63072">
+                  <Condition><![CDATA[(VS2012_IDE_VC_PROJECTSYSTEM_INSTALLED)]]></Condition>
+                  <File Id="AndroidPlusPlusMsBuildCommonPdb2012" Source="$(var.OutputPathMsBuildBin2012)\AndroidPlusPlus.MsBuild.Common.pdb"/>
+                  <File Id="AndroidPlusPlusMsBuildCppTasksPdb2012" Source="$(var.OutputPathMsBuildBin2012)\AndroidPlusPlus.MsBuild.CppTasks.pdb"/>
+                  <File Id="AndroidPlusPlusMsBuildDeployTasksPdb2012" Source="$(var.OutputPathMsBuildBin2012)\AndroidPlusPlus.MsBuild.DeployTasks.pdb"/>
+                </Component>
+                <Directory Id="ProjectMsBuildScriptsFolder2012" Name="Scripts">
+                  -->
+              <!-- populated by .wixproj -->
+              <!--
+              </Directory>
+              </Directory>
+              -->
 
-          <Directory Id="MsBuildMicrosoftCppDir" Name="Microsoft.Cpp">
+              <!-- VS2013 -->
+              <!--
+              <Directory Id="ProjectMsBuildFolder2013" Name="VS2013">
+                <Component Id="ProjectMsBuildSymbols2013" Guid="450B06FA-E6CA-4D67-8F8F-92859EE1B0AA">
+                  <Condition><![CDATA[(VS2013_IDE_VC_PROJECTSYSTEM_INSTALLED)]]></Condition>
+                  <File Id="AndroidPlusPlusMsBuildCommonPdb2013" Source="$(var.OutputPathMsBuildBin2013)\AndroidPlusPlus.MsBuild.Common.pdb"/>
+                  <File Id="AndroidPlusPlusMsBuildCppTasksPdb2013" Source="$(var.OutputPathMsBuildBin2013)\AndroidPlusPlus.MsBuild.CppTasks.pdb"/>
+                  <File Id="AndroidPlusPlusMsBuildDeployTasksPdb2013" Source="$(var.OutputPathMsBuildBin2013)\AndroidPlusPlus.MsBuild.DeployTasks.pdb"/>
+                </Component>
+                <Directory Id="ProjectMsBuildScriptsFolder2013" Name="Scripts"> 
+                  -->
+              <!-- populated by .wixproj -->
+              <!--
+                 </Directory>
+              </Directory>
+              -->
 
-            <Directory Id="MsBuildMicrosoftCppv4Dir" Name="v4.0">
+            </Directory>
 
+            <!-- Documentation -->
+            <Directory Id="ProjectDocumentationFolder" Name="Documentation">
+              <!-- populated by .wixproj -->
+            </Directory>
+
+            <!-- Samples -->
+            <Directory Id="ProjectSamplesFolder" Name="Samples">
+              <!-- populated by .wixproj -->
+            </Directory>
+
+            <!-- Tests -->
+            <Directory Id="ProjectTestsFolder" Name="Tests">
+              <!-- populated by .wixproj -->
             </Directory>
 
           </Directory>
@@ -193,42 +280,69 @@
         Visual Studio 2010
       -->
 
-      <Feature Id="FeatureVS2010" Title="Visual Studio 2010" Level="0">
-        <Condition Level="1"><![CDATA[(VS2010_IDE_VC_PROJECTSYSTEM_INSTALLED)]]></Condition>
-        <Feature Id="FeatureVs2010Debugger" Title="Debugger" Level="1">
+      <Feature Id="FeatureVs2010" Title="Visual Studio 2010" Level="0" Display="expand">
+        <Condition Level="1">
+          <![CDATA[(VS2010_IDE_VC_PROJECTSYSTEM_INSTALLED)]]>
+        </Condition>
+        <Feature Id="FeatureVs2010Debugger" Title="Extension" Level="1">
           <ComponentRef Id="ProjectVsix2010" />
+          <ComponentRef Id="ProjectVsixSymbols2010" />
         </Feature>
         <Feature Id="FeatureVs2010MsBuild" Title="MSBuild" Level="1">
-          <ComponentGroupRef Id="ProjectMsBuildTemplates2010" />
-        </Feature>
-        <Feature Id="FeatureSymbols2010" Title="Symbols" Level="1">
-          <ComponentRef Id="ProjectSymbols2010" />
+          <ComponentRef Id="ProjectMsBuildSymbols2010" />
+          <ComponentGroupRef Id="ProjectMsBuildScripts2010" />
         </Feature>
       </Feature>
 
       <!-- 
-        Visual Studio 2012 IDE and MSBuild Integration. 
+        Visual Studio 2012
+      -->
+      <!--
+      <Feature Id="FeatureVs2012" Title="Visual Studio 2012" Level="0" Display="expand">
+        <Condition Level="1">
+          <![CDATA[(VS2012_IDE_VC_PROJECTSYSTEM_INSTALLED)]]>
+        </Condition>
+        <Feature Id="FeatureVs2012Debugger" Title="Extension" Level="1">
+          <ComponentRef Id="ProjectVsix2012" />
+          <ComponentRef Id="ProjectVsixSymbols2012" />
+        </Feature>
+        <Feature Id="FeatureVs2012MsBuild" Title="MSBuild" Level="1">
+          <ComponentRef Id="ProjectMsBuildSymbols2012" />
+          <ComponentGroupRef Id="ProjectMsBuildScripts2012" />
+        </Feature>
+        <ComponentGroupRef Id="ProjectDocumentation" />
+        <ComponentGroupRef Id="ProjectSamples" />
+        <ComponentGroupRef Id="ProjectTests" />
+      </Feature>
+      -->
+      
+      <!-- 
+        Visual Studio 2013
       -->
 
       <!--
-      <Feature Id="FeatureVS2012" Title="VS2012 IDE &amp; MSBuild Integration" Level="0">
-        <Condition Level="1"><![CDATA[(VS2012_IDE_VC_PROJECTSYSTEM_INSTALLED)]]></Condition>
-        <ComponentRef Id="ProjectVsix2012" />
-        <ComponentRef Id="ProjectMsBuildFolder2012" />
-        <Feature Id="FeatureSymbols2012" Title="Symbols" Level="1">
-          <ComponentRef Id="ProjectSymbols2012" />
+      <Feature Id="FeatureVs2013" Title="Visual Studio 2013" Level="0" Display="expand">
+        <Condition Level="1">
+          <![CDATA[(VS2013_IDE_VC_PROJECTSYSTEM_INSTALLED)]]>
+        </Condition>
+        <Feature Id="FeatureVs2013Debugger" Title="Extension" Level="1">
+          <ComponentRef Id="ProjectVsix2013" />
+          <ComponentRef Id="ProjectVsixSymbols2013" />
         </Feature>
-      </Feature>
-      -->
-
-      <!-- 
-        Samples (required) 
-      -->
-
-      <Feature Id="FeatureSamples" Title="Samples" Level="1" Absent="disallow">
+        <Feature Id="FeatureVs2013MsBuild" Title="MSBuild" Level="1">
+          <ComponentRef Id="ProjectMsBuildSymbols2013" />
+          <ComponentGroupRef Id="ProjectMsBuildScripts2013" />
+        </Feature>
+        <ComponentGroupRef Id="ProjectDocumentation" />
         <ComponentGroupRef Id="ProjectSamples" />
+        <ComponentGroupRef Id="ProjectTests" />
       </Feature>
-      
+      -->
+
+      <ComponentGroupRef Id="ProjectDocumentation" />
+      <ComponentGroupRef Id="ProjectSamples" />
+      <ComponentGroupRef Id="ProjectTests" />
+
     </Feature>
 
     <!--
