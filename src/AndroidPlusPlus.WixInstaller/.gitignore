@@ -1,0 +1,4 @@
+bin/
+obj/
+*.wixproj.user
+*.suo
