@@ -19,35 +19,34 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{34677C05-0918-4CA2-BC38-3BC93358CF6E}</ProjectGuid>
-    <RootNamespace>nativeneon</RootNamespace>
+    <ProjectGuid>{1596F6E9-F058-4994-B086-923FBC3FD158}</ProjectGuid>
+    <RootNamespace>nativelibraryb</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -76,11 +75,6 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <OutputCommandLine>true</OutputCommandLine>
-      <AdditionalOptions>-mfpu=neon %(AdditionalOptions)</AdditionalOptions>
-      <ArmFloatingPointHardware>neon</ArmFloatingPointHardware>
-      <AdditionalIncludeDirectories>$(AndroidNdkRoot)\sources\android\cpufeatures;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>HAVE_NEON=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -105,8 +99,6 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <ArmFloatingPointHardware>neon</ArmFloatingPointHardware>
-      <AdditionalIncludeDirectories>$(AndroidNdkRoot)\sources\android\cpufeatures;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -115,21 +107,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\..\buildtools\android-ndk-r9c\sources\android\cpufeatures\cpu-features.c" />
-    <ClCompile Include="src\helloneon-intrinsics.c" />
-    <ClCompile Include="src\helloneon.c" />
+    <ProjectReference Include="..\native-library-a\native-library-a.vcxproj">
+      <Project>{94272158-481e-439f-8996-6c49cf6bd211}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\helloneon-intrinsics.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <AndroidJava Include="src\HelloNeon.java" />
-  </ItemGroup>
-  <ItemGroup>
-    <AndroidManifest Include="AndroidManifest.xml" />
+    <ClCompile Include="src\native-library-b.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.targets" />
   </ImportGroup>
 </Project>

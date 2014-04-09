@@ -21,7 +21,7 @@
 #include <cpu-features.h>
 #include "helloneon-intrinsics.h"
 
-#define DEBUG 0
+#define DEBUG _DEBUG
 
 #if DEBUG
 #include <android/log.h>
