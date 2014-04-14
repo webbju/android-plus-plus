@@ -167,7 +167,7 @@
   <ItemGroup>
     <None Include="Resources\Images_24bit.bmp" />
     <None Include="Resources\Images_32bit.bmp" />
-    <Content Include="..\..\EULA.txt">
+    <Content Include="..\..\docs\EULA.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
