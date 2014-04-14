@@ -27,6 +27,8 @@ namespace AndroidPlusPlus.MsBuild.Exporter
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    private static bool s_uninstall = false;
+
     private static List<string> s_templateDirs = new List<string> ();
 
     private static List<string> s_vsVersions = new List<string> ();
@@ -53,6 +55,8 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
         foreach (string version in s_vsVersions)
         {
+          UninstallMsBuildTemplates (version, ref textSubstitution);
+
           ExportMsBuildTemplateForVersion (version, ref textSubstitution);
         }
       }
@@ -91,6 +95,13 @@ namespace AndroidPlusPlus.MsBuild.Exporter
       {
         switch (args [i])
         {
+          case "--uninstall":
+          {
+            s_uninstall = true;
+
+            break;
+          }
+
           case "--template-dir":
           {
             string template = args [++i].Replace ("\"", "");
@@ -197,19 +208,22 @@ namespace AndroidPlusPlus.MsBuild.Exporter
       // Validate the tool executed with appropriate arguments.
       // 
 
-      if (s_templateDirs.Count () == 0)
+      if (!s_uninstall)
       {
-        throw new ArgumentException ("--template-dir not specified.");
-      }
+        if (s_templateDirs.Count () == 0)
+        {
+          throw new ArgumentException ("--template-dir not specified.");
+        }
 
-      if (s_templateDirs.Count () > 1)
-      {
-        throw new ArgumentException ("Please only specify a single target --template-dir.");
-      }
+        if (s_templateDirs.Count () > 1)
+        {
+          throw new ArgumentException ("Please only specify a single target --template-dir.");
+        }
 
-      if (s_exportDirectories.Count () == 0)
-      {
-        throw new ArgumentException ("--export-dir not specified.");
+        if (s_exportDirectories.Count () == 0)
+        {
+          throw new ArgumentException ("--export-dir not specified.");
+        }
       }
 
       if (s_vsVersions.Count () == 0)
@@ -245,7 +259,7 @@ namespace AndroidPlusPlus.MsBuild.Exporter
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private static void ExportMsBuildTemplateForVersion (string version, ref Dictionary <string, string> textSubstitution)
+    private static void UninstallMsBuildTemplates (string version, ref Dictionary<string, string> textSubstitution)
     {
       // 
       // Clean any existing MsBuild deployment.
@@ -271,7 +285,17 @@ namespace AndroidPlusPlus.MsBuild.Exporter
             }
           }
         }
+      }
+    }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private static void ExportMsBuildTemplateForVersion (string version, ref Dictionary <string, string> textSubstitution)
+    {
+      foreach (string exportDir in s_exportDirectories)
+      {
         // 
         // Copy each directory of the template directories and apply pattern processing.
         // 
