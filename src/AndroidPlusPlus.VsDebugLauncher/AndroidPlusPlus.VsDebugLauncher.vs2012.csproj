@@ -14,35 +14,32 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\Key.snk</AssemblyOriginatorKeyFile>
     <GeneratePkgDefFile>false</GeneratePkgDefFile>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\build\vs2013\bin\$(Configuration)\</OutputPath>
-    <BaseIntermediateOutputPath>..\..\build\vs2013\obj\$(Configuration)\</BaseIntermediateOutputPath>
+    <OutputPath>..\..\build\vs2012\bin\$(Configuration)\</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\vs2012\obj\$(Configuration)\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DeploymentDirectory>$(OutputPath)</DeploymentDirectory>
-    <DefineConstants>TRACE;DEBUG;VS2013</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;VS2012</DefineConstants>
     <WarningLevel>4</WarningLevel>
     <IncrementalBuild>false</IncrementalBuild>
     <RegisterForComInterop>false</RegisterForComInterop>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <DebugType>full</DebugType>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\build\vs2013\bin\$(Configuration)\</OutputPath>
-    <BaseIntermediateOutputPath>..\..\build\vs2013\obj\$(Configuration)\</BaseIntermediateOutputPath>
+    <OutputPath>..\..\build\vs2012\bin\$(Configuration)\</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\vs2012\obj\$(Configuration)\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DeploymentDirectory>$(OutputPath)</DeploymentDirectory>
-    <DefineConstants>TRACE;VS2013</DefineConstants>
+    <DefineConstants>TRACE;VS2012</DefineConstants>
     <WarningLevel>4</WarningLevel>
     <IncrementalBuild>false</IncrementalBuild>
     <DebugType>pdbonly</DebugType>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="EnvDTE, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
@@ -56,26 +53,23 @@
     </Reference>
     <Reference Include="Microsoft.Build" />
     <Reference Include="Microsoft.Build.Framework" />
-    <Reference Include="Microsoft.VisualStudio.ProjectSystem.v12Only" />
-    <Reference Include="Microsoft.VisualStudio.ProjectSystem.VS.v12Only" />
-    <Reference Include="Microsoft.VisualStudio.ProjectSystem.Utilities.v12.0" />
+    <Reference Include="Microsoft.VisualStudio.Project.v11Only" />
+    <Reference Include="Microsoft.VisualStudio.Project.Utilities.v11.0" />
     <Reference Include="Microsoft.Collections.Immutable" />
-    <Reference Include="Microsoft.VisualStudio.Shell.12.0, Version=12.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Project.VS.V11Only, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files (x86)\Microsoft Visual Studio 11.0\Common7\IDE\CommonExtensions\Microsoft\Project\Microsoft.VisualStudio.Project.VS.V11Only.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Shell.11.0, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Threading" />
     <Reference Include="Microsoft.VisualStudio.Shell.Immutable.10.0, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Shell.Immutable.11.0, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Shell.Interop, Version=7.1.40304.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-    <Reference Include="Microsoft.VisualStudio.Shell.Interop.10.0, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <EmbedInteropTypes>False</EmbedInteropTypes>
-    </Reference>
-    <Reference Include="Microsoft.VisualStudio.Shell.Interop.11.0, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <EmbedInteropTypes>False</EmbedInteropTypes>
-    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Shell.Interop.10.0, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Shell.Interop.11.0, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Shell.Interop.8.0, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
     <Reference Include="Microsoft.VisualStudio.Shell.Interop.9.0, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-    <Reference Include="Microsoft.VisualStudio.VCProjectEngine, Version=12.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <EmbedInteropTypes>False</EmbedInteropTypes>
-    </Reference>
+    <Reference Include="Microsoft.VisualStudio.VCProjectEngine, Version=12.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
@@ -90,15 +84,15 @@
     <Compile Include="..\AndroidPlusPlus.Common\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="DebugLauncherXII.cs" />
+    <Compile Include="DebugLauncher.cs" />
+    <Compile Include="DebugLauncherXI.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="DebugLauncher.cs" />
-    <Compile Include="RulePropertiesXII.cs" />
+    <Compile Include="RulePropertiesXI.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AndroidPlusPlus.Common\AndroidPlusPlus.Common.vs2013.csproj">
+    <ProjectReference Include="..\AndroidPlusPlus.Common\AndroidPlusPlus.Common.vs2012.csproj">
       <Project>{6D575221-37D1-4C3D-82A5-5FEB632069AA}</Project>
       <Name>AndroidMT.Common</Name>
     </ProjectReference>
@@ -108,11 +102,10 @@
       <Link>Key.snk</Link>
     </None>
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.Targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /y /b $(TargetDir)$(TargetName).dll $(ProjectDir)..\..\bin\v12.0\$(TargetName).dll
-copy /y /b $(TargetDir)$(TargetName).pdb $(ProjectDir)..\..\bin\v12.0\$(TargetName).pdb</PostBuildEvent>
+    <PostBuildEvent>copy /y /b $(TargetDir)$(TargetName).dll $(ProjectDir)..\..\bin\v11.0\$(TargetName).dll
+copy /y /b $(TargetDir)$(TargetName).pdb $(ProjectDir)..\..\bin\v11.0\$(TargetName).pdb</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

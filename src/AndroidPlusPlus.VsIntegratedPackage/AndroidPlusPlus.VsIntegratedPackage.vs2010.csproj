@@ -205,6 +205,13 @@
   </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v10.0\VSSDK\Microsoft.VsSDK.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy /y /b $(TargetDir)$(TargetName).dll $(ProjectDir)..\..\bin\v10.0\$(TargetName).dll
+copy /y /b $(TargetDir)$(TargetName).pdb $(ProjectDir)..\..\bin\v10.0\$(TargetName).pdb
+copy /y /b $(TargetDir)$(TargetName).vsix $(ProjectDir)..\..\bin\v10.0\$(TargetName).vsix
+copy /y /b $(TargetDir)$(TargetName).pkgdef $(ProjectDir)..\..\bin\v10.0\$(TargetName).pkdef
+</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

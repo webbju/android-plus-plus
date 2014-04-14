@@ -19,6 +19,12 @@ using EnvDTE;
 using Microsoft.VisualStudio.Project.Contracts.VS2010ONLY;
 using Microsoft.VisualStudio.Project.Framework;
 using Microsoft.VisualStudio.Project.Utilities.DebuggerProviders;
+#elif VS2012
+using Microsoft.VisualStudio.Project;
+using Microsoft.VisualStudio.Project.Debuggers;
+using Microsoft.VisualStudio.Project.Utilities;
+using Microsoft.VisualStudio.Project.Utilities.DebuggerProviders;
+using Microsoft.VisualStudio.Project.VS.Debuggers;
 #elif VS2013
 using Microsoft.VisualStudio.ProjectSystem;
 using Microsoft.VisualStudio.ProjectSystem.Debuggers;
@@ -328,7 +334,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       string evaluatedProperty = string.Empty;
 
-#if VS2013
+#if VS2012 || VS2013
       string schemaGroupedKey = schema + "." + property;
 
       if (projectProperties.TryGetValue (schemaGroupedKey, out evaluatedProperty))

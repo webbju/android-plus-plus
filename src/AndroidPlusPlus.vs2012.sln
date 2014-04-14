@@ -1,15 +1,13 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
-MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.Common.vs2013", "AndroidPlusPlus.Common\AndroidPlusPlus.Common.vs2013.csproj", "{6D575221-37D1-4C3D-82A5-5FEB632069AA}"
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.Common.vs2012", "AndroidPlusPlus.Common\AndroidPlusPlus.Common.vs2012.csproj", "{6D575221-37D1-4C3D-82A5-5FEB632069AA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsDebugEngine.vs2013", "AndroidPlusPlus.VsDebugEngine\AndroidPlusPlus.VsDebugEngine.vs2013.csproj", "{52DDF087-9B2C-49AF-BD1C-EC2B9C1DD0F5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsDebugEngine.vs2012", "AndroidPlusPlus.VsDebugEngine\AndroidPlusPlus.VsDebugEngine.vs2012.csproj", "{52DDF087-9B2C-49AF-BD1C-EC2B9C1DD0F5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsDebugLauncher.vs2013", "AndroidPlusPlus.VsDebugLauncher\AndroidPlusPlus.VsDebugLauncher.vs2013.csproj", "{7C701BB4-BAD8-40DA-AFDC-B9820A04F005}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsDebugLauncher.vs2012", "AndroidPlusPlus.VsDebugLauncher\AndroidPlusPlus.VsDebugLauncher.vs2012.csproj", "{7C701BB4-BAD8-40DA-AFDC-B9820A04F005}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsIntegratedPackage.vs2013", "AndroidPlusPlus.VsIntegratedPackage\AndroidPlusPlus.VsIntegratedPackage.vs2013.csproj", "{14DF8540-798D-46E9-9EC0-1648D3792660}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsIntegratedPackage.vs2012", "AndroidPlusPlus.VsIntegratedPackage\AndroidPlusPlus.VsIntegratedPackage.vs2012.csproj", "{14DF8540-798D-46E9-9EC0-1648D3792660}"
 	ProjectSection(ProjectDependencies) = postProject
 		{7C701BB4-BAD8-40DA-AFDC-B9820A04F005} = {7C701BB4-BAD8-40DA-AFDC-B9820A04F005}
 	EndProjectSection
@@ -64,6 +62,16 @@ Global
 		{14DF8540-798D-46E9-9EC0-1648D3792660}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{14DF8540-798D-46E9-9EC0-1648D3792660}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{14DF8540-798D-46E9-9EC0-1648D3792660}.Release|x86.ActiveCfg = Release|Any CPU
+		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Debug|x86.ActiveCfg = Debug|x86
+		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Debug|x86.Build.0 = Debug|x86
+		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Release|Any CPU.ActiveCfg = Release|x86
+		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Release|Mixed Platforms.Build.0 = Release|x86
+		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Release|x86.ActiveCfg = Release|x86
+		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
