@@ -17,7 +17,7 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <UsingTask TaskName="AndroidNdkDepends" AssemblyFile="$(VCTargetsPath)\Platforms\{master}\{master-verbose}.MsBuild.DeployTasks.dll" />
+  <UsingTask TaskName="AndroidNdkDepends" AssemblyFile="$(ANDROID_PLUS_PLUS)\msbuild\bin\{master-verbose}.MsBuild.DeployTasks.dll" />
 
   <UsingTask TaskName="VCMessage" AssemblyName="Microsoft.Build.CppTasks.Common, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
 

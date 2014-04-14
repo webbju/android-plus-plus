@@ -24,11 +24,11 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <UsingTask TaskName="GccCompile" AssemblyFile="$(VCTargetsPath)\Platforms\{master}\{master-verbose}.MsBuild.CppTasks.dll" />
+  <UsingTask TaskName="GccCompile" AssemblyFile="$(ANDROID_PLUS_PLUS)\msbuild\bin\{master-verbose}.MsBuild.CppTasks.dll" />
 
-  <UsingTask TaskName="GccLink" AssemblyFile="$(VCTargetsPath)\Platforms\{master}\{master-verbose}.MsBuild.CppTasks.dll" />
+  <UsingTask TaskName="GccLink" AssemblyFile="$(ANDROID_PLUS_PLUS)\msbuild\bin\{master-verbose}.MsBuild.CppTasks.dll" />
 
-  <UsingTask TaskName="GccLib" AssemblyFile="$(VCTargetsPath)\Platforms\{master}\{master-verbose}.MsBuild.CppTasks.dll" />
+  <UsingTask TaskName="GccLib" AssemblyFile="$(ANDROID_PLUS_PLUS)\msbuild\bin\{master-verbose}.MsBuild.CppTasks.dll" />
 
   <UsingTask TaskName="VCMessage" AssemblyName="Microsoft.Build.CppTasks.Common, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
 

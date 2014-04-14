@@ -83,7 +83,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /y /b "$(ProjectDir)\$(OutDir)AndroidPlusPlus.MsBuild.Common.dll" "$(ProjectDir)..\..\scripts\Platforms\{master}\{master-verbose}.MsBuild.Common.dll"</PostBuildEvent>
+    <PostBuildEvent>copy /y /b $(TargetDir)$(TargetName).dll $(ProjectDir)..\..\bin\$(TargetName).dll
+copy /y /b $(TargetDir)$(TargetName).pdb $(ProjectDir)..\..\bin\$(TargetName).pdb</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

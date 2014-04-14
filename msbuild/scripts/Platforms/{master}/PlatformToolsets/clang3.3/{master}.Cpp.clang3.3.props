@@ -64,9 +64,9 @@
 
   <PropertyGroup>
 
-    <ExecutablePath Condition="'$(ExecutablePath)' == '' AND '$(SixtyFourBit)' == 'true' AND Exists('$(AndroidNdkRoot)\prebuilt\windows-x86_64')">$(AndroidNdkRoot)\prebuilt\windows-x86_64;$(VCTargetsPath)\Platforms\{master}\Toolchain\bin;$(PATH);</ExecutablePath>
+    <ExecutablePath Condition="'$(ExecutablePath)' == '' AND '$(SixtyFourBit)' == 'true' AND Exists('$(AndroidNdkRoot)\prebuilt\windows-x86_64')">$(AndroidNdkRoot)\prebuilt\windows-x86_64;$(ANDROID_PLUS_PLUS)\msbuild\toolchain\bin;$(PATH);</ExecutablePath>
 
-    <ExecutablePath Condition="'$(ExecutablePath)' == ''">$(AndroidNdkRoot)\prebuilt\windows\bin;$(VCTargetsPath)\Platforms\{master}\Toolchain\bin;$(PATH);</ExecutablePath>
+    <ExecutablePath Condition="'$(ExecutablePath)' == ''">$(AndroidNdkRoot)\prebuilt\windows\bin;$(ANDROID_PLUS_PLUS)\msbuild\toolchain\bin;$(PATH);</ExecutablePath>
 
     <IncludePath Condition="'$(IncludePath)' == ''">$(PlatformToolsetSysRoot)\usr\include;$(PlatformToolsetPrebuilt)\include;$(PlatformToolsetPrebuilt)\lib\gcc\include;$(LlvmToolsetPrebuilt)\lib\clang\$(LlvmVersion)\include;$(VCTargetsPath)\Platforms\{master}\Toolchain\include;</IncludePath>
 
