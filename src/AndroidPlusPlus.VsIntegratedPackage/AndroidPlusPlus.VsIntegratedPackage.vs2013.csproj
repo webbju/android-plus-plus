@@ -176,9 +176,9 @@
   <ItemGroup>
     <None Include="Resources\Images_24bit.bmp" />
     <None Include="Resources\Images_32bit.bmp" />
-    <Content Include="..\..\docs\EULA.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    <Content Include="EULA.txt">
       <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Package.ico" />
   </ItemGroup>
@@ -220,7 +220,7 @@
     <PostBuildEvent>copy /y /b $(TargetDir)$(TargetName).dll $(ProjectDir)..\..\bin\v12.0\$(TargetName).dll
 copy /y /b $(TargetDir)$(TargetName).pdb $(ProjectDir)..\..\bin\v12.0\$(TargetName).pdb
 copy /y /b $(TargetDir)$(TargetName).vsix $(ProjectDir)..\..\bin\v12.0\$(TargetName).vsix
-copy /y /b $(TargetDir)$(TargetName).pkgdef $(ProjectDir)..\..\bin\v12.0\$(TargetName).pkdef
+copy /y /b $(TargetDir)$(TargetName).pkgdef $(ProjectDir)..\..\bin\v12.0\$(TargetName).pkgdef
 </PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

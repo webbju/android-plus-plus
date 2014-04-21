@@ -34,10 +34,6 @@
 
       <OutputCommandLine Condition="'%(ClCompile.OutputCommandLine)' == ''">false</OutputCommandLine>
 
-      <MultiProcessorCompilation Condition="'%(ClCompile.MultiProcessorCompilation)' == ''">true</MultiProcessorCompilation>
-
-      <ProcessorNumber Condition="'%(ClCompile.ProcessorNumber)' == ''">$(NUMBER_OF_PROCESSORS)</ProcessorNumber>
-
       <CompileAs Condition="'%(ClCompile.CompileAs)' == ''">Default</CompileAs>
 
       <PreprocessorDefinitions>ANDROID;__ANDROID__;ANDROID_NDK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -49,6 +45,28 @@
       <NoExecutableStack Condition="'%(ClCompile.NoExecutableStack)' == ''">true</NoExecutableStack>
 
       <ExceptionHandling Condition="'%(ClCompile.ExceptionHandling)' == ''">false</ExceptionHandling>
+
+      <!--
+        Default (non {master} specific) properties.
+      -->
+
+      <MultiProcessorCompilation Condition="'%(ClCompile.MultiProcessorCompilation)' == ''">true</MultiProcessorCompilation>
+
+      <PrecompiledHeader Condition="'%(ClCompile.PrecompiledHeader)' == ''">NotUsing</PrecompiledHeader>
+
+      <PrecompiledHeaderFile Condition="'%(ClCompile.PrecompiledHeaderFile)' == ''">StdAfx.h</PrecompiledHeaderFile>
+
+      <PrecompiledHeaderOutputFile Condition="'%(ClCompile.PrecompiledHeaderOutputFile)' == ''">$(IntDir)$(TargetName).pch</PrecompiledHeaderOutputFile>
+
+      <ProcessorNumber Condition="'$(CL_MPCount)' != ''">$(CL_MPCount)</ProcessorNumber>
+
+      <ProcessorNumber Condition="'%(ClCompile.ProcessorNumber)' == ''">$(NUMBER_OF_PROCESSORS)</ProcessorNumber>
+
+      <ProgramDataBaseFileName Condition="'%(ClCompile.ProgramDataBaseFileName)' == '' and '$(PlatformToolsetVersion)' != ''">$(IntDir)vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
+
+      <TrackerLogDirectory Condition="'%(ClCompile.TrackerLogDirectory)' == ''">$(IntDir)</TrackerLogDirectory>
+
+      <MinimalRebuildFromTracking Condition="'%(ClCompile.MinimalRebuildFromTracking)' == ''">true</MinimalRebuildFromTracking>
 
     </ClCompile>
 

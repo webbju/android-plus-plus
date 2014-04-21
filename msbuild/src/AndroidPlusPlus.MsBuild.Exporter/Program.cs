@@ -139,7 +139,6 @@ namespace AndroidPlusPlus.MsBuild.Exporter
               switch (version)
               {
                 case "2010":
-                case "2012":
                 {
                   // 
                   // Lookup MSBuild platforms directory under 'Program Files' and 'Program Files (x86)'.
@@ -165,6 +164,27 @@ namespace AndroidPlusPlus.MsBuild.Exporter
                   break;
                 }
 
+                case "2012":
+                {
+                  string msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\V110\";
+
+                  if (!Directory.Exists (msBuildInstallationDir))
+                  {
+                    msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\V110\";
+                  }
+
+                  if (!Directory.Exists (msBuildInstallationDir))
+                  {
+                    throw new DirectoryNotFoundException ("Could not locate required MSBuild platforms directory. This should have been installed with VS2010. Tried: " + msBuildInstallationDir);
+                  }
+
+                  if (!s_exportDirectories.Contains (msBuildInstallationDir))
+                  {
+                    s_exportDirectories.Add (msBuildInstallationDir);
+                  }
+
+                  break;
+                }
 
                 case "2013":
                 {

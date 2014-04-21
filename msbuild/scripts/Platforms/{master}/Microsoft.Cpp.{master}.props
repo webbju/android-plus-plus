@@ -15,14 +15,16 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <!--
-    Import options from the renamed (Visual Studio 2013 compatible) default properties.
+    Import options from the renamed (Visual Studio 2012/2013 compatible) default properties.
   -->
 
-  <Import Condition="(exists('$(VCTargetsPath)\Platforms\{master}\ImportBefore'))" Project="$(VCTargetsPath)\Platforms\{master}\ImportBefore\*.props" />
+  <PropertyGroup>
+    <RequiresPlatformDefinition Condition="Exists('$(VCTargetsPath)\Microsoft.Cpp.Platform.targets')">true</RequiresPlatformDefinition>
+  </PropertyGroup>
 
-  <Import Project="$(VCTargetsPath)\Platforms\{master}\Platform.Common.props" />
+  <Import Condition="'$(RequiresPlatformDefinition)' == 'true'" Project="$(VCTargetsPath)\Microsoft.Cpp.Platform.props" />
 
-  <Import Condition="(exists('$(VCTargetsPath)\Platforms\{master}\ImportAfter'))" Project="$(VCTargetsPath)\Platforms\{master}\ImportAfter\*.props" />
+  <Import Condition="'$(RequiresPlatformDefinition)' != 'true'" Project="$(VCTargetsPath)\Platforms\{master}\{master}.Cpp.props" />
 
 </Project>
 

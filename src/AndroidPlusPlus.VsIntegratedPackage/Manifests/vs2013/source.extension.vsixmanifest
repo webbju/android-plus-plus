@@ -5,11 +5,12 @@
     <DisplayName>Android++</DisplayName>
     <Description xml:space="preserve">Native development and debugging extension for Visual Studio.</Description>
     <MoreInfo>http://www.android-plus-plus.com</MoreInfo>
+    <License>EULA.txt</License>
   </Metadata>
   <Installation InstalledByMsi="false">
-    <InstallationTarget Version="[13.0)" Id="Microsoft.VisualStudio.Premium" />
-    <InstallationTarget Version="[13.0)" Id="Microsoft.VisualStudio.Pro" />
-    <InstallationTarget Version="[13.0)" Id="Microsoft.VisualStudio.Ultimate" />
+    <InstallationTarget Version="12.0" Id="Microsoft.VisualStudio.Premium" />
+    <InstallationTarget Version="12.0" Id="Microsoft.VisualStudio.Pro" />
+    <InstallationTarget Version="12.0" Id="Microsoft.VisualStudio.Ultimate" />
   </Installation>
   <Dependencies>
     <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.5,)" />
