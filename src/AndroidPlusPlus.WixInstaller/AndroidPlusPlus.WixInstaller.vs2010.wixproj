@@ -17,18 +17,16 @@
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DefineConstants>
       Debug;
-      OutputPathVsExtension2010=$(ProjectDir)..\..\build\vs2010\bin\$(Configuration);
-      OutputPathVsExtension2012=$(ProjectDir)..\..\build\vs2012\bin\$(Configuration);
-      OutputPathVsExtension2013=$(ProjectDir)..\..\build\vs2013\bin\$(Configuration);
-      OutputPathMsBuildBin2010=$(ProjectDir)..\..\msbuild\build\vs2010\bin\$(Configuration);
-      OutputPathMsBuildBin2012=$(ProjectDir)..\..\msbuild\build\vs2012\bin\$(Configuration);
-      OutputPathMsBuildBin2013=$(ProjectDir)..\..\msbuild\build\vs2013\bin\$(Configuration);
-      OutputPathMsBuildScripts2010=$(ProjectDir)..\..\msbuild\build\vs2010\scripts;
-      OutputPathMsBuildScripts2012=$(ProjectDir)..\..\msbuild\build\vs2012\scripts;
-      OutputPathMsBuildScripts2013=$(ProjectDir)..\..\msbuild\build\vs2013\scripts;
-      ProjectDocumentationDir=$(ProjectDir)..\..\docs;
-      ProjectSamplesDir=$(ProjectDir)..\..\msbuild\samples;
-      ProjectTestsDir=$(ProjectDir)..\..\msbuild\tests;
+      ProjectRoot=$(ProjectDir)..\..\;
+      ProjectRootBin=$(ProjectDir)..\..\bin;
+      ProjectRootContrib=$(ProjectDir)..\..\contrib;
+      ProjectRootDocs=$(ProjectDir)..\..\docs;
+      ProjectRootMsBuild=$(ProjectDir)..\..\msbuild;
+      ProjectRootMsBuildBin=$(ProjectDir)..\..\msbuild\bin;
+      ProjectRootMsBuildSamples=$(ProjectDir)..\..\msbuild\samples;
+      ProjectRootMsBuildScripts=$(ProjectDir)..\..\msbuild\scripts;
+      ProjectRootMsBuildTests=$(ProjectDir)..\..\msbuild\tests;
+      ProjectRootMsBuildToolchain=$(ProjectDir)..\..\msbuild\toolchain;
     </DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
@@ -36,18 +34,16 @@
     <BaseIntermediateOutputPath>..\..\build\vs2010\obj\$(Configuration)\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DefineConstants>
-      OutputPathVsExtension2010=$(ProjectDir)..\..\build\vs2010\bin\$(Configuration);
-      OutputPathVsExtension2012=$(ProjectDir)..\..\build\vs2012\bin\$(Configuration);
-      OutputPathVsExtension2013=$(ProjectDir)..\..\build\vs2013\bin\$(Configuration);
-      OutputPathMsBuildBin2010=$(ProjectDir)..\..\msbuild\build\vs2010\bin\$(Configuration);
-      OutputPathMsBuildBin2012=$(ProjectDir)..\..\msbuild\build\vs2012\bin\$(Configuration);
-      OutputPathMsBuildBin2013=$(ProjectDir)..\..\msbuild\build\vs2013\bin\$(Configuration);
-      OutputPathMsBuildScripts2010=$(ProjectDir)..\..\msbuild\build\vs2010\scripts;
-      OutputPathMsBuildScripts2012=$(ProjectDir)..\..\msbuild\build\vs2012\scripts;
-      OutputPathMsBuildScripts2013=$(ProjectDir)..\..\msbuild\build\vs2013\scripts;
-      ProjectDocumentationDir=$(ProjectDir)..\..\docs;
-      ProjectSamplesDir=$(ProjectDir)..\..\msbuild\samples;
-      ProjectTestsDir=$(ProjectDir)..\..\msbuild\tests;
+      ProjectRoot=$(ProjectDir)..\..\;
+      ProjectRootBin=$(ProjectDir)..\..\bin;
+      ProjectRootContrib=$(ProjectDir)..\..\contrib;
+      ProjectRootDocs=$(ProjectDir)..\..\docs;
+      ProjectRootMsBuild=$(ProjectDir)..\..\msbuild;
+      ProjectRootMsBuildBin=$(ProjectDir)..\..\msbuild\bin;
+      ProjectRootMsBuildSamples=$(ProjectDir)..\..\msbuild\samples;
+      ProjectRootMsBuildScripts=$(ProjectDir)..\..\msbuild\scripts;
+      ProjectRootMsBuildTests=$(ProjectDir)..\..\msbuild\tests;
+      ProjectRootMsBuildToolchain=$(ProjectDir)..\..\msbuild\toolchain;
     </DefineConstants>
   </PropertyGroup>
   <ItemGroup>
@@ -65,44 +61,47 @@
     </WixExtension>
   </ItemGroup>
   <ItemGroup>
-    <HarvestDirectory Include="$(ProjectDir)..\..\msbuild\build\vs2010\scripts">
-      <DirectoryRefId>ProjectMsBuildScriptsFolder2010</DirectoryRefId>
-      <ComponentGroupName>ProjectMsBuildScripts2010</ComponentGroupName>
-      <PreprocessorVariable>var.OutputPathMsBuildScripts2010</PreprocessorVariable>
+    <HarvestDirectory Include="$(ProjectDir)..\..\contrib">
+      <DirectoryRefId>RootContrib</DirectoryRefId>
+      <ComponentGroupName>RootContribComponent</ComponentGroupName>
+      <PreprocessorVariable>var.ProjectRootContrib</PreprocessorVariable>
       <SuppressRootDirectory>true</SuppressRootDirectory>
-      <Link>MsBuildScripts2010</Link>
     </HarvestDirectory>
-    <HarvestDirectory Include="$(ProjectDir)..\..\msbuild\build\vs2012\scripts">
-      <DirectoryRefId>ProjectMsBuildScriptsFolder2012</DirectoryRefId>
-      <ComponentGroupName>ProjectMsBuildScripts2012</ComponentGroupName>
-      <PreprocessorVariable>var.OutputPathMsBuildScripts2012</PreprocessorVariable>
+    <HarvestDirectory Include="$(ProjectDir)..\..\docs">
+      <DirectoryRefId>RootDocs</DirectoryRefId>
+      <ComponentGroupName>RootDocsComponent</ComponentGroupName>
+      <PreprocessorVariable>var.ProjectRootDocs</PreprocessorVariable>
       <SuppressRootDirectory>true</SuppressRootDirectory>
-      <Link>MsBuildScripts2012</Link>
     </HarvestDirectory>
-    <HarvestDirectory Include="$(ProjectDir)..\..\msbuild\build\vs2013\scripts">
-      <DirectoryRefId>ProjectMsBuildScriptsFolder2013</DirectoryRefId>
-      <ComponentGroupName>ProjectMsBuildScripts2013</ComponentGroupName>
-      <PreprocessorVariable>var.OutputPathMsBuildScripts2013</PreprocessorVariable>
+    <HarvestDirectory Include="$(ProjectDir)..\..\msbuild\bin">
+      <DirectoryRefId>RootMsBuildBin</DirectoryRefId>
+      <ComponentGroupName>RootMsBuildBinComponent</ComponentGroupName>
+      <PreprocessorVariable>var.ProjectRootMsBuildBin</PreprocessorVariable>
       <SuppressRootDirectory>true</SuppressRootDirectory>
-      <Link>MsBuildScripts2013</Link>
     </HarvestDirectory>
-    <HarvestDirectory Include="$(ProjectDir)\..\..\docs">
-      <DirectoryRefId>ProjectDocumentationFolder</DirectoryRefId>
-      <ComponentGroupName>ProjectDocumentation</ComponentGroupName>
-      <PreprocessorVariable>var.ProjectDocumentationDir</PreprocessorVariable>
-      <Link>Samples</Link>
+    <HarvestDirectory Include="$(ProjectDir)..\..\msbuild\samples">
+      <DirectoryRefId>RootMsBuildSamples</DirectoryRefId>
+      <ComponentGroupName>RootMsBuildSamplesComponent</ComponentGroupName>
+      <PreprocessorVariable>var.ProjectRootMsBuildSamples</PreprocessorVariable>
+      <SuppressRootDirectory>true</SuppressRootDirectory>
     </HarvestDirectory>
-    <HarvestDirectory Include="$(ProjectDir)\..\..\msbuild\samples">
-      <DirectoryRefId>ProjectSamplesFolder</DirectoryRefId>
-      <ComponentGroupName>ProjectSamples</ComponentGroupName>
-      <PreprocessorVariable>var.ProjectSamplesDir</PreprocessorVariable>
-      <Link>Samples</Link>
+    <HarvestDirectory Include="$(ProjectDir)..\..\msbuild\scripts">
+      <DirectoryRefId>RootMsBuildScripts</DirectoryRefId>
+      <ComponentGroupName>RootMsBuildScriptsComponent</ComponentGroupName>
+      <PreprocessorVariable>var.ProjectRootMsBuildScripts</PreprocessorVariable>
+      <SuppressRootDirectory>true</SuppressRootDirectory>
     </HarvestDirectory>
-    <HarvestDirectory Include="$(ProjectDir)\..\..\msbuild\tests">
-      <DirectoryRefId>ProjectTestsFolder</DirectoryRefId>
-      <ComponentGroupName>ProjectTests</ComponentGroupName>
-      <PreprocessorVariable>var.ProjectTestsDir</PreprocessorVariable>
-      <Link>Tests</Link>
+    <HarvestDirectory Include="$(ProjectDir)..\..\msbuild\tests">
+      <DirectoryRefId>RootMsBuildTests</DirectoryRefId>
+      <ComponentGroupName>RootMsBuildTestsComponent</ComponentGroupName>
+      <PreprocessorVariable>var.ProjectRootMsBuildTests</PreprocessorVariable>
+      <SuppressRootDirectory>true</SuppressRootDirectory>
+    </HarvestDirectory>
+    <HarvestDirectory Include="$(ProjectDir)..\..\msbuild\toolchain">
+      <DirectoryRefId>RootMsBuildToolchain</DirectoryRefId>
+      <ComponentGroupName>RootMsBuildToolchainComponent</ComponentGroupName>
+      <PreprocessorVariable>var.ProjectRootMsBuildToolchain</PreprocessorVariable>
+      <SuppressRootDirectory>true</SuppressRootDirectory>
     </HarvestDirectory>
   </ItemGroup>
   <ItemGroup>
