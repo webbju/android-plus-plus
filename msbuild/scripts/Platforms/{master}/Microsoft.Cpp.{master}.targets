@@ -13,7 +13,7 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <!--
-    Import options from the renamed (Visual Studio 2012/2013 compatible) default properties.
+    Import targets for Visual Studio 2012/2013 support. Both use a 'Platform.targets' to an load appropriate toolset .target.
   -->
 
   <PropertyGroup>
@@ -22,7 +22,15 @@
 
   <Import Condition="'$(RequiresPlatformDefinition)' == 'true'" Project="$(VCTargetsPath)\Microsoft.Cpp.Platform.targets" />
 
+  <!--
+    Import targets for Visual Studio 2010 traditional support.
+  -->
+
+  <Import Condition="'$(RequiresPlatformDefinition)' != 'true' and Exists('$(VCTargetsPath)\Platforms\{master}\ImportBefore')" Project="$(VCTargetsPath)\Platforms\{master}\ImportBefore\*.targets" />
+
   <Import Condition="'$(RequiresPlatformDefinition)' != 'true'" Project="$(VCTargetsPath)\Platforms\{master}\{master}.Cpp.targets" />
+
+  <Import Condition="'$(RequiresPlatformDefinition)' != 'true' and Exists('$(VCTargetsPath)\Platforms\{master}\ImportAfter')" Project="$(VCTargetsPath)\Platforms\{master}\ImportAfter\*.targets" />
 
 </Project>
 

@@ -14,8 +14,6 @@
 
     <DebuggerKeepAppData Condition="'$(DebuggerKeepAppData)' == ''">true</DebuggerKeepAppData>
 
-    <DebuggerGdbTool Condition="'$(DebuggerGdbTool)' == ''">$(PlatformToolsetPrebuilt)\bin\$(TargetPlatformArchitectureToolchainPrefix)-gdb.exe</DebuggerGdbTool>
-
     <DebuggerLibraryPaths Condition="'$(DebuggerLibraryPaths)' == ''">$(LibraryPath)</DebuggerLibraryPaths>
 
   </PropertyGroup>
