@@ -118,7 +118,14 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
           case "--export-dir":
           {
-            s_exportDirectories.Add (args [++i].Replace ("\"", ""));
+            string exportDir = args [++i].Replace ("\"", "");
+
+            if (!Directory.Exists (exportDir))
+            {
+              Directory.CreateDirectory (exportDir);
+            }
+
+            s_exportDirectories.Add (exportDir);
 
             break;
           }
