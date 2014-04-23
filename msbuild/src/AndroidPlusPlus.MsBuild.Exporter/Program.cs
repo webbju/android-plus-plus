@@ -104,7 +104,7 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
           case "--template-dir":
           {
-            string template = args [++i].Replace ("\"", "");
+            string template = args [++i];
 
             if (!Directory.Exists (template))
             {
