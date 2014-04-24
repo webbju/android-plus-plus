@@ -117,11 +117,14 @@
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" />
   <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
     <GetAssemblyIdentity AssemblyFiles="$(OutputPath)\AndroidPlusPlus.Common.dll">
       <Output TaskParameter="Assemblies" ItemName="AssemblyVersion"/>
     </GetAssemblyIdentity>
+  <PropertyGroup>
+    <DefineConstants>ProductVersion=%(AssemblyVersion.Version);$(DefineConstants);</DefineConstants>
+  </PropertyGroup>
+  </Target>
+  <Target Name="AfterBuild">
     <Copy SourceFiles="$(OutputPath)\$(OutputName).msi" DestinationFiles="$(OutputPath)$(OutputName).%(AssemblyVersion.Version).msi" />
   </Target>
 </Project>

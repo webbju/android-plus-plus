@@ -11,24 +11,12 @@
 
   <?define ProductShortName="Android++" ?>
   <?define ProductManufacturer="Justin Webb" ?>
-  <?define ProductUpgradeCode="5444daf1-5354-41a9-babd-2ad2ab4179cd" ?>
-
-  <!--
-    Version information for an assembly consists of the following four values:
-    
-          Major Version
-          Minor Version 
-          Build Number
-          Revision
-  -->
   
-  <?define MajorVersion="0" ?>
-  <?define MinorVersion="1" ?>
-  <?define BuildVersion="0" ?>
-  <?define RevisionVersion="0" ?>
+  <!--
+    When performing major upgrades (e.g. 2.5 => 2.6); update the UpgradeCode.
+  -->
 
-  <?define VersionNumberInternal="$(var.MajorVersion).$(var.BuildVersion).$(var.RevisionVersion)" ?>
-  <?define VersionNumberUserVisible="$(var.MajorVersion).$(var.MinorVersion).$(var.BuildVersion)" ?>
+  <?define ProductUpgradeCode="5444daf1-5354-41a9-babd-2ad2ab4179cd" ?>
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -40,9 +28,31 @@
     Id="*" 
     Name="$(var.ProductShortName)" 
     Language="1033" 
-    Version="$(var.VersionNumberInternal)" 
+    Version="$(var.ProductVersion)" 
     Manufacturer="$(var.ProductManufacturer)" 
     UpgradeCode="$(var.ProductUpgradeCode)">
+
+    <!--
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    -->
+
+    <!--
+      Version information for an assembly consists of the following four values:
+      
+        Major Version
+        Minor Version 
+        Build Number
+        Revision
+  -->
+
+    <?define MajorVersion="!(bind.property.ProductVersion.Major)" ?>
+    <?define MinorVersion="!(bind.property.ProductVersion.Minor)" ?>
+    <?define BuildVersion="!(bind.property.ProductVersion.Build)" ?>
+    <?define RevisionVersion="!(bind.property.ProductVersion.Revision)" ?>
+
+    <?define VersionNumberUserVisible="$(var.MajorVersion).$(var.MinorVersion).$(var.BuildVersion)" ?>
 
     <!--
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
