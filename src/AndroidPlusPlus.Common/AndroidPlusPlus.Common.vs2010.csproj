@@ -89,8 +89,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /y /b $(TargetDir)$(TargetName).dll $(ProjectDir)..\..\bin\v10.0\$(TargetName).dll
-copy /y /b $(TargetDir)$(TargetName).pdb $(ProjectDir)..\..\bin\v10.0\$(TargetName).pdb</PostBuildEvent>
+    <PostBuildEvent>copy /y /b "$(TargetDir)$(TargetName).dll" "$(ProjectDir)..\..\bin\v10.0\$(TargetName).dll"
+copy /y /b "$(TargetDir)$(TargetName).pdb" "$(ProjectDir)..\..\bin\v10.0\$(TargetName).pdb"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
