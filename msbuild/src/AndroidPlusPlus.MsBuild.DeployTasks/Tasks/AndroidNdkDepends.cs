@@ -106,7 +106,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
         foreach (ITaskItem targetElf in TargetElfFiles)
         {
-          commandLineBuilder.Append (targetElf.GetMetadata ("FullPath") + " ");
+          commandLineBuilder.Append (GccUtilities.QuoteIfNeeded (targetElf.GetMetadata ("FullPath")) + " ");
         }
 
         // 

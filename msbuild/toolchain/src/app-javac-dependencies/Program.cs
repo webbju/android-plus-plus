@@ -29,7 +29,7 @@ namespace app_javac_dependencies
 
     private static string s_jdkHomePath = string.Empty;
 
-    private static StringBuilder s_javacArgumentsBuilder = new StringBuilder ();
+    private static List<string> s_javacToolArguments = new List<string> ();
 
     private static Dictionary <string, List <string>> s_sourceDependencyList = new Dictionary<string,List<string>> ();
 
@@ -51,7 +51,7 @@ namespace app_javac_dependencies
         {
           using (Process trackedProcess = new Process ())
           {
-            string arguments = s_javacArgumentsBuilder.ToString () + " " + sourceKeyPair.Key;
+            string arguments = string.Join (" ", s_javacToolArguments.ToArray ()) + " " + QuotePathIfNeeded (sourceKeyPair.Key);
 
             trackedProcess.StartInfo = new ProcessStartInfo (Path.Combine (s_jdkHomePath, "bin", "javac.exe"), arguments);
 
@@ -109,7 +109,7 @@ namespace app_javac_dependencies
     private static void ProcessArguments (string [] args)
     {
       // 
-      // All arguments which are not '--jdk-home' or a source-file reference, should be passed on to javac invokation.
+      // All arguments which are not '--jdk-home' or a source-file reference, should be passed on to javac invocation.
       // 
 
       for (int i = 0; i < args.Length; ++i)
@@ -123,6 +123,29 @@ namespace app_javac_dependencies
             break;
           }
 
+          case "-bootclasspath":
+          case "-classpath":
+          case "-d":
+          case "-encoding":
+          case "-endorseddirs":
+          case "-extdirs":
+          case "-processor":
+          case "-processorpath":
+          case "-s":
+          case "-source":
+          case "-sourcepath":
+          case "-target":
+          {
+            if (args [i+1].StartsWith ("-"))
+            {
+              throw new ArgumentException ("Expected data for argument (" + args [i] + "). Got: " + args [i+1]);
+            }
+
+            s_javacToolArguments.Add (string.Format ("{0} {1}", args [i], QuotePathIfNeeded (args [++i])));
+
+            break;
+          }
+
           default:
           {
             if (args [i].EndsWith (".java"))
@@ -131,7 +154,7 @@ namespace app_javac_dependencies
             }
             else
             {
-              s_javacArgumentsBuilder.Append (args [i] + " ");
+              s_javacToolArguments.Add (args [i]);
             }
 
             break;
@@ -162,14 +185,12 @@ namespace app_javac_dependencies
       }
 
       // 
-      // This passthrough tool required verbose mode in order to identify source dependencies, turn it on if it isn't already.
+      // This pass-through tool required verbose mode in order to identify source dependencies, turn it on if it isn't already.
       // 
 
-      string arguments = s_javacArgumentsBuilder.ToString ();
-
-      if (!arguments.Contains ("-verbose"))
+      if (!s_javacToolArguments.Contains ("-verbose"))
       {
-        s_javacArgumentsBuilder.Append ("-verbose ");
+        s_javacToolArguments.Add ("-verbose");
       }
     }
 
@@ -251,6 +272,26 @@ namespace app_javac_dependencies
           }
         }
       }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public static string QuotePathIfNeeded (string arg)
+    {
+      // 
+      // Add quotes around a string, if they are needed.
+      // 
+
+      var match = arg.IndexOfAny (new char [] { ' ', '\t', ';', '&' }) != -1;
+
+      if (!match)
+      {
+        return arg;
+      }
+
+      return "\"" + arg + "\"";
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
