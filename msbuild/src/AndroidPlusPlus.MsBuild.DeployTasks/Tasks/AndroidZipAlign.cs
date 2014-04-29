@@ -66,13 +66,11 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
 
         using (StreamWriter writer = new StreamWriter (AlignedZip.GetMetadata ("FullPath") + ".d", false, Encoding.Unicode))
         {
-          writer.WriteLine (string.Format ("{0}: \\", AlignedZip.GetMetadata ("FullPath")));
+          writer.WriteLine (string.Format ("{0}: \\", GccUtilities.ConvertPathWindowsToGccDependency (AlignedZip.GetMetadata ("FullPath"))));
 
           foreach (ITaskItem source in Sources)
           {
-            string sourceFullPath = source.GetMetadata ("FullPath");
-
-            writer.WriteLine (string.Format ("  {0} \\", sourceFullPath));
+            writer.WriteLine (string.Format ("  {0} \\", GccUtilities.ConvertPathWindowsToGccDependency (source.GetMetadata ("FullPath"))));
           }
         }
       }

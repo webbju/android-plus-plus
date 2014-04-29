@@ -101,12 +101,12 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
         foreach (ITaskItem libraryPath in LibrarySearchPaths)
         {
-          commandLineBuilder.Append ("-L" + GccUtilities.QuoteIfNeeded (libraryPath.GetMetadata ("FullPath")) + " ");
+          commandLineBuilder.Append ("-L" + GccUtilities.ConvertPathWindowsToPosix (libraryPath.GetMetadata ("FullPath")) + " ");
         }
 
         foreach (ITaskItem targetElf in TargetElfFiles)
         {
-          commandLineBuilder.Append (GccUtilities.QuoteIfNeeded (targetElf.GetMetadata ("FullPath")) + " ");
+          commandLineBuilder.Append (GccUtilities.ConvertPathWindowsToPosix (targetElf.GetMetadata ("FullPath")) + " ");
         }
 
         // 

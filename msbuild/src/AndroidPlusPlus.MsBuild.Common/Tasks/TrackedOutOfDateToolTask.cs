@@ -266,7 +266,7 @@ namespace AndroidPlusPlus.MsBuild.Common
       foreach (ITaskItem source in Sources)
       {
         // 
-        // Identify if the source's command line is different from that previously built. This may require iterating through mutliple sources per command.
+        // Identify if the source's command line is different from that previously built. This may require iterating through multiple sources per command.
         // 
 
         string sourcePath = source.GetMetadata ("FullPath").ToUpperInvariant ();

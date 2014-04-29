@@ -53,6 +53,17 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    public static string ConvertPathWindowsToGccDependency (string path)
+    {
+      string rtn = path.Replace ('\\', '/');
+
+      return GccUtilities.Escape (rtn);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public static string ConvertPathPosixToWindows (string path)
     {
       // 
@@ -86,6 +97,36 @@ namespace AndroidPlusPlus.MsBuild.Common
       }
 
       return "\"" + arg + "\"";
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public static string Escape (string input)
+    {
+      StringBuilder escapedStringBuilder = new StringBuilder (input);
+
+      escapedStringBuilder.Replace (@"\", @"\\");
+
+      escapedStringBuilder.Replace (@" ", @"\ ");
+
+      return escapedStringBuilder.ToString ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public static string Unescape (string input)
+    {
+      StringBuilder unescapedStringBuilder = new StringBuilder (input);
+
+      unescapedStringBuilder.Replace (@"\\", @"\");
+
+      unescapedStringBuilder.Replace (@"\ ", @" ");
+
+      return unescapedStringBuilder.ToString ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -238,7 +279,9 @@ namespace AndroidPlusPlus.MsBuild.Common
           {
             if (i == 0)
             {
-              m_outputFile = new TaskItem (line);
+              string outputFilePath = GccUtilities.Unescape (line);
+
+              m_outputFile = new TaskItem (outputFilePath);
             }
             else
             {
@@ -285,14 +328,14 @@ namespace AndroidPlusPlus.MsBuild.Common
 
           if (!string.IsNullOrWhiteSpace (filename))
           {
-            filename = GccUtilities.ConvertPathPosixToWindows (filename);
-
             // 
             // Files with spaces in look like this:
             //  C:\Program\ Files\ (x86)\ARM\Mali\ Developer\ Tools\OpenGL\ ES\ 1.1\ Emulator\ v1.0\include/GLES2/gl2ext.h \
             // 
 
-            filename = filename.Replace ("\\ ", " ");
+            filename = GccUtilities.Unescape (filename);
+
+            filename = GccUtilities.ConvertPathPosixToWindows (filename);
 
             m_dependencies.Add (new TaskItem (filename));
           }
@@ -337,6 +380,61 @@ namespace AndroidPlusPlus.MsBuild.Common
         }
 
         return i;
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+      public static void ConvertJavaDependencyFileToGcc (string dependencyFile)
+      {
+        // 
+        // Load a specified dependency file and convert any invalid (windows) paths, to escaped-posix.
+        // 
+
+        string dependencyFileTemp = dependencyFile + ".tmp";
+
+        using (StreamReader reader = new StreamReader (dependencyFile))
+        {
+          using (StreamWriter writer = new StreamWriter (dependencyFileTemp))
+          {
+            StringBuilder builder = new StringBuilder ();
+
+            string line = reader.ReadLine ();
+
+            while (!string.IsNullOrWhiteSpace (line))
+            {
+              builder.Length = 0;
+
+              builder.Append (line);
+
+              // 
+              // Remove a trailing '\' character used to signify the list continues on the next line.
+              // 
+
+              if (line.EndsWith (@"\"))
+              {
+                line = line.Substring (0, line.Length - 1);
+              }
+
+              line.Trim ();
+
+              builder.Replace (line, ConvertPathWindowsToGccDependency (line));
+
+              builder.Replace (@"\ \", @" \"); // patch line endings
+
+              builder.Replace (@"\ :\ ", @" : "); // patch output directive
+
+              writer.WriteLine (builder.ToString ());
+
+              line = reader.ReadLine ();
+            }
+          }
+        }
+
+        File.Copy (dependencyFileTemp, dependencyFile, true);
+
+        File.Delete (dependencyFileTemp);
       }
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

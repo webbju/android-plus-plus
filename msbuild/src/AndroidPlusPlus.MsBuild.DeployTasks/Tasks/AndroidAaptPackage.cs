@@ -149,6 +149,8 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
                 {
                   string apkDependencyFileSource = source.GetMetadata ("ApkOutputFile") + ".d";
 
+                  GccUtilities.DependencyParser.ConvertJavaDependencyFileToGcc (apkDependencyFileSource);
+
                   File.Copy (apkDependencyFileSource, dependencyFileSource, true); // overwrite invalid R.java.d export
                 }
 

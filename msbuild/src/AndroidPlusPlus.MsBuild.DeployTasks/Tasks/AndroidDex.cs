@@ -65,7 +65,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
         using (StreamWriter writer = new StreamWriter (OutputFile.GetMetadata ("FullPath") + ".d", false, Encoding.Unicode))
         {
-          writer.WriteLine (string.Format ("{0}: \\", OutputFile.GetMetadata ("FullPath")));
+          writer.WriteLine (string.Format ("{0}: \\", GccUtilities.ConvertPathWindowsToGccDependency (OutputFile.GetMetadata ("FullPath"))));
 
           foreach (ITaskItem source in Sources)
           {
@@ -77,12 +77,12 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
               foreach (string classpath in classPathFiles)
               {
-                writer.WriteLine (string.Format ("  {0} \\", classpath));
+                writer.WriteLine (string.Format ("  {0} \\", GccUtilities.ConvertPathWindowsToGccDependency (classpath)));
               }
             }
             else
             {
-              writer.WriteLine (string.Format ("  {0} \\", sourceFullPath));
+              writer.WriteLine (string.Format ("  {0} \\", GccUtilities.ConvertPathWindowsToGccDependency (sourceFullPath)));
             }
           }
         }
