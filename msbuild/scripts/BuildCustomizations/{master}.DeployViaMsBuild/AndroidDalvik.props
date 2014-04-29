@@ -43,7 +43,7 @@
 
       <TrackerLogDirectory Condition="'%(AndroidDalvik.TrackerLogDirectory)' == ''">$(IntDir)</TrackerLogDirectory>
 
-      <OutputCommandLine Condition="'%(AndroidDalvik.OutputCommandLine)' == ''">true</OutputCommandLine>
+      <OutputCommandLine Condition="'%(AndroidDalvik.OutputCommandLine)' == ''">false</OutputCommandLine>
 
     </AndroidDalvik>
 

@@ -226,9 +226,11 @@ namespace AndroidPlusPlus.MsBuild.Common
             bufferedCommandWithFiles.Replace (responseFileCommands, "");
           }
 
-          if (AppendSourcesToCommandLine)
+          foreach (ITaskItem threadSource in commandKeyPair.Value)
           {
-            foreach (ITaskItem threadSource in commandKeyPair.Value)
+            //Log.LogMessageFromText (string.Format ("[{0}] {1}", ToolName, Path.GetFileName (threadSource.GetMetadata ("Identity") ?? threadSource.ToString ())), MessageImportance.High);
+
+            if (AppendSourcesToCommandLine)
             {
               string threadSourceFilePath = Path.GetFullPath (threadSource.GetMetadata ("FullPath") ?? threadSource.ToString ());
 
@@ -465,7 +467,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
     protected virtual void TrackedExecuteToolOutput (KeyValuePair<string, List<ITaskItem>> commandAndSourceFiles, string singleLine)
     {
-      LogEventsFromTextOutput (singleLine, MessageImportance.High);
+      LogEventsFromTextOutput (string.Format ("[{0}] {1}", ToolName, singleLine), MessageImportance.High);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

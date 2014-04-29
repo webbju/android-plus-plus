@@ -158,7 +158,7 @@
 
     <Exec 
       Condition="'@(AndroidApkUnsignedOutputFile)' != ''"
-      Command="7za.exe a -tzip -mx7 -r &quot;@(AndroidApkUnsignedOutputFile->Metadata('FullPath'))&quot; *" 
+      Command="7za.exe a -tzip -mx7 -r &quot;@(AndroidApkUnsignedOutputFile->Metadata('FullPath'))&quot; * > nul" 
       WorkingDirectory="%(AndroidApk.IntermediateDirectory)"
     />
 

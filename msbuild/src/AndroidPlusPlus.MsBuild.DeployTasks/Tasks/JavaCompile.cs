@@ -144,7 +144,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
           {
             if (Sources [0].GetMetadata ("Verbose") == "true")
             {
-              LogEventsFromTextOutput (singleLine, MessageImportance.High);
+              LogEventsFromTextOutput (string.Format ("[{0}] {1}", ToolName, singleLine), MessageImportance.High);
             }
 
             string sanitisedOutput = singleLine.Trim (new char [] { ' ', '[', ']' });
@@ -173,7 +173,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
           }
           else
           {
-            LogEventsFromTextOutput (singleLine, MessageImportance.High);
+            LogEventsFromTextOutput (string.Format ("[{0}] {1}", ToolName, singleLine), MessageImportance.High);
           }
         }
       }
