@@ -117,6 +117,7 @@
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" />
   <Target Name="BeforeBuild">
+    <Error Condition="'$(Configuration)' == 'Debug'" Text="Please only build installer in RELEASE configuration." />
     <GetAssemblyIdentity AssemblyFiles="$(OutputPath)\AndroidPlusPlus.Common.dll">
       <Output TaskParameter="Assemblies" ItemName="AssemblyVersion"/>
     </GetAssemblyIdentity>
@@ -126,5 +127,6 @@
   </Target>
   <Target Name="AfterBuild">
     <Copy SourceFiles="$(OutputPath)\$(OutputName).msi" DestinationFiles="$(OutputPath)$(OutputName).%(AssemblyVersion.Version).msi" />
+    <WriteLinesToFile File="$(OutputPath)$(OutputName).%(AssemblyVersion.Version).bat" Lines="msiexec /i &quot;$(OutputName).%(AssemblyVersion.Version).msi&quot; /l*v AndroidPlusPlus.WixInstaller.log" Overwrite="true"/>
   </Target>
 </Project>
