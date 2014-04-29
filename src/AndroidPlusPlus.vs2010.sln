@@ -12,14 +12,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsIntegrate
 		{7C701BB4-BAD8-40DA-AFDC-B9820A04F005} = {7C701BB4-BAD8-40DA-AFDC-B9820A04F005}
 	EndProjectSection
 EndProject
-Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "AndroidPlusPlus.WixInstaller.vs2010", "AndroidPlusPlus.WixInstaller\AndroidPlusPlus.WixInstaller.vs2010.wixproj", "{3913F304-DDEE-482A-BDBA-FE25FB0171E3}"
-	ProjectSection(ProjectDependencies) = postProject
-		{6D575221-37D1-4C3D-82A5-5FEB632069AA} = {6D575221-37D1-4C3D-82A5-5FEB632069AA}
-		{14DF8540-798D-46E9-9EC0-1648D3792660} = {14DF8540-798D-46E9-9EC0-1648D3792660}
-		{52DDF087-9B2C-49AF-BD1C-EC2B9C1DD0F5} = {52DDF087-9B2C-49AF-BD1C-EC2B9C1DD0F5}
-		{7C701BB4-BAD8-40DA-AFDC-B9820A04F005} = {7C701BB4-BAD8-40DA-AFDC-B9820A04F005}
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -70,16 +62,6 @@ Global
 		{14DF8540-798D-46E9-9EC0-1648D3792660}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{14DF8540-798D-46E9-9EC0-1648D3792660}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{14DF8540-798D-46E9-9EC0-1648D3792660}.Release|x86.ActiveCfg = Release|Any CPU
-		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Debug|Any CPU.ActiveCfg = Debug|x86
-		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
-		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Debug|Mixed Platforms.Build.0 = Debug|x86
-		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Debug|x86.ActiveCfg = Debug|x86
-		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Debug|x86.Build.0 = Debug|x86
-		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Release|Any CPU.ActiveCfg = Release|x86
-		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Release|Mixed Platforms.ActiveCfg = Release|x86
-		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Release|Mixed Platforms.Build.0 = Release|x86
-		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Release|x86.ActiveCfg = Release|x86
-		{3913F304-DDEE-482A-BDBA-FE25FB0171E3}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
