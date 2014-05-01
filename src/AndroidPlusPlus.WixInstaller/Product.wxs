@@ -293,29 +293,29 @@
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     -->
 
-    <CustomAction Id="MsBuildBootstrapVS2010" Directory="RootMsBuildBin" Execute="immediate" ExeCommand="[RootMsBuildBin]AndroidPlusPlus.MsBuild.Exporter.exe --template-dir &quot;[RootMsBuildScripts]&#92;&quot; --vs-version 2010" />
+    <CustomAction Id="MsBuildBootstrapVS2010" Directory="RootMsBuildBin" Execute="deferred" Impersonate="no" ExeCommand="[RootMsBuildBin]AndroidPlusPlus.MsBuild.Exporter.exe --template-dir &quot;[RootMsBuildScripts]&#92;&quot; --vs-version 2010" />
 
-    <CustomAction Id="MsBuildBootstrapVS2012" Directory="RootMsBuildBin" Execute="immediate" ExeCommand="[RootMsBuildBin]AndroidPlusPlus.MsBuild.Exporter.exe --template-dir &quot;[RootMsBuildScripts]&#92;&quot; --vs-version 2012" />
+    <CustomAction Id="MsBuildBootstrapVS2012" Directory="RootMsBuildBin" Execute="deferred" Impersonate="no" ExeCommand="[RootMsBuildBin]AndroidPlusPlus.MsBuild.Exporter.exe --template-dir &quot;[RootMsBuildScripts]&#92;&quot; --vs-version 2012" />
 
-    <CustomAction Id="MsBuildBootstrapVS2013" Directory="RootMsBuildBin" Execute="immediate" ExeCommand="[RootMsBuildBin]AndroidPlusPlus.MsBuild.Exporter.exe --template-dir &quot;[RootMsBuildScripts]&#92;&quot; --vs-version 2013" />
+    <CustomAction Id="MsBuildBootstrapVS2013" Directory="RootMsBuildBin" Execute="deferred" Impersonate="no" ExeCommand="[RootMsBuildBin]AndroidPlusPlus.MsBuild.Exporter.exe --template-dir &quot;[RootMsBuildScripts]&#92;&quot; --vs-version 2013" />
 
-    <CustomAction Id="MsBuildUninstallVS2010" Directory="RootMsBuildBin" Execute="immediate" ExeCommand="[RootMsBuildBin]AndroidPlusPlus.MsBuild.Exporter.exe --uninstall --vs-version 2010" />
+    <CustomAction Id="MsBuildUninstallVS2010" Directory="RootMsBuildBin" Execute="deferred" Impersonate="no" ExeCommand="[RootMsBuildBin]AndroidPlusPlus.MsBuild.Exporter.exe --uninstall --vs-version 2010" />
 
-    <CustomAction Id="MsBuildUninstallVS2012" Directory="RootMsBuildBin" Execute="immediate" ExeCommand="[RootMsBuildBin]AndroidPlusPlus.MsBuild.Exporter.exe --uninstall --vs-version 2012" />
+    <CustomAction Id="MsBuildUninstallVS2012" Directory="RootMsBuildBin" Execute="deferred" Impersonate="no" ExeCommand="[RootMsBuildBin]AndroidPlusPlus.MsBuild.Exporter.exe --uninstall --vs-version 2012" />
 
-    <CustomAction Id="MsBuildUninstallVS2013" Directory="RootMsBuildBin" Execute="immediate" ExeCommand="[RootMsBuildBin]AndroidPlusPlus.MsBuild.Exporter.exe --uninstall --vs-version 2013" />
+    <CustomAction Id="MsBuildUninstallVS2013" Directory="RootMsBuildBin" Execute="deferred" Impersonate="no" ExeCommand="[RootMsBuildBin]AndroidPlusPlus.MsBuild.Exporter.exe --uninstall --vs-version 2013" />
 
     <InstallExecuteSequence>
 
       <!-- Installation steps -->
-      <Custom Action="MsBuildBootstrapVS2010" After="InstallFinalize">NOT Installed</Custom>
-      <Custom Action="MsBuildBootstrapVS2012" After="InstallFinalize">NOT Installed</Custom>
-      <Custom Action="MsBuildBootstrapVS2013" After="InstallFinalize">NOT Installed</Custom>
+      <Custom Action="MsBuildBootstrapVS2010" After="InstallFiles">NOT Installed</Custom>
+      <Custom Action="MsBuildBootstrapVS2012" After="InstallFiles">NOT Installed</Custom>
+      <Custom Action="MsBuildBootstrapVS2013" After="InstallFiles">NOT Installed</Custom>
 
       <!-- Uninstall steps -->
-      <Custom Action="MsBuildUninstallVS2010" After="InstallFinalize">Installed AND NOT UPGRADINGPRODUCTCODE</Custom>
-      <Custom Action="MsBuildUninstallVS2012" After="InstallFinalize">Installed AND NOT UPGRADINGPRODUCTCODE</Custom>
-      <Custom Action="MsBuildUninstallVS2013" After="InstallFinalize">Installed AND NOT UPGRADINGPRODUCTCODE</Custom>
+      <Custom Action="MsBuildUninstallVS2010" After="InstallFiles">Installed AND NOT UPGRADINGPRODUCTCODE</Custom>
+      <Custom Action="MsBuildUninstallVS2012" After="InstallFiles">Installed AND NOT UPGRADINGPRODUCTCODE</Custom>
+      <Custom Action="MsBuildUninstallVS2013" After="InstallFiles">Installed AND NOT UPGRADINGPRODUCTCODE</Custom>
 
     </InstallExecuteSequence>
 
