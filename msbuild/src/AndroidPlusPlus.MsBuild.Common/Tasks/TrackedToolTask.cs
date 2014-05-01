@@ -1030,7 +1030,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
     protected override string GenerateFullPathToTool ()
     {
-      return Path.Combine (ToolPath, ToolName);
+      return Path.Combine (ToolPath, ToolExe);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

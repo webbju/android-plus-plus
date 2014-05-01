@@ -60,32 +60,39 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
       // - This tends to fix cyclic dependencencies as undefined symbols are continually re-evaualted for each library in turn.
       // 
 
-      string derivedSourceProperties = m_parsedProperties.Parse (Sources [0]);
-
-      string [] responseFileArguments = derivedSourceProperties.Split (new char [] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-      foreach (string arg in responseFileArguments)
+      try
       {
-        if (arg.StartsWith ("-l"))
+        string derivedSourceProperties = m_parsedProperties.Parse (Sources [0]);
+
+        string [] responseFileArguments = derivedSourceProperties.Split (new char [] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (string arg in responseFileArguments)
         {
-          sourceLibraryDependencies.Append (arg + " ");
+          if (arg.StartsWith ("-l"))
+          {
+            sourceLibraryDependencies.Append (arg + " ");
+          }
+          else
+          {
+            responseFileCommands.Append (arg + " ");
+          }
         }
-        else
+
+        responseFileCommands.Append (" -Wl,--start-group ");
+
+        foreach (ITaskItem source in Sources)
         {
-          responseFileCommands.Append (arg + " ");
+          responseFileCommands.Append (GccUtilities.ConvertPathWindowsToPosix (source.GetMetadata ("FullPath")) + " ");
         }
+
+        responseFileCommands.Append (sourceLibraryDependencies.ToString ());
+
+        responseFileCommands.Append (" -Wl,--end-group ");
       }
-
-      responseFileCommands.Append (" -Wl,--start-group ");
-
-      foreach (ITaskItem source in Sources)
+      catch (Exception e)
       {
-        responseFileCommands.Append (GccUtilities.ConvertPathWindowsToPosix (source.GetMetadata ("FullPath")) + " ");
+        Log.LogErrorFromException (e, true);
       }
-
-      responseFileCommands.Append (sourceLibraryDependencies.ToString ());
-
-      responseFileCommands.Append (" -Wl,--end-group ");
 
       return responseFileCommands.ToString ();
     }

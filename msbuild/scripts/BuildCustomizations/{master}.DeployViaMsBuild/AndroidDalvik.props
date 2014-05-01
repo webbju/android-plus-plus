@@ -31,7 +31,7 @@
 
       <Optimize Condition="'%(AndroidDalvik.Optimize)' == ''">true</Optimize>
 
-      <NumberOfThreads Condition="'%(AndroidDalvik.NumberOfThreads)' == ''"></NumberOfThreads>
+      <NumberOfThreads Condition="'%(AndroidDalvik.NumberOfThreads)' == ''">4</NumberOfThreads>
 
       <Statistics Condition="'%(AndroidDalvik.Statistics)' == ''">false</Statistics>
 

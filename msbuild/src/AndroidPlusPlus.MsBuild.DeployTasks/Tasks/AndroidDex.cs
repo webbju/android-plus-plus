@@ -47,6 +47,9 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     [Required]
     public ITaskItem OutputFile { get; set; }
 
+    [Required]
+    public string DexJar { get; set; }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -63,28 +66,37 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
         // Create a dependency file containing references to each .jar and .class used during execution.
         // 
 
-        using (StreamWriter writer = new StreamWriter (OutputFile.GetMetadata ("FullPath") + ".d", false, Encoding.Unicode))
+        try
         {
-          writer.WriteLine (string.Format ("{0}: \\", GccUtilities.ConvertPathWindowsToGccDependency (OutputFile.GetMetadata ("FullPath"))));
-
-          foreach (ITaskItem source in Sources)
+          using (StreamWriter writer = new StreamWriter (OutputFile.GetMetadata ("FullPath") + ".d", false, Encoding.Unicode))
           {
-            string sourceFullPath = source.GetMetadata ("FullPath");
+            writer.WriteLine (string.Format ("{0}: \\", GccUtilities.ConvertPathWindowsToGccDependency (OutputFile.GetMetadata ("FullPath"))));
 
-            if (Directory.Exists (sourceFullPath))
+            foreach (ITaskItem source in Sources)
             {
-              string [] classPathFiles = Directory.GetFiles (sourceFullPath, "*.class", SearchOption.AllDirectories);
+              string sourceFullPath = source.GetMetadata ("FullPath");
 
-              foreach (string classpath in classPathFiles)
+              if (Directory.Exists (sourceFullPath))
               {
-                writer.WriteLine (string.Format ("  {0} \\", GccUtilities.ConvertPathWindowsToGccDependency (classpath)));
+                string [] classPathFiles = Directory.GetFiles (sourceFullPath, "*.class", SearchOption.AllDirectories);
+
+                foreach (string classpath in classPathFiles)
+                {
+                  writer.WriteLine (string.Format ("  {0} \\", GccUtilities.ConvertPathWindowsToGccDependency (classpath)));
+                }
+              }
+              else
+              {
+                writer.WriteLine (string.Format ("  {0} \\", GccUtilities.ConvertPathWindowsToGccDependency (sourceFullPath)));
               }
             }
-            else
-            {
-              writer.WriteLine (string.Format ("  {0} \\", GccUtilities.ConvertPathWindowsToGccDependency (sourceFullPath)));
-            }
           }
+        }
+        catch (Exception e)
+        {
+          Log.LogErrorFromException (e, true);
+
+          retCode = -1;
         }
       }
 
@@ -98,14 +110,32 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     protected override string GenerateCommandLineCommands ()
     {
       // 
-      // Build a commandline based on parsing switches from the registered property sheet, and any additional flags.
+      // Build a command-line based on parsing switches from the registered property sheet, and any additional flags.
       // 
 
       StringBuilder builder = new StringBuilder (GccUtilities.CommandLineLength);
 
-      builder.Append ("--dex ");
+      try
+      {
+        builder.Append ("-Xms32m -Xss1m ");
 
-      builder.Append (m_parsedProperties.Parse (Sources [0]) + " ");
+        // By default, give dx a max heap size of 1 gig (2 gig on 64bit systems) and a stack size of 1meg.
+        builder.Append (string.Format ("-Xmx{0}M ", (System.Environment.Is64BitOperatingSystem) ? 2048 : 1024));
+
+        string frameworkDir = Path.GetDirectoryName (DexJar);
+
+        builder.Append ("-Djava.ext.dirs=\"" + frameworkDir + "\" ");
+
+        builder.Append ("-jar \"" + DexJar + "\" ");
+
+        builder.Append ("--dex ");
+
+        builder.Append (m_parsedProperties.Parse (Sources [0]) + " ");
+      }
+      catch (Exception e)
+      {
+        Log.LogErrorFromException (e, true);
+      }
 
       return builder.ToString ();
     }

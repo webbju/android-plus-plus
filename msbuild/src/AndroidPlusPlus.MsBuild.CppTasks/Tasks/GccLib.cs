@@ -52,25 +52,32 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
 
       StringBuilder builder = new StringBuilder (GccUtilities.CommandLineLength);
 
-      builder.Append ("rcsP ");
-
-      //builder.Append (m_parsedProperties.Parse (Sources [0]) + " ");
-
-      string outputFile = Path.GetFullPath (Sources [0].GetMetadata ("OutputFile"));
-
-      string responseFile = Path.GetFullPath (Path.Combine (TrackerLogDirectory, Path.GetFileName (outputFile) + ".rcf"));
-
-      builder.Append (GccUtilities.ConvertPathWindowsToPosix (outputFile) + " ");
-
-      using (StreamWriter writer = new StreamWriter (responseFile, false, Encoding.ASCII))
+      try
       {
-        foreach (ITaskItem source in Sources)
-        {
-          writer.Write (GccUtilities.ConvertPathWindowsToPosix (source.GetMetadata ("FullPath")) + " ");
-        }
-      }
+        builder.Append ("rcsP ");
 
-      builder.Append ('@' + GccUtilities.ConvertPathWindowsToPosix (responseFile));
+        //builder.Append (m_parsedProperties.Parse (Sources [0]) + " ");
+
+        string outputFile = Path.GetFullPath (Sources [0].GetMetadata ("OutputFile"));
+
+        string responseFile = Path.GetFullPath (Path.Combine (TrackerLogDirectory, Path.GetFileName (outputFile) + ".rcf"));
+
+        builder.Append (GccUtilities.ConvertPathWindowsToPosix (outputFile) + " ");
+
+        using (StreamWriter writer = new StreamWriter (responseFile, false, Encoding.ASCII))
+        {
+          foreach (ITaskItem source in Sources)
+          {
+            writer.Write (GccUtilities.ConvertPathWindowsToPosix (source.GetMetadata ("FullPath")) + " ");
+          }
+        }
+
+        builder.Append ('@' + GccUtilities.ConvertPathWindowsToPosix (responseFile));
+      }
+      catch (Exception e)
+      {
+        Log.LogErrorFromException (e, true);
+      }
 
       return builder.ToString ();
     }

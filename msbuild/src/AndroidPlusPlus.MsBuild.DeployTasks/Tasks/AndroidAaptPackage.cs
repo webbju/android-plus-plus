@@ -284,6 +284,8 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
         {
           Log.LogError ("Could not successfully parse '" + sourcePath + "'. Check this is a valid AndroidManifest.xml document. Reason: " + e, MessageImportance.High);
 
+          Log.LogErrorFromException (e, true);
+
           validParameters = false;
         }
       }

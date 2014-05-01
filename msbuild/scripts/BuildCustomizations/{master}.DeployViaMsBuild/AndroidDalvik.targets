@@ -90,8 +90,9 @@
       TrackFileAccess="$(TrackFileAccess)"
       MinimalRebuildFromTracking="%(AndroidDalvik.MinimalRebuildFromTracking)"
       OutputCommandLine="%(AndroidDalvik.OutputCommandLine)"
-      ToolPath="$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)"
-      ToolExe="dx.bat"
+      ToolPath="$(JavaHomeDir)\bin"
+      ToolExe="java.exe"
+      DexJar="$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\lib\dx.jar"
       PropertiesFile="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml">
       <Output TaskParameter="OutputFiles" ItemName="AndroidDalvikOutputFiles" />
       <Output TaskParameter="SkippedExecution" PropertyName="AndroidDalvikSkippedExecution" />

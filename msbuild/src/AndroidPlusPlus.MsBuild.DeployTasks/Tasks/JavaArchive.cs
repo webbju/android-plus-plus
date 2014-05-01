@@ -97,14 +97,23 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
         // Construct a simple dependency file for tracking purposes.
         // 
 
-        using (StreamWriter writer = new StreamWriter (OutputFile.GetMetadata ("FullPath") + ".d", false, Encoding.Unicode))
+        try
         {
-          writer.WriteLine (string.Format ("{0}: \\", GccUtilities.ConvertPathWindowsToGccDependency (OutputFile.GetMetadata ("FullPath"))));
-
-          foreach (ITaskItem source in Sources)
+          using (StreamWriter writer = new StreamWriter (OutputFile.GetMetadata ("FullPath") + ".d", false, Encoding.Unicode))
           {
-            writer.WriteLine (string.Format ("  {0} \\", GccUtilities.ConvertPathWindowsToGccDependency (source.GetMetadata ("FullPath"))));
+            writer.WriteLine (string.Format ("{0}: \\", GccUtilities.ConvertPathWindowsToGccDependency (OutputFile.GetMetadata ("FullPath"))));
+
+            foreach (ITaskItem source in Sources)
+            {
+              writer.WriteLine (string.Format ("  {0} \\", GccUtilities.ConvertPathWindowsToGccDependency (source.GetMetadata ("FullPath"))));
+            }
           }
+        }
+        catch (Exception e)
+        {
+          Log.LogErrorFromException (e, true);
+
+          retCode = -1;
         }
       }
 
