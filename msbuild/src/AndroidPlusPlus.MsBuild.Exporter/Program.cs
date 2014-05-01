@@ -62,7 +62,7 @@ namespace AndroidPlusPlus.MsBuild.Exporter
       }
       catch (Exception e)
       {
-        string exception = string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Exception: {0}\nStack trace:\n{1}", e.Message, e.StackTrace);
+        string exception = string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Exception: {0} ({1})\nStack trace:\n{2}", e.Message, e.GetType ().Name, e.StackTrace);
 
         Console.WriteLine (exception);
 
@@ -274,11 +274,41 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
     private static void KillMsBuildInstances ()
     {
-      Process [] activeMsBuildProcesses = Process.GetProcessesByName ("MSBuild");
-
-      foreach (Process process in activeMsBuildProcesses)
+      try
       {
-        process.Kill ();
+        Process [] activeMsBuildProcesses = Process.GetProcessesByName ("MSBuild");
+
+        foreach (Process process in activeMsBuildProcesses)
+        {
+          bool killed = false;
+
+          try
+          {
+            process.Kill ();
+
+            killed = true;
+          }
+          catch (Exception)
+          {
+            using (Process taskkill = Process.Start ("taskkill", "/pid " + process.Id + " /f"))
+            {
+              taskkill.WaitForExit ();
+
+              killed = (taskkill.ExitCode == 0);
+            }
+          }
+          finally
+          {
+            if (!killed)
+            {
+              Console.WriteLine (string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Couldn't kill a running MSBuild instance."));
+            }
+          }
+        }
+      }
+      catch (Exception)
+      {
+        Console.WriteLine (string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Failed to terminate running MSBuild instance(s)."));
       }
     }
 
