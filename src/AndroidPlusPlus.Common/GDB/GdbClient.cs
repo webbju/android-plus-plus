@@ -138,7 +138,7 @@ namespace AndroidPlusPlus.Common
 
       if (File.Exists (m_gdbSetup.CacheDirectory + @"\gdb.setup"))
       {
-        m_gdbClientInstance.StartInfo.Arguments += string.Format (@" -x {0}\gdb.setup", StringUtils.ConvertPathWindowsToPosix (m_gdbSetup.CacheDirectory));
+        m_gdbClientInstance.StartInfo.Arguments += string.Format (@" -fullname -x {0}\gdb.setup", StringUtils.ConvertPathWindowsToPosix (m_gdbSetup.CacheDirectory));
       }
 
       m_syncCommandLock = new ManualResetEvent (false);
