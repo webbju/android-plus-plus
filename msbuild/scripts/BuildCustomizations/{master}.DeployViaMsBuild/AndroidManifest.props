@@ -21,9 +21,27 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
+  <ItemDefinitionGroup Condition="'$(UseDebugLibraries)' == 'true'">
+
+    <AndroidManifest>
+
+      <DebugMode Condition="'%(AndroidManifest.DebugMode)' == ''">true</DebugMode>
+
+    </AndroidManifest>
+
+  </ItemDefinitionGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
   <ItemDefinitionGroup>
 
     <AndroidManifest>
+
+      <ProjectManifest Condition="'%(AndroidManifest.ProjectManifest)' == ''">$(ProjDir)AndroidManifest.xml</ProjectManifest>
 
       <PrintAndroidSpecificData Condition="'%(AndroidManifest.PrintAndroidSpecificData)' == ''">false</PrintAndroidSpecificData>
 
@@ -59,11 +77,9 @@
 
       <PublicResourceDefintionsOutputFile Condition="'%(AndroidManifest.PublicResourceDefintionsOutputFile)' == ''"></PublicResourceDefintionsOutputFile>
 
-      <IncludeResourceDirectories Condition="'%(AndroidManifest.IncludeResourceDirectories)' == ''">%(RelativeDir)res</IncludeResourceDirectories>
+      <IncludeResourceDirectories Condition="'%(AndroidManifest.IncludeResourceDirectories)' == ''">res</IncludeResourceDirectories>
 
       <NoNotCompressExtensions Condition="'%(AndroidManifest.NoNotCompressExtensions)' == ''"></NoNotCompressExtensions>
-
-      <DebugMode Condition="'%(AndroidManifest.DebugMode)' == '' and '$(Configuration)' == 'Debug'">true</DebugMode>
 
       <DebugMode Condition="'%(AndroidManifest.DebugMode)' == ''">false</DebugMode>
 

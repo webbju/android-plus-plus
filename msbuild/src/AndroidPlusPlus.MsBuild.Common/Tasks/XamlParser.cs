@@ -131,7 +131,7 @@ namespace AndroidPlusPlus.MsBuild.Common
         AppendArgumentForProperty (builder, name, value);
       }
 
-      return builder.ToString ().Replace ('\\', '/'); // convert to posix path.
+      return builder.ToString ().Replace ('\\', '/');
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -171,8 +171,6 @@ namespace AndroidPlusPlus.MsBuild.Common
 
     private void AppendStringValue (CommandLineBuilder builder, BaseProperty property, string subtype, string value)
     {
-      value = value.Trim ();
-
       string switchName = property.SwitchPrefix;
 
       if (string.IsNullOrEmpty (property.SwitchPrefix))
@@ -215,7 +213,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
       if (subtype == "file" || subtype == "folder")
       {
-        builder.AppendSwitchIfNotNull (switchName, value, delimiter);
+        builder.AppendSwitchUnquotedIfNotNull (switchName, value, delimiter);
       }
       else if (!string.IsNullOrEmpty (property.Switch))
       {
@@ -251,7 +249,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
     private void GenerateArgumentStringList (CommandLineBuilder builder, BaseProperty property, string value)
     {
-      string [] arguments = value.Split (';');
+      string [] arguments = value.Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
 
       if (arguments.Length > 0)
       {
@@ -265,7 +263,7 @@ namespace AndroidPlusPlus.MsBuild.Common
           {
             if (argument.Length > 0)
             {
-              sanitised.Add (argument);
+              sanitised.Add (argument.Trim (new char [] { ' ', '\"' }));
             }
           }
 
@@ -280,7 +278,7 @@ namespace AndroidPlusPlus.MsBuild.Common
           {
             if (argument.Length > 0)
             {
-              AppendStringValue (builder, property, casted.Subtype, argument);
+              AppendStringValue (builder, property, casted.Subtype, argument.Trim (new char [] { ' ', '\"' }));
             }
           }
         }
@@ -295,7 +293,7 @@ namespace AndroidPlusPlus.MsBuild.Common
     {
       StringProperty casted = (StringProperty)property;
 
-      AppendStringValue (builder, property, casted.Subtype, value);
+      AppendStringValue (builder, property, casted.Subtype, value.Trim (new char [] { ' ', '\"' }));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

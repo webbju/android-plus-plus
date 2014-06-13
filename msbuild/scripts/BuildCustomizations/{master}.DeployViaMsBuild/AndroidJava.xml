@@ -83,7 +83,7 @@
       Separator=" "
       CommandLineValueSeparator=";"
     />
-
+    
     <!--
       BootClassPaths
     -->
@@ -249,6 +249,43 @@
     />
 
     <!--
+      DisableJarExport
+    -->
+
+    <BoolProperty
+      Name="DisableJarExport"
+      DisplayName="Disable JAR Export"
+      Description="Do not include file in any exported JAR achieves."
+      Category="Advanced"
+      IncludeInCommandLine="false"
+    />
+
+    <!--
+      DisableDexExport
+    -->
+
+    <BoolProperty
+      Name="DisableDexExport"
+      DisplayName="Disable Dalvik Executable (DEX) Export"
+      Description="Do not include file in class paths evaluated for DEX byte-code export. Only applies to JAR files."
+      Category="Advanced"
+      IncludeInCommandLine="false"
+    />
+
+    <!--
+      DexClassPaths
+    -->
+
+    <StringListProperty
+      Subtype="file"
+      Name="DexClassPaths"
+      DisplayName="DEX Class Path(s)"
+      Description="Specify the location of class files or JAR archives which should be exported to DEX (Dalvik Executable) byte-code."
+      Category="Advanced"
+      IncludeInCommandLine="false"
+    />
+    
+    <!--
       Verbose
     -->
 
@@ -287,6 +324,34 @@
     />
 
     <!--
+      MultiProcessorCompilation
+    -->
+
+    <BoolProperty
+      Name="MultiProcessorCompilation"
+      DisplayName="Multi-processor Compilation"
+      Description="Multi-processor Compilation"
+      Category="General"
+      IncludeInCommandLine="false">
+
+      <Argument Property="ProcessorNumber" IsRequired="false" />
+
+    </BoolProperty>
+
+    <!--
+      ProcessorNumber (Hidden)
+    -->
+
+    <IntProperty
+      Name="ProcessorNumber"
+      DisplayName="Number of processors"
+      Description="Number of processors."
+      Category="General"
+      IncludeInCommandLine="false"
+      Visible="false"
+    />
+
+    <!--
       TrackerLogDirectory
     -->
 
@@ -299,7 +364,7 @@
       IncludeInCommandLine="false"
       Visible="false"
     />
-    
+
     <!--
       OutputCommandLine
     -->

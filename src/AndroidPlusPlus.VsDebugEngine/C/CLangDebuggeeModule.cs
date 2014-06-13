@@ -35,7 +35,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (asyncRecord == null)
         {
-          throw new ArgumentNullException ();
+          throw new ArgumentNullException ("asyncRecord");
         }
 
         Name = asyncRecord ["id"].GetString ();

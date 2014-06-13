@@ -54,6 +54,7 @@
   
   <Target
     Name="AndroidDalvik"
+    Condition="'$(ConfigurationType)' == 'Application'"
     BeforeTargets="$(AndroidDalvikBeforeTargets)"
     AfterTargets="$(AndroidDalvikAfterTargets)"
     DependsOnTargets="_AndroidDalvik">
@@ -84,7 +85,7 @@
     <AndroidDex
       BuildingInIDE="$(BuildingInsideVisualStudio)"
       Condition="'@(AndroidDalvik)' != ''"
-      Sources="@(AndroidDalvik)"
+      Sources="@(AndroidDalvik->Metadata('FullPath')->Distinct())"
       OutputFile="%(AndroidDalvik.OutputFile)"
       TrackerLogDirectory ="%(AndroidDalvik.TrackerLogDirectory)"
       TrackFileAccess="$(TrackFileAccess)"

@@ -41,9 +41,9 @@
 
       <DisplayCertificates Condition="'%(AndroidApkSign.DisplayCertificates)' == ''">false</DisplayCertificates>
 
-      <SignedOutputFile Condition="'%(AndroidApkSign.SignedOutputFile)' == ''">$(IntDir)bin\$(ProjectName)-$(Configuration)-Unaligned.apk</SignedOutputFile>
+      <SignedOutputFile Condition="'%(AndroidApkSign.SignedOutputFile)' == ''">$(IntDir)bin\$(ProjectName)-$(Configuration.Replace(' ','_'))-Unaligned.apk</SignedOutputFile>
 
-      <SignedAlignedOutputFile Condition="'%(AndroidApkSign.AlignedOutputFile)' == ''">$(OutDir)$(ProjectName)-$(Configuration).apk</SignedAlignedOutputFile>
+      <SignedAlignedOutputFile Condition="'%(AndroidApkSign.AlignedOutputFile)' == ''">$(OutDir)$(ProjectName)-$(Configuration.Replace(' ','_')).apk</SignedAlignedOutputFile>
 
       <CommandLineUnsignedJar Condition="'%(AndroidApkSign.CommandLineUnsignedJar)' == ''"></CommandLineUnsignedJar>
 

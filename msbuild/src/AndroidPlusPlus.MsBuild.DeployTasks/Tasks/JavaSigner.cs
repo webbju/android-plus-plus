@@ -116,32 +116,59 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
     protected override bool ValidateParameters ()
     {
       // 
-      // This tool expects a single .jar/.apk/.zip archive as input.
+      // Check for existence of a valid keystore file before attempting signing.
       // 
 
-      if (Sources.Length == 1)
+      string keystorePath = Sources [0].GetMetadata ("Keystore");
+
+      if (string.IsNullOrWhiteSpace (keystorePath) || !File.Exists (keystorePath))
       {
-        string sourceExtension = Path.GetExtension (Sources [0].GetMetadata ("FullPath"));
+        Log.LogError (string.Format ("Could not find specified .keystore file. Expected: {0}", keystorePath), MessageImportance.High);
+
+        return false;
+      }
+
+      // 
+      // This tool expects a single ZIP-compatible archive as input.
+      // 
+
+      if (Sources.Length == 0)
+      {
+        Log.LogError ("No inputs specified - Please provide a single ZIP-compatible archive.");
+
+        return false;
+      }
+      else if (Sources.Length > 1)
+      {
+        Log.LogError ("Multiple inputs specified - Please provide a single ZIP-compatible archive.");
+
+        return false;
+      }
+      else
+      {
+        string sourcePath = Sources [0].GetMetadata ("FullPath");
+
+        string sourceExtension = Path.GetExtension (sourcePath);
 
         switch (sourceExtension)
         {
           case ".jar":
           case ".apk":
           case ".zip":
-            {
-              return base.ValidateParameters ();
-            }
+          {
+            break;
+          }
 
           default:
-            {
-              break;
-            }
+          {
+            Log.LogError (string.Format ("{0} is not a ZIP-compatible archive. Must be .jar, .apk, or .zip.", sourcePath));
+
+            return false;
+          }
         }
       }
 
-      Log.LogError ("Expecting a single .jar/.apk/.zip file as input.", MessageImportance.High);
-
-      return false;
+      return base.ValidateParameters ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

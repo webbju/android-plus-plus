@@ -1,13 +1,17 @@
 :: 
-:: Launch solution in Visual Studio 2013
+:: Bootstrap and launch Tests solution in Visual Studio 2013
 :: 
 
 @echo off
 
 setlocal
 
-set ANDROID_PLUS_PLUS=%CD%\..\..\
+cd %~dp0\..\
 
-call "%VS120COMNTOOLS%vsvars32.bat"
+call bootstrap_vs2013.cmd
 
-"%DevEnvDir%devenv.exe" Tests.sln
+call "%VS110COMNTOOLS%vsvars32.bat"
+
+"%DevEnvDir%devenv.exe" .\tests\Tests.sln
+
+endlocal

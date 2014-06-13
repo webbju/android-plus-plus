@@ -21,7 +21,7 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <ItemDefinitionGroup Condition="'$(Configuration)' == 'Debug'">
+  <ItemDefinitionGroup Condition="'$(UseDebugLibraries)' == 'true'">
 
     <AndroidJava>
 
@@ -63,6 +63,12 @@
 
       <DisableWarningMessages Condition="'%(AndroidJava.DisableWarningMessages)' == ''">false</DisableWarningMessages>
 
+      <DisableJarExport Condition="'%(AndroidJava.DisableJarExport)' == ''">false</DisableJarExport>
+
+      <DisableDexExport Condition="'%(AndroidJava.DisableDexExport)' == ''">false</DisableDexExport>
+
+      <DexClassPaths Condition="'%(AndroidJava.DexClassPaths)' == ''">%(ClassPaths)</DexClassPaths>
+
       <Verbose Condition="'%(AndroidJava.Verbose)' == ''">false</Verbose>
 
       <JarOutputFile Condition="'%(AndroidJava.JarOutputFile)' == '' and '$(ConfigurationType)' != 'Application'">$(TargetDir)$(TargetName).jar</JarOutputFile>
@@ -70,6 +76,16 @@
       <JarOutputFile Condition="'%(AndroidJava.JarOutputFile)' == ''"></JarOutputFile>
 
       <JarManifestFile Condition="'%(AndroidJava.JarManifestFile)' == ''"></JarManifestFile>
+
+      <!--
+        Default (non {master} specific) properties.
+      -->
+
+      <MultiProcessorCompilation Condition="'%(AndroidJava.MultiProcessorCompilation)' == ''">true</MultiProcessorCompilation>
+
+      <ProcessorNumber Condition="'$(CL_MPCount)' != ''">$(CL_MPCount)</ProcessorNumber>
+
+      <ProcessorNumber Condition="'%(AndroidJava.ProcessorNumber)' == ''">$(NUMBER_OF_PROCESSORS)</ProcessorNumber>
 
       <TrackerLogDirectory Condition="'%(AndroidJava.TrackerLogDirectory)' == ''">$(IntDir)</TrackerLogDirectory>
 

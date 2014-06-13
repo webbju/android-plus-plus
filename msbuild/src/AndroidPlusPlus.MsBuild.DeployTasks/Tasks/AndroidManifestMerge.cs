@@ -48,7 +48,10 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     [Required]
-    public ITaskItem [] Manifests { get; set; }
+    public ITaskItem [] PrimaryManifest { get; set; }
+
+    [Required]
+    public ITaskItem [] ProjectManifests { get; set; }
 
     [Output]
     public ITaskItem MergedManifest { get; set; }
@@ -64,55 +67,92 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     {
       try
       {
-        if (Manifests.Length == 0)
+        if (PrimaryManifest.Length == 0)
         {
-          Log.LogError ("No input 'Manifests' entries specified.");
+          Log.LogError ("No 'PrimaryManifest' file(s) specified.");
+
+          return false;
+        }
+
+        if (PrimaryManifest.Length > 1)
+        {
+          Log.LogError ("Too many 'PrimaryManifest' files specified. Expected one.");
+
+          return false;
+        }
+
+        if (ProjectManifests.Length == 0)
+        {
+          Log.LogError ("No 'ProjectManifests' file(s) specified.");
 
           return false;
         }
 
         // 
-        // Evaluate the primary manifest in the provided list. There should be only one manifest with an <application> node.
+        // Identify which is the primary AndroidManifest.xml provided.
         // 
 
         MergedManifest = null;
 
-        foreach (ITaskItem item in Manifests)
+        string primaryManifestFullPath = PrimaryManifest [0].GetMetadata ("FullPath");
+
+        foreach (ITaskItem manifestItem in ProjectManifests)
         {
-          try
+          string manifestItemFullPath = manifestItem.GetMetadata ("FullPath");
+
+          if (primaryManifestFullPath.Equals (manifestItemFullPath))
           {
-            AndroidManifestDocument itemManifest = new AndroidManifestDocument ();
-
-            itemManifest.Load (item.GetMetadata ("FullPath"));
-
-            if (itemManifest.IsApplication)
-            {
-              if (MergedManifest == null)
-              {
-                MergedManifest = new TaskItem (item.ItemSpec);
-
-                PackageName = itemManifest.PackageName;
-
-                item.CopyMetadataTo (MergedManifest);
-              }
-              else
-              {
-                Log.LogError ("Found multiple manifests which define an <application> node");
-
-                break;
-              }
-            }
-          }
-          catch (Exception e)
-          {
-            Log.LogErrorFromException (e, true);
+            MergedManifest = manifestItem;
 
             break;
           }
         }
 
+        if (MergedManifest == null)
+        {
+          Log.LogError ("Could not find 'primary' manifest in provided list of project manifests. Expected: " + primaryManifestFullPath);
+
+          return false;
+        }
+
         // 
-        // Process other 'library' manifests merging required metadata.
+        // Sanity check all manifests to ensure that there's not another which defines <application> that's not 'primary'.
+        // 
+
+        ITaskItem applicationManifest = null;
+
+        foreach (ITaskItem manifestItem in ProjectManifests)
+        {
+          AndroidManifestDocument androidManifestDocument = new AndroidManifestDocument ();
+
+          androidManifestDocument.Load (manifestItem.GetMetadata ("FullPath"));
+
+          if (androidManifestDocument.IsApplication)
+          {
+            if (applicationManifest == null)
+            {
+              applicationManifest = manifestItem;
+
+              break;
+            }
+            else
+            {
+              Log.LogError ("Found multiple AndroidManifest files which define an <application> node.");
+
+              return false;
+            }
+          }
+        }
+
+        if ((applicationManifest != null) && (applicationManifest != MergedManifest))
+        {
+          Log.LogError ("Specified project manifest does not define an <application> node.");
+
+          return false;
+        }
+
+        // 
+        // Process other 'third-party' manifests merging required metadata.
         // 
 
         if (MergedManifest != null)
@@ -123,17 +163,21 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
           extraResourcePaths.Add (MergedManifest.GetMetadata ("IncludeResourceDirectories"));
 
-          foreach (ITaskItem item in Manifests)
+          foreach (ITaskItem item in ProjectManifests)
           {
-            if (item.GetMetadata ("FullPath") != MergedManifest.GetMetadata ("FullPath"))
+            AndroidManifestDocument androidManifestDocument = new AndroidManifestDocument ();
+
+            androidManifestDocument.Load (item.GetMetadata ("FullPath"));
+
+            if (item == MergedManifest)
             {
-              AndroidManifestDocument itemManifest = new AndroidManifestDocument ();
-
-              itemManifest.Load (item.GetMetadata ("FullPath"));
-
-              if (!extraPackages.Contains (itemManifest.PackageName))
+              PackageName = androidManifestDocument.PackageName;
+            }
+            else
+            {
+              if (!extraPackages.Contains (androidManifestDocument.PackageName))
               {
-                extraPackages.Add (itemManifest.PackageName);
+                extraPackages.Add (androidManifestDocument.PackageName);
               }
 
               if (!extraResourcePaths.Contains (item.GetMetadata ("IncludeResourceDirectories")))
@@ -146,9 +190,9 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
           MergedManifest.SetMetadata ("ExtraPackages", String.Join (":", extraPackages.ToArray ()));
 
           MergedManifest.SetMetadata ("IncludeResourceDirectories", String.Join (";", extraResourcePaths.ToArray ()));
-        }
 
-        return true;
+          return true;
+        }
       }
       catch (Exception e)
       {

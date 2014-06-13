@@ -104,10 +104,12 @@
     </PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PostBuildEvent>copy /y /b "$(TargetDir)$(TargetName).exe" "$(ProjectDir)..\..\bin\$(TargetName).exe"
-copy /y /b "$(TargetDir)$(TargetName).pdb" "$(ProjectDir)..\..\bin\$(TargetName).pdb"
+    <PostBuildEvent>xcopy /f /y "$(TargetDir)$(TargetName).exe" "$(ProjectDir)..\..\bin\*"
+xcopy /f /y "$(TargetDir)$(TargetName).pdb" "$(ProjectDir)..\..\bin\*"
 rmdir "$(ProjectDir)$(OutDir)..\..\scripts\" /s /q
-"$(TargetPath)" --template-dir "$(ProjectDir)..\..\scripts" --export-dir "$(ProjectDir)$(OutDir)..\..\scripts" --vs-version 2010 --vs-version 2012 --vs-version 2013</PostBuildEvent>
+
+"$(TargetPath)" --template-dir "$(ProjectDir)..\..\scripts" --export-dir "$(ProjectDir)$(OutDir)..\..\scripts" --vs-version 2010 --vs-version 2012
+</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

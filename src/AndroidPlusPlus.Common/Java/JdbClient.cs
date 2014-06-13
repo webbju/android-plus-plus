@@ -295,20 +295,27 @@ namespace AndroidPlusPlus.Common
 
     public void ProcessStdout (object sendingProcess, DataReceivedEventArgs args)
     {
-      m_lastOperationTimestamp = Environment.TickCount;
-
-      if (!string.IsNullOrEmpty (args.Data))
+      try
       {
-        LoggingUtils.Print (string.Format ("[JdbClient] ProcessStdout: {0}", args.Data));
+        m_lastOperationTimestamp = Environment.TickCount;
 
-        // 
-        // Simplistic exception handling.
-        // 
-
-        if (args.Data.Contains ("Exception occurred:"))
+        if (!string.IsNullOrEmpty (args.Data))
         {
-          Continue ();
+          LoggingUtils.Print (string.Format ("[JdbClient] ProcessStdout: {0}", args.Data));
+
+          // 
+          // Simplistic exception handling.
+          // 
+
+          if (args.Data.Contains ("Exception occurred:"))
+          {
+            Continue ();
+          }
         }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
       }
     }
 
@@ -318,11 +325,18 @@ namespace AndroidPlusPlus.Common
 
     public void ProcessStderr (object sendingProcess, DataReceivedEventArgs args)
     {
-      m_lastOperationTimestamp = Environment.TickCount;
-
-      if (!string.IsNullOrEmpty (args.Data))
+      try
       {
-        LoggingUtils.Print (string.Format ("[JdbClient] ProcessStderr: {0}", args.Data));
+        m_lastOperationTimestamp = Environment.TickCount;
+
+        if (!string.IsNullOrEmpty (args.Data))
+        {
+          LoggingUtils.Print (string.Format ("[JdbClient] ProcessStderr: {0}", args.Data));
+        }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
       }
     }
 
@@ -332,17 +346,24 @@ namespace AndroidPlusPlus.Common
 
     public void ProcessExited (object sendingProcess, EventArgs args)
     {
-      m_lastOperationTimestamp = Environment.TickCount;
-
-      LoggingUtils.Print (string.Format ("[JdbClient] ProcessExited: {0}", args));
-
-      // 
-      // If we're waiting on a synchronous command, signal a finish to process termination.
-      // 
-
-      if (m_syncCommandLock != null)
+      try
       {
-        m_syncCommandLock.Set ();
+        m_lastOperationTimestamp = Environment.TickCount;
+
+        LoggingUtils.Print (string.Format ("[JdbClient] ProcessExited: {0}", args));
+
+        // 
+        // If we're waiting on a synchronous command, signal a finish to process termination.
+        // 
+
+        if (m_syncCommandLock != null)
+        {
+          m_syncCommandLock.Set ();
+        }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
       }
     }
 

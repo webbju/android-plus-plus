@@ -215,7 +215,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     protected override string GenerateCommandLineFromProps (ITaskItem source)
     {
       // 
-      // Build a commandline based on parsing switches from the registered property sheet, and any additional flags.
+      // Build a command-line based on parsing switches from the registered property sheet, and any additional flags.
       // 
 
       StringBuilder builder = new StringBuilder (GccUtilities.CommandLineLength);
@@ -255,7 +255,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
       if (Sources.Length != 1)
       {
-        Log.LogError ("Expected single input, got: " + Sources.Length + "'.", MessageImportance.High);
+        Log.LogError ("Expected single input, got: " + Sources.Length + "'.");
 
         validParameters = false;
       }
@@ -266,7 +266,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
         if (string.IsNullOrEmpty (sourcePath) || !File.Exists (sourcePath))
         {
-          Log.LogError ("Could locate expected input: '" + sourcePath + "'.", MessageImportance.High);
+          Log.LogError ("Could locate expected input: '" + sourcePath + "'.");
 
           validParameters = false;
         }

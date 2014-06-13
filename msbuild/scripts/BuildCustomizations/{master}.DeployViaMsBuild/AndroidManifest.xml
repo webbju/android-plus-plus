@@ -41,7 +41,20 @@
     -->
 
     <!--
-    PrintAndroidSpecificData
+      ProjectManifest
+    -->
+
+    <StringProperty 
+      Name="ProjectManifest" 
+      DisplayName="Project Manifest" 
+      Description="Default (primary) 'AndroidManifest.xml' for the project. For applications this is a manifest which specifies an &lt;application%gt; tag."
+      Category="General"
+      IncludeInCommandLine="false"
+      Subtype="file"
+    />
+
+    <!--
+      PrintAndroidSpecificData
     -->
 
     <BoolProperty
@@ -53,7 +66,7 @@
     />
 
     <!--
-    ConfigurationsToInclude
+      ConfigurationsToInclude
     -->
 
     <StringProperty
@@ -65,7 +78,7 @@
     />
 
     <!--
-    DeviceAssetsToInclude
+      DeviceAssetsToInclude
     -->
 
     <StringProperty
@@ -77,7 +90,7 @@
     />
 
     <!--
-    OverwriteExistingFiles
+      OverwriteExistingFiles
     -->
 
     <BoolProperty
@@ -88,7 +101,7 @@
     />
 
     <!--
-    DeviceAssetsToInclude
+      DeviceAssetsToInclude
     -->
 
     <IntProperty
@@ -101,7 +114,7 @@
     />
 
     <!--
-    IncludeJarOrZip
+      IncludeJarOrZip
     -->
 
     <StringListProperty
@@ -115,7 +128,7 @@
     />
 
     <!--
-    CreatePackageDirectoriesUnderOutput
+      CreatePackageDirectoriesUnderOutput
     -->
 
     <BoolProperty
@@ -127,7 +140,7 @@
     />
 
     <!--
-    UpdateExistingPackages
+      UpdateExistingPackages
     -->
 
     <BoolProperty
@@ -139,7 +152,7 @@
     />
 
     <!--
-    Verbose
+      Verbose
     -->
 
     <BoolProperty
@@ -150,7 +163,7 @@
     />
 
     <!--
-    CreateExistingResourceIds
+      CreateExistingResourceIds
     -->
 
     <BoolProperty
@@ -161,7 +174,7 @@
     />
 
     <!--
-    RequireSuggestedLocalisationResources
+      RequireSuggestedLocalisationResources
     -->
 
     <BoolProperty
@@ -173,7 +186,7 @@
     />
 
     <!--
-    IncludeRawAssetsDirectory
+      IncludeRawAssetsDirectory
     -->
 
     <StringProperty
@@ -187,7 +200,7 @@
     />
 
     <!--
-    ProguardOptionsOutputFile
+      ProguardOptionsOutputFile
     -->
 
     <StringProperty
@@ -201,7 +214,7 @@
     />
 
     <!--
-    ApkOutputFile
+      ApkOutputFile
     -->
 
     <StringProperty
@@ -216,7 +229,7 @@
     />
 
     <!--
-    IncludeExistingPackages
+      IncludeExistingPackages
     -->
 
     <StringListProperty
@@ -230,7 +243,7 @@
     />
 
     <!--
-    ResourceConstantsOutputDirectory
+      ResourceConstantsOutputDirectory
     -->
 
     <StringProperty
@@ -244,7 +257,7 @@
     />
 
     <!--
-    PublicResourceDefintionsOutputFile
+      PublicResourceDefintionsOutputFile
     -->
 
     <StringProperty
@@ -258,7 +271,7 @@
     />
 
     <!--
-    IncludeResourceDirectories
+      IncludeResourceDirectories
     -->
 
     <StringListProperty
@@ -272,7 +285,7 @@
     />
 
     <!--
-    NoNotCompressExtensions
+      NoNotCompressExtensions
     -->
 
     <StringListProperty
@@ -286,7 +299,7 @@
     />
 
     <!--
-    DebugMode
+      DebugMode
     -->
 
     <BoolProperty
@@ -298,7 +311,7 @@
     />
 
     <!--
-    InsertManifestMinSdkVersion
+      InsertManifestMinSdkVersion
     -->
 
     <EnumProperty
@@ -328,7 +341,7 @@
     </EnumProperty>
 
     <!--
-    InsertManifestMaxSdkVersion
+      InsertManifestMaxSdkVersion
     -->
 
     <EnumProperty
@@ -358,7 +371,7 @@
     </EnumProperty>
 
     <!--
-    InsertManifestVersionCode
+      InsertManifestVersionCode
     -->
 
     <StringProperty
@@ -371,7 +384,7 @@
     />
 
     <!--
-    InsertManifestVersionName
+      InsertManifestVersionName
     -->
 
     <StringProperty
@@ -384,7 +397,7 @@
   />
 
     <!--
-    MaxResVersion
+      MaxResVersion
     -->
 
     <StringProperty
@@ -397,7 +410,7 @@
     />
 
     <!--
-    CustomPackage
+      CustomPackage
     -->
 
     <StringProperty
@@ -410,7 +423,7 @@
     />
 
     <!--
-    ExtraPackages
+      ExtraPackages
     -->
 
     <StringProperty
@@ -423,7 +436,7 @@
     />
 
     <!--
-    GenerateDependencies
+      GenerateDependencies
     -->
 
     <BoolProperty
@@ -435,7 +448,7 @@
     />
 
     <!--
-    AutoAddOverlay
+      AutoAddOverlay
     -->
 
     <BoolProperty
@@ -447,7 +460,7 @@
     />
 
     <!--
-    PreferredConfigurations
+      PreferredConfigurations
     -->
 
     <StringProperty
@@ -460,7 +473,7 @@
     />
 
     <!--
-    RenameManifestPackage
+      RenameManifestPackage
     -->
 
     <StringProperty
@@ -473,7 +486,7 @@
     />
 
     <!--
-    RenameInstrumentationTargetPackage
+      RenameInstrumentationTargetPackage
     -->
 
     <StringProperty
@@ -486,7 +499,7 @@
     />
 
     <!--
-    StringProductVariant
+      StringProductVariant
     -->
 
     <StringProperty
@@ -499,7 +512,7 @@
     />
 
     <!--
-    UseUtf16Encoding
+      UseUtf16Encoding
     -->
 
     <BoolProperty
@@ -511,7 +524,7 @@
     />
 
     <!--
-    NonConstantResourceId
+      NonConstantResourceId
     -->
 
     <BoolProperty
@@ -523,7 +536,7 @@
     />
 
     <!--
-    ErrorOnFailedManifestInsert
+      ErrorOnFailedManifestInsert
     -->
 
     <BoolProperty
@@ -535,7 +548,7 @@
     />
 
     <!--
-    OutputTextSymbols
+      OutputTextSymbols
     -->
 
     <BoolProperty
@@ -547,7 +560,7 @@
     />
 
     <!--
-    IgnoreAssetPatterns
+      IgnoreAssetPatterns
     -->
 
     <StringProperty
@@ -560,7 +573,7 @@
     />
 
     <!--
-    IncludeRawDirectories (needs to be last items in command line)
+      IncludeRawDirectories (needs to be last items in command line)
     -->
 
     <StringListProperty
@@ -573,7 +586,7 @@
     />
 
     <!--
-    OutputCommandLine
+      OutputCommandLine
     -->
 
     <BoolProperty
@@ -583,7 +596,7 @@
     />
 
     <!--
-    TrackerLogDirectory
+      TrackerLogDirectory
     -->
 
     <StringProperty

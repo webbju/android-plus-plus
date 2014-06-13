@@ -57,18 +57,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       NativeMemoryBytes = new CLangDebuggeeMemoryBytes (this);
 
-      List<string> libraryPaths = new List<string> ();
-
-      if (Engine.LaunchConfiguration.ContainsKey ("LibraryPaths"))
-      {
-        string [] paths = Engine.LaunchConfiguration ["LibraryPaths"].Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-
-        foreach (string path in paths)
-        {
-          libraryPaths.Add (StringUtils.ConvertPathWindowsToPosix (path));
-        }
-      }
-
       // 
       // Evaluate the most up-to-date deployment of GDB provided in the registered SDK. Look at the target device and determine architecture.
       // 
@@ -120,7 +108,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           continue;
         }
 
-        m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, gdbMatches [i], libraryPaths.ToArray ());
+        m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, gdbMatches [i]);
 
         break;
       }

@@ -25,7 +25,7 @@
 
     <AndroidApk>
 
-      <UnsignedOutputFile Condition="'%(AndroidApk.UnsignedOutputFile)' == ''">$(IntDir)bin\$(ProjectName)-$(Configuration)-Unsigned.apk</UnsignedOutputFile>
+      <UnsignedOutputFile Condition="'%(AndroidApk.UnsignedOutputFile)' == ''">$(IntDir)bin\$(ProjectName)-$(Configuration.Replace(' ','_'))-Unsigned.apk</UnsignedOutputFile>
 
       <IntermediateDirectory Condition="'%(AndroidApk.IntermediateDirectory)' == ''">$(IntDir)raw</IntermediateDirectory>
 

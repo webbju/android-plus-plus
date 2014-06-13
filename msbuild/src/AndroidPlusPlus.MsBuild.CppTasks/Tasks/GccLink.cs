@@ -57,7 +57,8 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
       // 
       // We require GCC to behave more like Visual Studio in terms of library dependencies.
       // - Here we filter object file and specified libraries so that they are contained with in -Wl,--start-group/--end-group
-      // - This tends to fix cyclic dependencencies as undefined symbols are continually re-evaualted for each library in turn.
+      // - This tends to fix cyclic dependencies as undefined symbols are continually re-evaluated for each library in turn.
+      // - Also accommodate use of -Wl,--whole-archive/-Wl,--no-whole-archive to ensure these are batched properly.
       // 
 
       try
@@ -71,6 +72,18 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
           if (arg.StartsWith ("-l"))
           {
             sourceLibraryDependencies.Append (arg + " ");
+          }
+          else if (arg.Contains ("lib") && arg.Contains (".a"))
+          {
+            sourceLibraryDependencies.Append (arg + " ");
+          }
+          else if (arg.Equals ("-Wl,--whole-archive") || arg.Equals ("-Wl,--no-whole-archive"))
+          {
+            sourceLibraryDependencies.Append (arg + " ");
+          }
+          else if (arg.Equals ("-Wl,--start-group") || arg.Equals ("-Wl,--end-group"))
+          {
+            // Skip these duplicate group being/end markers. We're grouping everything anyway.
           }
           else
           {
@@ -95,6 +108,15 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
       }
 
       return responseFileCommands.ToString ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override string GetResponseFileSwitch (string responseFilePath)
+    {
+      return '@' + GccUtilities.ConvertPathWindowsToPosix (responseFilePath);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

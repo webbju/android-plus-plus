@@ -59,7 +59,7 @@
     />
 
     <!-- 
-      Flag sources for incremental build 
+      Flag sources for incremental build.
     -->
 
     <ItemGroup>
@@ -68,21 +68,49 @@
       </AndroidJava>
     </ItemGroup>
 
-    <!-- 
-      Compile all explicit and generated .java sources. Outputs a list of absolute locations to generated .class files. 
+    <!--
+      Collate any registered .jar archives to be automatically referenced in the compilation class path.
+      - Segment class paths for 'Dalvik Executable' processing as some libraries are designed to skip this step.
     -->
 
     <ItemGroup Condition="'@(AndroidJava)' != ''">
-      <AndroidJavaJars Include="@(AndroidJava)" Condition="'%(Extension)' =='.jar'" />
-      <AndroidJava Remove="@(AndroidJavaJars)" />
+      <_ClassPathJars Include="@(AndroidJava)" Condition="'%(Extension)' =='.jar'" />
+      <_DexClassPathJars Include="@(AndroidJava)" Condition="('%(Extension)' =='.jar' AND '%(DisableDexExport)' == 'false')" />
+      <AndroidJava Remove="@(_ClassPathJars)" />
       <AndroidJava>
-        <ClassPaths>@(AndroidJavaJars->Metadata('FullPath')->Distinct());%(AndroidJava.ClassPaths);</ClassPaths>
+        <ClassPaths>@(_ClassPathJars->Metadata('FullPath')->Distinct());%(AndroidJava.ClassPaths);</ClassPaths>
+        <DexClassPaths>@(_DexClassPathJars->Metadata('FullPath')->Distinct());%(AndroidJava.DexClassPaths);</DexClassPaths>
       </AndroidJava>
     </ItemGroup>
 
+    <!--
+      Pre-process AndroidManifest generated sources first. This allows us to segment which outputs should be archived.
+    -->
+
     <JavaCompile
       BuildingInIDE="$(BuildingInsideVisualStudio)"
-      Condition="'@(AndroidJava)' != ''"
+      Condition="('@(AndroidJava)' != '' and '%(DisableJarExport)' == 'true')"
+      Sources="@(AndroidJava)"
+      TrackerLogDirectory="%(AndroidJava.TrackerLogDirectory)"
+      TrackFileAccess="$(TrackFileAccess)"
+      MinimalRebuildFromTracking="%(AndroidJava.MinimalRebuildFromTracking)"
+      OutputCommandLine="%(AndroidJava.OutputCommandLine)"
+      ToolPath="$(ANDROID_PLUS_PLUS)\msbuild\toolchain\bin"
+      ToolExe="app-javac-dependencies.exe"
+      JavaHomeDir="$(JavaHomeDir)"
+      PropertiesFile="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml">
+      <Output TaskParameter="OutputFiles" ItemName="AndroidJavaOutputPreprocessedClassFiles" />
+      <Output TaskParameter="OutputClassPaths" ItemName="AndroidJavaOutputPreprocessedClassPaths" />
+      <Output TaskParameter="SkippedExecution" PropertyName="AndroidJavaPreprocessSkippedExecution" />
+    </JavaCompile>
+    
+    <!-- 
+      Compile all other explicit sources. Outputs a list of absolute locations to generated .class files to be archived. 
+    -->
+
+    <JavaCompile
+      BuildingInIDE="$(BuildingInsideVisualStudio)"
+      Condition="('@(AndroidJava)' != '' and '%(DisableJarExport)' != 'true')"
       Sources="@(AndroidJava)"
       TrackerLogDirectory="%(AndroidJava.TrackerLogDirectory)"
       TrackFileAccess="$(TrackFileAccess)"
@@ -99,6 +127,7 @@
 
     <!--
       When requested, archive the exported class files. This is only usually relevant for building library projects.
+      - Ignore any per-Manifest resource classes (i.e. R.class, R$styleable.class, etc) as these can cause DEX conflicts.
     -->
 
     <JavaArchive
@@ -118,6 +147,12 @@
       <Output TaskParameter="SkippedExecution" PropertyName="AndroidJavaArchiveSkippedExecution" />
     </JavaArchive>
 
+    <Message
+      Condition="'@(AndroidJavaOutputJarFiles)' != ''"
+      Text="$(MSBuildProjectFile) -&gt; @(AndroidJavaOutputJarFiles)"
+      Importance="High"
+    />
+
   </Target>
 
   <!--
@@ -130,13 +165,12 @@
     Name="ComputeAndroidJavaOutput"
     DependsOnTargets="AndroidJava">
 
+    <!--
+      Pass-through required 'class paths' to be DEXed.
+    -->
+
     <ItemGroup Condition="'@(AndroidJavaOutputClassPaths)' != ''">
-      <AndroidJavaInputClassPaths Include="%(AndroidJava.ClassPaths)" />
-      <AndroidJavaDistinctClassPaths Include="@(AndroidJavaInputClassPaths->ClearMetadata()->Distinct());
-        @(AndroidJavaOutputClassPaths->ClearMetadata()->Distinct());
-        @(AndroidJavaJars->ClearMetadata()->Distinct());"
-      />
-      <AndroidDalvik Include="@(AndroidJavaDistinctClassPaths->ClearMetadata()->Distinct())" />
+      <AndroidDalvik Include="%(AndroidJava.DexClassPaths)" />
     </ItemGroup>
 
   </Target>
@@ -161,7 +195,7 @@
 
     <Delete Files="@(CleanAndroidJavaCacheFiles)" />
 
-    <RemoveDir Directories="%(CleanAndroidJavaCacheFiles.RecursiveDir)" />
+    <RemoveDir Directories="%(CleanAndroidJavaCacheFiles.RelativeDir)" />
 
   </Target>
 

@@ -81,7 +81,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (requestedThreadId != CurrentThreadId)
       {
-        m_debugger.GdbClient.SendCommand ("-thread-selected " + requestedThreadId);
+        m_debugger.GdbClient.SendCommand ("-thread-select " + requestedThreadId);
 
         CurrentThreadId = requestedThreadId;
       }
@@ -97,7 +97,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (module == null)
       {
-        throw new ArgumentNullException ();
+        throw new ArgumentNullException ("module");
       }
 
       lock (m_debugModules)
@@ -154,7 +154,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (module == null)
       {
-        throw new ArgumentNullException ();
+        throw new ArgumentNullException ("module");
       }
 
       lock (m_debugModules)
@@ -178,7 +178,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (thread == null)
       {
-        throw new ArgumentNullException ();
+        throw new ArgumentNullException ("thread");
       }
 
       lock (m_debugThreads)
@@ -237,7 +237,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (thread == null)
       {
-        throw new ArgumentNullException ();
+        throw new ArgumentNullException ("thread");
       }
 
       lock (m_debugThreads)

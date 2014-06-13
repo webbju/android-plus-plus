@@ -11,6 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "native-library-a", "native-
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "native-library-b", "native-library-b\native-library-b.vcxproj", "{1596F6E9-F058-4994-B086-923FBC3FD158}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "native-library-jni", "native-library-jni\native-library-jni.vcxproj", "{4A09B316-A112-4B4B-B8DF-AB16867DDEBF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Android++ = Debug|Android++
@@ -59,6 +61,14 @@ Global
 		{1596F6E9-F058-4994-B086-923FBC3FD158}.Release|Android++.Build.0 = Release|Android++
 		{1596F6E9-F058-4994-B086-923FBC3FD158}.Release|Win32.ActiveCfg = Release|Win32
 		{1596F6E9-F058-4994-B086-923FBC3FD158}.Release|Win32.Build.0 = Release|Win32
+		{4A09B316-A112-4B4B-B8DF-AB16867DDEBF}.Debug|Android++.ActiveCfg = Debug|Android++
+		{4A09B316-A112-4B4B-B8DF-AB16867DDEBF}.Debug|Android++.Build.0 = Debug|Android++
+		{4A09B316-A112-4B4B-B8DF-AB16867DDEBF}.Debug|Win32.ActiveCfg = Debug|Win32
+		{4A09B316-A112-4B4B-B8DF-AB16867DDEBF}.Debug|Win32.Build.0 = Debug|Win32
+		{4A09B316-A112-4B4B-B8DF-AB16867DDEBF}.Release|Android++.ActiveCfg = Release|Android++
+		{4A09B316-A112-4B4B-B8DF-AB16867DDEBF}.Release|Android++.Build.0 = Release|Android++
+		{4A09B316-A112-4B4B-B8DF-AB16867DDEBF}.Release|Win32.ActiveCfg = Release|Win32
+		{4A09B316-A112-4B4B-B8DF-AB16867DDEBF}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

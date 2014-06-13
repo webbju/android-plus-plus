@@ -126,8 +126,6 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       string debuggerKeepAppData = EvaluateProjectProperty (projectProperties, "AndroidPlusPlusDebugger", "DebuggerKeepAppData");
 
-      string debuggerLibraryPaths = EvaluateProjectProperty (projectProperties, "AndroidPlusPlusDebugger", "DebuggerLibraryPaths");
-
       if (string.IsNullOrEmpty (debuggerTargetApk))
       {
         debuggerConfiguration = "Custom";
@@ -187,6 +185,23 @@ namespace AndroidPlusPlus.VsDebugLauncher
       if (!Directory.Exists (androidSdkBuildToolsPath))
       {
         throw new DirectoryNotFoundException ("Could not locate Android SDK build-tools. Expected " + androidSdkBuildToolsPath);
+      }
+
+      if (string.IsNullOrEmpty (debuggerTargetApk))
+      {
+        throw new FileNotFoundException ("No target APK path provided.");
+      }
+      else
+      {
+        if (!Path.IsPathRooted (debuggerTargetApk))
+        {
+          debuggerTargetApk = Path.Combine (projectProjectDir, debuggerTargetApk);
+        }
+
+        if (!File.Exists (debuggerTargetApk))
+        {
+          throw new FileNotFoundException ("Could not find required target .apk. Expected: " + debuggerTargetApk);
+        }
       }
 
       // 
@@ -296,8 +311,6 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       launchConfig ["OpenGlTrace"] = debuggerOpenGlTrace;
 
-      launchConfig ["LibraryPaths"] = debuggerLibraryPaths;
-
       debugLaunchSettings.Options = launchConfig.ToString ();
 
       if (shouldAttach)
@@ -308,11 +321,6 @@ namespace AndroidPlusPlus.VsDebugLauncher
       }
       else
       {
-        if (string.IsNullOrEmpty (debuggerTargetApk) || !File.Exists (debuggerTargetApk))
-        {
-          throw new FileNotFoundException ("Could not find required target .apk. Expected: " + debuggerTargetApk);
-        }
-
         debugLaunchSettings.Executable = debuggerTargetApk;
 
         debugLaunchSettings.LaunchOperation = DebugLaunchOperation.Custom;
@@ -371,11 +379,26 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       if (projectProperties.TryGetValue ("ProjectName", out startupProjectName))
       {
+        // 
+        // Construct a listing of all the sub-projects in this solution.
+        // 
+
+        List <Project> solutionProjects = new List <Project> ();
+
         foreach (Project project in solution.Projects)
+        {
+          solutionProjects.Add (project);
+
+          GetProjectSubprojects (project, ref solutionProjects);
+        }
+
+        foreach (Project project in solutionProjects)
         {
           if (project.Name.Equals (startupProjectName))
           {
             startupProject = project;
+
+            break;
           }
         }
       }
@@ -395,13 +418,32 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #if VS2010
+    public static void GetProjectSubprojects (Project project, ref List <Project> projectListing)
+    {
+      foreach (ProjectItem item in project.ProjectItems)
+      {
+        if (item.SubProject != null)
+        {
+          projectListing.Add (item.SubProject);
+
+          GetProjectSubprojects (item.SubProject, ref projectListing);
+        }
+      }
+    }
+#endif
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#if VS2010
     public static VCConfiguration GetActiveConfiguration (Project project)
     {
       LoggingUtils.PrintFunction ();
 
       if (project == null)
       {
-        throw new ArgumentNullException ();
+        throw new ArgumentNullException ("project");
       }
 
       VCProject vcProject = project.Object as VCProject;

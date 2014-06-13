@@ -1,1 +1,7 @@
-.\bin\AndroidPlusPlus.MsBuild.Exporter.exe --template-dir .\scripts\ --vs-version 2013
+:: 
+:: Bootstrap MSBuild support for Visual Studio 2013
+:: 
+
+set ANDROID_PLUS_PLUS=%CD%\..\
+
+"%ANDROID_PLUS_PLUS%\msbuild\bin\AndroidPlusPlus.MsBuild.Exporter.exe" --template-dir "%ANDROID_PLUS_PLUS%/msbuild/scripts/" --vs-version 2013

@@ -87,7 +87,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     {
       ToolWindowPane gdbConsoleWindow = m_package.FindToolWindow (typeof (GdbConsoleWindow), 0, true);
 
-      if ((gdbConsoleWindow == null) || (gdbConsoleWindow.Frame == null))
+      if ((null == gdbConsoleWindow) || (null == gdbConsoleWindow.Frame))
       {
         throw new NotSupportedException ("Could not create GdbConsole window");
       }

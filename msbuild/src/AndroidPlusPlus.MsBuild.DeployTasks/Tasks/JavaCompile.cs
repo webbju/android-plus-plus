@@ -171,8 +171,16 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
               m_outputClassSourceFiles.Add (classFileItem);
             }
           }
+          else if (singleLine.Contains ("errors"))
+          {
+            Log.LogError (singleLine);
+          }
           else
           {
+            // 
+            // TODO: Process errors and warnings.
+            // 
+
             LogEventsFromTextOutput (string.Format ("[{0}] {1}", ToolName, singleLine), MessageImportance.High);
           }
         }
@@ -190,7 +198,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     protected override string GenerateCommandLineFromProps (ITaskItem source)
     {
       // 
-      // Build a commandline based on parsing switches from the registered property sheet, and any additional flags.
+      // Build a command-line based on parsing switches from the registered property sheet, and any additional flags.
       // 
 
       StringBuilder builder = new StringBuilder (GccUtilities.CommandLineLength);

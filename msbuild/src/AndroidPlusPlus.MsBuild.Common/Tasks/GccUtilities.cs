@@ -89,6 +89,11 @@ namespace AndroidPlusPlus.MsBuild.Common
       // Add quotes around a string, if they are needed.
       // 
 
+      if (arg.StartsWith ("\""))
+      {
+        return arg;
+      }
+
       var match = arg.IndexOfAny (new char [] { ' ', '\t', ';', '&' }) != -1;
 
       if (!match)

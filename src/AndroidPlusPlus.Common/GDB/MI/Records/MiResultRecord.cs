@@ -32,9 +32,14 @@ namespace AndroidPlusPlus.Common
 
     public MiResultRecord (uint token, string clazz, List<MiResultValue> results)
     {
-      if (string.IsNullOrEmpty (clazz) || (results == null))
+      if (string.IsNullOrWhiteSpace (clazz))
       {
-        throw new ArgumentNullException ();
+        throw new ArgumentNullException ("clazz");
+      }
+
+      if (results == null)
+      {
+        throw new ArgumentNullException ("results");
       }
 
       Token = token;

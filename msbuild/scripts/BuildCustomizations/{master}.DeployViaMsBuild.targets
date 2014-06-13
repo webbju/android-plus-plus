@@ -29,13 +29,18 @@
 
   <PropertyGroup>
 
-    <AfterBuildCompileTargets Condition="'$(ConfigurationType)'!='Utility'">$(AfterBuildCompileTargets)</AfterBuildCompileTargets>
+    <BuildLibTargets Condition="'$(ConfigurationType)'!='Utility'">
+      $(BuildLibTargets);
+      AndroidJava;
+    </BuildLibTargets>
 
-    <BuildLinkTargets Condition="'$(ConfigurationType)' == 'Application'">
+    <BuildLinkTargets Condition="'$(ConfigurationType)'!='Utility'">
       $(BuildLinkTargets);
       AndroidApk;
       AndroidApkSign;
     </BuildLinkTargets>
+
+    <AfterBuildCompileTargets Condition="'$(ConfigurationType)'!='Utility'">$(AfterBuildCompileTargets)</AfterBuildCompileTargets>
 
     <BuildCompileAction>$(CommonBuildOnlyTargets);$(BeforeBuildCompileTargets);$(BuildCompileTargets);$(AfterBuildCompileTargets)</BuildCompileAction>
 

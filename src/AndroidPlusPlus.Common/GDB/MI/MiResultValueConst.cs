@@ -34,14 +34,14 @@ namespace AndroidPlusPlus.Common
     public MiResultValueConst (string variable, string value)
       : base (variable)
     {
-      if (variable == null)
+      if (string.IsNullOrWhiteSpace (variable))
       {
-        throw new ArgumentNullException ();
+        throw new ArgumentNullException ("variable");
       }
 
       if (value == null)
       {
-        throw new ArgumentNullException ();
+        throw new ArgumentNullException ("value");
       }
 
       m_valueList = new List<MiResultValue> ();

@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Xml;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -132,7 +133,7 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
           case "--vs-version":
           {
-            string [] versions = args [++i].Split (';');
+            string [] versions = args [++i].Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
 
             if (versions.Length == 0)
             {
@@ -182,7 +183,7 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
                   if (!Directory.Exists (msBuildInstallationDir))
                   {
-                    throw new DirectoryNotFoundException ("Could not locate required MSBuild platforms directory. This should have been installed with VS2010. Tried: " + msBuildInstallationDir);
+                    throw new DirectoryNotFoundException ("Could not locate required MSBuild platforms directory. This should have been installed with VS2012. Tried: " + msBuildInstallationDir);
                   }
 
                   if (!s_exportDirectories.Contains (msBuildInstallationDir))
@@ -208,7 +209,7 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
                   if (!Directory.Exists (msBuildInstallationDir))
                   {
-                    throw new DirectoryNotFoundException ("Could not locate required MSBuild platforms directory. This should have been installed with VS2010. Tried: " + msBuildInstallationDir);
+                    throw new DirectoryNotFoundException ("Could not locate required MSBuild platforms directory. This should have been installed with VS2013. Tried: " + msBuildInstallationDir);
                   }
 
                   if (!s_exportDirectories.Contains (msBuildInstallationDir))
@@ -388,19 +389,56 @@ namespace AndroidPlusPlus.MsBuild.Exporter
           File.Copy (file, newFileName, true);
 
           // 
-          // Process file contents with same text subsitution settings too.
+          // Process file contents with same text substitution settings too.
           // 
 
-          if ((Path.GetExtension (newFileName) != ".dll") && (Path.GetExtension (newFileName) != ".exe" ))
+          switch (Path.GetExtension (newFileName))
           {
-            StringBuilder fileContents = new StringBuilder (File.ReadAllText (newFileName));
-
-            foreach (KeyValuePair<string, string> keyPair in textSub)
+            case ".dll":
+            case ".exe":
             {
-              fileContents.Replace (keyPair.Key, keyPair.Value);
+              break;
             }
 
-            File.WriteAllText (newFileName, fileContents.ToString ());
+            default:
+            {
+              StringBuilder fileContents = new StringBuilder (File.ReadAllText (newFileName));
+
+              foreach (KeyValuePair<string, string> keyPair in textSub)
+              {
+                fileContents.Replace (keyPair.Key, keyPair.Value);
+              }
+
+              File.WriteAllText (newFileName, fileContents.ToString ());
+
+              break;
+            }
+          }
+
+          // 
+          // Validate the written file exists, and is proper.
+          // 
+
+          try
+          {
+            switch (Path.GetExtension (newFileName))
+            {
+              case ".xml":
+              case ".xaml":
+              case ".props":
+              case ".targets":
+              {
+                XmlDocument xmlDocument = new XmlDocument ();
+
+                xmlDocument.Load (newFileName);
+
+                break;
+              }
+            }
+          }
+          catch (Exception e)
+          {
+            throw new InvalidOperationException ("File validation failed: " + newFileName + ". Exception: " + e.Message);
           }
         }
       }

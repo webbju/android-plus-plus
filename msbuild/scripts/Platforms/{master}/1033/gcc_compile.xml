@@ -28,6 +28,7 @@
     <Category Name="Optimization" DisplayName="Optimization" />
     <Category Name="Preprocessor" DisplayName="Preprocessor" />
     <Category Name="Code Generation" DisplayName="Code Generation" />
+    <Category Name="Precompiled Headers" DisplayName="Precompiled Headers" />
     <Category Name="Output Files" DisplayName="Output Files" />
     <Category Name="Advanced" DisplayName="Advanced" />
     <Category Name="Command Line" DisplayName="Command Line" Subtype="CommandLine" />
@@ -76,7 +77,35 @@
       Description="Compile as Assembly Code"
     />
 
+    <EnumValue
+      Name="CompileAsCHeader"
+      Switch="-x c-header"
+      DisplayName="Compile as C Header Code"
+      Description="Compile as C Header Code"
+    />
+
+    <EnumValue
+      Name="CompileAsCppHeader"
+      Switch="-x c++-header"
+      DisplayName="Compile as C++ Header Code"
+      Description="Compile as C++ Header Code"
+    />
+
   </EnumProperty>
+  
+  <!-- 
+    ForcedIncludeFiles
+  -->
+
+  <StringListProperty 
+    Subtype="file" 
+    Name="ForcedIncludeFiles" 
+    DisplayName="Forced Include Files"
+    Description="Process file as if &quot;#include &quot;file&quot;&quot; appeared as the first line of the primary source file.     (-include [path])" 
+    Category="Advanced" 
+    Switch="-include" 
+    Separator=" "
+  />
 
   <!-- 
     AdditionalIncludeDirectories
@@ -136,23 +165,37 @@
     />
 
     <EnumValue
-      Name="EnableDefaultWarnings"
+      Name="Level1"
       Switch=""
-      DisplayName="Enable Default Warnings"
+      DisplayName="Level 1"
       Description="Enables default warnings."
     />
 
     <EnumValue
-      Name="EnableAllWarnings"
+      Name="Level2"
       Switch="-Wall"
-      DisplayName="Enable All Warnings"
+      DisplayName="Level 2"
       Description="Enables all warnings, including those disabled by default."
     />
 
     <EnumValue
-      Name="EnableExtraWarnings"
+      Name="Level3"
+      Switch="-Wall"
+      DisplayName="Level 3"
+      Description="Enables all warnings, and any extra warning flags that are not enabled by -Wall"
+    />
+    
+    <EnumValue
+      Name="Level4"
       Switch="-Wall -Wextra"
-      DisplayName="Enable Extra Warnings"
+      DisplayName="Level 4"
+      Description="Enables all warnings, and any extra warning flags that are not enabled by -Wall"
+    />
+    
+    <EnumValue
+      Name="EnableAllWarnings"
+      Switch="-Wall -Wextra"
+      DisplayName="Enable All Warnings"
       Description="Enables all warnings, and any extra warning flags that are not enabled by -Wall"
     />
 
@@ -384,6 +427,73 @@
   />
 
   <!--
+    ExceptionHandling
+  -->
+  
+  <EnumProperty
+    Name="ExceptionHandling"
+    DisplayName="C++ Exception Handling"
+    Description="Generates extra code needed to propagate exceptions. If you do not specify this option, GCC enables it by default for languages like C++ that normally require exception handling, and disables it for languages like C that do not normally require it."
+    Category="Code Generation">
+
+    <EnumValue
+      Name="Default"
+      Switch=""
+      DisplayName="Default"
+      Description="Allow GCC/Clang determine whether to allow C++ Exceptions."
+    />
+    
+    <EnumValue
+      Name="Disabled"
+      Switch="-fno-exceptions"
+      DisplayName="Disabled"
+      Description="Disable C++ Exceptions."
+    />
+    
+    <EnumValue
+      Name="Enabled"
+      Switch="-fexceptions"
+      DisplayName="Enabled"
+      Description="Enable C++ Exceptions."
+    />
+    
+  </EnumProperty>
+  
+  <!--
+    RuntimeTypeInfo
+  -->
+  
+  <EnumProperty
+    Name="RuntimeTypeInfo"
+    DisplayName="C++ RunTime Type Information (RTTI)"
+    Description="Control generation of information about every class with virtual functions for use by the C++ runtime type identification features ('dynamic_cast' and 'typeid')."
+    Category="Code Generation">
+
+    <EnumValue
+      Name="Default"
+      Switch=""
+      DisplayName="Default"
+      Description="Allow GCC/Clang determine whether to allow C++ RTTI."
+    />
+    
+    <EnumValue
+      Name="Disabled"
+      Switch="-fno-rtti"
+      DisplayName="Disabled"
+      Description="Disable C++ RTTI."
+    />
+    
+    <EnumValue
+      Name="Enabled"
+      Switch="-frtti"
+      DisplayName="Enabled"
+      Description="Enable C++ RTTI."
+    />
+    
+  </EnumProperty>
+  
+  
+  <!--
     UnwindTables
   -->
 
@@ -509,6 +619,66 @@
     Switch="-U"
   />
 
+  <!-- 
+    PrecompiledHeader 
+  -->
+
+  <EnumProperty 
+    Name="PrecompiledHeader" 
+    DisplayName="Precompiled Header" 
+    Description="Create/Use Precompiled Header : Enables creation or use of a precompiled header during the build." 
+    Category="Precompiled Headers" 
+    IncludeInCommandLine="false">
+
+    <EnumValue 
+      Name="Create" 
+      DisplayName="Create" 
+      Description="Instructs the compiler to create a precompiled header file that represents the state of compilation at a certain point."
+      Switch="" 
+    />
+
+    <EnumValue 
+      Name="Use" 
+      DisplayName="Use" 
+      Description="Instructs the compiler to use an existing precompiled header file in the current compilation."
+      Switch="" 
+    />
+
+    <EnumValue 
+      Name="NotUsing" 
+      DisplayName="Not Using Precompiled Headers" 
+      Description="Not using precompiled headers."
+      Switch="" 
+    />
+
+  </EnumProperty>
+
+  <!-- 
+    PrecompiledHeaderFile 
+  -->
+  
+  <StringProperty 
+    Name="PrecompiledHeaderFile" 
+    DisplayName="Precompiled Header File" 
+    Description="Specifies header file name to use when creating or using a precompiled header file." 
+    Category="Precompiled Headers" 
+    Subtype="file" 
+    IncludeInCommandLine="false"
+  />
+
+  <!-- 
+    PrecompiledHeaderOutputFile 
+  -->
+  
+  <StringProperty 
+    Name="PrecompiledHeaderOutputFile" 
+    DisplayName="Precompiled Header Output File" 
+    Description="Specifies the path and/or name of the generated precompiled header file." 
+    Category="Precompiled Headers" 
+    Subtype="file" 
+    IncludeInCommandLine="false"
+  />
+
   <!--
     ObjectFileName
   -->
@@ -521,19 +691,6 @@
     Category="Output Files"
     Switch="-o"
     Separator=" "
-  />
-
-  <!--
-    ExceptionHandling
-  -->
-
-  <BoolProperty
-    Name="ExceptionHandling"
-    DisplayName="Enable C++ Exceptions"
-    Description="Specifies the model of exception handling to be used by the compiler."
-    Category="Code Generation"
-    Switch="-fexceptions"
-    ReverseSwitch="-fno-exceptions"
   />
 
   <!--

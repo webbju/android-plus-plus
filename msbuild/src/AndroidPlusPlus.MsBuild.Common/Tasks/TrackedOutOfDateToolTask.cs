@@ -145,7 +145,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
           if (!string.IsNullOrWhiteSpace (source.GetMetadata ("OutputFiles")))
           {
-            string [] files = source.GetMetadata ("OutputFiles").Split (';');
+            string [] files = source.GetMetadata ("OutputFiles").Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
 
             foreach (string file in files)
             {

@@ -95,7 +95,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public override string ToString ()
     {
-      return string.Format ("0x{0,8:X}", MemoryAddress);
+      return "0x" + MemoryAddress.ToString ("X8");
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

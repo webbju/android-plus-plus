@@ -6,6 +6,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
+using System.IO;
 using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
 
@@ -29,11 +31,15 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private CLangDebugger m_debugger;
 
-    private DebuggeeAddress m_memoryAddress;
+    private string m_locationId;
 
-    private string m_location;
+    private DebuggeeAddress m_locationAddress;
 
-    private bool m_locationIsFunction;
+    private string m_locationFunction;
+
+    private string m_locationModule;
+
+    private bool m_locationIsSymbolicated;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -69,7 +75,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (frameTuple == null)
         {
-          throw new ArgumentNullException ();
+          throw new ArgumentNullException ("frameTuple");
         }
 
         if (frameTuple.HasField ("level"))
@@ -77,36 +83,59 @@ namespace AndroidPlusPlus.VsDebugEngine
           Level = frameTuple ["level"].GetUnsignedInt ();
         }
 
-        string memoryAddress = frameTuple ["addr"].GetString ();
-
-        m_property = new CLangDebuggeeProperty (m_debugger, this, "*" + memoryAddress, new CLangDebuggeeProperty [] { });
-
-        m_memoryAddress = new DebuggeeAddress (memoryAddress);
-
         // 
         // Discover the function or shared library location.
         // 
 
-        if (frameTuple.HasField ("func"))
+        if (frameTuple.HasField ("addr"))
         {
-          m_location = frameTuple ["func"].GetString ();
-
-          m_locationIsFunction = (m_location != "??") ? true : false;
-        }
-        else if (frameTuple.HasField ("from"))
-        {
-          // The shared library where this function is defined. This is only given if the frame's function is not known.
-
-          m_location = frameTuple ["from"].GetString ();
-
-          m_locationIsFunction = false;
+          m_locationAddress = new DebuggeeAddress (frameTuple ["addr"].GetString ());
         }
         else
         {
-          m_location = frameTuple ["addr"].GetString ();
-
-          m_locationIsFunction = false;
+          m_locationAddress = new DebuggeeAddress ("0x0");
         }
+
+        m_property = new CLangDebuggeeProperty (m_debugger, this, "*" + m_locationAddress.ToString (), new CLangDebuggeeProperty [] { });
+
+        if (!frameTuple.HasField ("func") || frameTuple ["func"].GetString () == "??")
+        {
+          m_locationFunction = "??";
+
+          m_locationIsSymbolicated = false;
+        }
+        else
+        {
+          m_locationFunction = frameTuple ["func"].GetString ();
+
+          m_locationIsSymbolicated = true;
+        }
+
+        if (frameTuple.HasField ("from"))
+        {
+          m_locationModule = Path.GetFileName (frameTuple ["from"].GetString ());
+        }
+        else
+        {
+          m_locationModule = string.Empty;
+        }
+
+        // 
+        // Construct a descriptive location identifier.
+        // 
+
+        StringBuilder locationBuilder = new StringBuilder ();
+
+        locationBuilder.Append ("[" + m_locationAddress.ToString () + "]");
+
+        locationBuilder.Append (" " + m_locationFunction);
+
+        if (!string.IsNullOrEmpty (m_locationModule))
+        {
+          locationBuilder.Append (" (" + m_locationModule + ")");
+        }
+
+        m_locationId = locationBuilder.ToString ();
 
         // 
         // Generate code and document contexts for this frame location.
@@ -126,13 +155,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           string filename = StringUtils.ConvertPathPosixToWindows (frameTuple ["fullname"].GetString ());
 
-          m_documentContext = new DebuggeeDocumentContext (m_debugger.Engine, filename, textPositions [0], textPositions [1], DebugEngineGuids.guidLanguageCpp, m_memoryAddress);
+          m_documentContext = new DebuggeeDocumentContext (m_debugger.Engine, filename, textPositions [0], textPositions [1], DebugEngineGuids.guidLanguageCpp, m_locationAddress);
 
           m_codeContext = m_documentContext.GetCodeContext ();
         }
         else
         {
-          m_codeContext = m_debugger.GetCodeContextForLocation ("*" + m_memoryAddress.ToString ());
+          m_codeContext = m_debugger.GetCodeContextForLocation ("*" + m_locationAddress.ToString ());
 
           if (m_codeContext != null)
           {
@@ -369,7 +398,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFlags & enum_FRAMEINFO_FLAGS.FIF_FUNCNAME) != 0)
         {
-          frameInfo.m_bstrFuncName = m_location;
+          frameInfo.m_bstrFuncName = m_locationId;
 
           frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_FUNCNAME;
         }
@@ -383,7 +412,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFlags & enum_FRAMEINFO_FLAGS.FIF_ARGS) != 0)
         {
-          frameInfo.m_bstrArgs = "<args>";
+          frameInfo.m_bstrArgs = m_stackArguments.Keys.ToString ();;
 
           frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_ARGS;
         }
@@ -403,7 +432,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFlags & enum_FRAMEINFO_FLAGS.FIF_MODULE) != 0)
         {
-          frameInfo.m_bstrModule = "<unknown module>";
+          frameInfo.m_bstrModule = m_locationModule;
 
           frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_MODULE;
         }
@@ -426,7 +455,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFlags & enum_FRAMEINFO_FLAGS.FIF_DEBUGINFO) != 0)
         {
-          frameInfo.m_fHasDebugInfo = (m_locationIsFunction) ? 1 : 0;
+          frameInfo.m_fHasDebugInfo = (m_locationIsSymbolicated) ? 1 : 0;
 
           frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_DEBUGINFO;
         }

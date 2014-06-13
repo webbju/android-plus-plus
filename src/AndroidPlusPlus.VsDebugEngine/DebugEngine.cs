@@ -128,7 +128,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       if (((eventAttributes & (uint)enum_EVENTATTRIBUTES.EVENT_STOPPING) != 0) && (thread == null))
       {
         // For stopping events, this parameter cannot be a null value as the stack frame is obtained from this parameter.
-        throw new ArgumentNullException ();
+        throw new ArgumentNullException ("thread");
       }
 
       LoggingUtils.RequireOk (m_sdmCallback.Event (this, null, program, thread, debugEvent, ref eventGuid, eventAttributes));
@@ -201,6 +201,8 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ("Failed to retrieve program's current thread.");
         }
 
+        JavaDebugger = new JavaLangDebugger (this, Program);
+
         // 
         // When this method is called, the DE needs to send these events in sequence:
         // 1. IDebugEngineCreate2
@@ -212,8 +214,6 @@ namespace AndroidPlusPlus.VsDebugEngine
         Broadcast (new DebugEngineEvent.EngineCreate (this), Program, null);
 
         Broadcast (new DebugEngineEvent.ProgramCreate (), Program, null);
-
-        JavaDebugger = new JavaLangDebugger (this, Program);
 
         Broadcast (new DebugEngineEvent.LoadComplete (), Program, currentThread);
 
@@ -641,7 +641,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (port == null)
         {
-          throw new ArgumentNullException ("Invalid target port");
+          throw new ArgumentNullException ("port");
         }
 
         // 
@@ -675,7 +675,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         bool appIsRunning = false;
 
+#if FALSE
         if (!appIsInstalled)
+#endif
         {
           //debuggeePort.PortDevice.Uninstall (packageName, keepData);
 

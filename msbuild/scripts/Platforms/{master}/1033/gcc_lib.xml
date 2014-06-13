@@ -34,6 +34,30 @@
   </Rule.DataSource>
 
   <!--
+    StripUnusedSymbols
+  -->
+
+  <BoolProperty
+    Name="StripUnusedSymbols"
+    DisplayName="Strip Unused Symbols"
+    Description="Remove all symbols that are not needed for relocation processing."
+    Category="Advanced"
+    IncludeInCommandLine="false"
+  />
+
+  <!--
+    StripDebugSymbols
+  -->
+
+  <BoolProperty
+    Name="StripDebugSymbols"
+    DisplayName="Strip Debug Symbols"
+    Description="Remove debugging symbols."
+    Category="Advanced"
+    IncludeInCommandLine="false"
+  />
+
+  <!--
     NoCanonicalPrefixes
   -->
 

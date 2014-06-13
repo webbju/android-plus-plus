@@ -111,6 +111,7 @@
     Subtype="folder"
     Name="SystemLibraryDirectories"
     DisplayName="System Library Directories" 
+    Description="Add directory dir to the list of directories to be searched for -l.      (-L[dir])"
     Category="Advanced"
     Switch="-L"
   />
@@ -123,6 +124,7 @@
     Subtype="folder" 
     Name="AdditionalLibraryDirectories" 
     DisplayName="Additional Library Directories" 
+    Description="Add directory dir to the list of directories to be searched for -l.      (-L[dir])"
     Category="Input" 
     Switch="-L"
   />
@@ -140,6 +142,18 @@
   />
 
   <!--
+    AdditionalLibraries
+  -->
+
+  <StringListProperty 
+    Subtype="file" 
+    Name="AdditionalLibraries" 
+    DisplayName="Additional Libraries" 
+    Category="Input"
+    Switch="-l"
+  />
+
+  <!--
     AdditionalDependencies
   -->
 
@@ -148,7 +162,6 @@
     Name="AdditionalDependencies" 
     DisplayName="Additional Dependencies" 
     Category="Input"
-    Switch="-l"
   />
 
   <!--
@@ -161,6 +174,30 @@
     Description="Additional Options" 
     Category="Command Line"
     F1Keyword="vc.project.AdditionalOptionsPage"
+  />
+
+  <!--
+    StripUnusedSymbols
+  -->
+
+  <BoolProperty
+    Name="StripUnusedSymbols"
+    DisplayName="Strip Unused Symbols"
+    Description="Remove all symbols that are not needed for relocation processing."
+    Category="Advanced"
+    IncludeInCommandLine="false"
+  />
+
+  <!--
+    StripDebugSymbols
+  -->
+
+  <BoolProperty
+    Name="StripDebugSymbols"
+    DisplayName="Strip Debug Symbols"
+    Description="Remove debugging symbols."
+    Category="Advanced"
+    IncludeInCommandLine="false"
   />
 
   <!--
@@ -219,7 +256,7 @@
   <BoolProperty
     Name="ResolveSymbolsAtRuntime"
     DisplayName="Resolve Symbols At Runtime"
-    Description="Tells the dynamic linker to resolve symbols on program start instead of on first use."
+    Description="Tells the dynamic linker to resolve symbols on program start instead of on first use.     (-Wl,-z,now)"
     Category="Advanced"
     Switch="-Wl,-z,now"
   />
@@ -248,6 +285,19 @@
     Category="Advanced"
     Switch="-rdynamic"
   />
+
+  <!--
+    EmbedBuildId
+  -->
+
+  <BoolProperty
+    Name="EmbedBuildId"
+    DisplayName="Embed Build Id"
+    Description="Request creation of .note.gnu.build-id ELF note section. The contents of the note are unique bits identifying this linked file.     (-Wl,--build-id)"
+    Category="Advanced"
+    Switch="-Wl,--build-id"
+  />
+  
 
   <!--
     NoCanonicalPrefixes
@@ -287,8 +337,8 @@
 
 </Rule>
 
-  <!--
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+<!--
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 -->

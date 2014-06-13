@@ -47,7 +47,7 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
     protected override string GenerateResponseFileCommands ()
     {
       // 
-      // Build a commandline based on parsing switches from the registered property sheet, and any additional flags.
+      // Build a command-line based on parsing switches from the registered property sheet, and any additional flags.
       // 
 
       StringBuilder builder = new StringBuilder (GccUtilities.CommandLineLength);
@@ -56,23 +56,12 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
       {
         builder.Append ("rcsP ");
 
-        //builder.Append (m_parsedProperties.Parse (Sources [0]) + " ");
+        builder.Append (GccUtilities.ConvertPathWindowsToPosix (Sources [0].GetMetadata ("OutputFile")) + " ");
 
-        string outputFile = Path.GetFullPath (Sources [0].GetMetadata ("OutputFile"));
-
-        string responseFile = Path.GetFullPath (Path.Combine (TrackerLogDirectory, Path.GetFileName (outputFile) + ".rcf"));
-
-        builder.Append (GccUtilities.ConvertPathWindowsToPosix (outputFile) + " ");
-
-        using (StreamWriter writer = new StreamWriter (responseFile, false, Encoding.ASCII))
+        foreach (ITaskItem source in Sources)
         {
-          foreach (ITaskItem source in Sources)
-          {
-            writer.Write (GccUtilities.ConvertPathWindowsToPosix (source.GetMetadata ("FullPath")) + " ");
-          }
+          builder.Append (GccUtilities.ConvertPathWindowsToPosix (source.GetMetadata ("FullPath")) + " ");
         }
-
-        builder.Append ('@' + GccUtilities.ConvertPathWindowsToPosix (responseFile));
       }
       catch (Exception e)
       {
@@ -80,6 +69,15 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
       }
 
       return builder.ToString ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override string GetResponseFileSwitch (string responseFilePath)
+    {
+      return '@' + GccUtilities.ConvertPathWindowsToPosix (responseFilePath);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

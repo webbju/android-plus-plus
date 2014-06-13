@@ -80,11 +80,4 @@
     Description="Ensures that existing data remains for if the Application is re-installed."
   />
 
-  <StringListProperty
-    Name="DebuggerLibraryPaths"
-    DisplayName="Library Paths"
-    Description="Specifies the location of libraries used by the Application to be exposed to the debugger."
-    Subtype="folder"
-  />
-
 </Rule>

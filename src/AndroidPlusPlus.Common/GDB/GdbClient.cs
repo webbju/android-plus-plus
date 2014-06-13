@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Threading;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -132,20 +133,102 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      m_gdbClientInstance = new AsyncRedirectProcess (m_gdbSetup.GdbToolPath, m_gdbSetup.GdbToolArguments);
+      // 
+      // Export an execution script ('gdb.setup') for standard start-up properties.
+      // 
 
-      m_gdbClientInstance.Listener = this;
+      string [] execCommands = m_gdbSetup.CreateGdbExecutionScript ();
 
-      if (File.Exists (m_gdbSetup.CacheDirectory + @"\gdb.setup"))
+      using (StreamWriter writer = new StreamWriter (Path.Combine (m_gdbSetup.CacheDirectory, "gdb.setup")))
       {
-        m_gdbClientInstance.StartInfo.Arguments += string.Format (@" -fullname -x {0}\gdb.setup", StringUtils.ConvertPathWindowsToPosix (m_gdbSetup.CacheDirectory));
+        foreach (string command in execCommands)
+        {
+          writer.WriteLine (command);
+        }
+
+        writer.Close ();
       }
+
+      // 
+      // Spawn a new GDB instance which executes gdb.setup and begins debugging file 'app_process'.
+      // 
 
       m_syncCommandLock = new ManualResetEvent (false);
 
       m_lastOperationTimestamp = Environment.TickCount;
 
+      m_gdbClientInstance = new AsyncRedirectProcess (m_gdbSetup.GdbToolPath, m_gdbSetup.GdbToolArguments);
+
+      m_gdbClientInstance.Listener = this;
+
+      m_gdbClientInstance.StartInfo.Arguments += string.Format (@" -x {0}\gdb.setup", StringUtils.ConvertPathWindowsToPosix (m_gdbSetup.CacheDirectory));
+
       m_gdbClientInstance.Start ();
+
+      // 
+      // Request symbol loading and probe each library for special embedded 'gdb.setup' sections.
+      // 
+
+      SetSetting ("solib-search-path", StringUtils.ConvertPathWindowsToPosix (m_gdbSetup.CacheDirectory), true);
+
+      SetSetting ("debug-file-directory", StringUtils.ConvertPathWindowsToPosix (m_gdbSetup.CacheDirectory), true);
+
+      string [] cachedBinaries = m_gdbSetup.CacheDeviceBinaries ();
+
+      string gnuObjdumpToolPath = m_gdbSetup.GdbToolPath.Replace ("-gdb", "-objdump");
+
+      foreach (string binary in cachedBinaries)
+      {
+        string embeddedGdbSetupSection = GnuObjdump.GetElfSectionData (gnuObjdumpToolPath, binary, "gdb.setup");
+
+        SetSetting ("solib-search-path", StringUtils.ConvertPathWindowsToPosix (Path.GetDirectoryName (binary)), true);
+
+        SetSetting ("debug-file-directory", StringUtils.ConvertPathWindowsToPosix (Path.GetDirectoryName (binary)), true);
+
+        if (!string.IsNullOrWhiteSpace (embeddedGdbSetupSection))
+        {
+          string [] embeddedCommands = embeddedGdbSetupSection.Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+          foreach (string command in embeddedCommands)
+          {
+            // 
+            // Sanitise path arguments, but only if they are rooted.
+            // 
+
+            bool setCommand = command.StartsWith ("set ");
+
+            string [] arguments = command.Replace ("set ", "").Split (new char [] { ' ', ';' }, StringSplitOptions.RemoveEmptyEntries);
+
+            StringBuilder joinedArguments = new StringBuilder ();
+
+            for (int i = 1; i < arguments.Length; ++i)
+            {
+              if (Path.IsPathRooted (arguments [i]))
+              {
+                arguments [i] = StringUtils.ConvertPathWindowsToPosix (arguments [i]);
+              }
+
+              joinedArguments.Append (";" + arguments [i]);
+            }
+
+            if (joinedArguments.Length > 0)
+            {
+              joinedArguments.Remove (0, 1); // clear leading ';'
+            }
+
+            if (setCommand)
+            {
+              SetSetting (arguments [0], joinedArguments.ToString (), true);
+            }
+            else
+            {
+              SendCommand (arguments [0] + " " + joinedArguments.ToString ());
+            }
+          }
+        }
+
+        SendCommand ("symbol-file " + StringUtils.ConvertPathWindowsToPosix (binary));
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -162,21 +245,7 @@ namespace AndroidPlusPlus.Common
 
       m_gdbSetup.SetupPortForwarding ();
 
-      SetSetting ("solib-search-path", m_gdbSetup.CacheDirectory);
-
-      string [] cachedBinaries = m_gdbSetup.CacheDeviceBinaries ();
-
-      foreach (string binary in cachedBinaries)
-      {
-        SendCommand ("symbol-file " + StringUtils.ConvertPathWindowsToPosix (binary));
-      }
-
-      string [] execCommands = m_gdbSetup.CreateGdbExecutionScript ();
-
-      foreach (string command in execCommands)
-      {
-        SendCommand (command);
-      }
+      SendCommand ("file " + StringUtils.ConvertPathWindowsToPosix (Path.Combine (m_gdbSetup.CacheDirectory, "app_process")));
 
       SendCommand (string.Format ("target remote {0}:{1}", m_gdbSetup.Host, m_gdbSetup.Port), 60000);
     }
@@ -351,9 +420,19 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void SetSetting (string setting, string value)
+    public void SetSetting (string setting, string value, bool appendToExisting)
     {
       LoggingUtils.Print (string.Format ("[GdbClient] SetSetting: " + setting + "=" + value));
+
+      if (appendToExisting)
+      {
+        string existingSettingValue = GetSetting (setting);
+
+        if (!existingSettingValue.Contains (value))
+        {
+          value = string.Join (";", new string [] { existingSettingValue, value }); 
+        }
+      }
 
       SendCommand (string.Format ("-gdb-set {0} {1}", setting, value));
     }
@@ -435,27 +514,34 @@ namespace AndroidPlusPlus.Common
 
       ThreadPool.QueueUserWorkItem (delegate (object state)
       {
-        AsyncCommandData commandData = new AsyncCommandData ();
+        try
+        {
+          AsyncCommandData commandData = new AsyncCommandData ();
 
-        commandData.Command = command;
+          commandData.Command = command;
 
-        commandData.ResultDelegate = asyncDelegate;
+          commandData.ResultDelegate = asyncDelegate;
 
-        m_asyncCommandData.Add (m_sessionCommandToken, commandData);
+          m_asyncCommandData.Add (m_sessionCommandToken, commandData);
 
-        // 
-        // Prepend (and increment) GDB/MI token.
-        // 
+          // 
+          // Prepend (and increment) GDB/MI token.
+          // 
 
-        command = m_sessionCommandToken + command;
+          command = m_sessionCommandToken + command;
 
-        ++m_sessionCommandToken;
+          ++m_sessionCommandToken;
 
-        m_gdbClientInstance.SendCommand (command);
+          m_gdbClientInstance.SendCommand (command);
 
-        m_lastOperationTimestamp = Environment.TickCount;
+          m_lastOperationTimestamp = Environment.TickCount;
 
-        LoggingUtils.Print (string.Format ("[GdbClient] SendAsyncCommand: {0}", command));
+          LoggingUtils.Print (string.Format ("[GdbClient] SendAsyncCommand: {0}", command));
+        }
+        catch (Exception e)
+        {
+          LoggingUtils.HandleException (e);
+        }
       });
     }
 
@@ -547,11 +633,18 @@ namespace AndroidPlusPlus.Common
 
     public void ProcessStderr (object sendingProcess, DataReceivedEventArgs args)
     {
-      m_lastOperationTimestamp = Environment.TickCount;
-
-      if (!string.IsNullOrWhiteSpace (args.Data))
+      try
       {
-        LoggingUtils.Print (string.Format ("[GdbClient] ProcessStderr: {0}", args.Data));
+        m_lastOperationTimestamp = Environment.TickCount;
+
+        if (!string.IsNullOrWhiteSpace (args.Data))
+        {
+          LoggingUtils.Print (string.Format ("[GdbClient] ProcessStderr: {0}", args.Data));
+        }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
       }
     }
 
@@ -561,22 +654,30 @@ namespace AndroidPlusPlus.Common
 
     public void ProcessExited (object sendingProcess, EventArgs args)
     {
-      m_lastOperationTimestamp = Environment.TickCount;
+      try
+      {
+        m_lastOperationTimestamp = Environment.TickCount;
 
-      LoggingUtils.Print (string.Format ("[GdbClient] ProcessExited: {0}", args));
+        LoggingUtils.Print (string.Format ("[GdbClient] ProcessExited: {0}", args));
 
-      m_gdbClientInstance = null;
+        m_gdbClientInstance = null;
 
-      // 
-      // If we're waiting on a synchronous command, signal a finish to process termination.
-      // 
+        // 
+        // If we're waiting on a synchronous command, signal a finish to process termination.
+        // 
 
-      m_syncCommandLock.Set ();
+        m_syncCommandLock.Set ();
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
   }
 

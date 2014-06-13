@@ -62,7 +62,7 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
     protected override string GenerateCommandLineFromProps (ITaskItem source)
     {
       // 
-      // Build a commandline based on parsing switches from the registered property sheet, and any additional flags.
+      // Build a command-line based on parsing switches from the registered property sheet, and any additional flags.
       // 
 
       StringBuilder builder = new StringBuilder (GccUtilities.CommandLineLength);
@@ -84,6 +84,57 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
       }
 
       return builder.ToString ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override void AddTaskSpecificDependencies (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
+    {
+      // 
+      // Register additional 'forced include' usage for each of the sources.
+      // 
+
+      foreach (ITaskItem source in sources)
+      {
+        if (!string.IsNullOrWhiteSpace (source.GetMetadata ("ForcedIncludeFiles")))
+        {
+          string [] forcedIncludeFiles = source.GetMetadata ("ForcedIncludeFiles").Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+
+          foreach (string file in forcedIncludeFiles)
+          {
+            try
+            {
+              // 
+              // Clang supports including pre-compiled headers via '-include' but they are referenced without ".pch". Fix this.
+              // 
+
+              string fileFullPath = Path.GetFullPath (file);
+
+              if ((ToolExe.StartsWith ("clang")) && (File.Exists (fileFullPath + ".pch")))
+              {
+                fileFullPath = fileFullPath + ".pch";
+              }
+
+              // 
+              // Also validate that we don't try adding dependencies to missing files, as this breaks tracking.
+              // 
+
+              if (!File.Exists (fileFullPath))
+              {
+                throw new FileNotFoundException ("Could not find task specific dependency: " + fileFullPath);
+              }
+
+              trackedFileManager.AddDependencyForSources (fileFullPath, new ITaskItem [] { source });
+            }
+            catch (System.Exception e)
+            {
+              Log.LogWarningFromException (e, true);
+            }
+          }
+        }
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

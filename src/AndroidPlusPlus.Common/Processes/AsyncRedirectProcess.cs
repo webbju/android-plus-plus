@@ -55,12 +55,17 @@ namespace AndroidPlusPlus.Common
     {
       if (string.IsNullOrEmpty (filename))
       {
-        throw new ArgumentNullException ();
+        throw new ArgumentNullException ("filename");
+      }
+
+      if (arguments == null)
+      {
+        throw new ArgumentNullException ("arguments");
       }
 
       if (!File.Exists (filename))
       {
-        throw new ArgumentException ();
+        throw new FileNotFoundException ("Could not find target executable.", filename);
       }
 
       Listener = null;
@@ -160,7 +165,10 @@ namespace AndroidPlusPlus.Common
 
       try
       {
-        Process.Kill ();
+        if (!m_exitMutex.WaitOne (0))
+        {
+          Process.Kill ();
+        }
       }
       catch (Exception e)
       {
@@ -185,16 +193,25 @@ namespace AndroidPlusPlus.Common
 
     protected void ProcessStdout (object sendingProcess, DataReceivedEventArgs args)
     {
-      m_lastOutputTimestamp = Environment.TickCount;
-
-      /*if (!string.IsNullOrWhiteSpace (args.Data))
+      try
       {
-        LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessStdout: {0}", args.Data));
-      }*/
+        m_lastOutputTimestamp = Environment.TickCount;
 
-      if (Listener != null)
+        /*if (!string.IsNullOrWhiteSpace (args.Data))
+        {
+          LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessStdout: {0}", args.Data));
+        }*/
+      }
+      catch (Exception e)
       {
-        Listener.ProcessStdout (sendingProcess, args);
+        LoggingUtils.HandleException (e);
+      }
+      finally
+      {
+        if (Listener != null)
+        {
+          Listener.ProcessStdout (sendingProcess, args);
+        }
       }
     }
 
@@ -204,16 +221,25 @@ namespace AndroidPlusPlus.Common
 
     protected void ProcessStderr (object sendingProcess, DataReceivedEventArgs args)
     {
-      m_lastOutputTimestamp = Environment.TickCount;
-
-      /*if (!string.IsNullOrWhiteSpace (args.Data))
+      try
       {
-        LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessStdout: {0}", args.Data));
-      }*/
+        m_lastOutputTimestamp = Environment.TickCount;
 
-      if (Listener != null)
+        /*if (!string.IsNullOrWhiteSpace (args.Data))
+        {
+          LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessStdout: {0}", args.Data));
+        }*/
+      }
+      catch (Exception e)
       {
-        Listener.ProcessStderr (sendingProcess, args);
+        LoggingUtils.HandleException (e);
+      }
+      finally
+      {
+        if (Listener != null)
+        {
+          Listener.ProcessStderr (sendingProcess, args);
+        }
       }
     }
 
@@ -223,18 +249,27 @@ namespace AndroidPlusPlus.Common
 
     protected void ProcessExited (object sendingProcess, EventArgs args)
     {
-      LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessExited: {0}", args));
-
-      m_exitCode = ((Process)sendingProcess).ExitCode;
-
-      LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] exited ({0}) in {1} ms", m_exitCode, Environment.TickCount - m_startTicks));
-
-      if (Listener != null)
+      try
       {
-        Listener.ProcessExited (sendingProcess, args);
-      }
+        LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessExited: {0}", args));
 
-      m_exitMutex.Set ();
+        m_exitCode = ((Process) sendingProcess).ExitCode;
+
+        m_exitMutex.Set ();
+
+        LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] exited ({0}) in {1} ms", m_exitCode, Environment.TickCount - m_startTicks));
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+      }
+      finally
+      {
+        if (Listener != null)
+        {
+          Listener.ProcessExited (sendingProcess, args);
+        }
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

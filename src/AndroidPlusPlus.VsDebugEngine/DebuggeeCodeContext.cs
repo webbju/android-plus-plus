@@ -63,12 +63,12 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (documentContext == null)
       {
-        throw new ArgumentNullException ();
+        throw new ArgumentNullException ("documentContext");
       }
 
       if (address == null)
       {
-        throw new ArgumentNullException ();
+        throw new ArgumentNullException ("address");
       }
 
       DocumentContext = documentContext;

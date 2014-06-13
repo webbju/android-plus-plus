@@ -27,7 +27,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public GdbSetup (AndroidProcess process, string gdbToolPath, string [] libraryPaths)
+    public GdbSetup (AndroidProcess process, string gdbToolPath)
     {
       LoggingUtils.PrintFunction ();
 
@@ -51,17 +51,6 @@ namespace AndroidPlusPlus.Common
       {
         throw new FileNotFoundException ("Could not find requested GDB instance. Expected: " + gdbToolPath);
       }
-
-      // 
-      // Evaluate a compound list of explicit native library locations on the host machine.
-      // 
-
-      if (libraryPaths == null)
-      {
-        throw new ArgumentNullException ();
-      }
-
-      LibraryPaths = new List<string> (libraryPaths);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -84,8 +73,6 @@ namespace AndroidPlusPlus.Common
     public string Host { get; private set; }
 
     public uint Port { get; private set; }
-
-    public List <string> LibraryPaths { get; private set; }
 
     public string CacheDirectory { get; private set; }
 
@@ -211,27 +198,9 @@ namespace AndroidPlusPlus.Common
       gdbExecutionCommands.Add ("set debug remote 1");
 
       gdbExecutionCommands.Add ("set debug infrun 1");
+
+      gdbExecutionCommands.Add ("set verbose on");
 #endif
-
-      // 
-      // Space characters are the delimiters in a GDB library list, ensure that paths with spaces are appropriately escaped.
-      // 
-
-      StringBuilder sanitisedLibraryPaths = new StringBuilder ();
-
-      foreach (string path in LibraryPaths)
-      {
-        sanitisedLibraryPaths.Append (path.Replace (" ", "\\ ") + " ");
-      }
-
-      gdbExecutionCommands.Add ("directory " + sanitisedLibraryPaths.ToString ());
-
-      string appProcessPath = Path.Combine (CacheDirectory, "app_process");
-
-      if (File.Exists (appProcessPath))
-      {
-        gdbExecutionCommands.Add ("file " + StringUtils.ConvertPathWindowsToPosix (appProcessPath));
-      }
 
       return gdbExecutionCommands.ToArray ();
     }

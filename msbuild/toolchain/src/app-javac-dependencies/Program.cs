@@ -31,6 +31,8 @@ namespace app_javac_dependencies
 
     private static List<string> s_javacToolArguments = new List<string> ();
 
+    private static List<string> s_sourcePathList = new List<string> ();
+
     private static Dictionary <string, List <string>> s_sourceDependencyList = new Dictionary<string,List<string>> ();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -39,7 +41,7 @@ namespace app_javac_dependencies
 
     static int Main (string [] args)
     {
-      int returnCode = -1;
+      int returnCode = 0;
 
       try
       {
@@ -85,7 +87,10 @@ namespace app_javac_dependencies
 
               trackedProcess.WaitForExit ();
 
-              returnCode = trackedProcess.ExitCode;
+              if (returnCode != 0)
+              {
+                returnCode = trackedProcess.ExitCode;
+              }
             }
           }
         }
@@ -133,7 +138,6 @@ namespace app_javac_dependencies
           case "-processorpath":
           case "-s":
           case "-source":
-          case "-sourcepath":
           case "-target":
           {
             if (args [i+1].StartsWith ("-"))
@@ -142,6 +146,21 @@ namespace app_javac_dependencies
             }
 
             s_javacToolArguments.Add (string.Format ("{0} {1}", args [i], QuotePathIfNeeded (args [++i])));
+
+            break;
+          }
+
+          case "-sourcepath":
+          {
+            string [] specifiedSourcePaths = args [++i].Split (';');
+
+            foreach (string sourcePath in specifiedSourcePaths)
+            {
+              if (!s_sourcePathList.Contains (sourcePath))
+              {
+                s_sourcePathList.Add (sourcePath);
+              }
+            }
 
             break;
           }
@@ -183,6 +202,64 @@ namespace app_javac_dependencies
       {
         throw new ArgumentException ("--jdk-home references an invalid JDK installation. Can not find required 'bin\\javac.exe' tool.");
       }
+
+      // 
+      // Iterate source files and evaluate common 'source paths'.
+      // 
+
+#if FALSE
+      foreach (KeyValuePair<string, List<string>> sourceKeyPair in s_sourceDependencyList)
+      {
+        string sourcePath = sourceKeyPair.Key;
+
+        using (StreamReader reader = new StreamReader (sourcePath))
+        {
+          string line = reader.ReadLine ();
+
+          int packageStart = -1;
+
+          int packageEnd = -1;
+
+          while (line != null)
+          {
+            packageStart = line.IndexOf ("package ");
+
+            if (packageStart != -1)
+            {
+              packageEnd = line.IndexOf (';', packageStart);
+            }
+
+            if (packageEnd != -1)
+            {
+              // 
+              // Identified the source's package address, evaluate it's source-path 'root' directory.
+              // 
+
+              int substringIndexStart = packageStart + "package ".Length;
+
+              int substringLength = packageEnd - substringIndexStart;
+
+              string package = line.Substring (substringIndexStart, substringLength).Trim (new char [] { ' ', ';', '\n', '\r' });
+
+              string sourceRootWithoutPackage = sourcePath.Replace (package.Replace ('.', '\\'), "");
+
+              if (!s_sourcePathList.Contains (sourceRootWithoutPackage))
+              {
+                s_sourcePathList.Add (sourceRootWithoutPackage);
+              }
+
+              line = null;
+            }
+            else
+            {
+              line = reader.ReadLine ();
+            }
+          }
+        }
+      }
+#endif
+
+      s_javacToolArguments.Add ("-sourcepath " + string.Join (";", s_sourcePathList.ToArray ()));
 
       // 
       // This pass-through tool required verbose mode in order to identify source dependencies, turn it on if it isn't already.

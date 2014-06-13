@@ -17,7 +17,7 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <UsingTask TaskName="AndroidNdkDepends" AssemblyFile="$(ANDROID_PLUS_PLUS)\msbuild\bin\{master-verbose}.MsBuild.DeployTasks.dll" />
+  <UsingTask TaskName="AndroidNdkDepends" AssemblyFile="$(ANDROID_PLUS_PLUS)\msbuild\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
 
   <UsingTask TaskName="VCMessage" AssemblyName="Microsoft.Build.CppTasks.Common, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
 
@@ -60,22 +60,19 @@
     DependsOnTargets="AndroidManifest;_AndroidApk;">
 
     <!--
-      Register first-party (linker output) application library for copying to target architecture libs path.
+      Register shared libraries (.so) which will need to be copied to the final APK .\lib\[arch] directory.
     -->
 
     <ItemGroup Condition="'@(AndroidApk)' != ''">
-      <CopyToNativeTargetArchLibs Include="@(LinkOutputFiles)">
+      <!-- First-party (linker output) libraries -->
+      <_CopyToNativeTargetArchLibs Include="@(LinkOutputFiles)">
         <IntermediateDirectory>%(AndroidApk.IntermediateDirectory)</IntermediateDirectory>
-      </CopyToNativeTargetArchLibs>
-    </ItemGroup>
+      </_CopyToNativeTargetArchLibs>
 
-    <!--
-      Register third-party libraries provided through a project .\libs\ directory.
-    -->
-
-    <ItemGroup Condition="'@(AndroidApk)' != ''">
-      <ProjectRelativeNativeLibs Include="$(ProjectDir)libs\$(TargetPlatformArchitectureEabi)\*.so" />
-      <CopyToNativeTargetArchLibs Include="@(ProjectRelativeNativeLibs)" >
+      <!-- Third-party provided libraries. -->
+      <CopyToNativeTargetArchLibs Include="
+        $(ProjectDir)lib\$(TargetPlatformArchitectureEabi)\*.so;
+        $(ProjectDir)libs\$(TargetPlatformArchitectureEabi)\*.so" >
         <IntermediateDirectory>%(AndroidApk.IntermediateDirectory)</IntermediateDirectory>
       </CopyToNativeTargetArchLibs>
     </ItemGroup>
@@ -85,28 +82,32 @@
     -->
 
     <AndroidNdkDepends 
-      Condition="'@(LinkOutputFiles)' != ''" 
+      Condition="'@(_CopyToNativeTargetArchLibs)' != ''" 
+      TargetElfFiles="@(_CopyToNativeTargetArchLibs)"
+      LibrarySearchPaths="
+        %(Link.AdditionalLibraryDirectories);
+        $(ProjectDir)lib\$(TargetPlatformArchitectureEabi)\;
+        $(ProjectDir)libs\$(TargetPlatformArchitectureEabi)\;
+        %(AndroidApk.IntermediateDirectory)\lib\$(TargetPlatformArchitectureEabi);"
       NdkDependsTool="$(AndroidNdkRoot)\ndk-depends.exe"
-      TargetElfFiles="@(LinkOutputFiles)"
-      LibrarySearchPaths="%(Link.AdditionalLibraryDirectories);"
       Verbose="false">
-      <Output TaskParameter="DependentLibraries" ItemName="AndroidApkDepedentLibraries" />
+      <Output TaskParameter="DependentLibraries" ItemName="AndroidApkDependentLibraries" />
     </AndroidNdkDepends>
 
     <ItemGroup Condition="'@(AndroidApk)' != ''">
-      <CopyToNativeTargetArchLibs Include="@(AndroidApkDepedentLibraries->Distinct())">
+      <_CopyToNativeTargetArchLibs Include="@(AndroidApkDependentLibraries->Distinct())">
         <IntermediateDirectory>%(AndroidApk.IntermediateDirectory)</IntermediateDirectory>
-      </CopyToNativeTargetArchLibs>
+      </_CopyToNativeTargetArchLibs>
     </ItemGroup>
 
     <!--
-      Copy appropriate target architecture 'gdbserver' instance.
+      Copy appropriate target architecture 'gdbserver' instance and 'gdb.setup'.
     -->
 
     <ItemGroup Condition="'$(Configuration)' != 'Release' and '@(AndroidApk)' != ''">
-      <CopyToNativeTargetArchLibs Include="$(AndroidNdkRoot)\prebuilt\android-$(TargetPlatformArchitecture)\gdbserver\gdbserver">
+      <_CopyToNativeTargetArchLibs Include="$(AndroidNdkRoot)\prebuilt\android-$(TargetPlatformArchitecture)\gdbserver\gdbserver;">
         <IntermediateDirectory>%(AndroidApk.IntermediateDirectory)</IntermediateDirectory>
-      </CopyToNativeTargetArchLibs>
+      </_CopyToNativeTargetArchLibs>
     </ItemGroup>
 
     <!-- 
@@ -114,9 +115,9 @@
     -->
 
     <Copy 
-      Condition="'@(CopyToNativeTargetArchLibs)' != ''" 
-      SourceFiles="@(CopyToNativeTargetArchLibs)" 
-      DestinationFiles="@(CopyToNativeTargetArchLibs->'%(IntermediateDirectory)\lib\$(TargetPlatformArchitectureEabi)\%(Filename)%(Extension)')" 
+      Condition="'@(_CopyToNativeTargetArchLibs)' != ''" 
+      SourceFiles="@(_CopyToNativeTargetArchLibs->Distinct())" 
+      DestinationFiles="@(_CopyToNativeTargetArchLibs->'%(IntermediateDirectory)\lib\$(TargetPlatformArchitectureEabi)\%(Filename)%(Extension)')" 
     />
 
     <!-- 
@@ -158,7 +159,7 @@
 
     <Exec 
       Condition="'@(AndroidApkUnsignedOutputFile)' != ''"
-      Command="7za.exe a -tzip -mx7 -r &quot;@(AndroidApkUnsignedOutputFile->Metadata('FullPath'))&quot; * > nul" 
+      Command="7za.exe a -tzip -mx7 -r &quot;@(AndroidApkUnsignedOutputFile->Metadata('FullPath'))&quot; *" 
       WorkingDirectory="%(AndroidApk.IntermediateDirectory)"
     />
 

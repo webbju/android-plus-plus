@@ -79,7 +79,7 @@
 
   <EnumProperty
     Name="AndroidSdkBuildToolsVersion"
-    DisplayName="SDK Build-tools Version"
+    DisplayName="SDK Build-Tools Version"
     Description="Specifies which version of 'build-tools' should be used."
     Category="PlatformDefaults">
 
@@ -293,6 +293,29 @@
     <EnumValue Name="DynamicLibrary" DisplayName="Dynamic Library (.so)" Description="Dynamic Library (.so)" />
     <EnumValue Name="StaticLibrary" DisplayName="Static library (.a)" Description="Static Library (.a)" />
 
+  </EnumProperty>
+  
+  <!--
+    ({master}) C++/STL Support
+  -->
+
+  <EnumProperty
+    Name="STLSupport"
+    DisplayName="C++/STL Support"
+    Description="Specifies which C++ Runtime Library port this configuration supports."
+    Category="ProjectDefaults">
+    
+    <EnumValue Name="none" DisplayName="No C++ Support" />
+    <EnumValue Name="system" DisplayName="Minimal C++ Support" />
+    <EnumValue Name="gabi++_static" DisplayName="GAbi++ Runtime (Static)" />
+    <EnumValue Name="gabi++_shared" DisplayName="GAbi++ Runtime (Shared)" />
+    <EnumValue Name="stlport_static" DisplayName="STLport Runtime (Static)" />
+    <EnumValue Name="stlport_shared" DisplayName="STLport Runtime (Shared)" />
+    <EnumValue Name="gnustl_static" DisplayName="GNU Standard Template Library (Static)" />
+    <EnumValue Name="gnustl_shared" DisplayName="GNU Standard Template Library (Shared)" />
+    <EnumValue Name="c++_static" DisplayName="LLVM libc++ [experimental] (Static) " />
+    <EnumValue Name="c++_shared" DisplayName="LLVM libc++ [experimental] (Shared)" />
+    
   </EnumProperty>
 
   <!-- 

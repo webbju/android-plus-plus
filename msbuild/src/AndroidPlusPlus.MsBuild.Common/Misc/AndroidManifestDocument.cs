@@ -65,7 +65,9 @@ namespace AndroidPlusPlus.MsBuild.Common
     {
       PackageName = DocumentElement.GetAttribute ("package");
 
-      IsApplication = (SelectSingleNode ("/manifest/application") != null);
+      XmlNode applicationNode = SelectSingleNode ("/manifest/application");
+
+      IsApplication = (applicationNode != null) && (applicationNode.Attributes.Count > 0);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
