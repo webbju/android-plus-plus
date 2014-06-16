@@ -154,7 +154,7 @@ namespace AndroidPlusPlus.Common
           }
         }
 
-        LoggingUtils.Print ("[AndroidDevice] " + filename + "installed successfully.");
+        LoggingUtils.Print ("[AndroidDevice] " + filename + " installed successfully.");
 
         return true;
       }
@@ -163,7 +163,7 @@ namespace AndroidPlusPlus.Common
         LoggingUtils.HandleException (e);
       }
 
-      LoggingUtils.Print ("[AndroidDevice] " + filename + "installation failed.");
+      LoggingUtils.Print ("[AndroidDevice] " + filename + " installation failed.");
 
       return false;
     }

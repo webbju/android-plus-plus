@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
 
 using Microsoft.VisualStudio.Debugger.Interop;
 
@@ -73,6 +74,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     protected readonly string m_expression;
 
+    protected readonly string m_fullExpression;
+
     protected DebuggeeProperty m_parent;
 
     protected readonly DebuggeeProperty [] m_children;
@@ -99,6 +102,25 @@ namespace AndroidPlusPlus.VsDebugEngine
       m_parent = null;
 
       m_children = children;
+
+      // 
+      // Compound parental expressions to evaluate this property's full identifier.
+      // 
+
+      StringBuilder expressionBuilder = new StringBuilder (2048);
+
+      DebuggeeProperty parent = m_parent;
+
+      while (parent != null)
+      {
+        expressionBuilder.Append (parent.m_expression + ".");
+
+        parent = parent.m_parent;
+      }
+
+      expressionBuilder.Append (m_expression);
+
+      m_fullExpression = expressionBuilder.ToString ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -285,14 +307,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_FULLNAME) != 0)
         {
-          if (m_parent != null)
-          {
-            propertyInfoArray [0].bstrFullName = string.Format ("{0}.{1}", m_parent.m_expression, m_expression);
-          }
-          else
-          {
-            propertyInfoArray [0].bstrFullName = m_expression;
-          }
+          propertyInfoArray [0].bstrFullName = m_fullExpression;
 
           propertyInfoArray [0].dwFields |= enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_FULLNAME;
         }
@@ -306,7 +321,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_TYPE) != 0)
         {
-          propertyInfoArray [0].bstrType = string.Empty;
+          propertyInfoArray [0].bstrType = "[type]";
 
           propertyInfoArray [0].dwFields |= enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_TYPE;
         }

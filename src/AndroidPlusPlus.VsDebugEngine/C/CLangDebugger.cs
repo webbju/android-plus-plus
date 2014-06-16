@@ -361,13 +361,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
               NativeProgram.SetRunning (true);
 
-              string threadId = asyncRecord ["thread-id"].GetString ();
+              string threadId = asyncRecord ["thread-id"] [0].GetString ();
 
               if (threadId.Equals ("all"))
               {
-                List<DebuggeeThread> programThreads = NativeProgram.GetThreads ();
+                Dictionary<uint, DebuggeeThread> programThreads = NativeProgram.GetThreads ();
 
-                foreach (DebuggeeThread thread in programThreads)
+                foreach (DebuggeeThread thread in programThreads.Values)
                 {
                   thread.SetRunning (true);
                 }
@@ -401,7 +401,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
               if (asyncRecord.HasField ("thread-id"))
               {
-                uint threadId = asyncRecord ["thread-id"].GetUnsignedInt ();
+                uint threadId = asyncRecord ["thread-id"] [0].GetUnsignedInt ();
 
                 stoppedThread = NativeProgram.GetThread (threadId);
 
@@ -423,11 +423,11 @@ namespace AndroidPlusPlus.VsDebugEngine
                 // Otherwise, the value of the stopped field will be a list of thread identifiers.
                 // 
 
-                MiResultValue stoppedThreadsRecord = asyncRecord ["stopped-threads"];
+                MiResultValue stoppedThreadsRecord = asyncRecord ["stopped-threads"] [0];
 
-                if (asyncRecord ["stopped-threads"] is MiResultValueList)
+                if (stoppedThreadsRecord is MiResultValueList)
                 {
-                  MiResultValueList stoppedThreads = asyncRecord ["stopped-threads"] as MiResultValueList;
+                  MiResultValueList stoppedThreads = stoppedThreadsRecord as MiResultValueList;
 
                   foreach (MiResultValue stoppedThreadValue in stoppedThreads.List)
                   {
@@ -443,9 +443,9 @@ namespace AndroidPlusPlus.VsDebugEngine
                 }
                 else
                 {
-                  List<DebuggeeThread> programThreads = NativeProgram.GetThreads ();
+                  Dictionary<uint, DebuggeeThread> programThreads = NativeProgram.GetThreads ();
 
-                  foreach (DebuggeeThread thread in programThreads)
+                  foreach (DebuggeeThread thread in programThreads.Values)
                   {
                     thread.SetRunning (false);
                   }
@@ -468,14 +468,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                 if (asyncRecord.HasField ("reason"))
                 {
-                  switch (asyncRecord ["reason"].GetString ())
+                  switch (asyncRecord ["reason"] [0].GetString ())
                   {
                     case "breakpoint-hit":
                     case "watchpoint-trigger":
                     {
                       bool canContinue = true;
 
-                      uint breakpointId = asyncRecord ["bkptno"].GetUnsignedInt ();
+                      uint breakpointId = asyncRecord ["bkptno"] [0].GetUnsignedInt ();
 
                       DebuggeeBreakpointBound boundBreakpoint = Engine.BreakpointManager.GetBoundBreakpoint (breakpointId);
 
@@ -494,7 +494,7 @@ namespace AndroidPlusPlus.VsDebugEngine
                         // Hit a breakpoint which internally is flagged as deleted. Oh noes!
                         // 
 
-                        DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, "Breakpoint #" + breakpointId, asyncRecord ["reason"].GetString (), 0x80000000, canContinue);
+                        DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, "Breakpoint #" + breakpointId, asyncRecord ["reason"] [0].GetString (), 0x80000000, canContinue);
 
                         Engine.Broadcast (exception, NativeProgram.DebugProgram, stoppedThread);
                       }
@@ -522,9 +522,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                     case "signal-received":
                     {
-                      string signalName = asyncRecord ["signal-name"].GetString ();
+                      string signalName = asyncRecord ["signal-name"] [0].GetString ();
 
-                      string signalMeaning = asyncRecord ["signal-meaning"].GetString ();
+                      string signalMeaning = asyncRecord ["signal-meaning"] [0].GetString ();
 
                       switch (signalName)
                       {
@@ -616,7 +616,7 @@ namespace AndroidPlusPlus.VsDebugEngine
                 // A thread group became associated with a running program, either because the program was just started or the thread group was attached to a program.
                 // 
 
-                string threadGroupId = asyncRecord ["id"].GetString ();
+                string threadGroupId = asyncRecord ["id"] [0].GetString ();
 
                 m_threadGroupStatus [threadGroupId] = 0;
 
@@ -630,11 +630,11 @@ namespace AndroidPlusPlus.VsDebugEngine
               // A thread group is no longer associated with a running program, either because the program has exited, or because it was detached from.
               // 
 
-              string threadGroupId = asyncRecord ["id"].GetString ();
+              string threadGroupId = asyncRecord ["id"] [0].GetString ();
 
               if (asyncRecord.HasField ("exit-code"))
               {
-                m_threadGroupStatus [threadGroupId] = asyncRecord ["exit-code"].GetUnsignedInt ();
+                m_threadGroupStatus [threadGroupId] = asyncRecord ["exit-code"] [0].GetUnsignedInt ();
               }
 
               break;
@@ -646,11 +646,11 @@ namespace AndroidPlusPlus.VsDebugEngine
               // A thread either was created. The id field contains the gdb identifier of the thread. The gid field identifies the thread group this thread belongs to. 
               // 
 
-              uint threadId = asyncRecord ["id"].GetUnsignedInt ();
+              uint threadId = asyncRecord ["id"] [0].GetUnsignedInt ();
 
-              string threadGroupId = asyncRecord ["group-id"].GetString ();
+              string threadGroupId = asyncRecord ["group-id"] [0].GetString ();
 
-              CLangDebuggeeThread createdThread = new CLangDebuggeeThread (NativeProgram, threadId, threadGroupId);
+              CLangDebuggeeThread createdThread = new CLangDebuggeeThread (NativeProgram, threadId);
 
               NativeProgram.AddThread (createdThread);
 
@@ -665,17 +665,15 @@ namespace AndroidPlusPlus.VsDebugEngine
               // A thread has exited. The 'id' field contains the GDB identifier of the thread. The 'group-id' field identifies the thread group this thread belongs to. 
               // 
 
-              uint threadId = asyncRecord ["id"].GetUnsignedInt ();
+              uint threadId = asyncRecord ["id"] [0].GetUnsignedInt ();
 
-              string threadGroupId = asyncRecord ["group-id"].GetString ();
+              string threadGroupId = asyncRecord ["group-id"] [0].GetString ();
 
               uint exitCode = m_threadGroupStatus [threadGroupId];
 
               CLangDebuggeeThread exitedThread = NativeProgram.GetThread (threadId);
 
-              Engine.Broadcast (new DebugEngineEvent.ThreadDestroy (exitCode), NativeProgram.DebugProgram, exitedThread);
-
-              NativeProgram.RemoveThread (exitedThread);
+              NativeProgram.RemoveThread (exitedThread, exitCode);
 
               break;
             }
@@ -686,7 +684,7 @@ namespace AndroidPlusPlus.VsDebugEngine
               // Informs that the selected thread was changed as result of the last command.
               // 
 
-              uint threadId = asyncRecord ["id"].GetUnsignedInt ();
+              uint threadId = asyncRecord ["id"] [0].GetUnsignedInt ();
 
               NativeProgram.CurrentThreadId = threadId;
 
@@ -744,7 +742,7 @@ namespace AndroidPlusPlus.VsDebugEngine
               {
                 ThreadPool.QueueUserWorkItem (delegate (object state)
                 {
-                  string moduleName = asyncRecord ["id"].GetString ();
+                  string moduleName = asyncRecord ["id"] [0].GetString ();
 
                   CLangDebuggeeModule module = NativeProgram.GetModule (moduleName);
 

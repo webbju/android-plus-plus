@@ -209,13 +209,13 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        MiResultValue assemblyInstructions = resultRecord ["asm_insns"];
+        MiResultValue assemblyInstructions = resultRecord ["asm_insns"] [0];
 
         for (int i = 0; i < Math.Min (assemblyInstructions.Count, dwInstructions); ++i)
         {
           MiResultValue instruction = assemblyInstructions [i];
 
-          DebuggeeAddress instructionAddress = new DebuggeeAddress (instruction ["address"].GetString ());
+          DebuggeeAddress instructionAddress = new DebuggeeAddress (instruction ["address"] [0].GetString ());
 
           if ((dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_ADDRESS) != 0)
           {
@@ -234,7 +234,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           if (instruction.HasField ("inst"))
           {
-            string [] operation = instruction ["inst"].GetString ().Split (new string [] { "\\t"}, StringSplitOptions.None);
+            string [] operation = instruction ["inst"] [0].GetString ().Split (new string [] { "\\t"}, StringSplitOptions.None);
 
             if (instruction.HasField ("inst") && (dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_OPCODE) != 0)
             {
@@ -302,7 +302,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           if (instruction.HasField ("offset") && (dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_BYTEOFFSET) != 0)
           {
-            prgDisassembly [i].dwByteOffset = instruction ["offset"].GetUnsignedInt ();
+            prgDisassembly [i].dwByteOffset = instruction ["offset"] [0].GetUnsignedInt ();
 
             prgDisassembly [i].dwFields |= enum_DISASSEMBLY_STREAM_FIELDS.DSF_BYTEOFFSET;
           }

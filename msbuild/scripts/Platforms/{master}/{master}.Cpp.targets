@@ -34,6 +34,8 @@
 
   <UsingTask TaskName="GccStrip" AssemblyFile="$(ANDROID_PLUS_PLUS)\msbuild\bin\AndroidPlusPlus.MsBuild.CppTasks.dll" />
 
+  <UsingTask TaskName="GccBuildId" AssemblyFile="$(ANDROID_PLUS_PLUS)\msbuild\bin\AndroidPlusPlus.MsBuild.CppTasks.dll" />
+
   <UsingTask TaskName="VCMessage" AssemblyName="Microsoft.Build.CppTasks.Common, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
 
   <!--
@@ -112,23 +114,23 @@
     </ItemGroup>
 
     <GccCompile
-      Condition                          ="'%(ClCompile.ExcludedFromBuild)'!='true' and '%(ClCompile.PrecompiledHeader)' == 'Create'"
-      BuildingInIDE                      ="$(BuildingInsideVisualStudio)"
-      Sources                            ="@(ClCompile)"
+      Condition="'%(ClCompile.ExcludedFromBuild)'!='true' and '%(ClCompile.PrecompiledHeader)' == 'Create'"
+      BuildingInIDE="$(BuildingInsideVisualStudio)"
+      Sources="@(ClCompile)"
 
-      ProcessorNumber                    ="%(ClCompile.ProcessorNumber)"
-      MultiProcessorCompilation          ="%(ClCompile.MultiProcessorCompilation)"
+      ProcessorNumber="%(ClCompile.ProcessorNumber)"
+      MultiProcessorCompilation="%(ClCompile.MultiProcessorCompilation)"
 
-      TrackerLogDirectory                ="%(ClCompile.TrackerLogDirectory)"
-      TLogReadFiles                      ="@(CLTLogReadFiles)"
-      TLogWriteFiles                     ="@(CLTLogWriteFiles)"
-      TrackFileAccess                    ="$(TrackFileAccess)"
-      MinimalRebuildFromTracking         ="%(ClCompile.MinimalRebuildFromTracking)"
+      TrackerLogDirectory="%(ClCompile.TrackerLogDirectory)"
+      TLogReadFiles="@(CLTLogReadFiles)"
+      TLogWriteFiles="@(CLTLogWriteFiles)"
+      TrackFileAccess="$(TrackFileAccess)"
+      MinimalRebuildFromTracking="%(ClCompile.MinimalRebuildFromTracking)"
 
-      OutputCommandLine                  ="%(ClCompile.OutputCommandLine)"
-      ToolPath                           ="$(PlatformToolsetCompileToolPath)"
-      ToolExe                            ="$(PlatformToolsetCompileTool)"
-      PropertiesFile                     ="$(VCTargetsPath)\Platforms\Android++\$(LangID)\gcc_compile.xml">
+      OutputCommandLine="%(ClCompile.OutputCommandLine)"
+      ToolPath="$(PlatformToolsetCompileToolPath)"
+      ToolExe="$(PlatformToolsetCompileTool)"
+      PropertiesFile="$(VCTargetsPath)\Platforms\Android++\$(LangID)\gcc_compile.xml">
 
     </GccCompile>
 
@@ -137,23 +139,23 @@
     -->
 
     <GccCompile
-      Condition                          ="'%(ClCompile.ExcludedFromBuild)'!='true' and '%(ClCompile.PrecompiledHeader)' != 'Create'"
-      BuildingInIDE                      ="$(BuildingInsideVisualStudio)"
-      Sources                            ="@(ClCompile)"
+      Condition="'%(ClCompile.ExcludedFromBuild)'!='true' and '%(ClCompile.PrecompiledHeader)' != 'Create'"
+      BuildingInIDE="$(BuildingInsideVisualStudio)"
+      Sources="@(ClCompile)"
 
-      ProcessorNumber                    ="%(ClCompile.ProcessorNumber)"
-      MultiProcessorCompilation          ="%(ClCompile.MultiProcessorCompilation)"
+      ProcessorNumber="%(ClCompile.ProcessorNumber)"
+      MultiProcessorCompilation="%(ClCompile.MultiProcessorCompilation)"
 
-      TrackerLogDirectory                ="%(ClCompile.TrackerLogDirectory)"
-      TLogReadFiles                      ="@(CLTLogReadFiles)"
-      TLogWriteFiles                     ="@(CLTLogWriteFiles)"
-      TrackFileAccess                    ="$(TrackFileAccess)"
-      MinimalRebuildFromTracking         ="%(ClCompile.MinimalRebuildFromTracking)"
+      TrackerLogDirectory="%(ClCompile.TrackerLogDirectory)"
+      TLogReadFiles="@(CLTLogReadFiles)"
+      TLogWriteFiles="@(CLTLogWriteFiles)"
+      TrackFileAccess="$(TrackFileAccess)"
+      MinimalRebuildFromTracking="%(ClCompile.MinimalRebuildFromTracking)"
 
-      OutputCommandLine                  ="%(ClCompile.OutputCommandLine)"
-      ToolPath                           ="$(PlatformToolsetCompileToolPath)"
-      ToolExe                            ="$(PlatformToolsetCompileTool)"
-      PropertiesFile                     ="$(VCTargetsPath)\Platforms\Android++\$(LangID)\gcc_compile.xml">
+      OutputCommandLine="%(ClCompile.OutputCommandLine)"
+      ToolPath="$(PlatformToolsetCompileToolPath)"
+      ToolExe="$(PlatformToolsetCompileTool)"
+      PropertiesFile="$(VCTargetsPath)\Platforms\Android++\$(LangID)\gcc_compile.xml">
 
     </GccCompile>
 
@@ -187,19 +189,19 @@
     </ItemGroup>
 
     <GccLink
-      BuildingInIDE                  ="$(BuildingInsideVisualStudio)"
-      Sources                        ="@(Link)"
+      BuildingInIDE="$(BuildingInsideVisualStudio)"
+      Sources="@(Link)"
 
-      TrackerLogDirectory            ="%(Link.TrackerLogDirectory)"
-      TLogReadFiles                  ="@(LinkTLogReadFiles)"
-      TLogWriteFiles                 ="@(LinkTLogWriteFiles)"
-      TrackFileAccess                ="$(TrackFileAccess)"
-      MinimalRebuildFromTracking     ="$(Link_MinimalRebuildFromTracking)"
+      TrackerLogDirectory="%(Link.TrackerLogDirectory)"
+      TLogReadFiles="@(LinkTLogReadFiles)"
+      TLogWriteFiles="@(LinkTLogWriteFiles)"
+      TrackFileAccess="$(TrackFileAccess)"
+      MinimalRebuildFromTracking="$(Link_MinimalRebuildFromTracking)"
 
-      OutputCommandLine              ="%(Link.OutputCommandLine)"
-      ToolPath                       ="$(PlatformToolsetLinkToolPath)"
-      ToolExe                        ="$(PlatformToolsetLinkTool)"
-      PropertiesFile                 ="$(VCTargetsPath)\Platforms\Android++\$(LangID)\gcc_link.xml">
+      OutputCommandLine="%(Link.OutputCommandLine)"
+      ToolPath="$(PlatformToolsetLinkToolPath)"
+      ToolExe="$(PlatformToolsetLinkTool)"
+      PropertiesFile="$(VCTargetsPath)\Platforms\Android++\$(LangID)\gcc_link.xml">
 
       <Output TaskParameter="OutputFiles" ItemName="LinkOutputFiles" />
 
@@ -215,11 +217,8 @@
 
     <PropertyGroup>
       <_DebugLinkSharedLibrary>@(LinkOutputFiles->'%(RootDir)%(Directory)%(Filename)%(Extension)')</_DebugLinkSharedLibrary>
-      <_DebugLinkSymbolsDir>@(LinkOutputFiles->'%(RootDir)%(Directory)')</_DebugLinkSymbolsDir>
       <_DebugLinkSymbolsFile>@(LinkOutputFiles->'%(RootDir)%(Directory)%(Filename).debug')</_DebugLinkSymbolsFile>
     </PropertyGroup>
-
-    <MakeDir Directories="$(_DebugLinkSymbolsDir)" />
 
     <Exec Command="$(PlatformToolsetObjcopyToolPath)\$(PlatformToolsetObjcopyTool) --only-keep-debug $(_DebugLinkSharedLibrary) $(_DebugLinkSymbolsFile)" />
 
@@ -237,29 +236,55 @@
     </ItemGroup>
 
     <GccStrip
-      BuildingInIDE                  ="$(BuildingInsideVisualStudio)"
-      Sources                        ="@(LinkOutputFiles)"
-      Condition                      ="('@(LinkOutputFiles)' != '' and ('%(StripUnusedSymbols)' == 'true' or '%(StripDebugSymbols)' == 'true'))"
+      BuildingInIDE="$(BuildingInsideVisualStudio)"
+      Sources="@(LinkOutputFiles)"
+      Condition="('@(LinkOutputFiles)' != '' and ('%(StripUnusedSymbols)' == 'true' or '%(StripDebugSymbols)' == 'true'))"
 
-      TrackerLogDirectory            ="%(LinkOutputFiles.TrackerLogDirectory)"
-      TrackFileAccess                ="$(TrackFileAccess)"
-      MinimalRebuildFromTracking     ="%(LinkOutputFiles.MinimalRebuildFromTracking)"
+      TrackerLogDirectory="%(LinkOutputFiles.TrackerLogDirectory)"
+      TrackFileAccess="$(TrackFileAccess)"
+      MinimalRebuildFromTracking="%(LinkOutputFiles.MinimalRebuildFromTracking)"
 
-      OutputCommandLine              ="%(LinkOutputFiles.OutputCommandLine)"
-      ToolPath                       ="$(PlatformToolsetStripToolPath)"
-      ToolExe                        ="$(PlatformToolsetStripTool)"
-      PropertiesFile                 ="$(VCTargetsPath)\Platforms\Android++\$(LangID)\gcc_strip.xml"
+      OutputCommandLine="%(LinkOutputFiles.OutputCommandLine)"
+      ToolPath="$(PlatformToolsetStripToolPath)"
+      ToolExe="$(PlatformToolsetStripTool)"
+      PropertiesFile="$(VCTargetsPath)\Platforms\Android++\$(LangID)\gcc_strip.xml"
     />
 
     <Exec Command="$(PlatformToolsetObjcopyToolPath)\$(PlatformToolsetObjcopyTool) --add-gnu-debuglink=$(_DebugLinkSymbolsFile) $(_DebugLinkSharedLibrary)" />
 
     <!--
-      Construct a GDB setup execution script to pass-through important configuration settings.
+      Evaluate library build-id and place debugging symbols under .\.build-id\[ab]\[cdefghijklmnopqrstuvwxyz].debug so GDB can find this via 'debug-files-directory'
+      - More info: https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
     -->
-   
+
+    <GccBuildId
+      TargetElf="$(_DebugLinkSharedLibrary)"
+      OutputCommandLine="%(LinkOutputFiles.OutputCommandLine)"
+      ToolPath="$(PlatformToolsetReadElfToolPath)"
+      ToolExe="$(PlatformToolsetReadElfTool)">
+      <Output TaskParameter="BuildId" PropertyName="_DebugLinkSharedLibaryBuildId" />
+    </GccBuildId>
+
+    <PropertyGroup>
+      <_DebugLinkBuildIdPath>$([System.IO.Path]::GetDirectoryName('$(_DebugLinkSharedLibrary)'))\.build-id\$(_DebugLinkSharedLibaryBuildId.Substring(0,2))</_DebugLinkBuildIdPath>
+      <_DebugLinkBuildIdFilename>$(_DebugLinkSharedLibaryBuildId.Substring(2)).debug</_DebugLinkBuildIdFilename>
+    </PropertyGroup>
+
+    <Copy SourceFiles="$(_DebugLinkSymbolsFile)" DestinationFiles="$(_DebugLinkBuildIdPath)\$(_DebugLinkBuildIdFilename)" />
+
+    <WriteLinesToFile
+      File="$(_DebugLinkBuildIdPath)\$(_DebugLinkBuildIdFilename).txt"
+      Lines="Debugging symbols for library: $(_DebugLinkSharedLibrary);Original file: $(_DebugLinkSymbolsFile);Build-id: $(_DebugLinkSharedLibaryBuildId);"
+      Overwrite="true"
+    />
+
+    <!--
+      Construct a GDB setup execution script, then embed this as an additional section ('gdb.setup') in the target library.
+    -->
+
     <ItemGroup>
       <_GdbSearchDirectories Include="$(OutDir);$(LibraryPath)" />
-      <_GdbDebugFileDirectories Include="$(_DebugLinkSymbolsDir)" />
+      <_GdbDebugFileDirectories Include="$([System.IO.Path]::GetDirectoryName('$(_DebugLinkSharedLibrary)'))" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -276,10 +301,6 @@
         set debug-file-directory $(GdbDebugFileDirectories);"
       Overwrite="true"
     />
-
-    <!-- 
-      Add additional sections to the ELF detailing the naming of our linked symbols file, and additional 'gdb.setup' contents. 
-    -->
 
     <Exec Command="$(PlatformToolsetObjcopyToolPath)\$(PlatformToolsetObjcopyTool) --add-section gdb.setup=$(GdbSetupExecutionScript) @(LinkOutputFiles->Metadata('FullPath'))" />
 
@@ -306,19 +327,19 @@
     </ItemGroup>
 
     <GccLib
-      BuildingInIDE                  ="$(BuildingInsideVisualStudio)"
-      Sources                        ="@(Lib)"
+      BuildingInIDE="$(BuildingInsideVisualStudio)"
+      Sources="@(Lib)"
 
-      TrackerLogDirectory            ="%(Lib.TrackerLogDirectory)"
-      TLogReadFiles                  ="@(LIBTLogReadFiles)"
-      TLogWriteFiles                 ="@(LIBTLogWriteFiles)"
-      TrackFileAccess                ="$(TrackFileAccess)"
-      MinimalRebuildFromTracking     ="%(Lib.MinimalRebuildFromTracking)"
+      TrackerLogDirectory="%(Lib.TrackerLogDirectory)"
+      TLogReadFiles="@(LIBTLogReadFiles)"
+      TLogWriteFiles="@(LIBTLogWriteFiles)"
+      TrackFileAccess="$(TrackFileAccess)"
+      MinimalRebuildFromTracking="%(Lib.MinimalRebuildFromTracking)"
 
-      OutputCommandLine              ="%(Lib.OutputCommandLine)"
-      ToolPath                       ="$(PlatformToolsetLibToolPath)"
-      ToolExe                        ="$(PlatformToolsetLibTool)"
-      PropertiesFile                 ="$(VCTargetsPath)\Platforms\Android++\$(LangID)\gcc_lib.xml">
+      OutputCommandLine="%(Lib.OutputCommandLine)"
+      ToolPath="$(PlatformToolsetLibToolPath)"
+      ToolExe="$(PlatformToolsetLibTool)"
+      PropertiesFile="$(VCTargetsPath)\Platforms\Android++\$(LangID)\gcc_lib.xml">
 
       <Output TaskParameter="OutputFiles" ItemName="LibOutputFiles" />
 
@@ -342,24 +363,24 @@
     </ItemGroup>
     
     <Copy 
-      Condition                      ="('@(LibOutputFiles)' != '' and ('%(StripUnusedSymbols)' == 'true' or '%(StripDebugSymbols)' == 'true'))"
-      SourceFiles                    ="@(LibOutputFiles)" 
-      DestinationFiles               ="$(OutDir)$(TargetName)$(TargetExt).unstripped" 
+      Condition="('@(LibOutputFiles)' != '' and ('%(StripUnusedSymbols)' == 'true' or '%(StripDebugSymbols)' == 'true'))"
+      SourceFiles="@(LibOutputFiles)" 
+      DestinationFiles="$(OutDir)$(TargetName)$(TargetExt).unstripped" 
     />
 
     <GccStrip
-      BuildingInIDE                  ="$(BuildingInsideVisualStudio)"
-      Sources                        ="@(LibOutputFiles)"
-      Condition                      ="('@(LibOutputFiles)' != '' and ('%(StripUnusedSymbols)' == 'true' or '%(StripDebugSymbols)' == 'true'))"
+      BuildingInIDE="$(BuildingInsideVisualStudio)"
+      Sources="@(LibOutputFiles)"
+      Condition="('@(LibOutputFiles)' != '' and ('%(StripUnusedSymbols)' == 'true' or '%(StripDebugSymbols)' == 'true'))"
 
-      TrackerLogDirectory            ="%(LibOutputFiles.TrackerLogDirectory)"
-      TrackFileAccess                ="$(TrackFileAccess)"
-      MinimalRebuildFromTracking     ="%(LibOutputFiles.MinimalRebuildFromTracking)"
+      TrackerLogDirectory="%(LibOutputFiles.TrackerLogDirectory)"
+      TrackFileAccess="$(TrackFileAccess)"
+      MinimalRebuildFromTracking="%(LibOutputFiles.MinimalRebuildFromTracking)"
 
-      OutputCommandLine              ="%(LibOutputFiles.OutputCommandLine)"
-      ToolPath                       ="$(PlatformToolsetStripToolPath)"
-      ToolExe                        ="$(PlatformToolsetStripTool)"
-      PropertiesFile                 ="$(VCTargetsPath)\Platforms\Android++\$(LangID)\gcc_strip.xml"
+      OutputCommandLine="%(LibOutputFiles.OutputCommandLine)"
+      ToolPath="$(PlatformToolsetStripToolPath)"
+      ToolExe="$(PlatformToolsetStripTool)"
+      PropertiesFile="$(VCTargetsPath)\Platforms\Android++\$(LangID)\gcc_strip.xml"
     />
 
     <Message Condition="'$(LibSkippedExecution)' == 'false'" Text="$(MSBuildProjectFile) -&gt; @(LibOutputFiles)" Importance="High" />

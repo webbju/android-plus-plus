@@ -126,9 +126,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             if (resultRecord.HasField ("bkpt"))
             {
-              uint number = resultRecord ["bkpt"] ["number"].GetUnsignedInt ();
+              uint number = resultRecord ["bkpt"] [0] ["number"] [0].GetUnsignedInt ();
 
-              string addr = resultRecord ["bkpt"] ["addr"].GetString ();
+              string addr = resultRecord ["bkpt"] [0] ["addr"] [0].GetString ();
 
               if (!string.IsNullOrEmpty (addr))
               {
@@ -226,7 +226,7 @@ namespace AndroidPlusPlus.VsDebugEngine
               throw new InvalidOperationException ();
             }
 
-            string addr = resultRecord ["BreakpointTable"] ["body"] [0] ["addr"].GetString ();
+            string addr = resultRecord ["BreakpointTable"] [0] ["body"] [0] ["addr"] [0].GetString ();
 
             if (!string.IsNullOrEmpty (addr))
             {

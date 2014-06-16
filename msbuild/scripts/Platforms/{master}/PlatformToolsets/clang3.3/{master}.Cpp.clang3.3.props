@@ -44,6 +44,8 @@
 
     <PlatformToolsetStripTool>$(TargetPlatformArchitectureToolchainToolPrefix)-strip.exe</PlatformToolsetStripTool>
 
+    <PlatformToolsetReadElfTool>$(TargetPlatformArchitectureToolchainToolPrefix)-readelf.exe</PlatformToolsetReadElfTool>
+
     <PlatformToolsetObjcopyTool>$(TargetPlatformArchitectureToolchainToolPrefix)-objcopy.exe</PlatformToolsetObjcopyTool>
 
     <PlatformToolsetCompileToolPath>$(LlvmToolsetPrebuilt)\bin</PlatformToolsetCompileToolPath>
@@ -53,6 +55,8 @@
     <PlatformToolsetLinkToolPath>$(PlatformToolsetPrebuilt)\bin</PlatformToolsetLinkToolPath>
 
     <PlatformToolsetStripToolPath>$(PlatformToolsetPrebuilt)\bin</PlatformToolsetStripToolPath>
+
+    <PlatformToolsetReadElfToolPath>$(PlatformToolsetPrebuilt)\bin</PlatformToolsetReadElfToolPath>
 
     <PlatformToolsetObjcopyToolPath>$(PlatformToolsetPrebuilt)\bin</PlatformToolsetObjcopyToolPath>
 

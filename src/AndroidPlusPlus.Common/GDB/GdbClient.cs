@@ -322,6 +322,7 @@ namespace AndroidPlusPlus.Common
 
           break;
         }
+
         case StepType.Instruction:
         {
           MiResultRecord resultRecord = SendCommand (string.Format ("-exec-step-instruction {0}", ((reverse) ? "--reverse" : "")));
@@ -410,7 +411,7 @@ namespace AndroidPlusPlus.Common
 
       if ((result != null) && (!result.IsError ()))
       {
-        return result ["value"].GetString ();
+        return result ["value"] [0].GetString ();
       }
 
       return string.Empty;
@@ -428,7 +429,7 @@ namespace AndroidPlusPlus.Common
       {
         string existingSettingValue = GetSetting (setting);
 
-        if (!existingSettingValue.Contains (value))
+        if (!string.IsNullOrWhiteSpace (existingSettingValue) && !existingSettingValue.Contains (value))
         {
           value = string.Join (";", new string [] { existingSettingValue, value }); 
         }

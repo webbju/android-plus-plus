@@ -3,6 +3,8 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -15,14 +17,14 @@ namespace AndroidPlusPlus.Common
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class MiVariable
+  public class MiVariable : IDisposable
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public MiVariable (string expression, MiResultRecord createRecord)
+    public MiVariable (string expression, List <MiResultValue> variableValues)
     {
       Expression = expression;
 
@@ -38,7 +40,15 @@ namespace AndroidPlusPlus.Common
 
       Value = string.Empty;
 
-      Refresh (createRecord);
+      Refresh (variableValues);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public void Dispose ()
+    {
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -63,68 +73,57 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void Refresh (MiResultRecord resultRecord)
+    public void Refresh (List<MiResultValue> variableValues)
     {
-      if ((resultRecord == null) || (resultRecord.IsError ()))
+      foreach (MiResultValue resultValue in variableValues)
       {
-        throw new ArgumentException ();
-      }
-
-      if (resultRecord.HasField ("name"))
-      {
-        Name = resultRecord ["name"].GetString ();
-      }
-
-      if (resultRecord.HasField ("type"))
-      {
-        Type = resultRecord ["type"].GetString ();
-      }
-
-      if (resultRecord.HasField ("new_type"))
-      {
-        Type = resultRecord ["new_type"].GetString ();
-      }
-
-      if (resultRecord.HasField ("thread-id"))
-      {
-        ThreadId =  resultRecord ["thread-id"].GetUnsignedInt ();
-      }
-
-      if (resultRecord.HasField ("dynamic"))
-      {
-        Dynamic = (resultRecord ["dynamic"].GetUnsignedInt () == 1);
-      }
-
-      if (Dynamic && (resultRecord.HasField ("has_more")))
-      {
-        HasChildren = (resultRecord ["has_more"].GetUnsignedInt () != 0);
-      }
-      else
-      {
-        if (resultRecord.HasField ("numchild"))
+        if (resultValue.HasField ("name"))
         {
-          HasChildren = (resultRecord ["numchild"].GetUnsignedInt () != 0);
+          Name = resultValue ["name"] [0].GetString ();
         }
 
-        if (resultRecord.HasField ("new_num_children"))
+        if (resultValue.HasField ("type"))
         {
-          HasChildren = (resultRecord ["new_num_children"].GetUnsignedInt () != 0);
+          Type = resultValue ["type"] [0].GetString ();
+        }
+
+        if (resultValue.HasField ("new_type"))
+        {
+          Type = resultValue ["new_type"] [0].GetString ();
+        }
+
+        if (resultValue.HasField ("thread-id"))
+        {
+          ThreadId = resultValue ["thread-id"] [0].GetUnsignedInt ();
+        }
+
+        if (resultValue.HasField ("dynamic"))
+        {
+          Dynamic = (resultValue ["dynamic"] [0].GetUnsignedInt () == 1);
+        }
+
+        if (Dynamic && (resultValue.HasField ("has_more")))
+        {
+          HasChildren = (resultValue ["has_more"] [0].GetUnsignedInt () != 0);
+        }
+        else
+        {
+          if (resultValue.HasField ("numchild"))
+          {
+            HasChildren = (resultValue ["numchild"] [0].GetUnsignedInt () != 0);
+          }
+
+          if (resultValue.HasField ("new_num_children"))
+          {
+            HasChildren = (resultValue ["new_num_children"] [0].GetUnsignedInt () != 0);
+          }
+        }
+
+        if (resultValue.HasField ("value"))
+        {
+          Value = resultValue ["value"] [0].GetString ();
         }
       }
-
-      if (resultRecord.HasField ("value"))
-      {
-        Value = resultRecord ["value"].GetString ();
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public void Delete ()
-    {
-      throw new NotImplementedException ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

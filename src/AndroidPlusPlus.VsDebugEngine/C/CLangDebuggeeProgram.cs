@@ -30,7 +30,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     protected List<DebuggeeModule> m_debugModules;
 
-    protected List<DebuggeeThread> m_debugThreads;
+    protected Dictionary<uint, DebuggeeThread> m_debugThreads;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -46,7 +46,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       m_debugModules = new List<DebuggeeModule> ();
 
-      m_debugThreads = new List<DebuggeeThread> ();
+      m_debugThreads = new Dictionary<uint, DebuggeeThread> ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -84,6 +84,44 @@ namespace AndroidPlusPlus.VsDebugEngine
         m_debugger.GdbClient.SendCommand ("-thread-select " + requestedThreadId);
 
         CurrentThreadId = requestedThreadId;
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public void RefreshThreads ()
+    {
+      LoggingUtils.PrintFunction ();
+
+      MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand ("-thread-list-ids");
+
+      if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
+      {
+        throw new InvalidOperationException ();
+      }
+
+      if (resultRecord.HasField ("thread-ids"))
+      {
+        List<MiResultValue> threadIds = resultRecord ["thread-ids"] [0] ["thread-id"];
+
+        for (int i = 0; i < threadIds.Count; ++i)
+        {
+          uint id = threadIds [i].GetUnsignedInt ();
+
+          if (GetThread (id) == null)
+          {
+            CLangDebuggeeThread thread = new CLangDebuggeeThread (this, id);
+
+            AddThread (thread);
+          }
+        }
+      }
+
+      if (resultRecord.HasField ("current-thread"))
+      {
+        CurrentThreadId = resultRecord ["current-thread"] [0].GetUnsignedInt ();
       }
     }
 
@@ -181,15 +219,52 @@ namespace AndroidPlusPlus.VsDebugEngine
         throw new ArgumentNullException ("thread");
       }
 
+      uint threadId;
+
+      LoggingUtils.RequireOk (thread.GetThreadId (out threadId));
+
       lock (m_debugThreads)
       {
-        if (m_debugThreads.Contains (thread))
+        if (m_debugThreads.ContainsKey (threadId))
         {
           throw new ArgumentException ();
         }
 
-        m_debugThreads.Add (thread);
+        m_debugThreads.Add (threadId, thread);
+
       }
+
+      m_debugger.Engine.Broadcast (new DebugEngineEvent.ThreadCreate (), DebugProgram, thread);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public void RemoveThread (CLangDebuggeeThread thread, uint exitCode)
+    {
+      LoggingUtils.PrintFunction ();
+
+      if (thread == null)
+      {
+        throw new ArgumentNullException ("thread");
+      }
+
+      uint threadId;
+
+      LoggingUtils.RequireOk (thread.GetThreadId (out threadId));
+
+      lock (m_debugThreads)
+      {
+        if (m_debugThreads.ContainsKey (threadId))
+        {
+          throw new ArgumentException ();
+        }
+
+        m_debugThreads.Remove (threadId);
+      }
+
+      m_debugger.Engine.Broadcast (new DebugEngineEvent.ThreadDestroy (exitCode), DebugProgram, thread);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -202,14 +277,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       lock (m_debugThreads)
       {
-        foreach (DebuggeeThread thread in m_debugThreads)
-        {
-          uint currThreadId;
+        DebuggeeThread thread;
 
-          if ((thread.GetThreadId (out currThreadId) == DebugEngineConstants.S_OK) && (currThreadId == threadId))
-          {
-            return thread as CLangDebuggeeThread; 
-          }
+        if (m_debugThreads.TryGetValue (threadId, out thread))
+        {
+          return thread as CLangDebuggeeThread;
         }
       }
 
@@ -220,35 +292,11 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public List<DebuggeeThread> GetThreads ()
+    public Dictionary<uint, DebuggeeThread> GetThreads ()
     {
       LoggingUtils.PrintFunction ();
 
       return m_debugThreads;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public void RemoveThread (CLangDebuggeeThread thread)
-    {
-      LoggingUtils.PrintFunction ();
-
-      if (thread == null)
-      {
-        throw new ArgumentNullException ("thread");
-      }
-
-      lock (m_debugThreads)
-      {
-        if (!m_debugThreads.Contains (thread))
-        {
-          throw new ArgumentException ();
-        }
-
-        m_debugThreads.Remove (thread);
-      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -512,10 +560,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         List<IDebugThread2> threads = new List<IDebugThread2> ();
 
-        foreach (DebuggeeThread thread in m_debugThreads)
-        {
-          threads.Add (thread as IDebugThread2);
-        }
+        threads.AddRange (m_debugThreads.Values);
 
         ppEnum = new DebuggeeThread.Enumerator (threads);
 

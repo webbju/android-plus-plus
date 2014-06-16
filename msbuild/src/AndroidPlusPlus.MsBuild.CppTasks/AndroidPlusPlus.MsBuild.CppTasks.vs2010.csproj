@@ -54,6 +54,7 @@
     <Compile Include="..\..\..\src\AndroidPlusPlus.Common\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Tasks\GccBuildId.cs" />
     <Compile Include="Tasks\GccLink.cs" />
     <Compile Include="Tasks\GccCompile.cs" />
     <Compile Include="Tasks\GccLib.cs" />

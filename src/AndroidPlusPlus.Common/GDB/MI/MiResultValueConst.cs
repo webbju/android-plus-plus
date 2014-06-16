@@ -48,9 +48,9 @@ namespace AndroidPlusPlus.Common
 
       m_valueList.Add (this);
 
-      m_fieldDictionary = new Dictionary<string, MiResultValue> ();
+      m_fieldDictionary = new Dictionary<string, List <MiResultValue>> ();
 
-      m_fieldDictionary.Add (variable, this);
+      m_fieldDictionary.Add (variable, m_valueList);
 
       m_rawConstValue = value;
     }
@@ -65,12 +65,7 @@ namespace AndroidPlusPlus.Common
       // Strip quotation marks on const value parameters.
       // 
 
-      if (!string.IsNullOrEmpty (m_rawConstValue) && (m_rawConstValue [0] == '\"'))
-      {
-        return m_rawConstValue.Substring (1, m_rawConstValue.Length - 2);
-      }
-
-      return m_rawConstValue;
+      return m_rawConstValue.Trim (new char [] { '"' });
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -86,7 +81,7 @@ namespace AndroidPlusPlus.Common
         return int.Parse (literal.Substring (2), NumberStyles.HexNumber);
       }
 
-      return int.Parse (GetString ());
+      return int.Parse (literal);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

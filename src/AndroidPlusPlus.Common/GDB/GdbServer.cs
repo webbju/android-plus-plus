@@ -132,6 +132,7 @@ namespace AndroidPlusPlus.Common
           {
             if (checkGdbServer.StartAndWaitForExit (1000) != 0)
             {
+              // TODO: Push the required gdbserver binary, so we can attach to any app.
               throw new InvalidOperationException ("Could not locate 'gdbserver' target.");
             }
 

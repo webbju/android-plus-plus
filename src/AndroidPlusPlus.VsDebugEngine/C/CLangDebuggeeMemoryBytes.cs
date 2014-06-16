@@ -80,7 +80,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        MiResultValue byteStream = resultRecord ["memory"] [0] ["contents"];
+        MiResultValue byteStream = resultRecord ["memory"] [0] ["contents"] [0];
 
         string hexValue = byteStream.GetString ();
 

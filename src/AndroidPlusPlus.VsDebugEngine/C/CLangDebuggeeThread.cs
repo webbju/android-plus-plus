@@ -27,12 +27,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public CLangDebuggeeThread (CLangDebuggeeProgram program, uint id, string groupId)
+    public CLangDebuggeeThread (CLangDebuggeeProgram program, uint id)
       : base (program.DebugProgram, id)
     {
       NativeProgram = program;
-
-      GroupId = groupId;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -45,16 +43,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public string GroupId { get; protected set; }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     public override void StackTrace ()
     {
       // 
-      // Each thread maintains an internal cache of the last reported stacktrace. This is only cleared when threads are resumed via 'SetRunning(true)'.
+      // Each thread maintains an internal cache of the last reported stack-trace. This is only cleared when threads are resumed via 'SetRunning(true)'.
       // 
 
       LoggingUtils.PrintFunction ();
@@ -69,13 +61,18 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           if ((resultRecord != null) && (!resultRecord.IsError ()) && (resultRecord.HasField ("stack")))
           {
-            MiResultValue stackRecord = resultRecord ["stack"];
+            MiResultValueList stackRecord = resultRecord ["stack"] [0] as MiResultValueList;
 
             for (int i = 0; i < stackRecord.Count; ++i)
             {
+              string stackFrameId = m_threadName + " #" + i;
+
               MiResultValueTuple frameTuple = stackRecord [i] as MiResultValueTuple;
 
-              string stackFrameId = m_threadName + " #" + i;
+              if (frameTuple == null)
+              {
+                throw new InvalidOperationException ();
+              }
 
               CLangDebuggeeStackFrame stackFrame = new CLangDebuggeeStackFrame (m_debugProgram.AttachedEngine.NativeDebugger, this, frameTuple, stackFrameId);
 

@@ -50,6 +50,11 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       m_debugger = debugger;
 
+      if (frameTuple == null)
+      {
+        throw new ArgumentNullException ("frameTuple");
+      }
+
       GetInfoFromCurrentLevel (frameTuple);
 
       LoggingUtils.RequireOk (GetArguments ());
@@ -80,7 +85,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (frameTuple.HasField ("level"))
         {
-          Level = frameTuple ["level"].GetUnsignedInt ();
+          Level = frameTuple ["level"] [0].GetUnsignedInt ();
         }
 
         // 
@@ -89,7 +94,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (frameTuple.HasField ("addr"))
         {
-          m_locationAddress = new DebuggeeAddress (frameTuple ["addr"].GetString ());
+          m_locationAddress = new DebuggeeAddress (frameTuple ["addr"] [0].GetString ());
         }
         else
         {
@@ -98,22 +103,20 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         m_property = new CLangDebuggeeProperty (m_debugger, this, "*" + m_locationAddress.ToString (), new CLangDebuggeeProperty [] { });
 
-        if (!frameTuple.HasField ("func") || frameTuple ["func"].GetString () == "??")
+        if (frameTuple.HasField ("func"))
         {
-          m_locationFunction = "??";
-
-          m_locationIsSymbolicated = false;
+          m_locationFunction = frameTuple ["func"] [0].GetString ();
         }
         else
         {
-          m_locationFunction = frameTuple ["func"].GetString ();
-
-          m_locationIsSymbolicated = true;
+          m_locationFunction = "??";
         }
+
+        m_locationIsSymbolicated = !(m_locationFunction.Equals ("??"));
 
         if (frameTuple.HasField ("from"))
         {
-          m_locationModule = Path.GetFileName (frameTuple ["from"].GetString ());
+          m_locationModule = Path.GetFileName (frameTuple ["from"] [0].GetString ());
         }
         else
         {
@@ -145,7 +148,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           TEXT_POSITION [] textPositions = new TEXT_POSITION [2];
 
-          textPositions [0].dwLine = frameTuple ["line"].GetUnsignedInt () - 1;
+          textPositions [0].dwLine = frameTuple ["line"] [0].GetUnsignedInt () - 1;
 
           textPositions [0].dwColumn = 0;
 
@@ -153,7 +156,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           textPositions [1].dwColumn = textPositions [0].dwColumn;
 
-          string filename = StringUtils.ConvertPathPosixToWindows (frameTuple ["fullname"].GetString ());
+          string filename = StringUtils.ConvertPathPosixToWindows (frameTuple ["fullname"] [0].GetString ());
 
           m_documentContext = new DebuggeeDocumentContext (m_debugger.Engine, filename, textPositions [0], textPositions [1], DebugEngineGuids.guidLanguageCpp, m_locationAddress);
 
@@ -195,18 +198,17 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           if ((resultRecord != null) && (!resultRecord.IsError ()) && (resultRecord.HasField ("stack-args")))
           {
-            MiResultValue stackLevelArguments = resultRecord ["stack-args"] [0] ["args"];
+            MiResultValueTuple stackLevelFrame = resultRecord ["stack-args"] [0] ["frame"] [0] as MiResultValueTuple;
 
-            for (int i = 0; i < stackLevelArguments.Count; ++i)
+            MiResultValueList stackLevelFrameArguments = stackLevelFrame ["args"] [0] as MiResultValueList;
+
+            for (int i = 0; i < stackLevelFrameArguments.Count; ++i)
             {
-              string argument = stackLevelArguments [i] ["name"].GetString ();
+              string argument = stackLevelFrameArguments [i] ["name"] [0].GetString ();
 
-              if (!string.IsNullOrEmpty (argument))
-              {
-                CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, argument, null);
+              CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, argument, null);
 
-                m_stackArguments.TryAdd (argument, property);
-              }
+              m_stackArguments.TryAdd (argument, property);
             }
           }
         }
@@ -243,18 +245,15 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           if ((resultRecord != null) && (!resultRecord.IsError ()) && (resultRecord.HasField ("locals")))
           {
-            MiResultValue localVariables = resultRecord ["locals"];
+            MiResultValue localVariables = resultRecord ["locals"] [0];
 
             for (int i = 0; i < localVariables.Count; ++i)
             {
-              string variable = localVariables [i] ["name"].GetString ();
+              string variable = localVariables [i] ["name"] [0].GetString ();
 
-              if (!string.IsNullOrEmpty (variable))
-              {
-                CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, variable, null);
+              CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, variable, null);
 
-                m_stackLocals.TryAdd (variable, property);
-              }
+              m_stackLocals.TryAdd (variable, property);
             }
           }
         }
@@ -301,28 +300,25 @@ namespace AndroidPlusPlus.VsDebugEngine
             throw new InvalidOperationException ("Failed to retrieve list of register names");
           }
 
-          MiResultValue registerValues = registerValueRecord ["register-values"];
+          MiResultValue registerValues = registerValueRecord ["register-values"] [0];
 
-          MiResultValue registerNames = registerNamesRecord ["register-names"];
+          MiResultValue registerNames = registerNamesRecord ["register-names"] [0];
 
           for (int i = 0; i < registerValues.Count; ++i)
           {
-            int number = registerValues [i] ["number"].GetInt ();
+            int number = registerValues [i] ["number"] [0].GetInt ();
 
-            string value = registerValues [i] ["value"].GetString ();
+            string value = registerValues [i] ["value"] [0].GetString ();
 
             string register = registerNames [number].GetString ();
 
-            if (!string.IsNullOrEmpty (register))
-            {
-              string prettified = "$" + register;
+            string prettified = "$" + register;
 
-              CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, prettified, null);
+            CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, prettified, null);
 
-              property.Value = value;
+            property.Value = value;
 
-              m_stackRegisters.TryAdd (prettified, property);
-            }
+            m_stackRegisters.TryAdd (prettified, property);
           }
         }
 

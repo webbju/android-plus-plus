@@ -24,7 +24,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private Dictionary<string, MiResultValue> m_fieldDictionary;
+    private Dictionary<string, List<MiResultValue>> m_fieldDictionary;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -54,21 +54,20 @@ namespace AndroidPlusPlus.Common
       // Build a searchable dictionary of available result variables (fields).
       // 
 
-      m_fieldDictionary = new Dictionary<string, MiResultValue> ();
+      m_fieldDictionary = new Dictionary<string, List <MiResultValue>> ();
 
-      foreach (MiResultValue value in Results)
+      foreach (MiResultValue value in results)
       {
-        // GDB 7.3.1 has a bug where the reason field can be provided twice for locations with a breakpoint, when already stepping.
-        // This is potentially fixed in GDB 7.4. But workaround exceptions here.
+        List<MiResultValue> fieldList;
 
-        try
+        if (!m_fieldDictionary.TryGetValue (value.Variable, out fieldList))
         {
-          m_fieldDictionary.Add (value.Variable, value);
+          fieldList = new List<MiResultValue> ();
         }
-        catch (Exception e)
-        {
-          LoggingUtils.HandleException (e);
-        }
+
+        fieldList.Add (value);
+
+        m_fieldDictionary [value.Variable] = fieldList;
       }
     }
 
@@ -130,7 +129,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public MiResultValue this [string key]
+    public List <MiResultValue> this [string key]
     {
       get
       {

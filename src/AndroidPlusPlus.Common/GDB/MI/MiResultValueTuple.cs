@@ -38,11 +38,20 @@ namespace AndroidPlusPlus.Common
       // Build a searchable dictionary of available result variables (fields).
       // 
 
-      m_fieldDictionary = new Dictionary<string, MiResultValue> ();
+      m_fieldDictionary = new Dictionary<string, List <MiResultValue>> ();
 
       foreach (MiResultValue value in m_valueList)
       {
-        m_fieldDictionary.Add (value.Variable, value);
+        List <MiResultValue> fieldList;
+
+        if (!m_fieldDictionary.TryGetValue (value.Variable, out fieldList))
+        {
+          fieldList = new List <MiResultValue> ();
+        }
+
+        fieldList.Add (value);
+
+        m_fieldDictionary [value.Variable] = fieldList;
       }
     }
 

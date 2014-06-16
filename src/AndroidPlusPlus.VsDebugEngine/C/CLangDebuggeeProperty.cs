@@ -47,14 +47,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (!(m_expression.StartsWith ("*0x") || m_expression.StartsWith ("$")))
       {
-        m_debugger.GdbClient.SendCommand (string.Format ("-stack-select-frame {0}", (m_stackFrame as CLangDebuggeeStackFrame).Level));
-
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-var-create - * {0}", StringUtils.Escape (m_expression)));
-
-        if ((resultRecord != null) && (!resultRecord.IsError ()))
-        {
-          m_gdbVariable = new MiVariable (m_expression, resultRecord);
-        }
+        m_gdbVariable = CreateGdbVariable (m_expression);
       }
     }
 
@@ -66,6 +59,59 @@ namespace AndroidPlusPlus.VsDebugEngine
       : this (parent.m_debugger, parent.m_stackFrame as CLangDebuggeeStackFrame, expression, children)
     {
       m_parent = parent;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private MiVariable CreateGdbVariable (string expression)
+    {
+      m_debugger.GdbClient.SendCommand (string.Format ("-stack-select-frame {0}", (m_stackFrame as CLangDebuggeeStackFrame).Level));
+
+      MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-var-create - * {0}", StringUtils.Escape (m_expression)));
+
+      if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
+      {
+        throw new InvalidOperationException ();
+      }
+
+      return new MiVariable (m_expression, resultRecord.Results);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private void UpdateGdbVariable (MiVariable gdbVariable)
+    {
+      MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-var-update --all-values {0}", gdbVariable.Name));
+
+      if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
+      {
+        throw new InvalidOperationException ();
+      }
+
+      if (!resultRecord.HasField ("changelist"))
+      {
+        throw new InvalidOperationException ();
+      }
+
+      gdbVariable.Refresh (resultRecord ["changelist"]);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private void DeleteGdbVariable (MiVariable gdbVariable)
+    {
+      MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-var-delete {0}", gdbVariable.Name));
+
+      if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
+      {
+        throw new InvalidOperationException ();
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -264,7 +310,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        size = resultRecord ["value"].GetUnsignedInt ();
+        size = resultRecord ["value"] [0].GetUnsignedInt ();
 
         return DebugEngineConstants.S_OK;
       }
@@ -301,7 +347,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        m_gdbVariable.Refresh (resultRecord);
+        UpdateGdbVariable (m_gdbVariable);
 
         return DebugEngineConstants.S_OK;
       }

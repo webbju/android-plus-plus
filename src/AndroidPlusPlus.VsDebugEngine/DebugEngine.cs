@@ -193,6 +193,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         LoggingUtils.RequireOk (Program.Attach (m_sdmCallback));
 
+        NativeDebugger.NativeProgram.RefreshThreads ();
+
         CLangDebuggeeThread currentThread = NativeDebugger.NativeProgram.GetThread (NativeDebugger.NativeProgram.CurrentThreadId);
 
         if (currentThread == null)

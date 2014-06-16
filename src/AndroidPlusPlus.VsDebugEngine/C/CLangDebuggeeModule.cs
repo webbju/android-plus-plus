@@ -38,13 +38,13 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new ArgumentNullException ("asyncRecord");
         }
 
-        Name = asyncRecord ["id"].GetString ();
+        Name = asyncRecord ["id"] [0].GetString ();
 
-        RemotePath = asyncRecord ["target-name"].GetString ();
+        RemotePath = asyncRecord ["target-name"] [0].GetString ();
 
         RemoteLoadAddress = 0;
 
-        SymbolsPath = asyncRecord ["host-name"].GetString ();
+        SymbolsPath = asyncRecord ["host-name"] [0].GetString ();
 
         // 
         // The 'symbols-loaded' field is emitted only for backward compatibility and should not be relied on to convey any useful information.
