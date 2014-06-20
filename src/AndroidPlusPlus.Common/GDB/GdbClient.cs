@@ -91,6 +91,8 @@ namespace AndroidPlusPlus.Common
 
     private uint m_sessionCommandToken = 1; // Start at 1 so 0 can represent an invalid token.
 
+    private Dictionary<uint, string> m_registerIdMapping = new Dictionary<uint, string> ();
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -161,29 +163,83 @@ namespace AndroidPlusPlus.Common
 
       m_gdbClientInstance.Listener = this;
 
-      m_gdbClientInstance.StartInfo.Arguments += string.Format (@" -fullname -x {0}\gdb.setup", StringUtils.ConvertPathWindowsToPosix (m_gdbSetup.CacheDirectory));
+      m_gdbClientInstance.StartInfo.Arguments += string.Format (@" -fullname -x {0}/gdb.setup", StringUtils.ConvertPathWindowsToPosix (m_gdbSetup.CacheDirectory));
 
       m_gdbClientInstance.Start ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public void Attach (GdbServer gdbServer)
+    {
+      LoggingUtils.PrintFunction ();
+
+      m_gdbServer = gdbServer;
+
+      m_gdbSetup.ClearPortForwarding ();
+
+      m_gdbSetup.SetupPortForwarding ();
+
+      SetSetting ("auto-solib-add", "on", false);
+
+      SetSetting ("breakpoint pending", "on", false); // an unrecognized breakpoint location should automatically result in a pending breakpoint being created.
 
       // 
-      // Request symbol loading and probe each library for special embedded 'gdb.setup' sections.
+      // Configure default shared library settings.
       // 
 
-      SetSetting ("solib-search-path", StringUtils.ConvertPathWindowsToPosix (m_gdbSetup.CacheDirectory), true);
+      SetSetting ("sysroot", StringUtils.ConvertPathWindowsToPosix (m_gdbSetup.CacheSysRoot), false);
 
-      SetSetting ("debug-file-directory", StringUtils.ConvertPathWindowsToPosix (m_gdbSetup.CacheDirectory), true);
+      SetSetting ("solib-search-path", StringUtils.ConvertPathWindowsToPosix (m_gdbSetup.CacheSysRoot), false);
 
-      string [] cachedBinaries = m_gdbSetup.CacheDeviceBinaries ();
+      SetSetting ("debug-file-directory", StringUtils.ConvertPathWindowsToPosix (m_gdbSetup.CacheSysRoot), false);
+
+      // 
+      // Pull required system and application binaries from the device.
+      // TODO: Use 'ndk-depends' to figure out which system shared libraries are used and pull these.
+      // 
+
+      string [] cachedSystemBinaries = m_gdbSetup.CacheSystemBinaries ();
+
+      string [] cachedAppBinaries = m_gdbSetup.CacheApplicationBinaries ();
+
+      List<string> sharedLibrarySearchPaths = new List<string> ();
+
+      foreach (string systemBinary in cachedSystemBinaries)
+      {
+        string posixSystemBinaryDirectory = StringUtils.ConvertPathWindowsToPosix (Path.GetDirectoryName (systemBinary));
+
+        if (!sharedLibrarySearchPaths.Contains (posixSystemBinaryDirectory))
+        {
+          sharedLibrarySearchPaths.Add (posixSystemBinaryDirectory);
+        }
+      }
+
+      foreach (string appBinary in cachedAppBinaries)
+      {
+        string posixAppBinaryDirectory = StringUtils.ConvertPathWindowsToPosix (Path.GetDirectoryName (appBinary));
+
+        if (!sharedLibrarySearchPaths.Contains (posixAppBinaryDirectory))
+        {
+          sharedLibrarySearchPaths.Add (posixAppBinaryDirectory);
+        }
+      }
+
+      SetSetting ("solib-search-path", string.Join (";", sharedLibrarySearchPaths.ToArray ()), true);
+
+      SetSetting ("debug-file-directory", string.Join (";", sharedLibrarySearchPaths.ToArray ()), true);
+
+      // 
+      // Probe each library for special embedded 'gdb.setup' sections.
+      // 
 
       string gnuObjdumpToolPath = m_gdbSetup.GdbToolPath.Replace ("-gdb", "-objdump");
 
-      foreach (string binary in cachedBinaries)
+      foreach (string binary in cachedAppBinaries)
       {
         string embeddedGdbSetupSection = GnuObjdump.GetElfSectionData (gnuObjdumpToolPath, binary, "gdb.setup");
-
-        SetSetting ("solib-search-path", StringUtils.ConvertPathWindowsToPosix (Path.GetDirectoryName (binary)), true);
-
-        SetSetting ("debug-file-directory", StringUtils.ConvertPathWindowsToPosix (Path.GetDirectoryName (binary)), true);
 
         if (!string.IsNullOrWhiteSpace (embeddedGdbSetupSection))
         {
@@ -227,27 +283,42 @@ namespace AndroidPlusPlus.Common
           }
         }
 
-        SendCommand ("symbol-file " + StringUtils.ConvertPathWindowsToPosix (binary));
+        //SendCommand ("symbol-file " + StringUtils.ConvertPathWindowsToPosix (binary));
       }
-    }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // 
+      // Connect to the remote target and '/system/bin/app_process' binary.
+      // 
 
-    public void Attach (GdbServer gdbServer)
-    {
-      LoggingUtils.PrintFunction ();
+      //SendCommand ("help show");
 
-      m_gdbServer = gdbServer;
+      //SendCommand ("show auto-solib-limit");
 
-      m_gdbSetup.ClearPortForwarding ();
+      //SendCommand ("show stop-on-solib-events");
 
-      m_gdbSetup.SetupPortForwarding ();
+      //SetSetting ("auto-solib-limit", "1024", false); // 1GB max shared library size.
 
-      SendCommand ("file " + StringUtils.ConvertPathWindowsToPosix (Path.Combine (m_gdbSetup.CacheDirectory, "app_process")));
+      //SetSetting ("stop-on-solib-events", "off", false);
 
-      SendCommand (string.Format ("target remote {0}:{1}", m_gdbSetup.Host, m_gdbSetup.Port), 60000);
+      MiResultRecord resultRecord = SendCommand ("file " + StringUtils.ConvertPathWindowsToPosix (Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\app_process")));
+
+      if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
+      {
+        throw new InvalidOperationException ();
+      }
+
+      resultRecord = SendCommand (string.Format ("-target-select remote {0}:{1}", m_gdbSetup.Host, m_gdbSetup.Port), 60000);
+
+      if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
+      {
+        throw new InvalidOperationException ();
+      }
+
+#if DEBUG && FALSE
+      //SendCommand ("sharedlibrary"); // Find and load all available matching symbols.
+
+      SendCommand ("info sharedlibrary");
+#endif
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -304,7 +375,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void StepInto (StepType stepType, bool reverse)
+    public void StepInto (uint threadId, StepType stepType, bool reverse)
     {
       LoggingUtils.PrintFunction ();
 
@@ -313,7 +384,7 @@ namespace AndroidPlusPlus.Common
         case StepType.Statement:
         case StepType.Line:
         {
-          MiResultRecord resultRecord = SendCommand (string.Format ("-exec-step {0}", ((reverse) ? "--reverse" : "")));
+          MiResultRecord resultRecord = SendCommand (string.Format ("-exec-step {0} {1}", threadId, ((reverse) ? "--reverse" : "")));
 
           if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
           {
@@ -325,7 +396,7 @@ namespace AndroidPlusPlus.Common
 
         case StepType.Instruction:
         {
-          MiResultRecord resultRecord = SendCommand (string.Format ("-exec-step-instruction {0}", ((reverse) ? "--reverse" : "")));
+          MiResultRecord resultRecord = SendCommand (string.Format ("-exec-step-instruction {0} {1}", threadId, ((reverse) ? "--reverse" : "")));
 
           if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
           {
@@ -341,7 +412,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void StepOut (StepType stepType, bool reverse)
+    public void StepOut (uint threadId, StepType stepType, bool reverse)
     {
       LoggingUtils.PrintFunction ();
 
@@ -351,7 +422,7 @@ namespace AndroidPlusPlus.Common
         case StepType.Line:
         case StepType.Instruction:
         {
-          MiResultRecord resultRecord = SendCommand (string.Format ("-exec-finish {0}", ((reverse) ? "--reverse" : "")));
+          MiResultRecord resultRecord = SendCommand (string.Format ("-exec-finish --thread {0} {1}", threadId, ((reverse) ? "--reverse" : "")));
 
           if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
           {
@@ -367,7 +438,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void StepOver (StepType stepType, bool reverse)
+    public void StepOver (uint threadId, StepType stepType, bool reverse)
     {
       LoggingUtils.PrintFunction ();
 
@@ -376,7 +447,7 @@ namespace AndroidPlusPlus.Common
         case StepType.Statement:
         case StepType.Line:
         {
-          MiResultRecord resultRecord = SendCommand (string.Format ("-exec-next {0}", ((reverse) ? "--reverse" : "")));
+          MiResultRecord resultRecord = SendCommand (string.Format ("-exec-next {0} {1}", threadId, ((reverse) ? "--reverse" : "")));
 
           if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
           {
@@ -387,7 +458,7 @@ namespace AndroidPlusPlus.Common
         }
         case StepType.Instruction:
         {
-          MiResultRecord resultRecord = SendCommand (string.Format ("-exec-next-instruction {0}", ((reverse) ? "--reverse" : "")));
+          MiResultRecord resultRecord = SendCommand (string.Format ("-exec-next-instruction {0} {1}", threadId, ((reverse) ? "--reverse" : "")));
 
           if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
           {
@@ -397,6 +468,36 @@ namespace AndroidPlusPlus.Common
           break;
         }
       }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public Dictionary <uint, string> GetRegisterIdMapping ()
+    {
+      LoggingUtils.Print (string.Format ("[GdbClient] GetRegisterNameFromId"));
+
+      if (m_registerIdMapping.Count == 0)
+      {
+        MiResultRecord registerNamesRecord = SendCommand ("-data-list-register-names");
+
+        if ((registerNamesRecord == null) || (registerNamesRecord.IsError ()) || (!registerNamesRecord.HasField ("register-names")))
+        {
+          throw new InvalidOperationException ("Failed to retrieve list of register names");
+        }
+
+        MiResultValue registerNames = registerNamesRecord ["register-names"] [0];
+
+        for (int i = 0; i < registerNames.Count; ++i)
+        {
+          string register = registerNames [i].GetString ();
+
+          m_registerIdMapping.Add ((uint) i, register);
+        }
+      }
+
+      return m_registerIdMapping;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -427,11 +528,31 @@ namespace AndroidPlusPlus.Common
 
       if (appendToExisting)
       {
+        // 
+        // Validate that the requested value isn't already set before joining.
+        // 
+
         string existingSettingValue = GetSetting (setting);
 
-        if (!string.IsNullOrWhiteSpace (existingSettingValue) && !existingSettingValue.Contains (value))
+        if (!string.IsNullOrWhiteSpace (existingSettingValue))
         {
-          value = string.Join (";", new string [] { existingSettingValue, value }); 
+          string [] existingValues = existingSettingValue.Split (new char [] { ';' });
+
+          foreach (string existing in existingValues)
+          {
+            if (existing.Equals (value))
+            {
+              appendToExisting = false;
+
+              break;
+            }
+          }
+
+          if (appendToExisting)
+          {
+            // Prefix the new value so it takes precedence. This is usually what's intended.
+            value = string.Join (";", new string [] { value, existingSettingValue });
+          }
         }
       }
 
@@ -606,24 +727,31 @@ namespace AndroidPlusPlus.Common
 
         MiResultRecord callbackRecord = record as MiResultRecord;
 
-        if ((callbackRecord != null) && (callbackRecord.Token != 0))
+        try
         {
-          AsyncCommandData callbackCommandData = null;
-
-          if (m_asyncCommandData.TryGetValue (callbackRecord.Token, out callbackCommandData))
+          if ((callbackRecord != null) && (callbackRecord.Token != 0))
           {
-            callbackRecord.Records.AddRange (callbackCommandData.StreamRecords);
-
-            if (callbackCommandData.ResultDelegate != null)
-            {
-              callbackCommandData.ResultDelegate (callbackRecord);
-            }
+            AsyncCommandData callbackCommandData = null;
 
             lock (m_asyncCommandData)
             {
-              m_asyncCommandData.Remove (callbackRecord.Token);
+              if (m_asyncCommandData.TryGetValue (callbackRecord.Token, out callbackCommandData))
+              {
+                callbackRecord.Records.AddRange (callbackCommandData.StreamRecords);
+
+                m_asyncCommandData.Remove (callbackRecord.Token);
+              }
+            }
+
+            if ((callbackCommandData != null) && (callbackCommandData.ResultDelegate != null))
+            {
+              callbackCommandData.ResultDelegate (callbackRecord);
             }
           }
+        }
+        catch (Exception e)
+        {
+          LoggingUtils.HandleException (e);
         }
       }
     }

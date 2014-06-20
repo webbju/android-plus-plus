@@ -48,11 +48,18 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
 
     protected override void TrackedExecuteToolOutput (KeyValuePair<string, List<ITaskItem>> commandAndSourceFiles, string singleLine)
     {
-      // 
-      // Receives GCC output, and transforms any errors or warnings into Visual Studio 'jump to line' format.
-      // 
+      if (ToolExe.StartsWith ("clang"))
+      {
+        LogEventsFromTextOutput (singleLine, MessageImportance.High);
+      }
+      else
+      {
+        // 
+        // GCC output differs from a Visual Studio's "jump to line" format, we transform that output here.
+        // 
 
-      LogEventsFromTextOutput (GccUtilities.ConvertGccOutputToVS (singleLine), MessageImportance.High);
+        LogEventsFromTextOutput (GccUtilities.ConvertGccOutputToVS (singleLine), MessageImportance.High);
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

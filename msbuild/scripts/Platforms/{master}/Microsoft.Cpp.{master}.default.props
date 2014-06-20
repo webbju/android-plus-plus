@@ -24,7 +24,7 @@
 
     <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">armv7-a</TargetArchitecture>
     
-    <STLSupport Condition="'$(STLSupport)' == ''">system</STLSupport>
+    <STLSupport Condition="'$(STLSupport)' == ''">gnustl_static</STLSupport>
 
     <IntDir Condition="'$(IntDir)'=='' AND '$(IntermediateOutputPath)'!=''">$(IntermediateOutputPath)</IntDir>
     <IntDir Condition="'$(IntDir)'=='' AND '$(IntermediateOutputPath)'==''">$(Platform)\$(Configuration)\</IntDir>

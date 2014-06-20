@@ -55,31 +55,35 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (m_threadStackFrames.Count == 0)
         {
-          NativeProgram.SelectThread (this);
+          uint threadId;
 
-          MiResultRecord resultRecord = m_debugProgram.AttachedEngine.NativeDebugger.GdbClient.SendCommand ("-stack-list-frames");
+          LoggingUtils.RequireOk (GetThreadId (out threadId));
 
-          if ((resultRecord != null) && (!resultRecord.IsError ()) && (resultRecord.HasField ("stack")))
+          MiResultRecord resultRecord = m_debugProgram.AttachedEngine.NativeDebugger.GdbClient.SendCommand (string.Format ("-stack-list-frames --thread {0}", threadId));
+
+          if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
           {
-            MiResultValueList stackRecord = resultRecord ["stack"] [0] as MiResultValueList;
+            throw new InvalidOperationException ();
+          }
 
-            for (int i = 0; i < stackRecord.Count; ++i)
+          if (!resultRecord.HasField ("stack"))
+          {
+            throw new InvalidOperationException ();
+          }
+
+          MiResultValueList stackRecord = resultRecord ["stack"] [0] as MiResultValueList;
+
+          for (int i = 0; i < stackRecord.Count; ++i)
+          {
+            string stackFrameId = m_threadName + "#" + i;
+
+            MiResultValueTuple frameTuple = stackRecord [i] as MiResultValueTuple;
+
+            CLangDebuggeeStackFrame stackFrame = new CLangDebuggeeStackFrame (m_debugProgram.AttachedEngine.NativeDebugger, this, frameTuple, stackFrameId);
+
+            lock (m_threadStackFrames)
             {
-              string stackFrameId = m_threadName + " #" + i;
-
-              MiResultValueTuple frameTuple = stackRecord [i] as MiResultValueTuple;
-
-              if (frameTuple == null)
-              {
-                throw new InvalidOperationException ();
-              }
-
-              CLangDebuggeeStackFrame stackFrame = new CLangDebuggeeStackFrame (m_debugProgram.AttachedEngine.NativeDebugger, this, frameTuple, stackFrameId);
-
-              lock (m_threadStackFrames)
-              {
-                m_threadStackFrames.Add (stackFrame);
-              }
+              m_threadStackFrames.Add (stackFrame);
             }
           }
         }

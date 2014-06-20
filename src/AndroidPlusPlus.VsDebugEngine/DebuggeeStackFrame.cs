@@ -124,7 +124,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public virtual int GetArguments ()
+    public virtual int QueryArgumentsAndLocals ()
     {
       try
       {
@@ -142,25 +142,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public virtual int GetLocals ()
-    {
-      try
-      {
-        throw new NotImplementedException ();
-      }
-      catch (NotImplementedException e)
-      {
-        LoggingUtils.HandleException (e);
-
-        return DebugEngineConstants.E_NOTIMPL;
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public virtual int GetRegisters ()
+    public virtual int QueryRegisters ()
     {
       try
       {
@@ -198,8 +180,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((guidFilter == DebuggeeProperty.Filters.guidFilterArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
         {
-          LoggingUtils.RequireOk (GetArguments ());
-
           foreach (KeyValuePair<string, DebuggeeProperty> argument in m_stackArguments)
           {
             DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
@@ -212,8 +192,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocals) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
         {
-          LoggingUtils.RequireOk (GetLocals ());
-
           foreach (KeyValuePair<string, DebuggeeProperty> local in m_stackLocals)
           {
             DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
@@ -229,8 +207,6 @@ namespace AndroidPlusPlus.VsDebugEngine
           // 
           // Registers must be specified in a collection/list as children of a 'CPU' property.
           // 
-
-          LoggingUtils.RequireOk (GetRegisters ());
 
           List<DebuggeeProperty> registers = new List<DebuggeeProperty> (m_stackRegisters.Values);
 

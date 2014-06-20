@@ -226,7 +226,7 @@ namespace AndroidPlusPlus.VsDebugEngine
               throw new InvalidOperationException ();
             }
 
-            string addr = resultRecord ["BreakpointTable"] [0] ["body"] [0] ["addr"] [0].GetString ();
+            string addr = resultRecord ["BreakpointTable"] [0] ["body"] [0] ["bkpt"] [0] ["addr"] [0].GetString ();
 
             if (!string.IsNullOrEmpty (addr))
             {
@@ -239,7 +239,7 @@ namespace AndroidPlusPlus.VsDebugEngine
               if (pending && (!breakpoint.GdbBreakpoint.IsPending ()))
               {
                 // 
-                // Address can't be satistfied. Unsatisified likely indicates the modules or symbols associated with the context aren't loaded, yet.
+                // Address can't be satisfied. Unsatisfied likely indicates the modules or symbols associated with the context aren't loaded, yet.
                 // 
 
                 IDebugBreakpointResolution2 resolution;
@@ -275,7 +275,7 @@ namespace AndroidPlusPlus.VsDebugEngine
               else if (!pending && !multiple)
               {
                 // 
-                // Address satistfied, and the breakpoint is legitimately bound.
+                // Address satisfied, and the breakpoint is legitimately bound.
                 // 
 
                 DebuggeeAddress boundAddress = new DebuggeeAddress (addr);

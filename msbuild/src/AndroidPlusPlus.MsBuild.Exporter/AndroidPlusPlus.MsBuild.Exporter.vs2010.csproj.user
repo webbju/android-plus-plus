@@ -12,7 +12,7 @@
     <VerifyUploadedFiles>false</VerifyUploadedFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
-    <StartArguments>--template-dir "L:\dev\projects\android-plus-plus\msbuild\scripts" --vs-version 2010</StartArguments>
+    <StartArguments>--uninstall --vs-version 2010</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <StartArguments>--template-dir "L:\dev\projects\android-plus-plus\msbuild\scripts" --vs-version 2010</StartArguments>

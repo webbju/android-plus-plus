@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Vsix Version="1.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2010">
+  <Identifier Id="97b722a7-93c5-4e05-a051-c5d1a82a2500">
+    <Name>About Box Package</Name>
+    <Author>Microsoft</Author>
+    <Version>1.0</Version>
+    <Description xml:space="preserve">Information about AndroidPlusPlus.VsIsolatedShell About box package</Description>
+    <Locale>1033</Locale>
+    <InstalledByMsi>true</InstalledByMsi>
+    <SupportedProducts>
+      <IsolatedShell Version="1.0">AndroidPlusPlus.VsIsolatedShell</IsolatedShell>
+    </SupportedProducts>
+    <SupportedFrameworkRuntimeEdition MinVersion="4.0" MaxVersion="4.0" />
+    <SystemComponent>true</SystemComponent>
+  </Identifier>
+  <References />
+  <Content>
+    <VsPackage>|%CurrentProject%;PkgdefProjectOutputGroup|</VsPackage>
+  </Content>
+</Vsix>

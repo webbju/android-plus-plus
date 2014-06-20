@@ -56,6 +56,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void Dispose ()
     {
+      LoggingUtils.PrintFunction ();
+
       if (JdbClient != null)
       {
         JdbClient.Dispose ();

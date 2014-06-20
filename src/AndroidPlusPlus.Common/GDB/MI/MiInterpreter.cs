@@ -55,27 +55,39 @@ namespace AndroidPlusPlus.Common
 
         ++streamIndex;
 
-        return new MiStreamRecord (MiStreamRecord.StreamType.Console, streamOutput.Substring (streamIndex + 1, (streamOutput.Length - (streamIndex + 1) - 3)));
+        StringBuilder consoleStreamBuilder = new StringBuilder (streamOutput.Trim (new char [] { '~', '\"' }));
+
+        consoleStreamBuilder.Replace ("\\n", "");
+
+        return new MiStreamRecord (MiStreamRecord.StreamType.Console, consoleStreamBuilder.ToString ());
       }
       else if (streamOutput [streamIndex] == '@')
       {
         // 
-        // Target stream record.
+        // Target stream record. Clears leading '@" and trailing '\\n"' characters.
         // 
 
         ++streamIndex;
 
-        return new MiStreamRecord (MiStreamRecord.StreamType.Target, streamOutput.Substring (streamIndex + 1, (streamOutput.Length - (streamIndex + 1) - 3)));
+        StringBuilder targetStreamBuilder = new StringBuilder (streamOutput.Trim (new char [] { '@', '\"' }));
+
+        targetStreamBuilder.Replace ("\\n", "");
+
+        return new MiStreamRecord (MiStreamRecord.StreamType.Target, targetStreamBuilder.ToString ());
       }
       else if (streamOutput [streamIndex] == '&')
       {
         // 
-        // Log stream record.
+        // Log stream record. Clears leading '&" and trailing '\\n"' characters.
         // 
 
         ++streamIndex;
 
-        return new MiStreamRecord (MiStreamRecord.StreamType.Log, streamOutput.Substring (streamIndex + 1, (streamOutput.Length - (streamIndex + 1) - 3)));
+        StringBuilder logStreamBuilder = new StringBuilder (streamOutput.Trim (new char [] { '&', '\"' }));
+
+        logStreamBuilder.Replace ("\\n", "");
+
+        return new MiStreamRecord (MiStreamRecord.StreamType.Log, logStreamBuilder.ToString ());
       }
       else
       {

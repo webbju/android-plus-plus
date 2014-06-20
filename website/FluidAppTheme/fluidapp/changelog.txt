@@ -1,0 +1,31 @@
+*** FluidApp Changelog ***
+
+3 November 2013 - Version 1.0.4
+
+	* functions/theme-ui.php - Update social icons
+	* functions/theme-options.php - Add option to change button text
+	* functions.php - Fix stylesheet enqueuing
+	* style.css - Update entypo icon sizes
+
+13 April 2013 - Version 1.0.3
+
+	* /javascripts/fluidapp.js - Fix Fancybox video bugs
+	* /fonts/* - Fix entypo font issues
+	* /functions/fonts/* - Fix entypo font issues
+	* /functions/theme-post-options.php - Add social icons to icon selector
+	* style.css - Update entypo icon sizes
+
+7 March 2013 - Version 1.0.2
+
+	* /javascripts/fluidapp.js - Fix js error
+	* /functions/includes/google-fonts.php - Update google fonts 
+
+8 February 2013 - Version 1.0.1
+
+	* /stylesheets/media.queries.css - iPhone 5 media query fixes
+	* /javascripts/fluidapp.js - Fixed mobile menu
+
+
+3 January 2013 - Version 1.0
+	
+	* First Release

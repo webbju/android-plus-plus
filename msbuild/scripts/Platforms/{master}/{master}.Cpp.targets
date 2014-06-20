@@ -85,6 +85,9 @@
         <NoExecutableStack Condition="'%(ClCompile.CompileAs)' == 'CompileAsAsm'">true</NoExecutableStack>
 
         <MinimalRebuildFromTracking Condition="'%(ClCompile.MinimalRebuildFromTracking)' == '' and '$(BuildType)' == 'Build' and '$(ForceRebuild)' != 'true'">true</MinimalRebuildFromTracking>
+
+        <!-- Inline function limit specification is not supported by Clang. -->
+        <InlineLimitSize Condition="'$(LlvmVersion)' != ''"></InlineLimitSize>
       </ClCompile>
     </ItemGroup>
 
@@ -93,30 +96,32 @@
     -->
 
     <ItemGroup>
-      <ClCompile>
-        <ObjectFileName Condition="('%(ClCompile.PrecompiledHeader)' == 'Create' and '$(LlvmVersion)' == '')">%(ClCompile.PrecompiledHeaderInputFile).gch</ObjectFileName>
-        <ObjectFileName Condition="('%(ClCompile.PrecompiledHeader)' == 'Create' and '$(LlvmVersion)' != '')">$(IntDir)%(ClCompile.PrecompiledHeaderOutputFile).pch</ObjectFileName>
-        <CompileAs Condition="('%(ClCompile.PrecompiledHeader)' == 'Create' and '%(ClCompile.CompileAs)' == 'CompileAsC')">CompileAsCHeader</CompileAs>
-        <CompileAs Condition="('%(ClCompile.PrecompiledHeader)' == 'Create' and '%(ClCompile.CompileAs)' != 'CompileAsC')">CompileAsCppHeader</CompileAs>
+      <!-- Create a list of PCH requirements for each of the registered sources. Add a new item for each PCH input on sources flagged 'create'. -->
+      <ClCompilePch Include="@(ClCompile->'%(RelativeDir)%(PrecompiledHeaderFile)')" Condition="'%(PrecompiledHeader)' == 'Create'">
+        <ObjectFileName Condition="'$(LlvmVersion)' == ''">%(ClCompile.PrecompiledHeaderFile).gch</ObjectFileName>
+        <ObjectFileName Condition="'$(LlvmVersion)' != ''">$(IntDir)%(ClCompile.PrecompiledHeaderOutputFile).pch</ObjectFileName>
+        <CompileAs Condition="'%(ClCompile.CompileAs)' == 'CompileAsC'">CompileAsCHeader</CompileAs>
+        <CompileAs Condition="'%(ClCompile.CompileAs)' != 'CompileAsC'">CompileAsCppHeader</CompileAs>
         <LinkCompiled Condition="'%(ClCompile.PrecompiledHeader)' == 'Create'">false</LinkCompiled>
-      </ClCompile>
-      
+      </ClCompilePch>
+
       <!-- GCC and Clang use slightly different methods of including PCHs. Clang also allows them to be placed in intermediate directories. -->
       <ClCompile>
         <ForcedIncludeFiles Condition="('%(ClCompile.PrecompiledHeader)' == 'Use' and '$(LlvmVersion)' == '')">%(ClCompile.PrecompiledHeaderFile);%(ForcedIncludeFiles)</ForcedIncludeFiles>
         <ForcedIncludeFiles Condition="('%(ClCompile.PrecompiledHeader)' == 'Use' and '$(LlvmVersion)' != '')">$(IntDir)%(ClCompile.PrecompiledHeaderOutputFile);%(ForcedIncludeFiles)</ForcedIncludeFiles>
       </ClCompile>
-      
-      <!-- Inline function limit specification is not supported by Clang. -->
-      <ClCompile>
-        <InlineLimitSize Condition="'$(LlvmVersion)' != ''"></InlineLimitSize>
-      </ClCompile>
     </ItemGroup>
 
+    <Message Text="ClCompilePch: @(ClCompilePch)" />
+
+    <!-- 
+      Compile each of the identified PCH dependencies first, as these will likely be used in the sources below.
+    -->
+
     <GccCompile
-      Condition="'%(ClCompile.ExcludedFromBuild)'!='true' and '%(ClCompile.PrecompiledHeader)' == 'Create'"
+      Condition="'%(ClCompile.ExcludedFromBuild)'!='true'"
       BuildingInIDE="$(BuildingInsideVisualStudio)"
-      Sources="@(ClCompile)"
+      Sources="@(ClCompilePch)"
 
       ProcessorNumber="%(ClCompile.ProcessorNumber)"
       MultiProcessorCompilation="%(ClCompile.MultiProcessorCompilation)"
@@ -135,11 +140,11 @@
     </GccCompile>
 
     <!--
-      Process the rest of the registered sources.
+      Compile all sources (even those flagged to 'create' PCH output).
     -->
 
     <GccCompile
-      Condition="'%(ClCompile.ExcludedFromBuild)'!='true' and '%(ClCompile.PrecompiledHeader)' != 'Create'"
+      Condition="'%(ClCompile.ExcludedFromBuild)'!='true'"
       BuildingInIDE="$(BuildingInsideVisualStudio)"
       Sources="@(ClCompile)"
 
@@ -298,6 +303,7 @@
       File="$(GdbSetupExecutionScript)"
       Lines="
         directory $(GdbSearchDirectories);
+        set solib-search-path $(GdbDebugFileDirectories);
         set debug-file-directory $(GdbDebugFileDirectories);"
       Overwrite="true"
     />

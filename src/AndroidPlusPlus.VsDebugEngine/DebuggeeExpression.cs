@@ -98,7 +98,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             LoggingUtils.RequireOk (EvaluateSync (evaluateFlags, 0, eventCallback, out result));
 
-            m_debugEngine.Broadcast (new DebugEngineEvent.ExpressionEvaluationComplete (this, result), m_debugEngine.Program, thread);
+            m_debugEngine.Broadcast (eventCallback, new DebugEngineEvent.ExpressionEvaluationComplete (this, result), m_debugEngine.Program, thread);
           }
           catch (Exception e)
           {

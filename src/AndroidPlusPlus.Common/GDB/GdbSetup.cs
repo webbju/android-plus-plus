@@ -43,6 +43,10 @@ namespace AndroidPlusPlus.Common
 
       Directory.CreateDirectory (CacheDirectory);
 
+      CacheSysRoot = Path.Combine (CacheDirectory, "sysroot");
+
+      Directory.CreateDirectory (CacheSysRoot);
+
       GdbToolPath = gdbToolPath;
 
       GdbToolArguments = "--interpreter=mi";
@@ -76,6 +80,8 @@ namespace AndroidPlusPlus.Common
 
     public string CacheDirectory { get; private set; }
 
+    public string CacheSysRoot { get; private set; }
+
     public string GdbToolPath { get; private set; }
 
     public string GdbToolArguments { get; private set; }
@@ -92,7 +98,20 @@ namespace AndroidPlusPlus.Common
 
       LoggingUtils.PrintFunction ();
 
-      using (SyncRedirectProcess adbPortForward = AndroidAdb.AdbCommand (Process.HostDevice, "forward", string.Format ("tcp:{0} tcp:{1}", Port, Port)))
+      StringBuilder commandLineArgumentsBuilder = new StringBuilder ();
+
+      commandLineArgumentsBuilder.AppendFormat ("tcp:{0} ", Port);
+
+      if (!string.IsNullOrWhiteSpace (Socket))
+      {
+        commandLineArgumentsBuilder.AppendFormat ("localfilesystem:{0}/{1}", Process.InternalCacheDirectory, Socket);
+      }
+      else
+      {
+        commandLineArgumentsBuilder.AppendFormat ("tcp:{0} ", Port);
+      }
+
+      using (SyncRedirectProcess adbPortForward = AndroidAdb.AdbCommand (Process.HostDevice, "forward", commandLineArgumentsBuilder.ToString ()))
       {
         adbPortForward.StartAndWaitForExit (1000);
       }
@@ -120,7 +139,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public string [] CacheDeviceBinaries ()
+    public string [] CacheSystemBinaries ()
     {
       // 
       // Pull the required binaries from the device.
@@ -134,50 +153,67 @@ namespace AndroidPlusPlus.Common
       {
         "/system/bin/app_process",
         "/system/bin/linker",
+        "/system/lib/libandroid.so",
+        "/system/lib/libandroid_runtime.so",
+        "/system/lib/libart.so",
         "/system/lib/libc.so",
         "/system/lib/libdvm.so",
-        "/system/lib/libart.so"
+        "/system/lib/libEGL.so",
+        "/system/lib/libGLESv1_CM.so",
+        "/system/lib/libGLESv2.so",
+        "/system/lib/libGLESv3.so"
       };
 
       foreach (string binary in remoteBinaries)
       {
-        string cachedBinary = Path.Combine (CacheDirectory, Path.GetFileName (binary));
+        string cachedBinary = Path.Combine (CacheSysRoot, binary.Substring (1));
 
-        if (File.Exists (cachedBinary))
+        string cahedBinaryFullPath = Path.Combine (Path.GetDirectoryName (cachedBinary), Path.GetFileName (cachedBinary));
+
+        Directory.CreateDirectory (Path.GetDirectoryName (cahedBinaryFullPath));
+
+        if (File.Exists (cahedBinaryFullPath))
         {
-          LoggingUtils.Print (string.Format ("[GdbSetup] Using cached {0}.", Path.GetFileName (binary)));
-
-          deviceBinaries.Add (cachedBinary);
+          LoggingUtils.Print (string.Format ("[GdbSetup] Using cached {0}.", binary));
         }
         else if (Process.HostDevice.Pull (binary, cachedBinary))
         {
-          LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", Path.GetFileName (binary)));
-
-          deviceBinaries.Add (cachedBinary);
+          LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", binary));
         }
+
+        deviceBinaries.Add (cahedBinaryFullPath);
       }
 
+      return deviceBinaries.ToArray ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public string [] CacheApplicationBinaries ()
+    {
       // 
       // Application binaries (those under /lib/ of an installed application).
       // TODO: Consider improving this. Pulling libraries ensures consistency, but takes time (ADB is a slow protocol).
       // 
 
-      if (Process.HostDevice.Pull (string.Format ("{0}/lib/", Process.InternalCacheDirectory), CacheDirectory))
+      LoggingUtils.PrintFunction ();
+
+      string libraryCachePath = Path.Combine (CacheSysRoot, Process.InternalCacheDirectory.Substring (1), "lib");
+
+      Directory.CreateDirectory (libraryCachePath);
+
+      if (Process.HostDevice.Pull (string.Format ("{0}/lib/", Process.InternalCacheDirectory), libraryCachePath))
       {
         LoggingUtils.Print (string.Format ("[GdbSetup] Pulled application libraries from device/emulator."));
 
-        string [] additionalLibraries = Directory.GetFiles (CacheDirectory, "lib*.so", SearchOption.AllDirectories);
+        string [] additionalLibraries = Directory.GetFiles (libraryCachePath, "lib*.so", SearchOption.AllDirectories);
 
-        foreach (string lib in additionalLibraries)
-        {
-          if (!deviceBinaries.Contains (lib))
-          {
-            deviceBinaries.Add (lib);
-          }
-        }
+        return additionalLibraries;
       }
 
-      return deviceBinaries.ToArray ();
+      return new string [] {};
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -190,11 +226,13 @@ namespace AndroidPlusPlus.Common
 
       List<string> gdbExecutionCommands = new List<string> ();
 
+      //gdbExecutionCommands.Add ("set sysroot " + StringUtils.ConvertPathWindowsToPosix (CacheSysRoot));
+
       gdbExecutionCommands.Add ("set target-async on");
 
       gdbExecutionCommands.Add ("set breakpoint pending on");
 
-#if DEBUG
+#if DEBUG && FALSE
       gdbExecutionCommands.Add ("set debug remote 1");
 
       gdbExecutionCommands.Add ("set debug infrun 1");

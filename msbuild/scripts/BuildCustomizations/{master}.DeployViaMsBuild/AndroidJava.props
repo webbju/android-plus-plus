@@ -49,7 +49,7 @@
 
       <BootClassPaths Condition="'%(AndroidJava.BootClassPaths)' == ''">$(AndroidSdkRoot)\platforms\android-$(AndroidSdkLevel)\android.jar</BootClassPaths>
 
-      <SourcePath Condition="'%(AndroidJava.SourcePath)' == ''">%(RelativeDir)</SourcePath>
+      <SourcePath Condition="'%(AndroidJava.SourcePath)' == ''"></SourcePath>
 
       <SourceCodeVersion Condition="'%(AndroidJava.SourceCodeVersion)' == ''">1.5</SourceCodeVersion>
 

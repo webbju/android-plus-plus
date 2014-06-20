@@ -74,7 +74,7 @@
 
     <Link>
 
-      <SystemLibraryDependencies>log;android;gcc</SystemLibraryDependencies>
+      <SystemLibraryDependencies>log;android;%(SystemLibraryDependencies)</SystemLibraryDependencies>
 
       <SystemLibraryDependencies Condition="'$(STLSupport)' == 'system'">c;m;stdc++;%(SystemLibraryDependencies)</SystemLibraryDependencies>
 

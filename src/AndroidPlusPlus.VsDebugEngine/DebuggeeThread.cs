@@ -171,16 +171,15 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         List<FRAMEINFO> frames = new List<FRAMEINFO> ();
 
-        lock (m_threadStackFrames)
+        DebuggeeStackFrame [] stackFrames = m_threadStackFrames.ToArray ();
+
+        foreach (DebuggeeStackFrame stackFrame in stackFrames)
         {
-          foreach (DebuggeeStackFrame stackFrame in m_threadStackFrames)
-          {
-            FRAMEINFO frameInfo = new FRAMEINFO ();
+          FRAMEINFO frameInfo = new FRAMEINFO ();
 
-            LoggingUtils.RequireOk (stackFrame.SetFrameInfo (requestedFields, radix, ref frameInfo));
+          LoggingUtils.RequireOk (stackFrame.SetFrameInfo (requestedFields, radix, ref frameInfo));
 
-            frames.Add (frameInfo);
-          }
+          frames.Add (frameInfo);
         }
 
         enumDebugFrame = new DebuggeeStackFrame.Enumerator (frames);
@@ -308,20 +307,19 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           StackTrace ();
 
-          lock (m_threadStackFrames)
+          DebuggeeStackFrame [] stackFrames = m_threadStackFrames.ToArray ();
+
+          foreach (DebuggeeStackFrame stackFrame in stackFrames)
           {
-            foreach (DebuggeeStackFrame stackFrame in m_threadStackFrames)
+            FRAMEINFO frameInfo = new FRAMEINFO ();
+
+            LoggingUtils.RequireOk (stackFrame.SetFrameInfo (enum_FRAMEINFO_FLAGS.FIF_FUNCNAME, 0, ref frameInfo));
+
+            if (!string.IsNullOrEmpty (frameInfo.m_bstrFuncName))
             {
-              FRAMEINFO frameInfo = new FRAMEINFO ();
+              propertiesArray [0].bstrLocation = frameInfo.m_bstrFuncName;
 
-              LoggingUtils.RequireOk (stackFrame.SetFrameInfo (enum_FRAMEINFO_FLAGS.FIF_FUNCNAME, 0, ref frameInfo));
-
-              if (!string.IsNullOrEmpty (frameInfo.m_bstrFuncName))
-              {
-                propertiesArray [0].bstrLocation = frameInfo.m_bstrFuncName;
-
-                break;
-              }
+              break;
             }
           }
 

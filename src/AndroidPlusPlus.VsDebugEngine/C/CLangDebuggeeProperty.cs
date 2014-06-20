@@ -47,7 +47,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (!(m_expression.StartsWith ("*0x") || m_expression.StartsWith ("$")))
       {
-        m_gdbVariable = CreateGdbVariable (m_expression);
+        m_gdbVariable = CreateGdbVariable (stackFrame, m_expression);
       }
     }
 
@@ -65,18 +65,49 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private MiVariable CreateGdbVariable (string expression)
+    public override void Dispose ()
     {
-      m_debugger.GdbClient.SendCommand (string.Format ("-stack-select-frame {0}", (m_stackFrame as CLangDebuggeeStackFrame).Level));
+      LoggingUtils.PrintFunction ();
 
-      MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-var-create - * {0}", StringUtils.Escape (m_expression)));
+      DeleteGdbVariable (m_gdbVariable);
+
+      base.Dispose ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private MiVariable CreateGdbVariable (CLangDebuggeeStackFrame stackFrame, string expression)
+    {
+      IDebugThread2 stackThread;
+
+      uint stackThreadId;
+
+      LoggingUtils.RequireOk (stackFrame.GetThread (out stackThread));
+
+      LoggingUtils.RequireOk (stackThread.GetThreadId (out stackThreadId));
+
+      MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-var-create --thread {0} --frame {1} - * {2} ", stackThreadId, stackFrame.StackLevel, StringUtils.Escape (m_expression)));
 
       if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
       {
         throw new InvalidOperationException ();
       }
 
-      return new MiVariable (m_expression, resultRecord.Results);
+      MiVariable variable = new MiVariable (m_expression, resultRecord.Results);
+
+      if (variable.HasChildren)
+      {
+        resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-var-list-children --thread {0} --frame {1} --all-values {2}", stackThreadId, stackFrame.StackLevel, variable.Name));
+
+        if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
+        {
+          throw new InvalidOperationException ();
+        }
+      }
+
+      return variable;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -301,9 +332,15 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        m_debugger.GdbClient.SendCommand (string.Format ("-stack-select-frame {0}", (m_stackFrame as CLangDebuggeeStackFrame).Level));
+        IDebugThread2 stackThread;
 
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-data-evaluate-expression \"sizeof({0})\"", m_expression));
+        uint stackThreadId;
+
+        LoggingUtils.RequireOk (m_stackFrame.GetThread (out stackThread));
+
+        LoggingUtils.RequireOk (stackThread.GetThreadId (out stackThreadId));
+
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-data-evaluate-expression --thread {0} --frame {1} \"sizeof({2})\"", stackThreadId, (m_stackFrame as CLangDebuggeeStackFrame).StackLevel, m_expression));
 
         if ((resultRecord == null) || ((resultRecord != null) && (resultRecord.IsError () || (!resultRecord.HasField ("value")))))
         {
@@ -338,8 +375,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        m_debugger.GdbClient.SendCommand (string.Format ("-stack-select-frame {0}", (m_stackFrame as CLangDebuggeeStackFrame).Level));
-
         MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-var-assign {0} {1}", m_gdbVariable.Name, value));
 
         if ((resultRecord == null) || ((resultRecord != null) && (resultRecord.IsError () || (!resultRecord.HasField ("value")))))

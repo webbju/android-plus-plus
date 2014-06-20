@@ -71,57 +71,49 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void SelectThread (CLangDebuggeeThread thread)
-    {
-      LoggingUtils.PrintFunction ();
-
-      uint requestedThreadId;
-
-      LoggingUtils.RequireOk (thread.GetThreadId (out requestedThreadId));
-
-      if (requestedThreadId != CurrentThreadId)
-      {
-        m_debugger.GdbClient.SendCommand ("-thread-select " + requestedThreadId);
-
-        CurrentThreadId = requestedThreadId;
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     public void RefreshThreads ()
     {
       LoggingUtils.PrintFunction ();
 
-      MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand ("-thread-list-ids");
-
-      if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
+      try
       {
-        throw new InvalidOperationException ();
-      }
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand ("-thread-list-ids");
 
-      if (resultRecord.HasField ("thread-ids"))
-      {
-        List<MiResultValue> threadIds = resultRecord ["thread-ids"] [0] ["thread-id"];
-
-        for (int i = 0; i < threadIds.Count; ++i)
+        if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
         {
-          uint id = threadIds [i].GetUnsignedInt ();
+          throw new InvalidOperationException ();
+        }
 
-          if (GetThread (id) == null)
+        if (resultRecord.HasField ("thread-ids"))
+        {
+          MiResultValue threadIdsContainer = resultRecord ["thread-ids"] [0];
+
+          if (threadIdsContainer.HasField ("thread-id"))
           {
-            CLangDebuggeeThread thread = new CLangDebuggeeThread (this, id);
+            List<MiResultValue> threadIds = threadIdsContainer ["thread-id"];
 
-            AddThread (thread);
+            for (int i = 0; i < threadIds.Count; ++i)
+            {
+              uint id = threadIds [i].GetUnsignedInt ();
+
+              if (GetThread (id) == null)
+              {
+                CLangDebuggeeThread thread = new CLangDebuggeeThread (this, id);
+
+                AddThread (thread);
+              }
+            }
           }
         }
-      }
 
-      if (resultRecord.HasField ("current-thread"))
+        if (resultRecord.HasField ("current-thread"))
+        {
+          CurrentThreadId = resultRecord ["current-thread"] [0].GetUnsignedInt ();
+        }
+      }
+      catch (Exception e)
       {
-        CurrentThreadId = resultRecord ["current-thread"] [0].GetUnsignedInt ();
+        LoggingUtils.HandleException (e);
       }
     }
 
@@ -774,27 +766,29 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         CLangDebuggeeThread thread = pThread as CLangDebuggeeThread;
 
-        GdbClient.StepType stepType = (GdbClient.StepType)Step;
+        uint threadId;
 
-        SelectThread (thread);
+        LoggingUtils.RequireOk (thread.GetThreadId (out threadId));
+
+        GdbClient.StepType stepType = (GdbClient.StepType)Step;
 
         switch (sk)
         {
           case enum_STEPKIND.STEP_INTO:
           {
-            m_debugger.GdbClient.StepInto (stepType, false);
+            m_debugger.GdbClient.StepInto (threadId, stepType, false);
 
             break;
           }
           case enum_STEPKIND.STEP_OVER:
           {
-            m_debugger.GdbClient.StepOver (stepType, false);
+            m_debugger.GdbClient.StepOver (threadId, stepType, false);
 
             break;
           }
           case enum_STEPKIND.STEP_OUT:
           {
-            m_debugger.GdbClient.StepOut (stepType, false);
+            m_debugger.GdbClient.StepOut (threadId, stepType, false);
 
             break;
           }
@@ -900,7 +894,20 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        SelectThread (pThread as CLangDebuggeeThread);
+        uint threadId;
+
+        CLangDebuggeeThread thread = pThread as CLangDebuggeeThread;
+
+        LoggingUtils.RequireOk (thread.GetThreadId (out threadId));
+
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand ("-thread-select " + threadId);
+
+        if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
+        {
+          throw new InvalidOperationException ();
+        }
+
+        CurrentThreadId = threadId;
 
         LoggingUtils.RequireOk (Execute ());
 

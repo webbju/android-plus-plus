@@ -108,9 +108,19 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void Broadcast (IDebugEvent2 debugEvent, IDebugProgram2 program, IDebugThread2 thread)
     {
+      Broadcast (m_sdmCallback, debugEvent, program, thread);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    public void Broadcast (IDebugEventCallback2 callback, IDebugEvent2 debugEvent, IDebugProgram2 program, IDebugThread2 thread)
+    {
       LoggingUtils.PrintFunction ();
 
-      if (m_sdmCallback == null)
+      if (callback == null)
       {
         throw new InvalidOperationException ();
       }
@@ -131,7 +141,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         throw new ArgumentNullException ("thread");
       }
 
-      LoggingUtils.RequireOk (m_sdmCallback.Event (this, null, program, thread, debugEvent, ref eventGuid, eventAttributes));
+      LoggingUtils.RequireOk (callback.Event (this, null, program, thread, debugEvent, ref eventGuid, eventAttributes));
 
       if ((eventAttributes & (uint)enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS) != 0)
       {

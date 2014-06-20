@@ -203,6 +203,11 @@ namespace app_javac_dependencies
         throw new ArgumentException ("--jdk-home references an invalid JDK installation. Can not find required 'bin\\javac.exe' tool.");
       }
 
+      if (s_sourceDependencyList.Count == 0)
+      {
+        throw new ArgumentException ("No .java source files provided.");
+      }
+
       // 
       // Iterate source files and evaluate common 'source paths'.
       // 
@@ -259,7 +264,10 @@ namespace app_javac_dependencies
       }
 #endif
 
-      s_javacToolArguments.Add ("-sourcepath " + string.Join (";", s_sourcePathList.ToArray ()));
+      if (s_sourcePathList.Count > 0)
+      {
+        s_javacToolArguments.Add ("-sourcepath " + string.Join (";", s_sourcePathList.ToArray ()));
+      }
 
       // 
       // This pass-through tool required verbose mode in order to identify source dependencies, turn it on if it isn't already.

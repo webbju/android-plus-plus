@@ -319,23 +319,56 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
     private static void UninstallMsBuildTemplates (string version, ref Dictionary<string, string> textSubstitution)
     {
-      // 
-      // Clean any existing MsBuild deployment.
-      // 
-
       foreach (string exportDir in s_exportDirectories)
       {
-        if (Directory.Exists (exportDir + @"\BuildCustomizations"))
+        // 
+        // Clean 'BuildCustomizations' files and sub-directories.
+        // 
+
+        Console.WriteLine (string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Uninstalling scripts from {0}", exportDir));
+
+        if (Directory.Exists (Path.Combine (exportDir, "BuildCustomizations")))
         {
-          foreach (string file in Directory.GetFiles (exportDir + @"\BuildCustomizations", textSubstitution ["{master}"] + "*"))
+          string [] installedCustomisationFiles = Directory.GetFiles (Path.Combine (exportDir, "BuildCustomizations"));
+
+          string [] installedCustomisationDirectories = Directory.GetDirectories (Path.Combine (exportDir, "BuildCustomizations"));
+
+          foreach (string file in installedCustomisationFiles)
           {
-            File.Delete (file);
+            if (file.Contains (textSubstitution ["{master}"]))
+            {
+              File.Delete (file);
+            }
+          }
+
+          foreach (string directory in installedCustomisationDirectories)
+          {
+            if (directory.Contains (textSubstitution ["{master}"]))
+            {
+              Directory.Delete (directory, true);
+            }
           }
         }
 
-        if (Directory.Exists (s_exportDirectories + @"\Platforms"))
+        // 
+        // Clean 'Platforms' files and sub-directories.
+        // 
+
+        if (Directory.Exists (Path.Combine (exportDir, "Platforms")))
         {
-          foreach (string directory in Directory.GetDirectories (exportDir + @"\Platforms"))
+          string [] installedPlatformFiles = Directory.GetFiles (Path.Combine (exportDir, "Platforms"));
+
+          string [] installedPlatformDirectories = Directory.GetDirectories (Path.Combine (exportDir, "Platforms"));
+
+          foreach (string file in installedPlatformFiles)
+          {
+            if (file.Contains (textSubstitution ["{master}"]))
+            {
+              File.Delete (file);
+            }
+          }
+
+          foreach (string directory in installedPlatformDirectories)
           {
             if (directory.Contains (textSubstitution ["{master}"]))
             {

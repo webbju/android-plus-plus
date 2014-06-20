@@ -137,6 +137,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void Dispose ()
     {
+      LoggingUtils.PrintFunction ();
+
       if (GdbClient != null)
       {
         //GdbClient.Stop ();
@@ -202,6 +204,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       // 
       // Interrupt the GDB session in order to execute the provided delegate in a 'stopped' state.
       // 
+
+      LoggingUtils.PrintFunction ();
 
       if (m_interruptOperationCounter++ == 0)
       {
@@ -646,15 +650,22 @@ namespace AndroidPlusPlus.VsDebugEngine
               // A thread either was created. The id field contains the gdb identifier of the thread. The gid field identifies the thread group this thread belongs to. 
               // 
 
-              uint threadId = asyncRecord ["id"] [0].GetUnsignedInt ();
+              try
+              {
+                uint threadId = asyncRecord ["id"] [0].GetUnsignedInt ();
 
-              string threadGroupId = asyncRecord ["group-id"] [0].GetString ();
+                string threadGroupId = asyncRecord ["group-id"] [0].GetString ();
 
-              CLangDebuggeeThread createdThread = new CLangDebuggeeThread (NativeProgram, threadId);
+                CLangDebuggeeThread createdThread = new CLangDebuggeeThread (NativeProgram, threadId);
 
-              NativeProgram.AddThread (createdThread);
+                NativeProgram.AddThread (createdThread);
 
-              Engine.Broadcast (new DebugEngineEvent.ThreadCreate (), NativeProgram.DebugProgram, createdThread);
+                Engine.Broadcast (new DebugEngineEvent.ThreadCreate (), NativeProgram.DebugProgram, createdThread);
+              }
+              catch (Exception e)
+              {
+                LoggingUtils.HandleException (e);
+              }
 
               break;
             }
@@ -665,15 +676,22 @@ namespace AndroidPlusPlus.VsDebugEngine
               // A thread has exited. The 'id' field contains the GDB identifier of the thread. The 'group-id' field identifies the thread group this thread belongs to. 
               // 
 
-              uint threadId = asyncRecord ["id"] [0].GetUnsignedInt ();
+              try
+              {
+                uint threadId = asyncRecord ["id"] [0].GetUnsignedInt ();
 
-              string threadGroupId = asyncRecord ["group-id"] [0].GetString ();
+                string threadGroupId = asyncRecord ["group-id"] [0].GetString ();
 
-              uint exitCode = m_threadGroupStatus [threadGroupId];
+                uint exitCode = m_threadGroupStatus [threadGroupId];
 
-              CLangDebuggeeThread exitedThread = NativeProgram.GetThread (threadId);
+                CLangDebuggeeThread exitedThread = NativeProgram.GetThread (threadId);
 
-              NativeProgram.RemoveThread (exitedThread, exitCode);
+                NativeProgram.RemoveThread (exitedThread, exitCode);
+              }
+              catch (Exception e)
+              {
+                LoggingUtils.HandleException (e);
+              }
 
               break;
             }
@@ -699,30 +717,22 @@ namespace AndroidPlusPlus.VsDebugEngine
 
               try
               {
-                ThreadPool.QueueUserWorkItem (delegate (object state)
+                CLangDebuggeeModule module = new CLangDebuggeeModule (Engine, asyncRecord);
+
+                string moduleName = asyncRecord ["id"] [0].GetString ();
+
+                NativeProgram.AddModule (module);
+
+                Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, true), NativeProgram.DebugProgram, null);
+
+                if (module.SymbolsLoaded)
                 {
-                  try
-                  {
-                    CLangDebuggeeModule module = new CLangDebuggeeModule (Engine, asyncRecord);
+                  Engine.Broadcast (new DebugEngineEvent.BeforeSymbolSearch (module as IDebugModule3), NativeProgram.DebugProgram, null);
 
-                    NativeProgram.AddModule (module);
+                  Engine.Broadcast (new DebugEngineEvent.SymbolSearch (module as IDebugModule3, module.Name), NativeProgram.DebugProgram, null);
+                }
 
-                    Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, true), NativeProgram.DebugProgram, null);
-
-                    if (module.SymbolsLoaded)
-                    {
-                      Engine.Broadcast (new DebugEngineEvent.BeforeSymbolSearch (module as IDebugModule3), NativeProgram.DebugProgram, null);
-
-                      Engine.Broadcast (new DebugEngineEvent.SymbolSearch (module as IDebugModule3, module.Name), NativeProgram.DebugProgram, null);
-                    }
-
-                    Engine.BreakpointManager.RefreshBoundBreakpoints ();
-                  }
-                  catch (Exception e)
-                  {
-                    LoggingUtils.HandleException (e);
-                  }
-                });
+                Engine.BreakpointManager.RefreshBoundBreakpoints ();
               }
               catch (Exception e)
               {
@@ -740,16 +750,15 @@ namespace AndroidPlusPlus.VsDebugEngine
 
               try
               {
-                ThreadPool.QueueUserWorkItem (delegate (object state)
-                {
-                  string moduleName = asyncRecord ["id"] [0].GetString ();
+                string moduleName = asyncRecord ["id"] [0].GetString ();
 
-                  CLangDebuggeeModule module = NativeProgram.GetModule (moduleName);
+                CLangDebuggeeModule module = NativeProgram.GetModule (moduleName);
 
-                  Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, false), NativeProgram.DebugProgram, null);
+                Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, false), NativeProgram.DebugProgram, null);
 
-                  NativeProgram.RemoveModule (module);
-                });
+                NativeProgram.RemoveModule (module);
+
+                Engine.BreakpointManager.RefreshBoundBreakpoints ();
               }
               catch (Exception e)
               {
@@ -760,18 +769,10 @@ namespace AndroidPlusPlus.VsDebugEngine
             }
 
             case "breakpoint-created":
-            {
-              break;
-            }
-
             case "breakpoint-modified":
-            {
-              break;
-            }
-
             case "breakpoint-deleted":
             {
-              break;
+              throw new NotImplementedException ();
             }
           }
 

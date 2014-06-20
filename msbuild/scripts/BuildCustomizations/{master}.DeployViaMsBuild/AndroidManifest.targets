@@ -239,15 +239,18 @@
 
       <AndroidJava Remove="@(AndroidJava)" />
 
-      <AndroidJava Include="@(AndroidManifestOutputResourceConstantSourceFiles->ClearMetadata()->Distinct())">
+      <AndroidJava 
+        Include="@(AndroidManifestOutputResourceConstantSourceFiles->ClearMetadata()->Distinct())">
         <DisableJarExport>true</DisableJarExport>
       </AndroidJava>
 
       <AndroidJava
-        Include="@(AndroidManifestOutputFiles->ClearMetadata()->Distinct());
+        Include="
+          @(AndroidManifestOutputFiles->ClearMetadata()->Distinct());
           $(BuildConfigOutputPath)\BuildConfig.java;
           @(AndroidJavaReorderCache->ClearMetadata()->Distinct())"
-        Exclude="@(AndroidManifestOutputResourceConstantSourceFiles);
+        Exclude="
+          @(AndroidManifestOutputResourceConstantSourceFiles);
           @(AndroidManifestOutputApk)">
       </AndroidJava>
 

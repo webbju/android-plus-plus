@@ -30,7 +30,7 @@
 
     <TargetPlatformArchitectureToolchainToolPrefix>arm-linux-androideabi</TargetPlatformArchitectureToolchainToolPrefix>
 
-    <TargetPlatformArchitectureLlvmPlatformTriple>$(TargetPlatformArchitectureInstructionSet)-none-linux-androideabi</TargetPlatformArchitectureLlvmPlatformTriple>
+    <TargetPlatformArchitectureLlvmPlatformTriple>armv5te-none-linux-androideabi</TargetPlatformArchitectureLlvmPlatformTriple>
 
   </PropertyGroup>
 

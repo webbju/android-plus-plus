@@ -140,7 +140,7 @@
 
       <AdditionalLibraryDirectories Condition="'%(Link.AdditionalLibraryDirectories)' == ''"></AdditionalLibraryDirectories>
 
-      <SystemLibraryDependencies>c;m;log;android;gcc</SystemLibraryDependencies>
+      <SystemLibraryDependencies Condition="'%(Link.SystemLibraryDependencies)' == ''">log;android</SystemLibraryDependencies>
 
       <IgnoreAllDefaultLibraries Condition="'%(Link.IgnoreAllDefaultLibraries)' == ''">false</IgnoreAllDefaultLibraries>
 

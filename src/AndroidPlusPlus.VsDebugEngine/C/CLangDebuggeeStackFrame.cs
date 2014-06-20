@@ -29,7 +29,9 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private CLangDebugger m_debugger;
+    private readonly CLangDebugger m_debugger;
+
+    private uint m_stackLevel;
 
     private string m_locationId;
 
@@ -57,22 +59,49 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       GetInfoFromCurrentLevel (frameTuple);
 
-      LoggingUtils.RequireOk (GetArguments ());
+      LoggingUtils.RequireOk (QueryArgumentsAndLocals ());
 
-      LoggingUtils.RequireOk (GetLocals ());
+      LoggingUtils.RequireOk (QueryRegisters ());
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public uint Level { get; protected set; }
+    public DebuggeeAddress Address
+    {
+      get
+      {
+        return m_locationAddress;
+      }
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void GetInfoFromCurrentLevel (MiResultValueTuple frameTuple)
+    public uint StackLevel 
+    {
+      get
+      {
+        return m_stackLevel;
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public override void Delete ()
+    {
+      base.Delete ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private void GetInfoFromCurrentLevel (MiResultValueTuple frameTuple)
     {
       LoggingUtils.PrintFunction ();
 
@@ -85,7 +114,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (frameTuple.HasField ("level"))
         {
-          Level = frameTuple ["level"] [0].GetUnsignedInt ();
+          m_stackLevel = frameTuple ["level"] [0].GetUnsignedInt ();
         }
 
         // 
@@ -177,39 +206,42 @@ namespace AndroidPlusPlus.VsDebugEngine
         LoggingUtils.HandleException (e);
       }
     }
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public override int GetArguments ()
+    public override int QueryArgumentsAndLocals ()
     {
-      // 
-      // Returns a list of arguments for the current stack level. Caches results for faster lookup.
-      // 
-
       LoggingUtils.PrintFunction ();
 
       try
       {
-        if (m_stackArguments.Count == 0)
+        uint threadId;
+
+        LoggingUtils.RequireOk (m_thread.GetThreadId (out threadId));
+
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-stack-list-variables --thread {0} --frame {1} --no-values", threadId, StackLevel));
+
+        if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
         {
-          MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand ("-stack-list-arguments " + string.Format ("0 {0} {0}", Level));
+          throw new InvalidOperationException ();
+        }
 
-          if ((resultRecord != null) && (!resultRecord.IsError ()) && (resultRecord.HasField ("stack-args")))
+        MiResultValue localVariables = resultRecord ["variables"] [0];
+
+        for (int i = 0; i < localVariables.Count; ++i)
+        {
+          string variable = localVariables [i] ["name"] [0].GetString ();
+
+          CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, variable, null);
+
+          if (localVariables [i].HasField ("arg"))
           {
-            MiResultValueTuple stackLevelFrame = resultRecord ["stack-args"] [0] ["frame"] [0] as MiResultValueTuple;
-
-            MiResultValueList stackLevelFrameArguments = stackLevelFrame ["args"] [0] as MiResultValueList;
-
-            for (int i = 0; i < stackLevelFrameArguments.Count; ++i)
-            {
-              string argument = stackLevelFrameArguments [i] ["name"] [0].GetString ();
-
-              CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, argument, null);
-
-              m_stackArguments.TryAdd (argument, property);
-            }
+            m_stackArguments.TryAdd (variable, property);
+          }
+          else
+          {
+            m_stackLocals.TryAdd (variable, property);
           }
         }
 
@@ -227,98 +259,48 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public override int GetLocals ()
+    public override int QueryRegisters ()
     {
-      // 
-      // Returns a list of local variables for the current stack level. Caches results for faster lookup.
-      // 
-
-      LoggingUtils.PrintFunction ();
-
-      try
-      {
-        if (m_stackLocals.Count == 0)
-        {
-          m_debugger.GdbClient.SendCommand (string.Format ("-stack-select-frame {0}", Level));
-
-          MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand ("-stack-list-locals 0");
-
-          if ((resultRecord != null) && (!resultRecord.IsError ()) && (resultRecord.HasField ("locals")))
-          {
-            MiResultValue localVariables = resultRecord ["locals"] [0];
-
-            for (int i = 0; i < localVariables.Count; ++i)
-            {
-              string variable = localVariables [i] ["name"] [0].GetString ();
-
-              CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, variable, null);
-
-              m_stackLocals.TryAdd (variable, property);
-            }
-          }
-        }
-
-        return DebugEngineConstants.S_OK;
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-
-        return DebugEngineConstants.E_FAIL;
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public override int GetRegisters ()
-    {
-      // 
-      // Returns a list of registers for the current stack level. Caches results for faster lookup.
-      // 
-
       LoggingUtils.PrintFunction ();
 
       try
       {
         if (m_stackRegisters.Count == 0)
         {
+          // 
+          // Returns a list of registers for the current stack level. Caches results for faster lookup.
+          // 
 
-          // TODO: Change requested type based on radix.
-          MiResultRecord registerValueRecord = m_debugger.GdbClient.SendCommand ("-data-list-register-values r");
+          uint threadId;
+
+          LoggingUtils.RequireOk (m_thread.GetThreadId (out threadId));
+
+          MiResultRecord registerValueRecord = m_debugger.GdbClient.SendCommand (string.Format ("-data-list-register-values --thread {0} --frame {1} r", threadId, StackLevel));
 
           if ((registerValueRecord == null) || (registerValueRecord.IsError ()) || (!registerValueRecord.HasField ("register-values")))
           {
             throw new InvalidOperationException ("Failed to retrieve list of register values");
           }
 
-          MiResultRecord registerNamesRecord = m_debugger.GdbClient.SendCommand ("-data-list-register-names");
-
-          if ((registerNamesRecord == null) || (registerNamesRecord.IsError ()) || (!registerNamesRecord.HasField ("register-names")))
-          {
-            throw new InvalidOperationException ("Failed to retrieve list of register names");
-          }
-
           MiResultValue registerValues = registerValueRecord ["register-values"] [0];
 
-          MiResultValue registerNames = registerNamesRecord ["register-names"] [0];
+          Dictionary<uint, string> registerIdMapping = m_debugger.GdbClient.GetRegisterIdMapping ();
 
           for (int i = 0; i < registerValues.Count; ++i)
           {
-            int number = registerValues [i] ["number"] [0].GetInt ();
+            uint registerId = registerValues [i] ["number"] [0].GetUnsignedInt ();
 
-            string value = registerValues [i] ["value"] [0].GetString ();
+            string registerValue = registerValues [i] ["value"] [0].GetString ();
 
-            string register = registerNames [number].GetString ();
+            string registerName = "$" + registerIdMapping [registerId];
 
-            string prettified = "$" + register;
+            string registerNamePrettified = "$" + registerName;
 
-            CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, prettified, null);
+            CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, registerNamePrettified, null);
 
-            property.Value = value;
+            property.Value = registerValue;
 
-            m_stackRegisters.TryAdd (prettified, property);
+            m_stackRegisters.TryAdd (registerNamePrettified, property);
           }
         }
 
@@ -358,12 +340,12 @@ namespace AndroidPlusPlus.VsDebugEngine
           return property;
         }
 
-        if (m_stackRegisters.TryGetValue (expression, out property))
+        if (m_customExpressions.TryGetValue (expression, out property))
         {
           return property;
         }
 
-        if (m_customExpressions.TryGetValue (expression, out property))
+        if (m_stackRegisters.TryGetValue (expression, out property))
         {
           return property;
         }

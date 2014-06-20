@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -71,10 +72,32 @@ namespace AndroidPlusPlus.Common
         KillActiveGdbServerSessions ();
 
         // 
+        // Construct a adaptive command line based on GdbSetup requirements.
+        // 
+
+        StringBuilder commandLineArgumentsBuilder = new StringBuilder ();
+
+        commandLineArgumentsBuilder.AppendFormat ("run-as {0} lib/gdbserver ", m_gdbSetup.Process.Name);
+
+        if (!string.IsNullOrWhiteSpace (m_gdbSetup.Socket))
+        {
+          commandLineArgumentsBuilder.AppendFormat ("+{0} ", m_gdbSetup.Socket);
+        }
+
+        commandLineArgumentsBuilder.Append ("--attach ");
+
+        if (string.IsNullOrWhiteSpace (m_gdbSetup.Socket)) // Don't need a host if we have a bound socket?
+        {
+          commandLineArgumentsBuilder.AppendFormat ("{0}:{1} ", m_gdbSetup.Host, m_gdbSetup.Port);
+        }
+
+        commandLineArgumentsBuilder.Append (m_gdbSetup.Process.Pid);
+
+        // 
         // Launch 'gdbserver' now.
         // 
 
-        m_gdbServerInstance = AndroidAdb.AdbCommandAsync (m_gdbSetup.Process.HostDevice, "shell", string.Format ("run-as {0} lib/gdbserver --attach {1}:{2} {3} ", m_gdbSetup.Process.Name, m_gdbSetup.Host, m_gdbSetup.Port, m_gdbSetup.Process.Pid));
+        m_gdbServerInstance = AndroidAdb.AdbCommandAsync (m_gdbSetup.Process.HostDevice, "shell", commandLineArgumentsBuilder.ToString ());
 
         m_gdbServerInstance.Listener = this;
 
@@ -106,8 +129,6 @@ namespace AndroidPlusPlus.Common
 
         stopped = true;
       }
-
-      KillActiveGdbServerSessions ();
 
       return stopped;
     }
@@ -163,15 +184,34 @@ namespace AndroidPlusPlus.Common
       {
         m_gdbSetup.Process.HostDevice.Refresh ();
 
-        AndroidProcess [] activeProcesses = m_gdbSetup.Process.HostDevice.GetProcesses ();
+        // 
+        // Killing GDB server instances requires use of run-as [package-name],
+        // but it's very difficult to get the parent package of lib/gdbserver as the PPID
+        // will always refer to the zygote. This hack uses the sand-boxed 'user' to try all combinations.
+        // 
 
-        foreach (AndroidProcess process in activeProcesses)
+        AndroidProcess [] activeDeviceProcesses = m_gdbSetup.Process.HostDevice.GetProcesses ();
+
+        List <AndroidProcess> activeGdbProcesses = new List<AndroidProcess> ();
+
+        foreach (AndroidProcess process in activeDeviceProcesses)
         {
           if (process.Name.Contains ("lib/gdbserver"))
           {
-            LoggingUtils.Print (string.Format ("[GdbServer] Killing existing debugging session: ({0}).", process.Name));
+            activeGdbProcesses.Add (process);
+          }
+        }
 
-            m_gdbSetup.Process.HostDevice.Shell (string.Format ("run-as {0}", process.Name), string.Format ("kill -9 {0}", process.Pid));
+        foreach (AndroidProcess gdbProcess in activeGdbProcesses)
+        {
+          foreach (AndroidProcess process in activeDeviceProcesses)
+          {
+            if ((gdbProcess != process) && (gdbProcess.User.Equals (process.User)))
+            {
+              LoggingUtils.Print (string.Format ("[GdbServer] Attempting to terminate existing debugging session: ({0}).", gdbProcess.Name));
+
+              m_gdbSetup.Process.HostDevice.Shell ("run-as " + process.Name, "kill -9 " + process.Pid);
+            }
           }
         }
       }
