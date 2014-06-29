@@ -62,6 +62,9 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     [Output]
     public ITaskItem [] DependentLibraries { get; set; }
 
+    [Output]
+    public ITaskItem [] DependentSystemLibraries { get; set; }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -72,7 +75,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
       {
         if (!File.Exists (NdkDependsTool))
         {
-          throw new ArgumentNullException ("Could not find 'ndk-depends' tool. Tried: " + NdkDependsTool);
+          throw new ArgumentNullException ("Failed to find 'ndk-depends.exe'. Tried: " + NdkDependsTool);
         }
 
         // 
@@ -115,7 +118,11 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
         int returnCode = -1;
 
-        List<ITaskItem> dependencyTaskItems = new List<ITaskItem> ();
+        bool receivedErrorOutput = false;
+
+        List<ITaskItem> depedentLibraries = new List<ITaskItem> ();
+
+        List<ITaskItem> dependentSystemLibraries = new List<ITaskItem> ();
 
         using (Process trackedProcess = new Process ())
         {
@@ -137,6 +144,11 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
               // libSDL2.so -> !! Could not find library
               // 
 
+              if (Verbose)
+              {
+                Log.LogMessageFromText (string.Format ("[{0}] {1}", "AndroidNdkDepends", e.Data), MessageImportance.High);
+              }
+
               if (e.Data.Contains (" -> "))
               {
                 string [] splitDependencyEntry = e.Data.Split (new string [] {" -> "}, StringSplitOptions.None);
@@ -145,13 +157,17 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
                 {
                   Log.LogError ("Could not evaluate path for dependency: '" + splitDependencyEntry [0] + "'.");
                 }
-                else if (splitDependencyEntry [1].StartsWith ("$"))
+                else if (splitDependencyEntry [1].StartsWith ("$")) // Android system library.
                 {
-                  // Android system library.
+                  string dependency = splitDependencyEntry [1].Substring (2);
+
+                  dependentSystemLibraries.Add (new TaskItem (GccUtilities.ConvertPathPosixToWindows (dependency)));
                 }
                 else
                 {
-                  dependencyTaskItems.Add (new TaskItem (splitDependencyEntry [1]));
+                  string dependency = splitDependencyEntry [1];
+
+                  depedentLibraries.Add (new TaskItem (GccUtilities.ConvertPathPosixToWindows (dependency)));
                 }
               }
             }
@@ -162,6 +178,8 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
             if (!string.IsNullOrWhiteSpace (e.Data))
             {
               Log.LogError (e.Data);
+
+              receivedErrorOutput = true;
             }
           };
 
@@ -177,9 +195,11 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
           }
         }
 
-        DependentLibraries = dependencyTaskItems.ToArray ();
+        DependentLibraries = depedentLibraries.ToArray ();
 
-        return (returnCode == 0);
+        DependentSystemLibraries = dependentSystemLibraries.ToArray ();
+
+        return (returnCode == 0) && (!receivedErrorOutput);
       }
       catch (Exception e)
       {

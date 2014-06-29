@@ -312,9 +312,9 @@ namespace AndroidPlusPlus.VsDebugEngine
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
-      }
 
-      return DebugEngineConstants.E_FAIL;
+        return DebugEngineConstants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

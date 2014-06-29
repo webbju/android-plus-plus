@@ -99,7 +99,7 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
 
       try
       {
-        builder.Append (m_parsedProperties.Parse (Sources [0]) + " ");
+        builder.Append (m_parsedProperties.Parse (Sources [0]));
       }
       catch (Exception e)
       {

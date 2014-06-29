@@ -371,18 +371,23 @@ namespace AndroidPlusPlus.MsBuild.Common
                 if (!string.IsNullOrWhiteSpace (responseFileCommands))
                 {
                   string responseFile = Path.Combine (TrackerLogDirectory, string.Format ("{0}_{1}.rcf", ToolName, Guid.NewGuid ().ToString ()));
-                  
+
                   string responseFileSwitch = GetResponseFileSwitch (responseFile);
 
                   if (!string.IsNullOrWhiteSpace (responseFileSwitch))
                   {
                     using (StreamWriter writer = new StreamWriter (responseFile, false, Encoding.ASCII))
                     {
-                      writer.Write (responseFileCommands);
+                      writer.WriteLine (responseFileCommands);
                     }
-                    
+
                     responseFileCommands = responseFileSwitch;
                   }
+                }
+
+                if (OutputCommandLine)
+                {
+                  Log.LogMessageFromText (string.Format ("[{0}] Response file switch: {1}", ToolName, responseFileCommands), MessageImportance.High);
                 }
 
                 using (Process trackedProcess = new Process ())
@@ -641,11 +646,6 @@ namespace AndroidPlusPlus.MsBuild.Common
         throw new ArgumentNullException ();
       }
 
-      if (inputSources.Length == 0)
-      {
-        throw new ArgumentException ();
-      }
-
       Dictionary<string, List<ITaskItem>> commandBuffer = new Dictionary<string, List<ITaskItem>> ();
 
       // 
@@ -662,17 +662,12 @@ namespace AndroidPlusPlus.MsBuild.Common
 
         if (!string.IsNullOrWhiteSpace (commandLineCommands))
         {
-          commandLineBuilder.Append (commandLineCommands);
+          commandLineBuilder.Append (commandLineCommands + " ");
         }
 
         if (!string.IsNullOrWhiteSpace (responseFileCommands))
         {
-          if (commandLineBuilder.Length > 0)
-          {
-            commandLineBuilder.Append (" ");
-          }
-
-          commandLineBuilder.Append (responseFileCommands);
+          commandLineBuilder.Append (responseFileCommands + " ");
         }
 
         commandBuffer.Add (commandLineBuilder.ToString (), new List<ITaskItem> (inputSources));
@@ -705,11 +700,6 @@ namespace AndroidPlusPlus.MsBuild.Common
         }
       }
 
-      if (commandBuffer.Count == 0)
-      {
-        throw new InvalidOperationException ("Command buffer is empty");
-      }
-
       return commandBuffer;
     }
 
@@ -732,7 +722,7 @@ namespace AndroidPlusPlus.MsBuild.Common
           throw new ArgumentNullException ();
         }
 
-        builder.Append (m_parsedProperties.Parse (source) + " ");
+        builder.Append (m_parsedProperties.Parse (source));
       }
       catch (Exception e)
       {

@@ -62,23 +62,43 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
     protected override bool Setup ()
     {
-      m_tempWorkingDirectory = Path.Combine (Path.GetTempPath (), Guid.NewGuid ().ToString ());
+      // 
+      // Temporary working directory needs to be consistent between runs of the same source files.
+      // 
 
-      if (Directory.Exists (m_tempWorkingDirectory))
+      try
       {
-        Directory.Delete (m_tempWorkingDirectory, true);
+        int sourceTreeHash = 0;
+
+        foreach (ITaskItem source in Sources)
+        {
+          sourceTreeHash += source.GetHashCode ();
+        }
+
+        m_tempWorkingDirectory = Path.Combine (Path.GetTempPath (), sourceTreeHash.ToString ());
+
+        if (Directory.Exists (m_tempWorkingDirectory))
+        {
+          Directory.Delete (m_tempWorkingDirectory, true);
+        }
+
+        Directory.CreateDirectory (m_tempWorkingDirectory);
+
+        if (!Directory.Exists (m_tempWorkingDirectory))
+        {
+          Log.LogError ("Failed to create required working directory. Tried: " + m_tempWorkingDirectory);
+
+          return false;
+        }
+
+        return base.Setup ();
       }
-
-      Directory.CreateDirectory (m_tempWorkingDirectory);
-
-      if (!Directory.Exists (m_tempWorkingDirectory))
+      catch (Exception e)
       {
-        Log.LogError ("Failed to create required working directory. Tried: " + m_tempWorkingDirectory);
+        Log.LogErrorFromException (e, true);
 
         return false;
       }
-
-      return base.Setup ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -130,35 +150,35 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
       StringBuilder responseFileCommands = new StringBuilder (GccUtilities.CommandLineLength);
 
-      // 
-      // c    create new archive
-      // f    specify archive file name
-      // m    specify manifest file name
-      // 0    store only; use no ZIP compression
-      // 
-
-      responseFileArguments.Append ("c0");
-
-      if (ManifestFile != null)
-      {
-        responseFileArguments.Append ("m");
-
-        responseFileCommands.Append (GccUtilities.ConvertPathWindowsToPosix (ManifestFile.GetMetadata ("FullPath")) + " ");
-      }
-
-      if (OutputFile != null)
-      {
-        responseFileArguments.Append ("f");
-
-        responseFileCommands.Append (GccUtilities.ConvertPathWindowsToPosix (OutputFile.GetMetadata ("FullPath")) + " ");
-      }
-
-      // 
-      // jar tool is a rather pants as it requires classes to be in package mapped directory structures. Use a temp directory for this.
-      // 
-
       try
       {
+        // 
+        // c    create new archive
+        // f    specify archive file name
+        // m    specify manifest file name
+        // 0    store only; use no ZIP compression
+        // 
+
+        responseFileArguments.Append ("c0");
+
+        if (ManifestFile != null)
+        {
+          responseFileArguments.Append ("m");
+
+          responseFileCommands.Append (GccUtilities.ConvertPathWindowsToPosix (ManifestFile.GetMetadata ("FullPath")) + " ");
+        }
+
+        if (OutputFile != null)
+        {
+          responseFileArguments.Append ("f");
+
+          responseFileCommands.Append (GccUtilities.ConvertPathWindowsToPosix (OutputFile.GetMetadata ("FullPath")) + " ");
+        }
+
+        // 
+        // jar tool is a rather pants as it requires classes to be in package mapped directory structures. Use a temp directory for this.
+        // 
+
         foreach (ITaskItem source in Sources)
         {
           string sourceFullPath = Path.GetFullPath (source.ItemSpec);

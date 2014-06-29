@@ -68,13 +68,19 @@ namespace AndroidPlusPlus.MsBuild.Common
 
         ITaskItem [] outOfDateSourcesFromTracking = TrackedInputFiles.ComputeSourcesNeedingCompilation ();// (true);
 
-        ITaskItem [] outOfDateSourcesFromCommandLine = GetOutOfDateSourcesFromCmdLineChanges ();
+        ITaskItem [] outOfDateSourcesFromCommandLine = GetOutOfDateSourcesFromCmdLineChanges (Sources);
+
+#if DEBUG
+        Log.LogMessageFromText (string.Format ("[{0}] --> No. out-of-date sources (from tracking): {1}", ToolName, outOfDateSourcesFromTracking.Length), MessageImportance.Low);
+
+        Log.LogMessageFromText (string.Format ("[{0}] --> No. out-of-date sources (command line differs): {1}", ToolName, outOfDateSourcesFromCommandLine.Length), MessageImportance.Low);
+#endif
 
         // 
         // Merge out-of-date lists from both sources and assign these for compilation.
         // 
 
-        List<ITaskItem> mergedOutOfDateSources = new List<ITaskItem> (outOfDateSourcesFromTracking);
+        HashSet<ITaskItem> mergedOutOfDateSources = new HashSet<ITaskItem> (outOfDateSourcesFromTracking);
 
         foreach (ITaskItem item in outOfDateSourcesFromCommandLine)
         {
@@ -84,7 +90,9 @@ namespace AndroidPlusPlus.MsBuild.Common
           }
         }
 
-        OutOfDateSources = mergedOutOfDateSources.ToArray ();
+        OutOfDateSources = new ITaskItem [mergedOutOfDateSources.Count];
+
+        mergedOutOfDateSources.CopyTo (OutOfDateSources);
 
         if ((OutOfDateSources == null) || (OutOfDateSources.Length == 0))
         {
@@ -105,6 +113,15 @@ namespace AndroidPlusPlus.MsBuild.Common
           trackedOutputFiles.SaveTlog ();
         }
       }
+
+#if DEBUG
+      Log.LogMessageFromText (string.Format ("[{0}] --> Skipped execution: {1}", ToolName, SkippedExecution), MessageImportance.Low);
+
+      for (int i = 0; i < OutOfDateSources.Length; ++i)
+      {
+        Log.LogMessageFromText (string.Format ("[{0}] --> Out-of-date Sources: [{1}] {2}", ToolName, i, OutOfDateSources [i].ToString ()), MessageImportance.Low);
+      }
+#endif
 
       return result;
     }
@@ -253,48 +270,60 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected ITaskItem [] GetOutOfDateSourcesFromCmdLineChanges ()
+    protected ITaskItem [] GetOutOfDateSourcesFromCmdLineChanges (ITaskItem [] uncheckedSources)
     {
       // 
       // Evaluate a list of the currently saved commands, and check whether these are considered out-of-date.
       // 
 
-      Dictionary<string, List<ITaskItem>> commandLineDictionary = GenerateCommandLinesFromTlog ();
+      Dictionary<string, List<ITaskItem>> commandLineFromTLog = GenerateCommandLinesFromTlog ();
+
+      Dictionary<string, List<ITaskItem>> commandLineFromSources = GenerateCommandLineBuffer (uncheckedSources);
 
       List<ITaskItem> outOfDateSources = new List<ITaskItem> ();
 
-      foreach (ITaskItem source in Sources)
-      {
-        // 
-        // Identify if the source's command line is different from that previously built. This may require iterating through multiple sources per command.
-        // 
+      // 
+      // Identify the command line to be used for a specific source file for the *current* build.
+      // 
 
+      foreach (ITaskItem source in uncheckedSources)
+      {
         string sourcePath = source.GetMetadata ("FullPath").ToUpperInvariant ();
 
-        string commandLine = GenerateCommandLineFromProps (source);
+        bool foundMatchingSource = false;
 
-        List<ITaskItem> commandLineCachedSources = null;
-
-        bool outOfDate = true;
-
-        if (commandLineDictionary.TryGetValue (commandLine, out commandLineCachedSources))
+        foreach (KeyValuePair<string, List<ITaskItem>> keyPair in commandLineFromSources)
         {
-          foreach (ITaskItem cachedSource in commandLineCachedSources)
+          List<ITaskItem> cachedSourcesUsingCommand = keyPair.Value;
+
+          foreach (ITaskItem cachedSource in cachedSourcesUsingCommand)
           {
             string cachedSourcePath = Path.GetFullPath (cachedSource.ItemSpec).ToUpperInvariant ();
 
             if (cachedSourcePath.Equals (sourcePath))
             {
-              outOfDate = false;
+              // 
+              // Found a matching source file. Check if this command is already cached in the TLog. 
+              // If not, it should be considered out-of-date.
+              // 
+
+              foundMatchingSource = true;
+
+              List <ITaskItem> matchingCachedTLogSources = null;
+
+              if (!commandLineFromTLog.TryGetValue (keyPair.Key, out matchingCachedTLogSources))
+              {
+                outOfDateSources.Add (source);
+              }
 
               break;
             }
           }
-        }
 
-        if (outOfDate)
-        {
-          outOfDateSources.Add (source);
+          if (foundMatchingSource)
+          {
+            break;
+          }
         }
       }
 

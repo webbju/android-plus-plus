@@ -31,9 +31,9 @@ namespace app_javac_dependencies
 
     private static List<string> s_javacToolArguments = new List<string> ();
 
-    private static List<string> s_sourcePathList = new List<string> ();
+    private static HashSet<string> s_sourcePathList = new HashSet<string> ();
 
-    private static Dictionary <string, List <string>> s_sourceDependencyList = new Dictionary<string,List<string>> ();
+    private static HashSet<string> s_sourceFileList = new HashSet<string> ();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -41,7 +41,7 @@ namespace app_javac_dependencies
 
     static int Main (string [] args)
     {
-      int returnCode = 0;
+      int returnCode = -1;
 
       try
       {
@@ -49,47 +49,77 @@ namespace app_javac_dependencies
 
         ValidateArguments ();
 
-        foreach (KeyValuePair<string, List<string>> sourceKeyPair in s_sourceDependencyList)
+        HashSet<string> filesRead = new HashSet<string> ();
+
+        HashSet<string> filesWritten = new HashSet<string> ();
+
+        using (Process trackedProcess = new Process ())
         {
-          using (Process trackedProcess = new Process ())
+          StringBuilder argumentsBuilder = new StringBuilder ();
+
+          argumentsBuilder.Append (string.Join (" ", s_javacToolArguments));
+
+          argumentsBuilder.Append (" ");
+
+          foreach (string sourceFile in s_sourceFileList)
           {
-            string arguments = string.Join (" ", s_javacToolArguments.ToArray ()) + " " + QuotePathIfNeeded (sourceKeyPair.Key);
+            argumentsBuilder.Append (QuotePathIfNeeded (sourceFile) + " ");
+          }
 
-            trackedProcess.StartInfo = new ProcessStartInfo (Path.Combine (s_jdkHomePath, "bin", "javac.exe"), arguments);
+          trackedProcess.StartInfo = new ProcessStartInfo (Path.Combine (s_jdkHomePath, "bin", "javac.exe"), argumentsBuilder.ToString ());
 
-            trackedProcess.StartInfo.UseShellExecute = false;
+          trackedProcess.StartInfo.UseShellExecute = false;
 
-            trackedProcess.StartInfo.RedirectStandardOutput = true;
+          trackedProcess.StartInfo.RedirectStandardOutput = true;
 
-            trackedProcess.StartInfo.RedirectStandardError = true;
+          trackedProcess.StartInfo.RedirectStandardError = true;
 
-            trackedProcess.OutputDataReceived += (sender, e) =>
+          trackedProcess.OutputDataReceived += (sender, e) =>
+          {
+            if (!string.IsNullOrWhiteSpace (e.Data))
             {
-              if (!string.IsNullOrWhiteSpace (e.Data))
-              {
-                ProcessJavacOutput (e.Data, sourceKeyPair);
-              }
-            };
+              ProcessJavacOutput (e.Data, ref filesRead, ref filesWritten);
+            }
+          };
 
-            trackedProcess.ErrorDataReceived += (sender, e) =>
+          trackedProcess.ErrorDataReceived += (sender, e) =>
+          {
+            if (!string.IsNullOrWhiteSpace (e.Data))
             {
-              if (!string.IsNullOrWhiteSpace (e.Data))
-              {
-                ProcessJavacOutput (e.Data, sourceKeyPair);
-              }
-            };
+              ProcessJavacOutput (e.Data, ref filesRead, ref filesWritten);
+            }
+          };
 
-            if (trackedProcess.Start ())
+          if (trackedProcess.Start ())
+          {
+            trackedProcess.BeginOutputReadLine ();
+
+            trackedProcess.BeginErrorReadLine ();
+
+            trackedProcess.WaitForExit ();
+
+            if (returnCode != 0)
             {
-              trackedProcess.BeginOutputReadLine ();
+              returnCode = trackedProcess.ExitCode;
+            }
+          }
+        }
 
-              trackedProcess.BeginErrorReadLine ();
+        // 
+        // Dump a dependency file alongside any of the tool's output classes.
+        // 
 
-              trackedProcess.WaitForExit ();
+        if (returnCode == 0)
+        {
+          foreach (string file in filesWritten)
+          {
+            using (StreamWriter writer = new StreamWriter (file + ".d", false, Encoding.Unicode))
+            {
+              writer.WriteLine (string.Format ("{0}: \\", ConvertPathWindowsToGccDependency (file)));
 
-              if (returnCode != 0)
+              foreach (string dependency in filesRead)
               {
-                returnCode = trackedProcess.ExitCode;
+                writer.WriteLine (string.Format ("  {0} \\", ConvertPathWindowsToGccDependency (dependency)));
               }
             }
           }
@@ -169,7 +199,7 @@ namespace app_javac_dependencies
           {
             if (args [i].EndsWith (".java"))
             {
-              s_sourceDependencyList.Add (args [i], new List<string> ());
+              s_sourceFileList.Add (args [i]);
             }
             else
             {
@@ -203,66 +233,10 @@ namespace app_javac_dependencies
         throw new ArgumentException ("--jdk-home references an invalid JDK installation. Can not find required 'bin\\javac.exe' tool.");
       }
 
-      if (s_sourceDependencyList.Count == 0)
+      if (s_sourceFileList.Count == 0)
       {
         throw new ArgumentException ("No .java source files provided.");
       }
-
-      // 
-      // Iterate source files and evaluate common 'source paths'.
-      // 
-
-#if FALSE
-      foreach (KeyValuePair<string, List<string>> sourceKeyPair in s_sourceDependencyList)
-      {
-        string sourcePath = sourceKeyPair.Key;
-
-        using (StreamReader reader = new StreamReader (sourcePath))
-        {
-          string line = reader.ReadLine ();
-
-          int packageStart = -1;
-
-          int packageEnd = -1;
-
-          while (line != null)
-          {
-            packageStart = line.IndexOf ("package ");
-
-            if (packageStart != -1)
-            {
-              packageEnd = line.IndexOf (';', packageStart);
-            }
-
-            if (packageEnd != -1)
-            {
-              // 
-              // Identified the source's package address, evaluate it's source-path 'root' directory.
-              // 
-
-              int substringIndexStart = packageStart + "package ".Length;
-
-              int substringLength = packageEnd - substringIndexStart;
-
-              string package = line.Substring (substringIndexStart, substringLength).Trim (new char [] { ' ', ';', '\n', '\r' });
-
-              string sourceRootWithoutPackage = sourcePath.Replace (package.Replace ('.', '\\'), "");
-
-              if (!s_sourcePathList.Contains (sourceRootWithoutPackage))
-              {
-                s_sourcePathList.Add (sourceRootWithoutPackage);
-              }
-
-              line = null;
-            }
-            else
-            {
-              line = reader.ReadLine ();
-            }
-          }
-        }
-      }
-#endif
 
       if (s_sourcePathList.Count > 0)
       {
@@ -283,7 +257,7 @@ namespace app_javac_dependencies
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private static void ProcessJavacOutput (string singleLine, KeyValuePair<string, List<string>> sourceKeyPair)
+    private static void ProcessJavacOutput (string singleLine, ref HashSet<string> filesRead, ref HashSet<string> filesWritten)
     {
       Debug.WriteLine (singleLine);
 
@@ -301,9 +275,9 @@ namespace app_javac_dependencies
 
           string classLoaded = sanitisedOutput.Substring ("parsing started ".Length);
 
-          if (!sourceKeyPair.Value.Contains (classLoaded))
+          if (!filesRead.Contains (classLoaded))
           {
-            sourceKeyPair.Value.Add (classLoaded);
+            filesRead.Add (classLoaded);
           }
         }
         else if (sanitisedOutput.StartsWith ("search path for class files: "))
@@ -318,9 +292,9 @@ namespace app_javac_dependencies
           {
             if (file.EndsWith (".jar") && !file.Contains (s_jdkHomePath))
             {
-              if (!sourceKeyPair.Value.Contains (file))
+              if (!filesRead.Contains (file))
               {
-                sourceKeyPair.Value.Add (file);
+                filesRead.Add (file);
               }
             }
           }
@@ -333,27 +307,21 @@ namespace app_javac_dependencies
 
           string classLoaded = sanitisedOutput.Substring ("loading ".Length);
 
-          if ((classLoaded.EndsWith (".class") || classLoaded.EndsWith (".java")) && !sourceKeyPair.Value.Contains (classLoaded))
+          if (classLoaded.EndsWith (".class") || classLoaded.EndsWith (".java"))
           {
-            sourceKeyPair.Value.Add (classLoaded);
+            if (!filesRead.Contains (classLoaded))
+            {
+              filesRead.Add (classLoaded);
+            }
           }
         }
         else if (sanitisedOutput.StartsWith ("wrote "))
         {
-          // 
-          // Dump a dependency file alongside any of the tool's output classes.
-          // 
-
           string classFileWritten = Path.GetFullPath (sanitisedOutput.Substring ("wrote ".Length));
 
-          using (StreamWriter writer = new StreamWriter (classFileWritten + ".d", false, Encoding.Unicode))
+          if (!filesWritten.Contains (classFileWritten))
           {
-            writer.WriteLine (string.Format ("{0}: \\", ConvertPathWindowsToGccDependency (classFileWritten)));
-
-            foreach (string dependency in sourceKeyPair.Value)
-            {
-              writer.WriteLine (string.Format ("  {0} \\", ConvertPathWindowsToGccDependency (dependency)));
-            }
+            filesWritten.Add (classFileWritten);
           }
         }
       }

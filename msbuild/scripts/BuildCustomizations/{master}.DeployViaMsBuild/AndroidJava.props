@@ -83,8 +83,6 @@
 
       <MultiProcessorCompilation Condition="'%(AndroidJava.MultiProcessorCompilation)' == ''">true</MultiProcessorCompilation>
 
-      <ProcessorNumber Condition="'$(CL_MPCount)' != ''">$(CL_MPCount)</ProcessorNumber>
-
       <ProcessorNumber Condition="'%(AndroidJava.ProcessorNumber)' == ''">$(NUMBER_OF_PROCESSORS)</ProcessorNumber>
 
       <TrackerLogDirectory Condition="'%(AndroidJava.TrackerLogDirectory)' == ''">$(IntDir)</TrackerLogDirectory>

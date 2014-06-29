@@ -229,9 +229,9 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
         builder.Append ("package ");
 
-        builder.Append (" -M " + GccUtilities.QuoteIfNeeded (source.GetMetadata ("FullPath")) + " ");
+        builder.Append ("-M " + GccUtilities.QuoteIfNeeded (source.GetMetadata ("FullPath")) + " ");
 
-        builder.Append (m_parsedProperties.Parse (source) + " ");
+        builder.Append (m_parsedProperties.Parse (source));
       }
       catch (Exception e)
       {

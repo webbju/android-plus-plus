@@ -210,11 +210,11 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
           throw new ArgumentNullException ();
         }
 
-        builder.Append (" --jdk-home " + GccUtilities.QuoteIfNeeded (JavaHomeDir));
+        builder.Append ("--jdk-home " + GccUtilities.QuoteIfNeeded (JavaHomeDir) + " ");
 
-        builder.Append (" " + m_parsedProperties.Parse (source));
+        builder.Append ("-verbose" + " ");
 
-        builder.Append (" -verbose ");
+        builder.Append (m_parsedProperties.Parse (source));
       }
       catch (Exception e)
       {

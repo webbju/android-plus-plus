@@ -86,8 +86,9 @@
 
         <MinimalRebuildFromTracking Condition="'%(ClCompile.MinimalRebuildFromTracking)' == '' and '$(BuildType)' == 'Build' and '$(ForceRebuild)' != 'true'">true</MinimalRebuildFromTracking>
 
-        <!-- Inline function limit specification is not supported by Clang. -->
+        <!-- 'Inline function limit' and 'Unswitch loops' are not supported by Clang. -->
         <InlineLimitSize Condition="'$(LlvmVersion)' != ''"></InlineLimitSize>
+        <UnswitchLoops Condition="'$(LlvmVersion)' != ''"></UnswitchLoops>
       </ClCompile>
     </ItemGroup>
 
@@ -221,19 +222,33 @@
     -->
 
     <PropertyGroup>
-      <_DebugLinkSharedLibrary>@(LinkOutputFiles->'%(RootDir)%(Directory)%(Filename)%(Extension)')</_DebugLinkSharedLibrary>
+      <_LinkStripUnusedSymbols>%(Link.StripUnusedSymbols)</_LinkStripUnusedSymbols>
+      <_LinkStripDebugSymbols>%(Link.StripDebugSymbols)</_LinkStripDebugSymbols>
+      <_LinkStripSymbolsRequired>false</_LinkStripSymbolsRequired>
+      <_LinkStripSymbolsRequired Condition="('$(_LinkStripUnusedSymbols)' == 'true' or '$(_LinkStripDebugSymbols)' == 'true')">true</_LinkStripSymbolsRequired>
+      <_LinkStripSymbolsRequired Condition="'$(LinkSkippedExecution)' == 'true'">false</_LinkStripSymbolsRequired>
+
+      <_DebugLinkSharedLibrary>@(LinkOutputFiles->'%(FullPath)')</_DebugLinkSharedLibrary>
       <_DebugLinkSymbolsFile>@(LinkOutputFiles->'%(RootDir)%(Directory)%(Filename).debug')</_DebugLinkSymbolsFile>
     </PropertyGroup>
 
-    <Exec Command="$(PlatformToolsetObjcopyToolPath)\$(PlatformToolsetObjcopyTool) --only-keep-debug $(_DebugLinkSharedLibrary) $(_DebugLinkSymbolsFile)" />
+    <Exec 
+      Condition="('@(LinkOutputFiles)' != '' and '$(_LinkStripSymbolsRequired)' == 'true')" 
+      Command="$(PlatformToolsetObjcopyToolPath)\$(PlatformToolsetObjcopyTool) --only-keep-debug $(_DebugLinkSharedLibrary) $(_DebugLinkSymbolsFile)" 
+    />
+    
+    <Error Condition="('$(_LinkStripSymbolsRequired)' == 'true' and !Exists('$(_DebugLinkSymbolsFile)'))" Text="Failed to export separated debug symbols file. Expected: $(_DebugLinkSymbolsFile)" />
 
-    <Message Condition="'$(LinkSkippedExecution)' == 'false'" Text="$(MSBuildProjectFile) -&gt; $(_DebugLinkSymbolsFile)" Importance="High" />
+    <Message Condition="'$(_LinkStripSymbolsRequired)' == 'true'" Text="$(MSBuildProjectFile) -&gt; $(_DebugLinkSymbolsFile)" Importance="High" />
+
+    <!--
+      Strip info/symbols from exported libraries, and create a link between these and their separated (paired) .debug symbol file.
+    -->
 
     <ItemGroup>
       <LinkOutputFiles>
-        <StripUnusedSymbols>%(Link.StripUnusedSymbols)</StripUnusedSymbols>
-        <StripDebugSymbols>%(Link.StripDebugSymbols)</StripDebugSymbols>
-        <!-- Obviously I don't understand MSBuild, because referencing these props directly in GccStrip doesn't work. -->
+        <StripUnusedSymbols>$(_LinkStripUnusedSymbols)</StripUnusedSymbols>
+        <StripDebugSymbols>$(_LinkStripDebugSymbols)</StripDebugSymbols>
         <TrackerLogDirectory>%(Link.TrackerLogDirectory)</TrackerLogDirectory>
         <MinimalRebuildFromTracking>%(Link.MinimalRebuildFromTracking)</MinimalRebuildFromTracking>
         <OutputCommandLine>%(Link.OutputCommandLine)</OutputCommandLine>
@@ -242,8 +257,8 @@
 
     <GccStrip
       BuildingInIDE="$(BuildingInsideVisualStudio)"
+      Condition="('@(LinkOutputFiles)' != '' and '$(_LinkStripSymbolsRequired)' == 'true')"
       Sources="@(LinkOutputFiles)"
-      Condition="('@(LinkOutputFiles)' != '' and ('%(StripUnusedSymbols)' == 'true' or '%(StripDebugSymbols)' == 'true'))"
 
       TrackerLogDirectory="%(LinkOutputFiles.TrackerLogDirectory)"
       TrackFileAccess="$(TrackFileAccess)"
@@ -255,7 +270,10 @@
       PropertiesFile="$(VCTargetsPath)\Platforms\Android++\$(LangID)\gcc_strip.xml"
     />
 
-    <Exec Command="$(PlatformToolsetObjcopyToolPath)\$(PlatformToolsetObjcopyTool) --add-gnu-debuglink=$(_DebugLinkSymbolsFile) $(_DebugLinkSharedLibrary)" />
+    <Exec 
+      Condition="('@(LinkOutputFiles)' != '' and '$(_LinkStripSymbolsRequired)' == 'true')"
+      Command="$(PlatformToolsetObjcopyToolPath)\$(PlatformToolsetObjcopyTool) --add-gnu-debuglink=$(_DebugLinkSymbolsFile) $(_DebugLinkSharedLibrary)" 
+    />
 
     <!--
       Evaluate library build-id and place debugging symbols under .\.build-id\[ab]\[cdefghijklmnopqrstuvwxyz].debug so GDB can find this via 'debug-files-directory'
@@ -263,6 +281,7 @@
     -->
 
     <GccBuildId
+      Condition="('@(LinkOutputFiles)' != '' and '$(_LinkStripSymbolsRequired)' == 'true')"
       TargetElf="$(_DebugLinkSharedLibrary)"
       OutputCommandLine="%(LinkOutputFiles.OutputCommandLine)"
       ToolPath="$(PlatformToolsetReadElfToolPath)"
@@ -270,14 +289,19 @@
       <Output TaskParameter="BuildId" PropertyName="_DebugLinkSharedLibaryBuildId" />
     </GccBuildId>
 
-    <PropertyGroup>
+    <PropertyGroup Condition="'$(_DebugLinkSharedLibaryBuildId)' != ''">
       <_DebugLinkBuildIdPath>$([System.IO.Path]::GetDirectoryName('$(_DebugLinkSharedLibrary)'))\.build-id\$(_DebugLinkSharedLibaryBuildId.Substring(0,2))</_DebugLinkBuildIdPath>
       <_DebugLinkBuildIdFilename>$(_DebugLinkSharedLibaryBuildId.Substring(2)).debug</_DebugLinkBuildIdFilename>
     </PropertyGroup>
 
-    <Copy SourceFiles="$(_DebugLinkSymbolsFile)" DestinationFiles="$(_DebugLinkBuildIdPath)\$(_DebugLinkBuildIdFilename)" />
+    <Copy 
+      Condition="('@(LinkOutputFiles)' != '' and '$(_LinkStripSymbolsRequired)' == 'true')"
+      SourceFiles="$(_DebugLinkSymbolsFile)" 
+      DestinationFiles="$(_DebugLinkBuildIdPath)\$(_DebugLinkBuildIdFilename)" 
+    />
 
     <WriteLinesToFile
+      Condition="('@(LinkOutputFiles)' != '' and '$(_LinkStripSymbolsRequired)' == 'true')"
       File="$(_DebugLinkBuildIdPath)\$(_DebugLinkBuildIdFilename).txt"
       Lines="Debugging symbols for library: $(_DebugLinkSharedLibrary);Original file: $(_DebugLinkSymbolsFile);Build-id: $(_DebugLinkSharedLibaryBuildId);"
       Overwrite="true"
@@ -287,28 +311,38 @@
       Construct a GDB setup execution script, then embed this as an additional section ('gdb.setup') in the target library.
     -->
 
-    <ItemGroup>
+    <ItemGroup Condition="('@(LinkOutputFiles)' != '' and '$(_LinkStripSymbolsRequired)' == 'true')">
       <_GdbSearchDirectories Include="$(OutDir);$(LibraryPath)" />
-      <_GdbDebugFileDirectories Include="$([System.IO.Path]::GetDirectoryName('$(_DebugLinkSharedLibrary)'))" />
+      <_GdbDebugFileDirectories Condition="'$(_DebugLinkSharedLibrary)' != ''" Include="$([System.IO.Path]::GetDirectoryName('$(_DebugLinkSharedLibrary)'))" />
     </ItemGroup>
 
     <PropertyGroup>
       <Semicolon>%3B</Semicolon>
       <GdbSetupExecutionScript>$(IntDir)gdb.setup</GdbSetupExecutionScript>
-      <GdbSearchDirectories>@(_GdbSearchDirectories->'%(FullPath)', '$(Semicolon)')</GdbSearchDirectories>
+      <GdbSourceDirectories>@(_GdbSearchDirectories->'%(FullPath)', '$(Semicolon)')</GdbSourceDirectories>
       <GdbDebugFileDirectories>@(_GdbDebugFileDirectories->'%(FullPath)', '$(Semicolon)')</GdbDebugFileDirectories>
     </PropertyGroup>
 
+    <Delete Condition="Exists('$(GdbSetupExecutionScript)')" Files="$(GdbSetupExecutionScript)" />
+
     <WriteLinesToFile
+      Condition="'$(GdbSourceDirectories)' != ''" 
       File="$(GdbSetupExecutionScript)"
-      Lines="
-        directory $(GdbSearchDirectories);
-        set solib-search-path $(GdbDebugFileDirectories);
-        set debug-file-directory $(GdbDebugFileDirectories);"
-      Overwrite="true"
+      Lines="directory $(GdbSourceDirectories);"
+      Overwrite="false"
     />
 
-    <Exec Command="$(PlatformToolsetObjcopyToolPath)\$(PlatformToolsetObjcopyTool) --add-section gdb.setup=$(GdbSetupExecutionScript) @(LinkOutputFiles->Metadata('FullPath'))" />
+    <WriteLinesToFile 
+      Condition="'$(GdbDebugFileDirectories)' != ''" 
+      File="$(GdbSetupExecutionScript)"
+      Lines="set solib-search-path $(GdbDebugFileDirectories);set debug-file-directory $(GdbDebugFileDirectories);"
+      Overwrite="false"
+    />
+
+    <Exec 
+      Condition="('@(LinkOutputFiles)' != '' and '$(_LinkStripSymbolsRequired)' == 'true' and Exists('$(GdbSetupExecutionScript)'))"
+      Command="$(PlatformToolsetObjcopyToolPath)\$(PlatformToolsetObjcopyTool) --add-section gdb.setup=$(GdbSetupExecutionScript) $(_DebugLinkSharedLibrary)" 
+    />
 
   </Target>
 
@@ -353,6 +387,8 @@
 
     </GccLib>
 
+    <Message Condition="'$(LibSkippedExecution)' == 'false'" Text="$(MSBuildProjectFile) -&gt; @(LibOutputFiles)" Importance="High" />
+
     <!--
       Strip unused and debugging symbols, when requested.
     -->
@@ -367,7 +403,7 @@
         <OutputCommandLine>%(Lib.OutputCommandLine)</OutputCommandLine>
       </LibOutputFiles>
     </ItemGroup>
-    
+
     <Copy 
       Condition="('@(LibOutputFiles)' != '' and ('%(StripUnusedSymbols)' == 'true' or '%(StripDebugSymbols)' == 'true'))"
       SourceFiles="@(LibOutputFiles)" 
@@ -376,8 +412,8 @@
 
     <GccStrip
       BuildingInIDE="$(BuildingInsideVisualStudio)"
-      Sources="@(LibOutputFiles)"
       Condition="('@(LibOutputFiles)' != '' and ('%(StripUnusedSymbols)' == 'true' or '%(StripDebugSymbols)' == 'true'))"
+      Sources="@(LibOutputFiles)"
 
       TrackerLogDirectory="%(LibOutputFiles.TrackerLogDirectory)"
       TrackFileAccess="$(TrackFileAccess)"
@@ -388,8 +424,6 @@
       ToolExe="$(PlatformToolsetStripTool)"
       PropertiesFile="$(VCTargetsPath)\Platforms\Android++\$(LangID)\gcc_strip.xml"
     />
-
-    <Message Condition="'$(LibSkippedExecution)' == 'false'" Text="$(MSBuildProjectFile) -&gt; @(LibOutputFiles)" Importance="High" />
 
   </Target> 
 

@@ -52,20 +52,7 @@
     />
 
     <!--
-      IntermediateDirectory
-    -->
-
-    <StringProperty
-      Subtype="file"
-      Name="IntermediateDirectory"
-      DisplayName="Intemediate Directory"
-      Category="General"
-      Switch=""
-      Separator=""
-    />
-
-    <!--
-    OutputCommandLine
+      OutputCommandLine
     -->
 
     <BoolProperty
@@ -75,7 +62,7 @@
     />
 
     <!--
-    TrackerLogDirectory
+      TrackerLogDirectory
     -->
 
     <StringProperty

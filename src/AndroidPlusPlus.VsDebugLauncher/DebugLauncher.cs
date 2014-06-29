@@ -198,6 +198,11 @@ namespace AndroidPlusPlus.VsDebugLauncher
           debuggerTargetApk = Path.Combine (projectProjectDir, debuggerTargetApk);
         }
 
+        if (!Path.IsPathRooted(debuggerTargetApk))
+        {
+          debuggerTargetApk = Path.GetFullPath (debuggerTargetApk);
+        }
+
         if (!File.Exists (debuggerTargetApk))
         {
           throw new FileNotFoundException ("Could not find required target .apk. Expected: " + debuggerTargetApk);
@@ -340,7 +345,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
       // - In order to avoid duplicates from similar properties under different schemas, they are prefixed in the list.
       // 
 
-      string evaluatedProperty = string.Empty;
+      string evaluatedProperty;
 
 #if VS2012 || VS2013
       string schemaGroupedKey = schema + "." + property;
@@ -351,9 +356,12 @@ namespace AndroidPlusPlus.VsDebugLauncher
       }
 #endif
 
-      projectProperties.TryGetValue (property, out evaluatedProperty);
+      if (projectProperties.TryGetValue (property, out evaluatedProperty))
+      {
+        return evaluatedProperty;
+      }
 
-      return evaluatedProperty;
+      return string.Empty;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

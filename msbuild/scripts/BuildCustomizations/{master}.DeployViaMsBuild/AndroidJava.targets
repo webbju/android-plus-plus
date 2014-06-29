@@ -91,6 +91,8 @@
       BuildingInIDE="$(BuildingInsideVisualStudio)"
       Condition="('@(AndroidJava)' != '' and '%(DisableJarExport)' == 'true')"
       Sources="@(AndroidJava)"
+      ProcessorNumber="%(AndroidJava.ProcessorNumber)"
+      MultiProcessorCompilation="%(AndroidJava.MultiProcessorCompilation)"
       TrackerLogDirectory="%(AndroidJava.TrackerLogDirectory)"
       TrackFileAccess="$(TrackFileAccess)"
       MinimalRebuildFromTracking="%(AndroidJava.MinimalRebuildFromTracking)"
@@ -103,7 +105,7 @@
       <Output TaskParameter="OutputClassPaths" ItemName="AndroidJavaOutputPreprocessedClassPaths" />
       <Output TaskParameter="SkippedExecution" PropertyName="AndroidJavaPreprocessSkippedExecution" />
     </JavaCompile>
-    
+
     <!-- 
       Compile all other explicit sources. Outputs a list of absolute locations to generated .class files to be archived. 
     -->
@@ -112,6 +114,8 @@
       BuildingInIDE="$(BuildingInsideVisualStudio)"
       Condition="('@(AndroidJava)' != '' and '%(DisableJarExport)' != 'true')"
       Sources="@(AndroidJava)"
+      ProcessorNumber="%(AndroidJava.ProcessorNumber)"
+      MultiProcessorCompilation="%(AndroidJava.MultiProcessorCompilation)"
       TrackerLogDirectory="%(AndroidJava.TrackerLogDirectory)"
       TrackFileAccess="$(TrackFileAccess)"
       MinimalRebuildFromTracking="%(AndroidJava.MinimalRebuildFromTracking)"

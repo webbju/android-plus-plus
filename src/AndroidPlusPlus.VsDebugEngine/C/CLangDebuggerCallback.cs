@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 
 using Microsoft.VisualStudio.Debugger.Interop;
 
@@ -91,16 +92,35 @@ namespace AndroidPlusPlus.VsDebugEngine
       // Custom event handler.
       // 
 
-      CLangDebuggerEventDelegate eventCallback;
-
-      LoggingUtils.Print ("[CLangDebuggerCallback] Event: " + riidEvent.ToString ());
-
-      if (m_debuggerCallback.TryGetValue (riidEvent, out eventCallback))
+      try
       {
-        return eventCallback (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
-      }
+        CLangDebuggerEventDelegate eventCallback;
 
-      return DebugEngineConstants.E_FAIL;
+        LoggingUtils.Print ("[CLangDebuggerCallback] Event: " + riidEvent.ToString ());
+
+        if (m_debuggerCallback.TryGetValue (riidEvent, out eventCallback))
+        {
+          LoggingUtils.RequireOk (eventCallback (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib));
+        }
+        else
+        {
+          throw new NotImplementedException ();
+        }
+
+        return DebugEngineConstants.S_OK;
+      }
+      catch (NotImplementedException e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return DebugEngineConstants.E_NOTIMPL;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return DebugEngineConstants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -117,7 +137,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (!debuggeeEvent.Debugger.GdbServer.Start ())
         {
-          throw new InvalidOperationException ("Could not start gdbserver");
+          throw new InvalidOperationException ("Failed to start 'gdbserver'");
         }
 
         return DebugEngineConstants.S_OK;
@@ -138,11 +158,23 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      CLangDebuggerEvent.StopServer debuggeeEvent = (pEvent as CLangDebuggerEvent.StopServer);
+      try
+      {
+        CLangDebuggerEvent.StopServer debuggeeEvent = (pEvent as CLangDebuggerEvent.StopServer);
 
-      debuggeeEvent.Debugger.GdbServer.Stop ();
+        if (!debuggeeEvent.Debugger.GdbServer.Stop ())
+        {
+          throw new InvalidOperationException ("Failed to stop 'gdbserver'");
+        }
 
-      return DebugEngineConstants.S_OK;
+        return DebugEngineConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return DebugEngineConstants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -153,11 +185,20 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      CLangDebuggerEvent.AttachClient debuggeeEvent = (pEvent as CLangDebuggerEvent.AttachClient);
+      try
+      {
+        CLangDebuggerEvent.AttachClient debuggeeEvent = (pEvent as CLangDebuggerEvent.AttachClient);
 
-      debuggeeEvent.Debugger.GdbClient.Attach (debuggeeEvent.Debugger.GdbServer);
+        debuggeeEvent.Debugger.GdbClient.Attach (debuggeeEvent.Debugger.GdbServer);
 
-      return DebugEngineConstants.S_OK;
+        return DebugEngineConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return DebugEngineConstants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -168,14 +209,34 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      CLangDebuggerEvent.DetachClient debuggeeEvent = (pEvent as CLangDebuggerEvent.DetachClient);
-
-      debuggeeEvent.Debugger.RunInterruptOperation (delegate ()
+      try
       {
-        debuggeeEvent.Debugger.GdbClient.Detach ();
-      });
+        CLangDebuggerEvent.DetachClient debuggeeEvent = (pEvent as CLangDebuggerEvent.DetachClient);
 
-      return DebugEngineConstants.S_OK;
+        ManualResetEvent detachLock = new ManualResetEvent (false);
+
+        debuggeeEvent.Debugger.RunInterruptOperation (delegate ()
+        {
+          debuggeeEvent.Debugger.GdbClient.Detach ();
+
+          detachLock.Set ();
+        });
+
+        bool detachedSignaled = detachLock.WaitOne (1000);
+
+        if (!detachedSignaled)
+        {
+          throw new InvalidOperationException ("Failed to detach GDB client");
+        }
+
+        return DebugEngineConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return DebugEngineConstants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -186,11 +247,20 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      CLangDebuggerEvent.StopClient debuggeeEvent = (pEvent as CLangDebuggerEvent.StopClient);
+      try
+      {
+        CLangDebuggerEvent.StopClient debuggeeEvent = (pEvent as CLangDebuggerEvent.StopClient);
 
-      debuggeeEvent.Debugger.GdbClient.Stop ();
+        debuggeeEvent.Debugger.GdbClient.Stop ();
 
-      return DebugEngineConstants.S_OK;
+        return DebugEngineConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return DebugEngineConstants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -201,11 +271,20 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      CLangDebuggerEvent.ContinueClient debuggeeEvent = (pEvent as CLangDebuggerEvent.ContinueClient);
+      try
+      {
+        CLangDebuggerEvent.ContinueClient debuggeeEvent = (pEvent as CLangDebuggerEvent.ContinueClient);
 
-      debuggeeEvent.Debugger.GdbClient.Continue ();
+        debuggeeEvent.Debugger.GdbClient.Continue ();
 
-      return DebugEngineConstants.S_OK;
+        return DebugEngineConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return DebugEngineConstants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -216,11 +295,20 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      CLangDebuggerEvent.TerminateClient debuggeeEvent = (pEvent as CLangDebuggerEvent.TerminateClient);
+      try
+      {
+        CLangDebuggerEvent.TerminateClient debuggeeEvent = (pEvent as CLangDebuggerEvent.TerminateClient);
 
-      debuggeeEvent.Debugger.GdbClient.Terminate ();
+        debuggeeEvent.Debugger.GdbClient.Terminate ();
 
-      return DebugEngineConstants.S_OK;
+        return DebugEngineConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return DebugEngineConstants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

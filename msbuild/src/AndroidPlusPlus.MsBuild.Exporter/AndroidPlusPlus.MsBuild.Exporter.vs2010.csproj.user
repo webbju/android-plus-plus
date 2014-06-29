@@ -12,9 +12,10 @@
     <VerifyUploadedFiles>false</VerifyUploadedFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
-    <StartArguments>--uninstall --vs-version 2010</StartArguments>
+    <StartArguments>--template-dir "$(ANDROID_PLUS_PLUS)\msbuild\scripts" --kill-msbuild --vs-version all</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <StartArguments>--template-dir "L:\dev\projects\android-plus-plus\msbuild\scripts" --vs-version 2010</StartArguments>
+    <StartArguments>--template-dir ".\msbuild\scripts" --kill-msbuild --vs-version all</StartArguments>
+    <StartWorkingDirectory>C:\nm\Android++_trunk\</StartWorkingDirectory>
   </PropertyGroup>
 </Project>

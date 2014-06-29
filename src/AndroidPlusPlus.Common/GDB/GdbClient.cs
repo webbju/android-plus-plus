@@ -176,6 +176,11 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
+      if (gdbServer == null)
+      {
+        throw new ArgumentNullException ("gdbServer");
+      }
+
       m_gdbServer = gdbServer;
 
       m_gdbSetup.ClearPortForwarding ();

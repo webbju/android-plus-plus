@@ -87,27 +87,28 @@ namespace AndroidPlusPlus.VsDebugLauncher.Rules
 
       var catalogs = await GetNamedCatalogsAsync ();
 
-      var projectPropertyList = catalogs.GetValueOrDefault ("Project");
-
-      IReadOnlyCollection <string> projectPropertySchemas = projectPropertyList.GetPropertyPagesSchemas ();
-
-      foreach (string schema in projectPropertySchemas)
+      foreach (var catalog in catalogs)
       {
-        IRule schemaRules = projectPropertyList.BindToContext (schema, File, ItemType, ItemName);
+        IReadOnlyCollection<string> catalogPropertySchemas = catalog.Value.GetPropertyPagesSchemas();
 
-        foreach (IProperty properties in schemaRules.Properties)
+        foreach (string schema in catalogPropertySchemas)
         {
-          IEvaluatedProperty evaluatedProperty = (IEvaluatedProperty)properties;
+          IRule schemaRules = catalog.Value.BindToContext(schema, File, ItemType, ItemName);
 
-          try
+          foreach (IProperty properties in schemaRules.Properties)
           {
-            string schemaGroupedKey = schema + "." + properties.Name;
+            IEvaluatedProperty evaluatedProperty = (IEvaluatedProperty)properties;
 
-            evaluatedProperties.Add (schemaGroupedKey, await evaluatedProperty.GetEvaluatedValueAsync ());
-          }
-          catch (Exception e)
-          {
-            LoggingUtils.HandleException (e);
+            try
+            {
+              string schemaGroupedKey = schema + "." + properties.Name;
+
+              evaluatedProperties.Add(schemaGroupedKey, await evaluatedProperty.GetEvaluatedValueAsync());
+            }
+            catch (Exception e)
+            {
+              LoggingUtils.HandleException(e);
+            }
           }
         }
       }

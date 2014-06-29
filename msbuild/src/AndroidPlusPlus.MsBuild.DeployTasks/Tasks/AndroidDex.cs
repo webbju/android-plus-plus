@@ -156,7 +156,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
         builder.Append ("--dex ");
 
-        builder.Append (m_parsedProperties.Parse (Sources [0]) + " ");
+        builder.Append (m_parsedProperties.Parse (Sources [0]));
       }
       catch (Exception e)
       {

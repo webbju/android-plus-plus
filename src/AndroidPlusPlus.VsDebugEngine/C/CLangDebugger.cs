@@ -115,7 +115,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (m_gdbSetup == null)
       {
-        throw new InvalidOperationException ("Could not evaluate GDB instance.");
+        throw new InvalidOperationException ("Could not evaluate GDB setup instance.");
       }
 
       GdbServer = new GdbServer (m_gdbSetup);

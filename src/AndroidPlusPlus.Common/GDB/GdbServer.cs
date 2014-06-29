@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Threading;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -30,6 +31,8 @@ namespace AndroidPlusPlus.Common
 
     private AsyncRedirectProcess m_gdbServerInstance;
 
+    private ManualResetEvent m_gdbServerAttached;
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -41,6 +44,8 @@ namespace AndroidPlusPlus.Common
       m_gdbSetup = gdbSetup;
 
       m_gdbServerInstance = null;
+
+      m_gdbServerAttached = null;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -94,8 +99,10 @@ namespace AndroidPlusPlus.Common
         commandLineArgumentsBuilder.Append (m_gdbSetup.Process.Pid);
 
         // 
-        // Launch 'gdbserver' now.
+        // Launch 'gdbserver' now, wait for output to determine success.
         // 
+
+        m_gdbServerAttached = new ManualResetEvent (false);
 
         m_gdbServerInstance = AndroidAdb.AdbCommandAsync (m_gdbSetup.Process.HostDevice, "shell", commandLineArgumentsBuilder.ToString ());
 
@@ -103,9 +110,11 @@ namespace AndroidPlusPlus.Common
 
         m_gdbServerInstance.Start ();
 
-        LoggingUtils.Print (string.Format ("[GdbServer] Launched gdbserver succesfully."));
+        LoggingUtils.Print (string.Format ("[GdbServer] Waiting to attach..."));
 
-        return true;
+        bool recievedSignal = m_gdbServerAttached.WaitOne (1000);
+
+        return recievedSignal;
       }
 
       return false;
@@ -226,6 +235,11 @@ namespace AndroidPlusPlus.Common
       if (!string.IsNullOrEmpty (args.Data))
       {
         LoggingUtils.Print (string.Format ("[GdbServer] ProcessStdout: {0}", args.Data));
+
+        if (args.Data.Contains ("Attached;"))
+        {
+          m_gdbServerAttached.Set ();
+        }
       }
     }
 

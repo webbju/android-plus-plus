@@ -63,18 +63,13 @@
       Register shared libraries (.so) which will need to be copied to the final APK .\lib\[arch] directory.
     -->
 
-    <ItemGroup Condition="'@(AndroidApk)' != ''">
-      <!-- First-party (linker output) libraries -->
-      <_CopyToNativeTargetArchLibs Include="@(LinkOutputFiles)">
-        <IntermediateDirectory>%(AndroidApk.IntermediateDirectory)</IntermediateDirectory>
-      </_CopyToNativeTargetArchLibs>
-
-      <!-- Third-party provided libraries. -->
-      <CopyToNativeTargetArchLibs Include="
+    <ItemGroup>
+      <!-- First-party (linker output) and third-party provided libraries. -->
+      <_TargetElfFiles Include="
+        @(LinkOutputFiles->Metadata('FullPath'));
         $(ProjectDir)lib\$(TargetPlatformArchitectureEabi)\*.so;
-        $(ProjectDir)libs\$(TargetPlatformArchitectureEabi)\*.so" >
-        <IntermediateDirectory>%(AndroidApk.IntermediateDirectory)</IntermediateDirectory>
-      </CopyToNativeTargetArchLibs>
+        $(ProjectDir)libs\$(TargetPlatformArchitectureEabi)\*.so">
+      </_TargetElfFiles>
     </ItemGroup>
 
     <!--
@@ -82,47 +77,61 @@
     -->
 
     <AndroidNdkDepends 
-      Condition="'@(_CopyToNativeTargetArchLibs)' != ''" 
-      TargetElfFiles="@(_CopyToNativeTargetArchLibs)"
+      Condition="'@(_TargetElfFiles)' != ''" 
+      TargetElfFiles="@(_TargetElfFiles->Metadata('FullPath'))"
       LibrarySearchPaths="
         %(Link.AdditionalLibraryDirectories);
-        $(ProjectDir)lib\$(TargetPlatformArchitectureEabi)\;
-        $(ProjectDir)libs\$(TargetPlatformArchitectureEabi)\;
-        %(AndroidApk.IntermediateDirectory)\lib\$(TargetPlatformArchitectureEabi);"
+        @(_TargetElfFiles->'%(RootDir)%(Directory)');
+        @(_TargetElfFiles->'$(IntDir)raw\lib\$(TargetPlatformArchitectureEabi)');"
       NdkDependsTool="$(AndroidNdkRoot)\ndk-depends.exe"
-      Verbose="false">
+      Verbose="true">
       <Output TaskParameter="DependentLibraries" ItemName="AndroidApkDependentLibraries" />
+      <Output TaskParameter="DependentSystemLibraries" ItemName="AndroidApkDependentSystemLibraries" />
     </AndroidNdkDepends>
-
-    <ItemGroup Condition="'@(AndroidApk)' != ''">
-      <_CopyToNativeTargetArchLibs Include="@(AndroidApkDependentLibraries->Distinct())">
-        <IntermediateDirectory>%(AndroidApk.IntermediateDirectory)</IntermediateDirectory>
-      </_CopyToNativeTargetArchLibs>
-    </ItemGroup>
-
-    <!--
-      Copy appropriate target architecture 'gdbserver' instance and 'gdb.setup'.
-    -->
-
-    <ItemGroup Condition="'$(Configuration)' != 'Release' and '@(AndroidApk)' != ''">
-      <_CopyToNativeTargetArchLibs Include="$(AndroidNdkRoot)\prebuilt\android-$(TargetPlatformArchitecture)\gdbserver\gdbserver;">
-        <IntermediateDirectory>%(AndroidApk.IntermediateDirectory)</IntermediateDirectory>
-      </_CopyToNativeTargetArchLibs>
-    </ItemGroup>
 
     <!-- 
       Recursively copy registered native libraries/tools to appropriate architecture paths. 
     -->
 
+    <ItemGroup>
+      <_CopyNativeLibrariesAndTools Include="@(AndroidApkDependentLibraries->Distinct())">
+        <IntermediateDirectory>$(IntDir)raw</IntermediateDirectory>
+      </_CopyNativeLibrariesAndTools>
+      
+      <!-- Copy appropriate target architecture 'gdbserver' instance. -->
+      <_CopyNativeLibrariesAndTools Condition="'$(Configuration)' != 'Release'" Include="$(AndroidNdkRoot)\prebuilt\android-$(TargetPlatformArchitecture)\gdbserver\gdbserver;">
+        <IntermediateDirectory>$(IntDir)raw</IntermediateDirectory>
+      </_CopyNativeLibrariesAndTools>
+    </ItemGroup>
+    
     <Copy 
-      Condition="'@(_CopyToNativeTargetArchLibs)' != ''" 
-      SourceFiles="@(_CopyToNativeTargetArchLibs->Distinct())" 
-      DestinationFiles="@(_CopyToNativeTargetArchLibs->'%(IntermediateDirectory)\lib\$(TargetPlatformArchitectureEabi)\%(Filename)%(Extension)')" 
+      Condition="'@(_CopyNativeLibrariesAndTools)' != ''" 
+      SourceFiles="@(_CopyNativeLibrariesAndTools->Distinct())" 
+      DestinationFiles="@(_CopyNativeLibrariesAndTools->'%(IntermediateDirectory)\lib\$(TargetPlatformArchitectureEabi)\%(Filename)%(Extension)')" 
     />
 
     <!-- 
-      Recursively copy registered files. Registering example: 
-      
+      Duplicate initial AndroidManifest-produced APK (so we can modify it without triggering incremental builds) 
+    -->
+
+    <ItemGroup>
+      <AndroidApkUnsignedOutputFile 
+        Condition="'@(AndroidApk)' != ''" 
+        Include="%(AndroidApk.UnsignedOutputFile)"
+      />
+    </ItemGroup>
+
+    <Copy 
+      Condition="'@(AndroidManifestOutputApk)' != ''" 
+      SourceFiles="@(AndroidManifestOutputApk)" 
+      DestinationFiles="@(AndroidApkUnsignedOutputFile)" 
+    />
+
+    <!-- 
+      Add registered files to the final APK using a 7zip deployment (significantly faster than AAPT). 
+        
+        Registering example: 
+        
         <ItemGroup>
           <AndroidApk Include="$(IntDir)**\libs\**\*" />
         </ItemGroup> 
@@ -131,36 +140,13 @@
     <Copy 
       Condition="'@(AndroidApk)' != ''"
       SourceFiles="@(AndroidApk)" 
-      DestinationFiles="@(AndroidApk->'%(IntermediateDirectory)\%(RecursiveDir)%(Filename)%(Extension)')"
+      DestinationFiles="@(AndroidApk->'$(IntDir)raw\%(RecursiveDir)%(Filename)%(Extension)')"
     />
-
-    <!-- 
-      Duplicate initial AndroidManifest-produced APK (so we can modify it without triggering incremental builds) 
-    -->
-
-    <MakeDir 
-      Condition="'@(AndroidApk)' != ''" 
-      Directories="$([System.IO.Path]::GetDirectoryName(%(AndroidApk.UnsignedOutputFile)))" 
-    />
-
-    <Copy
-      Condition="'@(AndroidApk)' != ''"
-      SourceFiles="@(AndroidManifestOutputApk)"
-      DestinationFiles="%(AndroidApk.UnsignedOutputFile)">
-    </Copy>
-
-    <!-- 
-      Add registered files to the final APK using a 7zip deployment (significantly faster than AAPT). 
-    -->
-
-    <ItemGroup>
-      <AndroidApkUnsignedOutputFile Include="%(AndroidApk.UnsignedOutputFile)"/>
-    </ItemGroup>
 
     <Exec 
       Condition="'@(AndroidApkUnsignedOutputFile)' != ''"
       Command="7za.exe a -tzip -mx7 -r &quot;@(AndroidApkUnsignedOutputFile->Metadata('FullPath'))&quot; *" 
-      WorkingDirectory="%(AndroidApk.IntermediateDirectory)"
+      WorkingDirectory="$(IntDir)raw"
     />
 
   </Target>
