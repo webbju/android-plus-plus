@@ -1,4 +1,0 @@
-C:\nm\Android++_trunk\msbuild\toolchain\src\app-javac-dependencies\bin\Release\app-javac-dependencies.exe
-C:\nm\Android++_trunk\msbuild\toolchain\src\app-javac-dependencies\bin\Release\app-javac-dependencies.pdb
-C:\nm\Android++_trunk\msbuild\toolchain\src\app-javac-dependencies\obj\Release\app-javac-dependencies.exe
-C:\nm\Android++_trunk\msbuild\toolchain\src\app-javac-dependencies\obj\Release\app-javac-dependencies.pdb
