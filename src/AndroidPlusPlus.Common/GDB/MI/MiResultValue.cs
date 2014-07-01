@@ -55,15 +55,11 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int Count
+    public List<MiResultValue> Values
     {
       get
       {
-        if (m_valueList != null)
-        {
-          return m_valueList.Count;
-        }
-        return 0;
+        return m_valueList;
       }
     }
 
@@ -77,6 +73,7 @@ namespace AndroidPlusPlus.Common
       {
         return m_fieldDictionary.ContainsKey (field);
       }
+
       return false;
     }
 
@@ -90,6 +87,7 @@ namespace AndroidPlusPlus.Common
       {
         throw new ArgumentException ();
       }
+
       return m_fieldDictionary [field];
     }
 
@@ -128,12 +126,17 @@ namespace AndroidPlusPlus.Common
     {
       get
       {
-        if ((m_valueList != null) && (index < m_valueList.Count))
+        if (m_valueList == null)
         {
-          return m_valueList [index];
+          throw new InvalidOperationException ();
         }
 
-        return null;
+        if (index > m_valueList.Count)
+        {
+          throw new ArgumentOutOfRangeException ("index");
+        }
+
+        return m_valueList [index];
       }
     }
 
@@ -145,12 +148,16 @@ namespace AndroidPlusPlus.Common
     {
       get
       {
-        if ((m_fieldDictionary != null) && (m_fieldDictionary.ContainsKey (key)))
+        if (m_fieldDictionary == null)
         {
-          return m_fieldDictionary [key];
+          throw new InvalidOperationException ();
         }
 
-        return null;
+        List <MiResultValue> ret = null;
+
+        m_fieldDictionary.TryGetValue (key, out ret);
+
+        return ret;
       }
     }
 

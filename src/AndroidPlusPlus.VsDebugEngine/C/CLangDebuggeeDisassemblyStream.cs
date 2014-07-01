@@ -200,7 +200,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         DebuggeeAddress endAddress = m_currentPosition.Add ((ulong)(dwInstructions));
 
-        string disassemblyCommand = string.Format ("-data-disassemble -s {0} -e {1} -- 0", m_currentPosition.ToString (), endAddress.ToString ());
+        string disassemblyCommand = string.Format ("-data-disassemble -s {0} -e {1} -- 1", m_currentPosition.ToString (), endAddress.ToString ());
 
         MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (disassemblyCommand);
 
@@ -211,7 +211,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         MiResultValue assemblyInstructions = resultRecord ["asm_insns"] [0];
 
-        for (int i = 0; i < Math.Min (assemblyInstructions.Count, dwInstructions); ++i)
+        for (int i = 0; i < Math.Min (assemblyInstructions.Values.Count, dwInstructions); ++i)
         {
           MiResultValue instruction = assemblyInstructions [i];
 
@@ -318,7 +318,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           }
         }
 
-        pdwInstructionsRead = (uint)assemblyInstructions.Count;
+        pdwInstructionsRead = (uint)assemblyInstructions.Values.Count;
 
         return DebugEngineConstants.S_OK;
       }

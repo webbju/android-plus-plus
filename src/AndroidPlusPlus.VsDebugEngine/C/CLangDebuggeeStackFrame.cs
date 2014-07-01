@@ -130,7 +130,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           m_locationAddress = new DebuggeeAddress ("0x0");
         }
 
-        m_property = new CLangDebuggeeProperty (m_debugger, this, "*" + m_locationAddress.ToString (), new CLangDebuggeeProperty [] { });
+        m_property = new CLangDebuggeeProperty (m_debugger, this, "*" + m_locationAddress.ToString (), null, new CLangDebuggeeProperty [] { });
 
         if (frameTuple.HasField ("func"))
         {
@@ -229,7 +229,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         MiResultValue localVariables = resultRecord ["variables"] [0];
 
-        for (int i = 0; i < localVariables.Count; ++i)
+        for (int i = 0; i < localVariables.Values.Count; ++i)
         {
           string variable = localVariables [i] ["name"] [0].GetString ();
 
@@ -286,7 +286,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           Dictionary<uint, string> registerIdMapping = m_debugger.GdbClient.GetRegisterIdMapping ();
 
-          for (int i = 0; i < registerValues.Count; ++i)
+          for (int i = 0; i < registerValues.Values.Count; ++i)
           {
             uint registerId = registerValues [i] ["number"] [0].GetUnsignedInt ();
 

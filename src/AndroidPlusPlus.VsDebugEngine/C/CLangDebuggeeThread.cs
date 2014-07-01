@@ -73,7 +73,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           MiResultValueList stackRecord = resultRecord ["stack"] [0] as MiResultValueList;
 
-          for (int i = 0; i < stackRecord.Count; ++i)
+          for (int i = 0; i < stackRecord.Values.Count; ++i)
           {
             string stackFrameId = m_threadName + "#" + i;
 

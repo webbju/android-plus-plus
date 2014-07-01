@@ -494,7 +494,7 @@ namespace AndroidPlusPlus.Common
 
         MiResultValue registerNames = registerNamesRecord ["register-names"] [0];
 
-        for (int i = 0; i < registerNames.Count; ++i)
+        for (int i = 0; i < registerNames.Values.Count; ++i)
         {
           string register = registerNames [i].GetString ();
 

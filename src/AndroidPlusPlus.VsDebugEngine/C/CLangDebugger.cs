@@ -792,9 +792,9 @@ namespace AndroidPlusPlus.VsDebugEngine
         location = "*" + location;
       }
 
-      MiResultRecord resultInfoLine = GdbClient.SendCommand ("info line " + location);
+      MiResultRecord resultRecord = GdbClient.SendCommand ("info line " + location);
 
-      if ((resultInfoLine == null) || ((resultInfoLine != null) && resultInfoLine.IsError ()))
+      if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
       {
         throw new InvalidOperationException ();
       }
@@ -803,7 +803,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       Regex regExMatcher = new Regex (infoRegExPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-      foreach (MiStreamRecord record in resultInfoLine.Records)
+      foreach (MiStreamRecord record in resultRecord.Records)
       {
         Match regExLineMatch = regExMatcher.Match (record.Stream);
 

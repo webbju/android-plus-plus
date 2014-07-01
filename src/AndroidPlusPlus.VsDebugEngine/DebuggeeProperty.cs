@@ -78,7 +78,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     protected DebuggeeProperty m_parent;
 
-    protected readonly DebuggeeProperty [] m_children;
+    protected readonly List <DebuggeeProperty> m_children;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -101,7 +101,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       m_parent = null;
 
-      m_children = children;
+      m_children = new List<DebuggeeProperty> (m_children);
 
       // 
       // Compound parental expressions to evaluate this property's full identifier.
@@ -346,7 +346,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           propertyInfoArray [0].dwAttrib = enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_NONE;
 
-          if ((m_children != null) && (m_children.Length > 0))
+          if ((m_children != null) && (m_children.Count > 0))
           {
             propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_OBJ_IS_EXPANDABLE;
           }

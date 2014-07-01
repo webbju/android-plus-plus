@@ -26,28 +26,53 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private readonly CLangDebugger m_debugger;
+    private readonly CLangDebugger m_debugger = null;
 
-    private MiVariable m_gdbVariable;
+    private MiVariable m_gdbVariable = null;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public CLangDebuggeeProperty (CLangDebugger debugger, CLangDebuggeeStackFrame stackFrame, string expression, CLangDebuggeeProperty [] children)
+    public CLangDebuggeeProperty (CLangDebugger debugger, CLangDebuggeeStackFrame stackFrame, string expression, MiVariable gdbVariable)
+      : this (debugger, stackFrame, expression, gdbVariable, new CLangDebuggeeProperty [] { })
+    {
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public CLangDebuggeeProperty (CLangDebugger debugger, CLangDebuggeeStackFrame stackFrame, string expression, MiVariable gdbVariable, CLangDebuggeeProperty [] children)
       : base (debugger.Engine, stackFrame, expression, children)
     {
+      if (string.IsNullOrWhiteSpace (expression))
+      {
+        throw new ArgumentNullException ("expression");
+      }
+
       m_debugger = debugger;
 
-      // 
-      // If this expression is not a memory address, memory range, or register - create a GDB/MI variable for polling its value.
-      // 
+      m_gdbVariable = gdbVariable;
 
-      m_gdbVariable = null;
-
-      if (!(m_expression.StartsWith ("*0x") || m_expression.StartsWith ("$")))
+      if (m_gdbVariable == null)
       {
-        m_gdbVariable = CreateGdbVariable (stackFrame, m_expression);
+        // 
+        // If this expression is not a memory address, memory range, or register - create a GDB/MI variable for polling its value.
+        // 
+
+        if (!(m_expression.StartsWith ("*0x") || m_expression.StartsWith ("$")))
+        {
+          m_gdbVariable = CreateGdbVariable (stackFrame, m_expression, true);
+        }
+      }
+
+      if (m_gdbVariable != null)
+      {
+        foreach (KeyValuePair <string, MiVariable> keyValuePair in m_gdbVariable.Children)
+        {
+          m_children.Add (new CLangDebuggeeProperty (this, keyValuePair.Key, keyValuePair.Value));
+        }
       }
     }
 
@@ -55,8 +80,18 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public CLangDebuggeeProperty (CLangDebuggeeProperty parent, string expression, CLangDebuggeeProperty [] children)
-      : this (parent.m_debugger, parent.m_stackFrame as CLangDebuggeeStackFrame, expression, children)
+    public CLangDebuggeeProperty (CLangDebuggeeProperty parent, string expression, MiVariable gdbVariable)
+      : this (parent.m_debugger, parent.m_stackFrame as CLangDebuggeeStackFrame, expression, gdbVariable, new CLangDebuggeeProperty [] { })
+    {
+      m_parent = parent;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public CLangDebuggeeProperty (CLangDebuggeeProperty parent, string expression, MiVariable gdbVariable, CLangDebuggeeProperty [] children)
+      : this (parent.m_debugger, parent.m_stackFrame as CLangDebuggeeStackFrame, expression, gdbVariable, children)
     {
       m_parent = parent;
     }
@@ -78,7 +113,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private MiVariable CreateGdbVariable (CLangDebuggeeStackFrame stackFrame, string expression)
+    private MiVariable CreateGdbVariable (CLangDebuggeeStackFrame stackFrame, string expression, bool populateChildren)
     {
       IDebugThread2 stackThread;
 
@@ -107,6 +142,15 @@ namespace AndroidPlusPlus.VsDebugEngine
         }
       }
 
+      MiResultValueList childrenList = resultRecord ["children"] [0] as MiResultValueList;
+
+      for (int i = 0; i < childrenList.Values.Count; ++i)
+      {
+        MiResultValueTuple childTuple = childrenList [0] as MiResultValueTuple;
+
+        variable.PopulateChild (childTuple ["exp"] [0].GetString (), childTuple.Values);
+      }
+
       return variable;
     }
 
@@ -128,7 +172,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         throw new InvalidOperationException ();
       }
 
-      gdbVariable.Refresh (resultRecord ["changelist"]);
+      gdbVariable.Populate (resultRecord ["changelist"]);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
