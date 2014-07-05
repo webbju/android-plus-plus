@@ -23,7 +23,7 @@ namespace AndroidPlusPlus.VsDebugEngine
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class DebuggeeProperty : IDebugProperty2, IDisposable
+  public class DebuggeeProperty : IDebugProperty2
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -56,11 +56,17 @@ namespace AndroidPlusPlus.VsDebugEngine
     public class Filters
     {
       public static Guid guidFilterAllLocals = new Guid ("196db21f-5f22-45a9-b5a3-32cddb30db06");
+
       public static Guid guidFilterAllLocalsPlusArgs = new Guid ("939729a8-4cb0-4647-9831-7ff465240d5f");
+
       public static Guid guidFilterArgs = new Guid ("804bccea-0475-4ae7-8a46-1862688ab863");
+
       public static Guid guidFilterAutoRegisters = new Guid ("38fc3258-d4d8-401e-a638-779a0145e906");
+
       public static Guid guidFilterLocals = new Guid ("b200f725-e725-4c53-b36a-1ec27aef12ef");
+
       public static Guid guidFilterLocalsPlusArgs = new Guid ("e74721bb-10c0-40f5-807f-920d37f95419");
+
       public static Guid guidFilterRegisters = new Guid ("223ae797-bd09-4f28-8241-2763bdc5f713");
     }
 
@@ -84,7 +90,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public DebuggeeProperty (DebugEngine engine, DebuggeeStackFrame stackFrame, string expression, DebuggeeProperty [] children)
+    public DebuggeeProperty (DebugEngine engine, DebuggeeStackFrame stackFrame, string expression)
     {
       m_debugEngine = engine;
 
@@ -101,7 +107,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       m_parent = null;
 
-      m_children = new List<DebuggeeProperty> (m_children);
+      m_children = new List<DebuggeeProperty> ();
 
       // 
       // Compound parental expressions to evaluate this property's full identifier.
@@ -127,8 +133,8 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public DebuggeeProperty (DebuggeeProperty parent, string expression, DebuggeeProperty [] children)
-      : this (parent.m_debugEngine, parent.m_stackFrame, expression, children)
+    public DebuggeeProperty (DebuggeeProperty parent, string expression)
+      : this (parent.m_debugEngine, parent.m_stackFrame, expression)
     {
       m_parent = parent;
     }
@@ -137,16 +143,32 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public string Value { get; set; }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public virtual void Dispose ()
+    public int AddChildren (DebuggeeProperty [] children)
     {
-      LoggingUtils.PrintFunction ();
+      try
+      {
+        if (children == null)
+        {
+          throw new ArgumentNullException ("children");
+        }
+
+        m_children.AddRange (children);
+
+        return DebugEngineConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return DebugEngineConstants.E_FAIL;
+      }
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public string Value { get; set; }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -337,6 +359,20 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE) != 0)
         {
+#if FALSE
+          if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND) != 0)
+          {
+          }
+
+          if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_RAW) != 0)
+          {
+          }
+
+          if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_NO_TOSTRING) != 0)
+          {
+          }
+#endif
+
           propertyInfoArray [0].bstrValue = Value;
 
           propertyInfoArray [0].dwFields |= enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE;
@@ -344,8 +380,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_ATTRIB) != 0)
         {
-          propertyInfoArray [0].dwAttrib = enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_NONE;
-
           if ((m_children != null) && (m_children.Count > 0))
           {
             propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_OBJ_IS_EXPANDABLE;
@@ -354,34 +388,11 @@ namespace AndroidPlusPlus.VsDebugEngine
           propertyInfoArray [0].dwFields |= enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_ATTRIB;
         }
 
-        if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_STANDARD) != 0)
-        {
-        }
-
         if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_PROP) != 0)
         {
           propertyInfoArray [0].pProperty = this;
 
           propertyInfoArray [0].dwFields |= enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_PROP;
-        }
-
-        if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND) != 0)
-        {
-        }
-
-        if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NOFUNCEVAL) != 0)
-        {
-          // 
-          // Deprecated.
-          // 
-        }
-
-        if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_RAW) != 0)
-        {
-        }
-
-        if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_NO_TOSTRING) != 0)
-        {
         }
 
         if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NO_NONPUBLIC_MEMBERS) != 0)

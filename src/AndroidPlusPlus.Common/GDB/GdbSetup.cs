@@ -226,7 +226,7 @@ namespace AndroidPlusPlus.Common
 
       List<string> gdbExecutionCommands = new List<string> ();
 
-      //gdbExecutionCommands.Add ("set sysroot " + StringUtils.ConvertPathWindowsToPosix (CacheSysRoot));
+      //gdbExecutionCommands.Add ("set sysroot " + PathUtils.ConvertPathWindowsToPosix (CacheSysRoot));
 
       gdbExecutionCommands.Add ("set target-async on");
 

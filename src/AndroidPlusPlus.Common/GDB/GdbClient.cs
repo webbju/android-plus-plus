@@ -163,7 +163,7 @@ namespace AndroidPlusPlus.Common
 
       m_gdbClientInstance.Listener = this;
 
-      m_gdbClientInstance.StartInfo.Arguments += string.Format (@" -fullname -x {0}/gdb.setup", StringUtils.ConvertPathWindowsToPosix (m_gdbSetup.CacheDirectory));
+      m_gdbClientInstance.StartInfo.Arguments += string.Format (@" -fullname -x {0}", PathUtils.SantiseWindowsPath (Path.Combine (m_gdbSetup.CacheDirectory, "gdb.setup")));
 
       m_gdbClientInstance.Start ();
     }
@@ -192,53 +192,10 @@ namespace AndroidPlusPlus.Common
       SetSetting ("breakpoint pending", "on", false); // an unrecognized breakpoint location should automatically result in a pending breakpoint being created.
 
       // 
-      // Configure default shared library settings.
+      // Probe each 'application' library for special embedded 'gdb.setup' sections.
       // 
-
-      SetSetting ("sysroot", StringUtils.ConvertPathWindowsToPosix (m_gdbSetup.CacheSysRoot), false);
-
-      SetSetting ("solib-search-path", StringUtils.ConvertPathWindowsToPosix (m_gdbSetup.CacheSysRoot), false);
-
-      SetSetting ("debug-file-directory", StringUtils.ConvertPathWindowsToPosix (m_gdbSetup.CacheSysRoot), false);
-
-      // 
-      // Pull required system and application binaries from the device.
-      // TODO: Use 'ndk-depends' to figure out which system shared libraries are used and pull these.
-      // 
-
-      string [] cachedSystemBinaries = m_gdbSetup.CacheSystemBinaries ();
 
       string [] cachedAppBinaries = m_gdbSetup.CacheApplicationBinaries ();
-
-      List<string> sharedLibrarySearchPaths = new List<string> ();
-
-      foreach (string systemBinary in cachedSystemBinaries)
-      {
-        string posixSystemBinaryDirectory = StringUtils.ConvertPathWindowsToPosix (Path.GetDirectoryName (systemBinary));
-
-        if (!sharedLibrarySearchPaths.Contains (posixSystemBinaryDirectory))
-        {
-          sharedLibrarySearchPaths.Add (posixSystemBinaryDirectory);
-        }
-      }
-
-      foreach (string appBinary in cachedAppBinaries)
-      {
-        string posixAppBinaryDirectory = StringUtils.ConvertPathWindowsToPosix (Path.GetDirectoryName (appBinary));
-
-        if (!sharedLibrarySearchPaths.Contains (posixAppBinaryDirectory))
-        {
-          sharedLibrarySearchPaths.Add (posixAppBinaryDirectory);
-        }
-      }
-
-      SetSetting ("solib-search-path", string.Join (";", sharedLibrarySearchPaths.ToArray ()), true);
-
-      SetSetting ("debug-file-directory", string.Join (";", sharedLibrarySearchPaths.ToArray ()), true);
-
-      // 
-      // Probe each library for special embedded 'gdb.setup' sections.
-      // 
 
       string gnuObjdumpToolPath = m_gdbSetup.GdbToolPath.Replace ("-gdb", "-objdump");
 
@@ -266,7 +223,7 @@ namespace AndroidPlusPlus.Common
             {
               if (Path.IsPathRooted (arguments [i]))
               {
-                arguments [i] = StringUtils.ConvertPathWindowsToPosix (arguments [i]);
+                arguments [i] = PathUtils.SantiseWindowsPath (arguments [i]);
               }
 
               joinedArguments.Append (";" + arguments [i]);
@@ -287,25 +244,56 @@ namespace AndroidPlusPlus.Common
             }
           }
         }
-
-        //SendCommand ("symbol-file " + StringUtils.ConvertPathWindowsToPosix (binary));
       }
+
+      // 
+      // Configure default shared library settings.
+      // 
+
+      SetSetting ("sysroot", PathUtils.SantiseWindowsPath (m_gdbSetup.CacheSysRoot), false);
+
+      SetSetting ("solib-search-path", PathUtils.SantiseWindowsPath (m_gdbSetup.CacheSysRoot), true);
+
+      SetSetting ("debug-file-directory", PathUtils.SantiseWindowsPath (m_gdbSetup.CacheSysRoot), true);
+
+      // 
+      // Pull required system and application binaries from the device.
+      // TODO: Use 'ndk-depends' to figure out which system shared libraries are used and pull these.
+      // 
+
+      string [] cachedSystemBinaries = m_gdbSetup.CacheSystemBinaries ();
+
+      List<string> sharedLibrarySearchPaths = new List<string> ();
+
+      foreach (string systemBinary in cachedSystemBinaries)
+      {
+        string posixSystemBinaryDirectory = PathUtils.SantiseWindowsPath (Path.GetDirectoryName (systemBinary));
+
+        if (!sharedLibrarySearchPaths.Contains (posixSystemBinaryDirectory))
+        {
+          sharedLibrarySearchPaths.Add (posixSystemBinaryDirectory);
+        }
+      }
+
+      foreach (string appBinary in cachedAppBinaries)
+      {
+        string posixAppBinaryDirectory = PathUtils.SantiseWindowsPath (Path.GetDirectoryName (appBinary));
+
+        if (!sharedLibrarySearchPaths.Contains (posixAppBinaryDirectory))
+        {
+          sharedLibrarySearchPaths.Add (posixAppBinaryDirectory);
+        }
+      }
+
+      SetSetting ("solib-search-path", string.Join (";", sharedLibrarySearchPaths.ToArray ()), true);
+
+      SetSetting ("debug-file-directory", string.Join (";", sharedLibrarySearchPaths.ToArray ()), true);
 
       // 
       // Connect to the remote target and '/system/bin/app_process' binary.
       // 
 
-      //SendCommand ("help show");
-
-      //SendCommand ("show auto-solib-limit");
-
-      //SendCommand ("show stop-on-solib-events");
-
-      //SetSetting ("auto-solib-limit", "1024", false); // 1GB max shared library size.
-
-      //SetSetting ("stop-on-solib-events", "off", false);
-
-      MiResultRecord resultRecord = SendCommand ("file " + StringUtils.ConvertPathWindowsToPosix (Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\app_process")));
+      MiResultRecord resultRecord = SendCommand ("file " + PathUtils.SantiseWindowsPath (Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\app_process")));
 
       if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
       {
@@ -318,12 +306,6 @@ namespace AndroidPlusPlus.Common
       {
         throw new InvalidOperationException ();
       }
-
-#if DEBUG && FALSE
-      //SendCommand ("sharedlibrary"); // Find and load all available matching symbols.
-
-      SendCommand ("info sharedlibrary");
-#endif
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -639,7 +621,7 @@ namespace AndroidPlusPlus.Common
 
       m_lastOperationTimestamp = Environment.TickCount;
 
-      ThreadPool.QueueUserWorkItem (delegate (object state)
+      Thread asyncCommandThread = new Thread (delegate (object state)
       {
         try
         {
@@ -649,7 +631,10 @@ namespace AndroidPlusPlus.Common
 
           commandData.ResultDelegate = asyncDelegate;
 
-          m_asyncCommandData.Add (m_sessionCommandToken, commandData);
+          lock (m_asyncCommandData)
+          {
+            m_asyncCommandData.Add (m_sessionCommandToken, commandData);
+          }
 
           // 
           // Prepend (and increment) GDB/MI token.
@@ -670,6 +655,8 @@ namespace AndroidPlusPlus.Common
           LoggingUtils.HandleException (e);
         }
       });
+
+      asyncCommandThread.Start ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -717,11 +704,14 @@ namespace AndroidPlusPlus.Common
           // We cache these outputs for any active CLI commands, identifiable as the commands don't start with '-'.
           // 
 
-          foreach (KeyValuePair<uint, AsyncCommandData> asyncCommand in m_asyncCommandData)
+          lock (m_asyncCommandData)
           {
-            if (!asyncCommand.Value.Command.StartsWith ("-"))
+            foreach (KeyValuePair<uint, AsyncCommandData> asyncCommand in m_asyncCommandData)
             {
-              asyncCommand.Value.StreamRecords.Add (streamRecord);
+              if (!asyncCommand.Value.Command.StartsWith ("-"))
+              {
+                asyncCommand.Value.StreamRecords.Add (streamRecord);
+              }
             }
           }
         }

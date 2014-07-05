@@ -50,7 +50,7 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
       // In *theory* linker settings are the same for all sources, so just query them from the first file.
       // 
 
-      StringBuilder responseFileCommands = new StringBuilder (GccUtilities.CommandLineLength);
+      StringBuilder responseFileCommands = new StringBuilder (PathUtils.CommandLineLength);
 
       StringBuilder sourceLibraryDependencies = new StringBuilder ();
 
@@ -95,7 +95,7 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
 
         foreach (ITaskItem source in Sources)
         {
-          responseFileCommands.Append (GccUtilities.ConvertPathWindowsToPosix (source.GetMetadata ("FullPath")) + " ");
+          responseFileCommands.Append (PathUtils.SantiseWindowsPath (source.GetMetadata ("FullPath")) + " ");
         }
 
         responseFileCommands.Append (sourceLibraryDependencies.ToString ());
@@ -116,7 +116,7 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
 
     protected override string GetResponseFileSwitch (string responseFilePath)
     {
-      return '@' + GccUtilities.ConvertPathWindowsToPosix (responseFilePath);
+      return '@' + PathUtils.SantiseWindowsPath (responseFilePath);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

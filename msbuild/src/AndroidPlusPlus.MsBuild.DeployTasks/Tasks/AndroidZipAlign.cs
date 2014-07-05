@@ -68,11 +68,11 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
         {
           using (StreamWriter writer = new StreamWriter (AlignedZip.GetMetadata ("FullPath") + ".d", false, Encoding.Unicode))
           {
-            writer.WriteLine (string.Format ("{0}: \\", GccUtilities.ConvertPathWindowsToGccDependency (AlignedZip.GetMetadata ("FullPath"))));
+            writer.WriteLine (string.Format ("{0}: \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (AlignedZip.GetMetadata ("FullPath"))));
 
             foreach (ITaskItem source in Sources)
             {
-              writer.WriteLine (string.Format ("  {0} \\", GccUtilities.ConvertPathWindowsToGccDependency (source.GetMetadata ("FullPath"))));
+              writer.WriteLine (string.Format ("  {0} \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (source.GetMetadata ("FullPath"))));
             }
           }
         }
@@ -93,7 +93,7 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
 
     protected override string GenerateCommandLineCommands ()
     {
-      return "-f 4 " + GccUtilities.QuoteIfNeeded (Sources [0].GetMetadata ("FullPath")) + " " + GccUtilities.QuoteIfNeeded (AlignedZip.GetMetadata ("FullPath"));
+      return "-f 4 " + PathUtils.QuoteIfNeeded (Sources [0].GetMetadata ("FullPath")) + " " + PathUtils.QuoteIfNeeded (AlignedZip.GetMetadata ("FullPath"));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

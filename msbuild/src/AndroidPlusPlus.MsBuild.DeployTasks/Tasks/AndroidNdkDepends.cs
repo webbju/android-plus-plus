@@ -104,12 +104,12 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
         foreach (ITaskItem libraryPath in LibrarySearchPaths)
         {
-          commandLineBuilder.Append ("-L" + GccUtilities.ConvertPathWindowsToPosix (libraryPath.GetMetadata ("FullPath")) + " ");
+          commandLineBuilder.Append ("-L" + PathUtils.SantiseWindowsPath (libraryPath.GetMetadata ("FullPath")) + " ");
         }
 
         foreach (ITaskItem targetElf in TargetElfFiles)
         {
-          commandLineBuilder.Append (GccUtilities.ConvertPathWindowsToPosix (targetElf.GetMetadata ("FullPath")) + " ");
+          commandLineBuilder.Append (PathUtils.SantiseWindowsPath (targetElf.GetMetadata ("FullPath")) + " ");
         }
 
         // 
@@ -161,13 +161,13 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
                 {
                   string dependency = splitDependencyEntry [1].Substring (2);
 
-                  dependentSystemLibraries.Add (new TaskItem (GccUtilities.ConvertPathPosixToWindows (dependency)));
+                  dependentSystemLibraries.Add (new TaskItem (PathUtils.ConvertPathCygwinToWindows (dependency)));
                 }
                 else
                 {
                   string dependency = splitDependencyEntry [1];
 
-                  depedentLibraries.Add (new TaskItem (GccUtilities.ConvertPathPosixToWindows (dependency)));
+                  depedentLibraries.Add (new TaskItem (PathUtils.ConvertPathCygwinToWindows (dependency)));
                 }
               }
             }

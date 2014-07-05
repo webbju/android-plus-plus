@@ -104,8 +104,6 @@
 
       <AdditionalOptions>-march=armv7-a -Wl,--fix-cortex-a8 %(Link.AdditionalOptions)</AdditionalOptions>
 
-      <NoCanonicalPrefixes Condition="'%(Link.NoCanonicalPrefixes)' == ''">false</NoCanonicalPrefixes>
-
       <SysRoot Condition="'%(Link.SysRoot)' == ''">$(PlatformToolsetSysRoot)</SysRoot>
 
     </Link>

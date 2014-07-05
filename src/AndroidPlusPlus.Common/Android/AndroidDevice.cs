@@ -92,7 +92,7 @@ namespace AndroidPlusPlus.Common
 
     public bool Pull (string remotePath, string localPath)
     {
-      using (SyncRedirectProcess adbPullCommand = AndroidAdb.AdbCommand (this, "pull", string.Format ("{0} {1}", StringUtils.ConvertPathWindowsToPosix (remotePath), StringUtils.ConvertPathWindowsToPosix (localPath))))
+      using (SyncRedirectProcess adbPullCommand = AndroidAdb.AdbCommand (this, "pull", string.Format ("{0} {1}", remotePath, PathUtils.SantiseWindowsPath (localPath))))
       {
         adbPullCommand.StartAndWaitForExit (60000);
 
@@ -125,11 +125,11 @@ namespace AndroidPlusPlus.Common
 
         string temporaryStoredFile = temporaryStorage + "/" + Path.GetFileName (filename);
 
-        using (SyncRedirectProcess adbPushToTemporaryCommand = AndroidAdb.AdbCommand (this, "push", string.Format ("{0} {1}", StringUtils.ConvertPathWindowsToPosix (filename), temporaryStorage)))
+        using (SyncRedirectProcess adbPushToTemporaryCommand = AndroidAdb.AdbCommand (this, "push", string.Format ("{0} {1}", PathUtils.SantiseWindowsPath (filename), temporaryStorage)))
         {
           if (adbPushToTemporaryCommand.StartAndWaitForExit (120000) != 0)
           {
-            throw new InvalidOperationException ("Failed transfering to temporary storage.");
+            throw new InvalidOperationException ("Failed transferring to temporary storage.");
           }
         }
 

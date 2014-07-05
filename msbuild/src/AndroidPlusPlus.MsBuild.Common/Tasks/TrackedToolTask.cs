@@ -351,7 +351,7 @@ namespace AndroidPlusPlus.MsBuild.Common
                   {
                     string threadSourceFilePath = Path.GetFullPath (threadSource.GetMetadata ("FullPath") ?? threadSource.ToString ());
 
-                    bufferedCommandWithFiles.Append (" " + GccUtilities.ConvertPathWindowsToPosix (threadSourceFilePath));
+                    bufferedCommandWithFiles.Append (" " + PathUtils.SantiseWindowsPath (threadSourceFilePath));
                   }
                 }
 
@@ -713,7 +713,7 @@ namespace AndroidPlusPlus.MsBuild.Common
       // Build a command-line based on parsing switches from the registered property sheet, and any additional flags.
       // 
 
-      StringBuilder builder = new StringBuilder (GccUtilities.CommandLineLength);
+      StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
 
       try
       {
@@ -903,9 +903,11 @@ namespace AndroidPlusPlus.MsBuild.Common
                       }
                     }
                   }
-                  catch (Exception)
+                  catch (Exception e)
                   {
                     Log.LogMessage (MessageImportance.High, "Could not parse dependency file: " + dependencyFilePath);
+
+                    Log.LogErrorFromException (e, true);
                   }
                 }
               }

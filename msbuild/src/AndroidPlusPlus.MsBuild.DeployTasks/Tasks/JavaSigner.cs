@@ -66,11 +66,11 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
         {
           using (StreamWriter writer = new StreamWriter (SignedOutputFile.GetMetadata ("FullPath") + ".d", false, Encoding.Unicode))
           {
-            writer.WriteLine (string.Format ("{0}: \\", GccUtilities.ConvertPathWindowsToGccDependency (SignedOutputFile.GetMetadata ("FullPath"))));
+            writer.WriteLine (string.Format ("{0}: \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (SignedOutputFile.GetMetadata ("FullPath"))));
 
             foreach (ITaskItem source in Sources)
             {
-              writer.WriteLine (string.Format ("  {0} \\", GccUtilities.ConvertPathWindowsToGccDependency (source.GetMetadata ("FullPath"))));
+              writer.WriteLine (string.Format ("  {0} \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (source.GetMetadata ("FullPath"))));
             }
           }
         }
@@ -95,7 +95,7 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
       // Build a command-line based on parsing switches from the registered property sheet, and any additional flags.
       // 
 
-      StringBuilder builder = new StringBuilder (GccUtilities.CommandLineLength);
+      StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
 
       try
       {

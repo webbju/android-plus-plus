@@ -151,7 +151,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
               documentContext = new DebuggeeDocumentContext (m_breakpointManager.Engine, fileName, startPos [0], endPos [0], DebugEngineGuids.guidLanguageCpp, new DebuggeeAddress ("0x0"));
 
-              location = string.Format ("\"{0}:{1}\"", StringUtils.ConvertPathWindowsToPosix (fileName), startPos [0].dwLine + 1);
+              location = string.Format ("\"{0}:{1}\"", fileName, startPos [0].dwLine + 1);
             }
             else
             {

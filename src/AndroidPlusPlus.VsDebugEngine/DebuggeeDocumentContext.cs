@@ -54,7 +54,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       m_engine = engine;
 
-      m_fileName = StringUtils.ConvertPathPosixToWindows (fileName);
+      m_fileName = PathUtils.ConvertPathCygwinToWindows (fileName);
 
       m_beginPosition = beginPosition;
 
@@ -224,7 +224,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           case enum_GETNAME_TYPE.GN_URL:
           {
-            fileName = "file://" + StringUtils.ConvertPathWindowsToPosix (m_fileName);
+            fileName = "file://" + m_fileName;
 
             break;
           }

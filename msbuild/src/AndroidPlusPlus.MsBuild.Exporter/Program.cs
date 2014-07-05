@@ -452,13 +452,14 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
           switch (Path.GetExtension (newFileName))
           {
-            case ".dll":
-            case ".exe":
+            default:
             {
               break;
             }
 
-            default:
+            case ".xml":
+            case ".props":
+            case ".targets":
             {
               StringBuilder fileContents = new StringBuilder (File.ReadAllText (newFileName));
 

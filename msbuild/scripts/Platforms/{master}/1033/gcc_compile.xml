@@ -142,7 +142,7 @@
     DisplayName="Generate Debugging Information"
     Description="Produce debugging information in the operating system's native format (stabs, COFF, XCOFF, or DWARF 2). GDB can work with this debugging information."
     Category="General"
-    Switch="-g"
+    Switch="-g3 -gdwarf-2 -feliminate-dwarf2-dups"
     F1Keyword="VC.Project.VCCLCompilerTool.WarnAsError"
   />
 

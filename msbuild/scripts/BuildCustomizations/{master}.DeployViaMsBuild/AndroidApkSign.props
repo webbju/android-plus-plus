@@ -25,7 +25,7 @@
 
     <AndroidApkSign>
 
-      <Keystore Condition="'%(AndroidApkSign.Keystore)' == ''">$(USERPROFILE)\.android\debug.keystore</Keystore>
+      <Keystore Condition="'%(AndroidApkSign.Keystore)' == ''">$(MSBuildThisFileDirectory)\Keystores\debug.keystore</Keystore>
 
       <KeystorePass Condition="'%(AndroidApkSign.KeystorePass)' == ''">android</KeystorePass>
 

@@ -132,14 +132,12 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         CLangDebuggeeStackFrame stackFrame = m_stackFrame as CLangDebuggeeStackFrame;
 
-        DebuggeeProperty expressionProperty = stackFrame.EvaluateCustomExpression (m_expression, m_radix);
+        result = stackFrame.EvaluateCustomExpression (m_expression, m_radix);
 
-        if (expressionProperty == null)
+        if (result == null)
         {
-          throw new InvalidOperationException ();
+          return DebugEngineConstants.E_FAIL;
         }
-
-        result = expressionProperty;
 
         return DebugEngineConstants.S_OK;
       }

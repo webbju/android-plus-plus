@@ -188,7 +188,7 @@ namespace AndroidPlusPlus.MsBuild.Common
         }
         else
         {
-          builder.AppendTextUnquoted (" " + GccUtilities.QuoteIfNeeded (value));
+          builder.AppendTextUnquoted (" " + PathUtils.QuoteIfNeeded (value));
         }
       }
       else if (!string.IsNullOrEmpty (property.Switch))

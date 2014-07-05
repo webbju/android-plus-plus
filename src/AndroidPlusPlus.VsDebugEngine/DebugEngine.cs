@@ -120,39 +120,42 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      if (callback == null)
+      try
       {
-        throw new InvalidOperationException ();
-      }
-
-      Guid eventGuid = ComUtils.GuidOf (debugEvent);
-
-      uint eventAttributes;
-
-      IDebugProcess2 programProcess;
-
-      LoggingUtils.RequireOk (debugEvent.GetAttributes (out eventAttributes));
-
-      LoggingUtils.RequireOk (program.GetProcess (out programProcess));
-
-      if (((eventAttributes & (uint)enum_EVENTATTRIBUTES.EVENT_STOPPING) != 0) && (thread == null))
-      {
-        // For stopping events, this parameter cannot be a null value as the stack frame is obtained from this parameter.
-        throw new ArgumentNullException ("thread");
-      }
-
-      LoggingUtils.RequireOk (callback.Event (this, null, program, thread, debugEvent, ref eventGuid, eventAttributes));
-
-      if ((eventAttributes & (uint)enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS) != 0)
-      {
-        try
+        if (callback == null)
         {
-          m_broadcastHandleLock.WaitOne (5000);
+          throw new ArgumentNullException ("callback");
         }
-        catch (Exception e)
+
+        Guid eventGuid = ComUtils.GuidOf (debugEvent);
+
+        uint eventAttributes;
+
+        IDebugProcess2 programProcess;
+
+        LoggingUtils.RequireOk (debugEvent.GetAttributes (out eventAttributes));
+
+        LoggingUtils.RequireOk (program.GetProcess (out programProcess));
+
+        if (((eventAttributes & (uint) enum_EVENTATTRIBUTES.EVENT_STOPPING) != 0) && (thread == null))
         {
-          LoggingUtils.HandleException (e);
+          // For stopping events, this parameter cannot be a null value as the stack frame is obtained from this parameter.
+          throw new ArgumentNullException ("thread");
         }
+
+        LoggingUtils.RequireOk (callback.Event (this, null, program, thread, debugEvent, ref eventGuid, eventAttributes));
+
+        if ((eventAttributes & (uint) enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS) != 0)
+        {
+          while (m_broadcastHandleLock.WaitOne (0))
+          {
+            Thread.Yield ();
+          }
+        }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
       }
     }
 
@@ -242,6 +245,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
+        Broadcast (new DebugEngineEvent.Error (e.Message, true), Program, null);
+
         return DebugEngineConstants.E_FAIL;
       }
     }
@@ -287,9 +292,18 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      m_broadcastHandleLock.Set ();
+      try
+      {
+        m_broadcastHandleLock.Set ();
 
-      return DebugEngineConstants.S_OK;
+        return DebugEngineConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return DebugEngineConstants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

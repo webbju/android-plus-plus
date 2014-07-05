@@ -126,7 +126,7 @@ namespace AndroidPlusPlus.Common
 
       StringBuilder argumentBuilder = new StringBuilder ();
 
-      //argumentBuilder.Append (" -Duser.home=" + StringUtils.ConvertPathWindowsToPosix (m_jdbSetup.CacheDirectory));
+      //argumentBuilder.Append (" -Duser.home=" + PathUtils.ConvertPathWindowsToPosix (m_jdbSetup.CacheDirectory));
 
       argumentBuilder.Append (string.Format (" -connect com.sun.jdi.SocketAttach:hostname={0},port={1}", m_jdbSetup.Host, m_jdbSetup.Port));
 

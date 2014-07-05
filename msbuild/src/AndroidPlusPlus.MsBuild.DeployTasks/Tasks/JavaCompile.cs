@@ -201,7 +201,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
       // Build a command-line based on parsing switches from the registered property sheet, and any additional flags.
       // 
 
-      StringBuilder builder = new StringBuilder (GccUtilities.CommandLineLength);
+      StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
 
       try
       {
@@ -210,7 +210,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
           throw new ArgumentNullException ();
         }
 
-        builder.Append ("--jdk-home " + GccUtilities.QuoteIfNeeded (JavaHomeDir) + " ");
+        builder.Append ("--jdk-home " + PathUtils.QuoteIfNeeded (JavaHomeDir) + " ");
 
         builder.Append ("-verbose" + " ");
 

@@ -113,8 +113,6 @@
       </ClCompile>
     </ItemGroup>
 
-    <Message Text="ClCompilePch: @(ClCompilePch)" />
-
     <!-- 
       Compile each of the identified PCH dependencies first, as these will likely be used in the sources below.
     -->

@@ -60,6 +60,7 @@
     <Compile Include="C\CLangDebugger.cs" />
     <Compile Include="C\CLangDebuggerCallback.cs" />
     <Compile Include="C\CLangDebuggerEvent.cs" />
+    <Compile Include="C\CLangDebuggerVariableManager.cs" />
     <Compile Include="DebugEngineGuids.cs" />
     <Compile Include="DebugEnumerator.cs" />
     <Compile Include="DebuggeeAddress.cs" />

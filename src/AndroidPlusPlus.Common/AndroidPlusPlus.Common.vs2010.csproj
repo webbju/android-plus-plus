@@ -60,6 +60,7 @@
     <Compile Include="Java\JdbSetup.cs" />
     <Compile Include="LaunchConfiguration.cs" />
     <Compile Include="LoggingUtils.cs" />
+    <Compile Include="PathUtils.cs" />
     <Compile Include="Processes\AsyncRedirectProcess.cs" />
     <Compile Include="ComUtils.cs" />
     <Compile Include="GDB\GdbClient.cs" />
@@ -79,7 +80,6 @@
     <Compile Include="GDB\MI\MiResultValueTuple.cs" />
     <Compile Include="Java\JavaSettings.cs" />
     <Compile Include="Properties\SharedAssemblyInfo.cs" />
-    <Compile Include="StringUtils.cs" />
     <Compile Include="Processes\SyncRedirectProcess.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

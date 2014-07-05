@@ -98,22 +98,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         LoggingUtils.Print ("[CLangDebuggerCallback] Event: " + riidEvent.ToString ());
 
-        if (m_debuggerCallback.TryGetValue (riidEvent, out eventCallback))
+        if (!m_debuggerCallback.TryGetValue (riidEvent, out eventCallback))
         {
-          LoggingUtils.RequireOk (eventCallback (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib));
+          return DebugEngineConstants.E_NOTIMPL;
         }
-        else
-        {
-          throw new NotImplementedException ();
-        }
+
+        LoggingUtils.RequireOk (eventCallback (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib));
 
         return DebugEngineConstants.S_OK;
-      }
-      catch (NotImplementedException e)
-      {
-        LoggingUtils.HandleException (e);
-
-        return DebugEngineConstants.E_NOTIMPL;
       }
       catch (Exception e)
       {

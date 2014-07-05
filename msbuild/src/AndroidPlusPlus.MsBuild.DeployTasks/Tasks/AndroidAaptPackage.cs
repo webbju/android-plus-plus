@@ -218,7 +218,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
       // Build a command-line based on parsing switches from the registered property sheet, and any additional flags.
       // 
 
-      StringBuilder builder = new StringBuilder (GccUtilities.CommandLineLength);
+      StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
 
       try
       {
@@ -229,7 +229,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
         builder.Append ("package ");
 
-        builder.Append ("-M " + GccUtilities.QuoteIfNeeded (source.GetMetadata ("FullPath")) + " ");
+        builder.Append ("-M " + PathUtils.QuoteIfNeeded (source.GetMetadata ("FullPath")) + " ");
 
         builder.Append (m_parsedProperties.Parse (source));
       }

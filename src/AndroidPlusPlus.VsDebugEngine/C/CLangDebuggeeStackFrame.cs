@@ -62,6 +62,20 @@ namespace AndroidPlusPlus.VsDebugEngine
       LoggingUtils.RequireOk (QueryArgumentsAndLocals ());
 
       LoggingUtils.RequireOk (QueryRegisters ());
+
+      m_property = new CLangDebuggeeProperty (debugger, this, frameName);
+
+      DebuggeeProperty [] arguments = new DebuggeeProperty [m_stackArguments.Count];
+
+      m_stackArguments.Values.CopyTo (arguments, 0);
+
+      m_property.AddChildren (arguments);
+
+      DebuggeeProperty [] locals = new DebuggeeProperty [m_stackLocals.Count];
+
+      m_stackLocals.Values.CopyTo (locals, 0);
+
+      m_property.AddChildren (locals);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -130,8 +144,6 @@ namespace AndroidPlusPlus.VsDebugEngine
           m_locationAddress = new DebuggeeAddress ("0x0");
         }
 
-        m_property = new CLangDebuggeeProperty (m_debugger, this, "*" + m_locationAddress.ToString (), null, new CLangDebuggeeProperty [] { });
-
         if (frameTuple.HasField ("func"))
         {
           m_locationFunction = frameTuple ["func"] [0].GetString ();
@@ -185,7 +197,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           textPositions [1].dwColumn = textPositions [0].dwColumn;
 
-          string filename = StringUtils.ConvertPathPosixToWindows (frameTuple ["fullname"] [0].GetString ());
+          string filename = PathUtils.ConvertPathCygwinToWindows (frameTuple ["fullname"] [0].GetString ());
 
           m_documentContext = new DebuggeeDocumentContext (m_debugger.Engine, filename, textPositions [0], textPositions [1], DebugEngineGuids.guidLanguageCpp, m_locationAddress);
 
@@ -210,7 +222,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public override int QueryArgumentsAndLocals ()
+    protected override int QueryArgumentsAndLocals ()
     {
       LoggingUtils.PrintFunction ();
 
@@ -231,17 +243,19 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         for (int i = 0; i < localVariables.Values.Count; ++i)
         {
-          string variable = localVariables [i] ["name"] [0].GetString ();
+          string variableName = localVariables [i] ["name"] [0].GetString ();
 
-          CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, variable, null);
+          MiVariable variable = m_debugger.VariableManager.CreateVariableFromExpression (this, variableName);
+
+          DebuggeeProperty property = m_debugger.VariableManager.CreatePropertyFromVariable (this, variable);
 
           if (localVariables [i].HasField ("arg"))
           {
-            m_stackArguments.TryAdd (variable, property);
+            m_stackArguments.TryAdd (variableName, property);
           }
           else
           {
-            m_stackLocals.TryAdd (variable, property);
+            m_stackLocals.TryAdd (variableName, property);
           }
         }
 
@@ -259,7 +273,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public override int QueryRegisters ()
+    protected override int QueryRegisters ()
     {
       LoggingUtils.PrintFunction ();
 
@@ -296,7 +310,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             string registerNamePrettified = "$" + registerName;
 
-            CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, registerNamePrettified, null);
+            CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, registerNamePrettified);
 
             property.Value = registerValue;
 
@@ -350,9 +364,18 @@ namespace AndroidPlusPlus.VsDebugEngine
           return property;
         }
 
-        property = new CLangDebuggeeProperty (m_debugger, this, expression, null);
+        // 
+        // Couldn't find a pre-registered matching property for this expression, creating a new custom one.
+        // 
 
-        m_customExpressions.TryAdd (expression, property);
+        MiVariable customExpressionVariable = m_debugger.VariableManager.CreateVariableFromExpression (this, expression);
+
+        if (customExpressionVariable != null)
+        {
+          property = m_debugger.VariableManager.CreatePropertyFromVariable (this, customExpressionVariable);
+
+          m_customExpressions.TryAdd (expression, property);
+        }
       }
       catch (Exception e)
       {
@@ -390,7 +413,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFlags & enum_FRAMEINFO_FLAGS.FIF_ARGS) != 0)
         {
-          frameInfo.m_bstrArgs = m_stackArguments.Keys.ToString ();;
+          frameInfo.m_bstrArgs = m_stackArguments.Keys.ToString ();
 
           frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_ARGS;
         }
@@ -451,19 +474,29 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           IEnumDebugModules2 debugProgramModules;
 
-          uint debugModulesCount = 1;
-
-          DebuggeeModule [] debugModules = new DebuggeeModule [debugModulesCount];
+          uint debugModulesCount = 0;
 
           LoggingUtils.RequireOk (m_thread.GetProgram (out debugProgram));
 
           LoggingUtils.RequireOk (debugProgram.EnumModules (out debugProgramModules));
 
-          LoggingUtils.RequireOk (debugProgramModules.Next (1, debugModules, ref debugModulesCount));
+          LoggingUtils.RequireOk (debugProgramModules.GetCount (out debugModulesCount));
 
-          frameInfo.m_pModule = debugModules [0];
+          DebuggeeModule [] debugModules = new DebuggeeModule [debugModulesCount];
 
-          frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_DEBUG_MODULEP;
+          LoggingUtils.RequireOk (debugProgramModules.Next (debugModulesCount, debugModules, ref debugModulesCount));
+
+          for (int i = 0; i < debugModulesCount; ++i)
+          {
+            if (m_locationModule.Equals (debugModules [i].Name))
+            {
+              frameInfo.m_pModule = debugModules [i];
+
+              frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_DEBUG_MODULEP;
+
+              break;
+            }
+          }
         }
 
         return DebugEngineConstants.S_OK;

@@ -121,11 +121,11 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
         {
           using (StreamWriter writer = new StreamWriter (OutputFile.GetMetadata ("FullPath") + ".d", false, Encoding.Unicode))
           {
-            writer.WriteLine (string.Format ("{0}: \\", GccUtilities.ConvertPathWindowsToGccDependency (OutputFile.GetMetadata ("FullPath"))));
+            writer.WriteLine (string.Format ("{0}: \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (OutputFile.GetMetadata ("FullPath"))));
 
             foreach (ITaskItem source in Sources)
             {
-              writer.WriteLine (string.Format ("  {0} \\", GccUtilities.ConvertPathWindowsToGccDependency (source.GetMetadata ("FullPath"))));
+              writer.WriteLine (string.Format ("  {0} \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (source.GetMetadata ("FullPath"))));
             }
           }
         }
@@ -148,7 +148,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     {
       StringBuilder responseFileArguments = new StringBuilder ();
 
-      StringBuilder responseFileCommands = new StringBuilder (GccUtilities.CommandLineLength);
+      StringBuilder responseFileCommands = new StringBuilder (PathUtils.CommandLineLength);
 
       try
       {
@@ -165,14 +165,14 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
         {
           responseFileArguments.Append ("m");
 
-          responseFileCommands.Append (GccUtilities.ConvertPathWindowsToPosix (ManifestFile.GetMetadata ("FullPath")) + " ");
+          responseFileCommands.Append (PathUtils.SantiseWindowsPath (ManifestFile.GetMetadata ("FullPath")) + " ");
         }
 
         if (OutputFile != null)
         {
           responseFileArguments.Append ("f");
 
-          responseFileCommands.Append (GccUtilities.ConvertPathWindowsToPosix (OutputFile.GetMetadata ("FullPath")) + " ");
+          responseFileCommands.Append (PathUtils.SantiseWindowsPath (OutputFile.GetMetadata ("FullPath")) + " ");
         }
 
         // 
@@ -194,7 +194,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
           File.Copy (sourceFullPath, Path.Combine (packageDirectory.FullName, sourceFileName), true);
         }
 
-        responseFileCommands.Append (" -C " + GccUtilities.ConvertPathWindowsToPosix (m_tempWorkingDirectory) + " . ");
+        responseFileCommands.Append (" -C " + PathUtils.SantiseWindowsPath (m_tempWorkingDirectory) + " . ");
       }
       catch (Exception e)
       {
@@ -210,7 +210,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
     protected override string GetResponseFileSwitch (string responseFilePath)
     {
-      return '@' + GccUtilities.ConvertPathWindowsToPosix (responseFilePath);
+      return '@' + PathUtils.SantiseWindowsPath (responseFilePath);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

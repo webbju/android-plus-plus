@@ -57,6 +57,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       NativeMemoryBytes = new CLangDebuggeeMemoryBytes (this);
 
+      VariableManager = new CLangDebuggerVariableManager (this);
+
       // 
       // Evaluate the most up-to-date deployment of GDB provided in the registered SDK. Look at the target device and determine architecture.
       // 
@@ -194,6 +196,12 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public CLangDebuggeeMemoryBytes NativeMemoryBytes { get; protected set; }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public CLangDebuggerVariableManager VariableManager { get; protected set; }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -659,8 +667,6 @@ namespace AndroidPlusPlus.VsDebugEngine
                 CLangDebuggeeThread createdThread = new CLangDebuggeeThread (NativeProgram, threadId);
 
                 NativeProgram.AddThread (createdThread);
-
-                Engine.Broadcast (new DebugEngineEvent.ThreadCreate (), NativeProgram.DebugProgram, createdThread);
               }
               catch (Exception e)
               {
@@ -754,9 +760,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                 CLangDebuggeeModule module = NativeProgram.GetModule (moduleName);
 
-                Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, false), NativeProgram.DebugProgram, null);
-
                 NativeProgram.RemoveModule (module);
+
+                Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, false), NativeProgram.DebugProgram, null);
 
                 Engine.BreakpointManager.RefreshBoundBreakpoints ();
               }
@@ -787,50 +793,64 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public DebuggeeCodeContext GetCodeContextForLocation (string location)
     {
-      if (location.StartsWith ("0x"))
+      try
       {
-        location = "*" + location;
-      }
-
-      MiResultRecord resultRecord = GdbClient.SendCommand ("info line " + location);
-
-      if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
-      {
-        throw new InvalidOperationException ();
-      }
-
-      string infoRegExPattern = "Line (?<line>[0-9]+) of \\\\\"(?<file>[^\"]+)\\\\\" starts at address (?<start>[^ ]+) (?<startsym>[^ ]+) and ends at (?<end>[^ ]+) (?<endsym>[^ .]+).";
-
-      Regex regExMatcher = new Regex (infoRegExPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-      foreach (MiStreamRecord record in resultRecord.Records)
-      {
-        Match regExLineMatch = regExMatcher.Match (record.Stream);
-
-        if (regExLineMatch.Success)
+        if (string.IsNullOrEmpty (location))
         {
-          uint line = uint.Parse (regExLineMatch.Result ("${line}"));
-
-          string filename = regExLineMatch.Result ("${file}");
-
-          DebuggeeAddress startAddress = new DebuggeeAddress (regExLineMatch.Result ("${start}"));
-
-          DebuggeeAddress endAddress = new DebuggeeAddress (regExLineMatch.Result ("${end}"));
-
-          TEXT_POSITION [] documentPositions = new TEXT_POSITION [2];
-
-          documentPositions [0].dwLine = line - 1;
-
-          documentPositions [0].dwColumn = 0;
-
-          documentPositions [1].dwLine = documentPositions [0].dwLine;
-
-          documentPositions [1].dwColumn = uint.MaxValue;
-
-          DebuggeeDocumentContext documentContext = new DebuggeeDocumentContext (Engine, filename, documentPositions [0], documentPositions [1], DebugEngineGuids.guidLanguageCpp, startAddress);
-
-          return new DebuggeeCodeContext (Engine, documentContext, startAddress);
+          throw new ArgumentNullException ("location");
         }
+
+        if (location.StartsWith ("0x"))
+        {
+          location = "*" + location;
+        }
+
+        MiResultRecord resultRecord = GdbClient.SendCommand ("info line " + location);
+
+        if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
+        {
+          throw new InvalidOperationException ();
+        }
+
+        string infoRegExPattern = "Line (?<line>[0-9]+) of \"(?<file>[^\\\"]+?)\" starts at address (?<start>[^ ]+) [<]?(?<startsym>[^>]+)[>]? and ends at (?<end>[^ ]+) [<]?(?<endsym>[^>.]+)[>]?";
+
+        Regex regExMatcher = new Regex (infoRegExPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+        foreach (MiStreamRecord record in resultRecord.Records)
+        {
+          string unescapedStream = Regex.Unescape (record.Stream);
+
+          Match regExLineMatch = regExMatcher.Match (unescapedStream);
+
+          if (regExLineMatch.Success)
+          {
+            uint line = uint.Parse (regExLineMatch.Result ("${line}"));
+
+            string filename = regExLineMatch.Result ("${file}");
+
+            DebuggeeAddress startAddress = new DebuggeeAddress (regExLineMatch.Result ("${start}"));
+
+            DebuggeeAddress endAddress = new DebuggeeAddress (regExLineMatch.Result ("${end}"));
+
+            TEXT_POSITION [] documentPositions = new TEXT_POSITION [2];
+
+            documentPositions [0].dwLine = line - 1;
+
+            documentPositions [0].dwColumn = 0;
+
+            documentPositions [1].dwLine = documentPositions [0].dwLine;
+
+            documentPositions [1].dwColumn = uint.MaxValue;
+
+            DebuggeeDocumentContext documentContext = new DebuggeeDocumentContext (Engine, filename, documentPositions [0], documentPositions [1], DebugEngineGuids.guidLanguageCpp, startAddress);
+
+            return new DebuggeeCodeContext (Engine, documentContext, startAddress);
+          }
+        }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
       }
 
       return null;

@@ -50,17 +50,17 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
       // Build a command-line based on parsing switches from the registered property sheet, and any additional flags.
       // 
 
-      StringBuilder builder = new StringBuilder (GccUtilities.CommandLineLength);
+      StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
 
       try
       {
-        builder.Append ("rcsP ");
+        builder.Append ("rcsD ");
 
-        builder.Append (GccUtilities.ConvertPathWindowsToPosix (Sources [0].GetMetadata ("OutputFile")) + " ");
+        builder.Append (PathUtils.SantiseWindowsPath (Sources [0].GetMetadata ("OutputFile")) + " ");
 
         foreach (ITaskItem source in Sources)
         {
-          builder.Append (GccUtilities.ConvertPathWindowsToPosix (source.GetMetadata ("FullPath")) + " ");
+          builder.Append (PathUtils.SantiseWindowsPath (source.GetMetadata ("FullPath")) + " ");
         }
       }
       catch (Exception e)
@@ -77,7 +77,7 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
 
     protected override string GetResponseFileSwitch (string responseFilePath)
     {
-      return '@' + GccUtilities.ConvertPathWindowsToPosix (responseFilePath);
+      return '@' + PathUtils.SantiseWindowsPath (responseFilePath);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -35,6 +35,12 @@ namespace AndroidPlusPlus.MsBuild.CppTasks.Tasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    private StringBuilder m_readElfOutput = new StringBuilder ();
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public GccBuildId ()
       : base (new ResourceManager ("AndroidPlusPlus.MsBuild.CppTasks.Properties.Resources", Assembly.GetExecutingAssembly ()))
     {
@@ -66,6 +72,40 @@ namespace AndroidPlusPlus.MsBuild.CppTasks.Tasks
 
         if (retCode == 0)
         {
+          // 
+          // Parse readelf tool output to identify the build-id from a hex section dump.
+          // 
+
+          /*
+           
+           Hex dump of section '.note.gnu.build-id':
+            0x00000134 04000000 14000000 03000000 474e5500 ............GNU.
+            0x00000144 ab9455ce ade577bb 423edaa0 e986585b ..U...w.B>....X[
+            0x00000154 900c47cd                            ..G.
+           
+          */
+
+          StringBuilder buildIdBuilder = new StringBuilder (40);
+
+          string [] readElfOutputLines = m_readElfOutput.ToString ().Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+          for (int i = 2; i < readElfOutputLines.Length; ++i) // Skip the first 3 lines of output
+          {
+            string santisedLine = readElfOutputLines [i].TrimStart (new char [] { ' ' } );
+
+            for (int wordId = 0; wordId < 4; ++wordId)
+            {
+              string longWord = santisedLine.Substring (11 + (9 * wordId), 8);
+
+              if (!string.IsNullOrWhiteSpace (longWord))
+              {
+                buildIdBuilder.Append (longWord);
+              }
+            }
+          }
+
+          BuildId = buildIdBuilder.ToString ();
+
           if (string.IsNullOrWhiteSpace (BuildId))
           {
             throw new InvalidOperationException ();
@@ -87,18 +127,10 @@ namespace AndroidPlusPlus.MsBuild.CppTasks.Tasks
     protected override void LogEventsFromTextOutput (string singleLine, MessageImportance messageImportance)
     {
       // 
-      // Notes at offset 0x00000168 with length 0x00000024:
-      //   Owner                 Data size       Description
-      //   GNU                  0x00000014       NT_GNU_BUILD_ID (unique build ID bitstring)
-      //     Build ID: d50f53361ef3a280610f4c41c68822f4d5317a5e
+      // Cache all tool output to be parsed upon successful execution.
       // 
 
-      int buildIdIndex = singleLine.IndexOf ("Build ID: ");
-
-      if (buildIdIndex != -1)
-      {
-        BuildId = singleLine.Substring (buildIdIndex + ("Build ID: ".Length));
-      }
+      m_readElfOutput.AppendLine (singleLine);
 
       if (OutputCommandLine)
       {
@@ -112,7 +144,7 @@ namespace AndroidPlusPlus.MsBuild.CppTasks.Tasks
 
     protected override string GenerateCommandLineCommands ()
     {
-      return "--notes " + GccUtilities.QuoteIfNeeded (TargetElf.GetMetadata ("FullPath"));
+      return "--hex-dump=.note.gnu.build-id " + PathUtils.QuoteIfNeeded (TargetElf.GetMetadata ("FullPath"));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

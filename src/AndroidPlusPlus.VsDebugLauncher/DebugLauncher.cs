@@ -217,7 +217,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       string applicationLaunchActivity = string.Empty;
 
-      using (SyncRedirectProcess getApkDetails = new SyncRedirectProcess (Path.Combine (androidSdkBuildToolsPath, "aapt.exe"), "dump --values badging " + StringUtils.ConvertPathWindowsToPosix (debuggerTargetApk)))
+      using (SyncRedirectProcess getApkDetails = new SyncRedirectProcess (Path.Combine (androidSdkBuildToolsPath, "aapt.exe"), "dump --values badging " + PathUtils.SantiseWindowsPath (debuggerTargetApk)))
       {
         getApkDetails.StartAndWaitForExit (5000);
 

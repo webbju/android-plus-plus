@@ -57,7 +57,7 @@ namespace AndroidPlusPlus.Common
 
         StringBuilder consoleStreamBuilder = new StringBuilder (streamOutput.Trim (new char [] { '~', '\"' }));
 
-        consoleStreamBuilder.Replace ("\\n", "\n");
+        //consoleStreamBuilder.Replace ("\\n", "\n");
 
         return new MiStreamRecord (MiStreamRecord.StreamType.Console, consoleStreamBuilder.ToString ());
       }
@@ -71,7 +71,7 @@ namespace AndroidPlusPlus.Common
 
         StringBuilder targetStreamBuilder = new StringBuilder (streamOutput.Trim (new char [] { '@', '\"' }));
 
-        targetStreamBuilder.Replace ("\\n", "\n");
+        //targetStreamBuilder.Replace ("\\n", "\n");
 
         return new MiStreamRecord (MiStreamRecord.StreamType.Target, targetStreamBuilder.ToString ());
       }
@@ -85,7 +85,7 @@ namespace AndroidPlusPlus.Common
 
         StringBuilder logStreamBuilder = new StringBuilder (streamOutput.Trim (new char [] { '&', '\"' }));
 
-        logStreamBuilder.Replace ("\\n", "\n");
+        //logStreamBuilder.Replace ("\\n", "\n");
 
         return new MiStreamRecord (MiStreamRecord.StreamType.Log, logStreamBuilder.ToString ());
       }
