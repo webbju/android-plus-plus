@@ -97,7 +97,7 @@
       TrackFileAccess="$(TrackFileAccess)"
       MinimalRebuildFromTracking="%(AndroidJava.MinimalRebuildFromTracking)"
       OutputCommandLine="%(AndroidJava.OutputCommandLine)"
-      ToolPath="$(ANDROID_PLUS_PLUS)\msbuild\toolchain\bin"
+      ToolPath="$(ANDROID_PLUS_PLUS)\toolchain\bin"
       ToolExe="app-javac-dependencies.exe"
       JavaHomeDir="$(JavaHomeDir)"
       PropertiesFile="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml">
@@ -120,7 +120,7 @@
       TrackFileAccess="$(TrackFileAccess)"
       MinimalRebuildFromTracking="%(AndroidJava.MinimalRebuildFromTracking)"
       OutputCommandLine="%(AndroidJava.OutputCommandLine)"
-      ToolPath="$(ANDROID_PLUS_PLUS)\msbuild\toolchain\bin"
+      ToolPath="$(ANDROID_PLUS_PLUS)\toolchain\bin"
       ToolExe="app-javac-dependencies.exe"
       JavaHomeDir="$(JavaHomeDir)"
       PropertiesFile="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml">

@@ -115,6 +115,9 @@ namespace AndroidPlusPlus.VsDebugEngine
         break;
       }
 
+      //m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, @"L:\dev\projects\android-plus-plus\toolchain\bin\gcc-linaro-arm-linux-gnueabihf-4.8\arm-linux-gnueabihf-gdb.exe");
+
+
       if (m_gdbSetup == null)
       {
         throw new InvalidOperationException ("Could not evaluate GDB setup instance.");

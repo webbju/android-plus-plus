@@ -47,13 +47,9 @@
   <ItemGroup>
     <Compile Include="Android\AndroidAdb.cs" />
     <Compile Include="Android\AndroidDevice.cs" />
-    <Compile Include="Android\AndroidDex.cs" />
     <Compile Include="Android\AndroidProcess.cs" />
-    <Compile Include="Android\AndroidAnt.cs" />
-    <Compile Include="Android\AndroidApk.cs" />
     <Compile Include="Android\AndroidManifest.cs" />
     <Compile Include="Android\AndroidSettings.cs" />
-    <Compile Include="Android\AndroidAapt.cs" />
     <Compile Include="DebugEngineConstants.cs" />
     <Compile Include="GNU\GnuObjdump.cs" />
     <Compile Include="Java\JdbClient.cs" />

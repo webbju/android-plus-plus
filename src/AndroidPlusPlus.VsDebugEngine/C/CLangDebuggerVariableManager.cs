@@ -52,7 +52,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       CLangDebuggeeProperty prop = new CLangDebuggeeProperty (m_debugger, stackFrame, variable);
 
-      if (variable.HasChildren && (variable.Children.Count > 0))
+      /*if (variable.HasChildren && (variable.Children.Count > 0))
       {
         List<CLangDebuggeeProperty> childProperties = new List<CLangDebuggeeProperty> ();
 
@@ -62,7 +62,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         }
 
         prop.AddChildren (childProperties.ToArray ());
-      }
+      }*/
 
       return prop;
     }

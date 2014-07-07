@@ -83,6 +83,10 @@ namespace AndroidPlusPlus.Common
 
     private AsyncRedirectProcess m_gdbClientInstance = null;
 
+    private List<string> m_gdbSupportedClientMiFeatures = new List<string> ();
+
+    private List<string> m_gdbSupportedTargetMiFeatures = new List<string> ();
+
     private Dictionary<uint, AsyncCommandData> m_asyncCommandData = new Dictionary<uint,AsyncCommandData> ();
 
     private ManualResetEvent m_syncCommandLock = null;
@@ -166,6 +170,25 @@ namespace AndroidPlusPlus.Common
       m_gdbClientInstance.StartInfo.Arguments += string.Format (@" -fullname -x {0}", PathUtils.SantiseWindowsPath (Path.Combine (m_gdbSetup.CacheDirectory, "gdb.setup")));
 
       m_gdbClientInstance.Start ();
+
+      // 
+      // Evaluate this client's GDB/MI support and capabilities. 
+      // 
+
+      MiResultRecord resultRecord = SendCommand ("-list-features");
+
+      if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
+      {
+        throw new InvalidOperationException ();
+      }
+
+      if (resultRecord.HasField ("features"))
+      {
+        foreach (MiResultValue feature in resultRecord ["features"] [0].Values)
+        {
+          m_gdbSupportedClientMiFeatures.Add (feature.GetString ());
+        }
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -197,6 +220,7 @@ namespace AndroidPlusPlus.Common
 
       string [] cachedAppBinaries = m_gdbSetup.CacheApplicationBinaries ();
 
+#if FALSE
       string gnuObjdumpToolPath = m_gdbSetup.GdbToolPath.Replace ("-gdb", "-objdump");
 
       foreach (string binary in cachedAppBinaries)
@@ -245,6 +269,7 @@ namespace AndroidPlusPlus.Common
           }
         }
       }
+#endif
 
       // 
       // Configure default shared library settings.
@@ -285,6 +310,8 @@ namespace AndroidPlusPlus.Common
         }
       }
 
+      sharedLibrarySearchPaths.Add (@"L:\dev\projects\android-plus-plus\msbuild\samples\Android++\Debug");
+
       SetSetting ("solib-search-path", string.Join (";", sharedLibrarySearchPaths.ToArray ()), true);
 
       SetSetting ("debug-file-directory", string.Join (";", sharedLibrarySearchPaths.ToArray ()), true);
@@ -300,11 +327,30 @@ namespace AndroidPlusPlus.Common
         throw new InvalidOperationException ();
       }
 
-      resultRecord = SendCommand (string.Format ("-target-select remote {0}:{1}", m_gdbSetup.Host, m_gdbSetup.Port), 60000);
+      resultRecord = SendCommand (string.Format ("target remote {0}:{1}", m_gdbSetup.Host, m_gdbSetup.Port), 60000);
 
       if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
       {
         throw new InvalidOperationException ();
+      }
+
+      // 
+      // Evaluate target's GDB/MI support and capabilities. 
+      // 
+
+      resultRecord = SendCommand ("-list-target-features");
+
+      if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
+      {
+        throw new InvalidOperationException ();
+      }
+
+      if (resultRecord.HasField ("features"))
+      {
+        foreach (MiResultValue feature in resultRecord ["features"] [0].Values)
+        {
+          m_gdbSupportedTargetMiFeatures.Add (feature.GetString ());
+        }
       }
     }
 
@@ -316,7 +362,12 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      SendCommand ("-target-detach");
+      MiResultRecord resultRecord = SendCommand ("-target-detach");
+
+      if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
+      {
+        throw new InvalidOperationException ();
+      }
 
       m_gdbServer = null;
 
@@ -331,7 +382,12 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      SendCommand ("-exec-interrupt");
+      MiResultRecord resultRecord = SendCommand ("-exec-interrupt");
+
+      if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
+      {
+        throw new InvalidOperationException ();
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -342,7 +398,12 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      SendCommand ("-exec-continue");
+      MiResultRecord resultRecord = SendCommand ("-exec-continue");
+
+      if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
+      {
+        throw new InvalidOperationException ();
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -353,9 +414,19 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      SendCommand ("-exec-interrupt");
+      MiResultRecord resultRecord = SendCommand ("-exec-interrupt");
 
-      SendCommand ("kill");
+      if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
+      {
+        throw new InvalidOperationException ();
+      }
+
+      resultRecord = SendCommand ("kill");
+
+      if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
+      {
+        throw new InvalidOperationException ();
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -467,20 +538,23 @@ namespace AndroidPlusPlus.Common
 
       if (m_registerIdMapping.Count == 0)
       {
-        MiResultRecord registerNamesRecord = SendCommand ("-data-list-register-names");
+        MiResultRecord resultRecord = SendCommand ("-data-list-register-names");
 
-        if ((registerNamesRecord == null) || (registerNamesRecord.IsError ()) || (!registerNamesRecord.HasField ("register-names")))
+        if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
         {
-          throw new InvalidOperationException ("Failed to retrieve list of register names");
+          throw new InvalidOperationException ();
         }
 
-        MiResultValue registerNames = registerNamesRecord ["register-names"] [0];
-
-        for (int i = 0; i < registerNames.Values.Count; ++i)
+        if (resultRecord.HasField ("register-names"))
         {
-          string register = registerNames [i].GetString ();
+          MiResultValue registerNames = resultRecord ["register-names"] [0];
 
-          m_registerIdMapping.Add ((uint) i, register);
+          for (int i = 0; i < registerNames.Values.Count; ++i)
+          {
+            string register = registerNames [i].GetString ();
+
+            m_registerIdMapping.Add ((uint)i, register);
+          }
         }
       }
 
@@ -495,11 +569,11 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.Print (string.Format ("[GdbClient] GetSetting: " + setting));
 
-      MiResultRecord result = SendCommand (string.Format ("-gdb-show {0}", setting));
+      MiResultRecord resultRecord = SendCommand (string.Format ("-gdb-show {0}", setting));
 
-      if ((result != null) && (!result.IsError ()))
+      if ((resultRecord != null) && (!resultRecord.IsError ()) && (resultRecord.HasField ("value")))
       {
-        return result ["value"] [0].GetString ();
+        return resultRecord ["value"] [0].GetString ();
       }
 
       return string.Empty;

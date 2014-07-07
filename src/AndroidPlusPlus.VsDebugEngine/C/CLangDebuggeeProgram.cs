@@ -328,8 +328,6 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ("Could not start gdbserver");
         }
 
-        m_debugger.GdbClient.SendCommand ("-list-features");
-
         m_debugger.GdbClient.Attach (m_debugger.GdbServer);
 #else
         m_debugger.Engine.Broadcast (new CLangDebuggerEvent.StartServer (m_debugger), DebugProgram, null);

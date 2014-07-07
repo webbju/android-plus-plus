@@ -62,20 +62,6 @@ namespace AndroidPlusPlus.VsDebugEngine
       LoggingUtils.RequireOk (QueryArgumentsAndLocals ());
 
       LoggingUtils.RequireOk (QueryRegisters ());
-
-      m_property = new CLangDebuggeeProperty (debugger, this, frameName);
-
-      DebuggeeProperty [] arguments = new DebuggeeProperty [m_stackArguments.Count];
-
-      m_stackArguments.Values.CopyTo (arguments, 0);
-
-      m_property.AddChildren (arguments);
-
-      DebuggeeProperty [] locals = new DebuggeeProperty [m_stackLocals.Count];
-
-      m_stackLocals.Values.CopyTo (locals, 0);
-
-      m_property.AddChildren (locals);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -257,6 +243,8 @@ namespace AndroidPlusPlus.VsDebugEngine
           {
             m_stackLocals.TryAdd (variableName, property);
           }
+
+          m_property.AddChildren (new DebuggeeProperty [] { property });
         }
 
         return DebugEngineConstants.S_OK;
@@ -279,43 +267,42 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        if (m_stackRegisters.Count == 0)
+        // 
+        // Returns a list of registers for the current stack level.
+        // 
+
+        uint threadId;
+
+        LoggingUtils.RequireOk (m_thread.GetThreadId (out threadId));
+
+        MiResultRecord registerValueRecord = m_debugger.GdbClient.SendCommand (string.Format ("-data-list-register-values --thread {0} --frame {1} r", threadId, StackLevel));
+
+        if ((registerValueRecord == null) || (registerValueRecord.IsError ()) || (!registerValueRecord.HasField ("register-values")))
         {
-          // 
-          // Returns a list of registers for the current stack level. Caches results for faster lookup.
-          // 
+          throw new InvalidOperationException ("Failed to retrieve list of register values");
+        }
 
-          uint threadId;
+        MiResultValue registerValues = registerValueRecord ["register-values"] [0];
 
-          LoggingUtils.RequireOk (m_thread.GetThreadId (out threadId));
+        Dictionary<uint, string> registerIdMapping = m_debugger.GdbClient.GetRegisterIdMapping ();
 
-          MiResultRecord registerValueRecord = m_debugger.GdbClient.SendCommand (string.Format ("-data-list-register-values --thread {0} --frame {1} r", threadId, StackLevel));
+        for (int i = 0; i < registerValues.Values.Count; ++i)
+        {
+          uint registerId = registerValues [i] ["number"] [0].GetUnsignedInt ();
 
-          if ((registerValueRecord == null) || (registerValueRecord.IsError ()) || (!registerValueRecord.HasField ("register-values")))
-          {
-            throw new InvalidOperationException ("Failed to retrieve list of register values");
-          }
+          string registerValue = registerValues [i] ["value"] [0].GetString ();
 
-          MiResultValue registerValues = registerValueRecord ["register-values"] [0];
+          string registerName = "$" + registerIdMapping [registerId];
 
-          Dictionary<uint, string> registerIdMapping = m_debugger.GdbClient.GetRegisterIdMapping ();
+          string registerNamePrettified = "$" + registerName;
 
-          for (int i = 0; i < registerValues.Values.Count; ++i)
-          {
-            uint registerId = registerValues [i] ["number"] [0].GetUnsignedInt ();
+          CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, registerNamePrettified);
 
-            string registerValue = registerValues [i] ["value"] [0].GetString ();
+          property.Value = registerValue;
 
-            string registerName = "$" + registerIdMapping [registerId];
+          m_stackRegisters.TryAdd (registerNamePrettified, property);
 
-            string registerNamePrettified = "$" + registerName;
-
-            CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, registerNamePrettified);
-
-            property.Value = registerValue;
-
-            m_stackRegisters.TryAdd (registerNamePrettified, property);
-          }
+          m_property.AddChildren (new DebuggeeProperty [] { property });
         }
 
         return DebugEngineConstants.S_OK;
@@ -375,6 +362,8 @@ namespace AndroidPlusPlus.VsDebugEngine
           property = m_debugger.VariableManager.CreatePropertyFromVariable (this, customExpressionVariable);
 
           m_customExpressions.TryAdd (expression, property);
+
+          m_property.AddChildren (new DebuggeeProperty [] { property });
         }
       }
       catch (Exception e)

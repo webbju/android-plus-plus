@@ -74,6 +74,54 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    public override int EnumChildren (enum_DEBUGPROP_INFO_FLAGS dwFields, uint dwRadix, ref Guid guidFilter, enum_DBG_ATTRIB_FLAGS dwAttribFilter, string pszNameFilter, uint dwTimeout, out IEnumDebugPropertyInfo2 ppEnum)
+    {
+      // 
+      // Enumerates the children of a property. This provides support for dereferencing pointers, displaying members of an array, or fields of a class or struct.
+      // 
+
+      LoggingUtils.PrintFunction ();
+
+      try
+      {
+        if (m_gdbVariable != null)
+        {
+          if (m_gdbVariable.HasChildren && (m_gdbVariable.Children.Count == 0))
+          {
+            m_debugger.VariableManager.CreateChildVariables (m_gdbVariable, 1);
+          }
+
+          if (m_gdbVariable.Children.Count != m_children.Count)
+          {
+            // TODO: Dispose the properties as appropriate.
+
+            m_children.Clear ();
+
+            foreach (MiVariable child in m_gdbVariable.Children.Values)
+            {
+              m_children.Add (m_debugger.VariableManager.CreatePropertyFromVariable (m_stackFrame as CLangDebuggeeStackFrame, child));
+            }
+          }
+        }
+
+        LoggingUtils.RequireOk (base.EnumChildren (dwFields, dwRadix, ref guidFilter, dwAttribFilter, pszNameFilter, dwTimeout, out ppEnum));
+
+        return DebugEngineConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        ppEnum = null;
+
+        return DebugEngineConstants.E_FAIL;
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public override int GetMemoryBytes (out IDebugMemoryBytes2 memoryBytes)
     {
       // 
@@ -194,6 +242,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((m_gdbVariable != null) && (requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_ATTRIB) != 0)
         {
+          if (m_gdbVariable.HasChildren)
+          {
+            propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_OBJ_IS_EXPANDABLE;
+          }
+
           if (m_gdbVariable.Expression.StartsWith ("$")) // Register. '$r0'
           {
             propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_STORAGE_REGISTER;
@@ -273,7 +326,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         LoggingUtils.RequireOk (stackThread.GetThreadId (out stackThreadId));
 
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-data-evaluate-expression --thread {0} --frame {1} \"sizeof({2})\"", stackThreadId, (m_stackFrame as CLangDebuggeeStackFrame).StackLevel, m_expression));
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-data-evaluate-expression --thread {0} --frame {1} --language c \"sizeof({2})\"", stackThreadId, (m_stackFrame as CLangDebuggeeStackFrame).StackLevel, m_expression));
 
         if ((resultRecord == null) || ((resultRecord != null) && (resultRecord.IsError () || (!resultRecord.HasField ("value")))))
         {
@@ -308,7 +361,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-var-assign {0} {1}", m_gdbVariable.Name, value));
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-var-assign {0} \"{1}\"", m_gdbVariable.Name, value));
 
         if ((resultRecord == null) || ((resultRecord != null) && (resultRecord.IsError () || (!resultRecord.HasField ("value")))))
         {
