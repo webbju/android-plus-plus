@@ -25,14 +25,25 @@
   Description="{master} Debugger options"
   xmlns="http://schemas.microsoft.com/build/2009/properties">
 
+  <Rule.Categories>
+    <Category Name="General" DisplayName="General"/>
+    <Category Name="LaunchConfiguration" DisplayName="Launch Configuration" />
+  </Rule.Categories>
+
   <Rule.DataSource>
     <DataSource Persistence="UserFile" />
   </Rule.DataSource>
 
+  <!--
+    DebuggerConfiguration
+  -->
+
+  <!--
   <EnumProperty
     Name="DebuggerConfiguration"
     DisplayName="Debugger Configuration"
     Description="Specifies a pre-defined MSBuild solution to interface."
+    Category="General"
   >
 
     <EnumValue
@@ -48,36 +59,62 @@
     />
 
   </EnumProperty>
+  -->
 
+  <!--
+    DebuggerTargetApk
+  -->
+  
   <StringProperty
     Name="DebuggerTargetApk"
     DisplayName="Target Apk"
     Description="Specifies the location of the Android Application package to be installed and debugged."
+    Category="General"
     Subtype="file"
   />
+
+  <!--
+    DebuggerCustomLaunchActivity
+  -->
 
   <StringProperty
     Name="DebuggerCustomLaunchActivity"
     DisplayName="Custom Launch Activity"
     Description="Override the default launch activity. If unset, debugger will use activity with 'android.intent.category.LAUNCHER' intent."
+    Category="LaunchConfiguration"
   />
+
+  <!--
+    DebuggerDebugMode
+  -->
 
   <BoolProperty
     Name="DebuggerDebugMode"
     DisplayName="Debug Mode"
     Description="Launch the Application in 'debug mode'. This suspends execution until a JDB client has attached, allowing GDB to debug native launch/startup methods."
+    Category="LaunchConfiguration"
   />
+
+  <!--
+    DebuggerOpenGlTrace
+  -->
 
   <BoolProperty
     Name="DebuggerOpenGlTrace"
     DisplayName="OpenGL Trace"
     Description="Launch the Application in 'trace mode'. This enables runtime and performance checking of OpenGL ES functionality."
+    Category="LaunchConfiguration"
   />
+
+  <!--
+    DebuggerKeepAppData
+  -->
 
   <BoolProperty
     Name="DebuggerKeepAppData"
     DisplayName="Keep Application Data (On Install)"
     Description="Ensures that existing data remains for if the Application is re-installed."
+    Category="LaunchConfiguration"
   />
 
 </Rule>

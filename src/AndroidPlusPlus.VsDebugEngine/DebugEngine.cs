@@ -44,6 +44,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private AutoResetEvent m_broadcastHandleLock;
 
+    private AsyncRedirectProcess m_adbLogcatInstance;
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -52,9 +54,11 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       m_sdmCallback = null;
 
-      BreakpointManager = new DebugBreakpointManager (this);
-
       m_broadcastHandleLock = new AutoResetEvent (false);
+
+      m_adbLogcatInstance = null;
+
+      BreakpointManager = new DebugBreakpointManager (this);
 
       LaunchConfiguration = new LaunchConfiguration ();
 
@@ -115,7 +119,6 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
     public void Broadcast (IDebugEventCallback2 callback, IDebugEvent2 debugEvent, IDebugProgram2 program, IDebugThread2 thread)
     {
       LoggingUtils.PrintFunction ();
@@ -156,6 +159,48 @@ namespace AndroidPlusPlus.VsDebugEngine
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
+
+        throw e;
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private class DeviceLogcatListener : AsyncRedirectProcess.EventListener
+    {
+      private readonly DebugEngine m_debugEngine;
+
+      private readonly DebuggeeProgram m_debuggeeProgram;
+
+      public DeviceLogcatListener (DebugEngine debugEngine, DebuggeeProgram debuggeeProgram)
+      {
+        m_debugEngine = debugEngine;
+
+        m_debuggeeProgram = debuggeeProgram;
+      }
+
+      public void ProcessStdout (object sendingProcess, DataReceivedEventArgs args)
+      {
+        if (!string.IsNullOrWhiteSpace (args.Data))
+        {
+          //Trace.WriteLine (args.Data);
+          m_debugEngine.Broadcast (new DebugEngineEvent.OutputString (string.Format ("[Logcat] {0}", args.Data)), m_debuggeeProgram, null);
+        }
+      }
+
+      public void ProcessStderr (object sendingProcess, DataReceivedEventArgs args)
+      {
+        if (!string.IsNullOrWhiteSpace (args.Data))
+        {
+          //Trace.WriteLine (args.Data);
+          //m_debugEngine.Broadcast (new DebugEngineEvent.OutputString (string.Format ("[Logcat] {0}", args.Data)), m_debuggeeProgram, null);
+        }
+      }
+
+      public void ProcessExited (object sendingProcess, EventArgs args)
+      {
       }
     }
 
@@ -201,6 +246,13 @@ namespace AndroidPlusPlus.VsDebugEngine
         Program = rgpPrograms [0] as DebuggeeProgram;
 
         Program.AttachedEngine = this;
+
+        if (Program.DebugProcess.NativeProcess.HostDevice.SdkVersion == AndroidSettings.VersionCode.JELLY_BEAN_MR2)
+        {
+          throw new InvalidOperationException ("Can not debug native code on a Android 4.3 device/emulator.");
+        }
+
+        m_adbLogcatInstance = Program.DebugProcess.NativeProcess.HostDevice.Logcat (new DeviceLogcatListener (this, Program));
 
         NativeDebugger = new CLangDebugger (this, Program);
 
@@ -612,6 +664,21 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
+        List<string> symbolSearchPaths = new List<string> ();
+
+        if (!string.IsNullOrWhiteSpace (szSymbolSearchPath))
+        {
+          symbolSearchPaths.AddRange (szSymbolSearchPath.Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries));
+        }
+
+#if DEBUG
+      symbolSearchPaths.Add (@"C:\nm\SuptechClient_2\build\bin\android\vs10.0\debug");
+#endif
+
+        NativeDebugger.GdbClient.SetSetting ("solib-search-path", string.Join (";", symbolSearchPaths.ToArray ()), true);
+
+        NativeDebugger.GdbClient.SetSetting ("debug-file-directory", string.Join (";", symbolSearchPaths.ToArray ()), true);
+
         throw new NotImplementedException ();
       }
       catch (NotImplementedException e)

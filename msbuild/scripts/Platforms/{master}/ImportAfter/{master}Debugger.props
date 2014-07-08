@@ -14,10 +14,6 @@
 
   <PropertyGroup>
 
-    <!--
-      Install/launch options.
-    -->
-
     <DebuggerConfiguration Condition="'$(DebuggerConfiguration)' == ''">Custom</DebuggerConfiguration>
 
     <DebuggerTargetApk Condition="'$(DebuggerTargetApk)' == ''">$(OutDir)$(ProjectName)-$(Configuration.Replace(' ','_')).apk</DebuggerTargetApk>

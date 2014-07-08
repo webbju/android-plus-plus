@@ -104,8 +104,73 @@ namespace AndroidPlusPlus.VsDebugLauncher
     {
       LoggingUtils.PrintFunction ();
 
-      DebugLaunchSettings debugLaunchSettings = new DebugLaunchSettings ((DebugLaunchOptions)launchOptionsFlags);
+      // 
+      // Check for any currently connected devices, and determine whether the target application is already installed/running.
+      // 
 
+      AndroidAdb.Refresh ();
+
+      AndroidDevice [] connectedDevices = AndroidAdb.GetConnectedDevices ();
+
+      if (connectedDevices.Length == 0)
+      {
+        throw new InvalidOperationException ("No device(s) connected.");
+      }
+
+      bool shouldAttach = false;
+
+      AndroidDevice debuggingDevice = connectedDevices [0];
+
+#if FALSE
+      AndroidProcess [] debuggingDeviceProcesses = debuggingDevice.GetProcesses ();
+
+      foreach (AndroidProcess process in debuggingDeviceProcesses)
+      {
+        if (process.Name.Equals (applicationPackageName))
+        {
+          shouldAttach = true;
+
+          break;
+        }
+      }
+#endif
+
+      DebugLaunchSettings debugLaunchSettings = new DebugLaunchSettings ((DebugLaunchOptions) launchOptionsFlags);
+
+      debugLaunchSettings.LaunchDebugEngineGuid = new Guid ("8310DAF9-1043-4C8E-85A0-FF68896E1922");
+
+      debugLaunchSettings.PortSupplierGuid = new Guid ("3AEE417F-E5F9-4B89-BC31-20534C99B7F5");
+
+      debugLaunchSettings.PortName = "adb://" + debuggingDevice.ID;
+
+      debugLaunchSettings.LaunchOptions = ((DebugLaunchOptions)launchOptionsFlags) | DebugLaunchOptions.Silent;
+
+      LaunchConfiguration launchConfig = GetLaunchConfigurationFromProjectProperties (projectProperties, startupProject);
+
+      debugLaunchSettings.Options = launchConfig.ToString ();
+
+      if (shouldAttach)
+      {
+        debugLaunchSettings.Executable = launchConfig ["PackageName"];
+
+        debugLaunchSettings.LaunchOperation = DebugLaunchOperation.AlreadyRunning;
+      }
+      else
+      {
+        debugLaunchSettings.Executable = launchConfig ["TargetApk"];
+
+        debugLaunchSettings.LaunchOperation = DebugLaunchOperation.Custom;
+      }
+
+      return debugLaunchSettings;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private static LaunchConfiguration GetLaunchConfigurationFromProjectProperties (Dictionary<string, string> projectProperties, Project startupProject)
+    {
       // 
       // Retrieve standard project macro values, and determine the preferred debugger configuration.
       // 
@@ -126,14 +191,14 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       string debuggerKeepAppData = EvaluateProjectProperty (projectProperties, "AndroidPlusPlusDebugger", "DebuggerKeepAppData");
 
-      if (string.IsNullOrEmpty (debuggerTargetApk))
-      {
-        debuggerConfiguration = "Custom";
-      }
-
       // 
       // Additional support for vs-android. Rather hacky for VS2010.
       // 
+
+      if (string.IsNullOrEmpty (debuggerConfiguration))
+      {
+        debuggerConfiguration = "Custom";
+      }
 
       if (debuggerConfiguration.Equals ("vs-android"))
       {
@@ -198,7 +263,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
           debuggerTargetApk = Path.Combine (projectProjectDir, debuggerTargetApk);
         }
 
-        if (!Path.IsPathRooted(debuggerTargetApk))
+        if (!Path.IsPathRooted (debuggerTargetApk))
         {
           debuggerTargetApk = Path.GetFullPath (debuggerTargetApk);
         }
@@ -219,7 +284,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       using (SyncRedirectProcess getApkDetails = new SyncRedirectProcess (Path.Combine (androidSdkBuildToolsPath, "aapt.exe"), "dump --values badging " + PathUtils.SantiseWindowsPath (debuggerTargetApk)))
       {
-        getApkDetails.StartAndWaitForExit (5000);
+        getApkDetails.StartAndWaitForExit ();
 
         string [] apkDetails = getApkDetails.StandardOutput.Replace ("\r", "").Split (new char [] { '\n' });
 
@@ -265,43 +330,6 @@ namespace AndroidPlusPlus.VsDebugLauncher
         debuggerCustomLaunchActivity = applicationLaunchActivity;
       }
 
-      // 
-      // Check for any currently connected devices, and determine whether the target application is already installed/running.
-      // 
-
-      AndroidAdb.Refresh ();
-
-      AndroidDevice [] connectedDevices = AndroidAdb.GetConnectedDevices ();
-
-      if (connectedDevices.Length == 0)
-      {
-        throw new InvalidOperationException ("No device(s) connected.");
-      }
-
-      AndroidDevice debuggingDevice = connectedDevices [0];
-
-      AndroidProcess [] debuggingDeviceProcesses = debuggingDevice.GetProcesses ();
-
-      bool shouldAttach = false;
-
-      foreach (AndroidProcess process in debuggingDeviceProcesses)
-      {
-        if (process.Name.Equals (applicationPackageName))
-        {
-          shouldAttach = true;
-
-          break;
-        }
-      }
-
-      debugLaunchSettings.LaunchDebugEngineGuid = new Guid ("8310DAF9-1043-4C8E-85A0-FF68896E1922");
-
-      debugLaunchSettings.PortSupplierGuid = new Guid ("3AEE417F-E5F9-4B89-BC31-20534C99B7F5");
-
-      debugLaunchSettings.PortName = "adb://" + connectedDevices [0].ID;
-
-      debugLaunchSettings.LaunchOptions = ((DebugLaunchOptions)launchOptionsFlags) | DebugLaunchOptions.Silent;
-
       LaunchConfiguration launchConfig = new LaunchConfiguration ();
 
       launchConfig ["TargetApk"] = debuggerTargetApk;
@@ -316,22 +344,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       launchConfig ["OpenGlTrace"] = debuggerOpenGlTrace;
 
-      debugLaunchSettings.Options = launchConfig.ToString ();
-
-      if (shouldAttach)
-      {
-        debugLaunchSettings.Executable = applicationPackageName;
-
-        debugLaunchSettings.LaunchOperation = DebugLaunchOperation.AlreadyRunning;
-      }
-      else
-      {
-        debugLaunchSettings.Executable = debuggerTargetApk;
-
-        debugLaunchSettings.LaunchOperation = DebugLaunchOperation.Custom;
-      }
-
-      return debugLaunchSettings;
+      return launchConfig;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -310,8 +310,6 @@ namespace AndroidPlusPlus.Common
         }
       }
 
-      sharedLibrarySearchPaths.Add (@"L:\dev\projects\android-plus-plus\msbuild\samples\Android++\Debug");
-
       SetSetting ("solib-search-path", string.Join (";", sharedLibrarySearchPaths.ToArray ()), true);
 
       SetSetting ("debug-file-directory", string.Join (";", sharedLibrarySearchPaths.ToArray ()), true);
@@ -320,14 +318,14 @@ namespace AndroidPlusPlus.Common
       // Connect to the remote target and '/system/bin/app_process' binary.
       // 
 
-      MiResultRecord resultRecord = SendCommand ("file " + PathUtils.SantiseWindowsPath (Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\app_process")));
+      MiResultRecord resultRecord = SendCommand ("-file-exec-and-symbols " + PathUtils.SantiseWindowsPath (Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\app_process")));
 
       if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
       {
         throw new InvalidOperationException ();
       }
 
-      resultRecord = SendCommand (string.Format ("target remote {0}:{1}", m_gdbSetup.Host, m_gdbSetup.Port), 60000);
+      resultRecord = SendCommand (string.Format ("-target-select remote {0}:{1}", m_gdbSetup.Host, m_gdbSetup.Port), 60000);
 
       if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
       {

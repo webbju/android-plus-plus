@@ -45,7 +45,9 @@ namespace AndroidPlusPlus.Common
       ICE_CREAM_SANDWICH,
       ICE_CREAM_SANDWICH_MR1,
       JELLY_BEAN,
-      JELLY_BEAM_MR1
+      JELLY_BEAN_MR1,
+      JELLY_BEAN_MR2,
+      KITKAT
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
