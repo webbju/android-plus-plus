@@ -162,6 +162,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         throw e;
       }
+      finally
+      {
+        m_broadcastHandleLock.Reset ();
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -186,7 +190,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         if (!string.IsNullOrWhiteSpace (args.Data))
         {
           //Trace.WriteLine (args.Data);
-          m_debugEngine.Broadcast (new DebugEngineEvent.OutputString (string.Format ("[Logcat] {0}", args.Data)), m_debuggeeProgram, null);
+          //m_debugEngine.Broadcast (new DebugEngineEvent.OutputString (string.Format ("[Logcat] {0}", args.Data)), m_debuggeeProgram, null);
         }
       }
 

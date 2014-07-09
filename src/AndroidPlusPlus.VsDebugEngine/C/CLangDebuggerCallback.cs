@@ -67,19 +67,19 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       m_debuggerCallback = new Dictionary<Guid, CLangDebuggerEventDelegate> ();
 
-      m_debuggerCallback.Add (typeof (CLangDebuggerEvent.StartServer).GUID, OnStartServer);
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (CLangDebuggerEvent.StartServer)), OnStartServer);
 
-      m_debuggerCallback.Add (typeof (CLangDebuggerEvent.StopServer).GUID, OnStopServer);
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (CLangDebuggerEvent.StopServer)), OnStopServer);
 
-      m_debuggerCallback.Add (typeof (CLangDebuggerEvent.AttachClient).GUID, OnAttachClient);
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (CLangDebuggerEvent.AttachClient)), OnAttachClient);
 
-      m_debuggerCallback.Add (typeof (CLangDebuggerEvent.DetachClient).GUID, OnDetachClient);
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (CLangDebuggerEvent.DetachClient)), OnDetachClient);
 
-      m_debuggerCallback.Add (typeof (CLangDebuggerEvent.StopClient).GUID, OnStopClient);
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (CLangDebuggerEvent.StopClient)), OnStopClient);
 
-      m_debuggerCallback.Add (typeof (CLangDebuggerEvent.ContinueClient).GUID, OnContinueClient);
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (CLangDebuggerEvent.ContinueClient)), OnContinueClient);
 
-      m_debuggerCallback.Add (typeof (CLangDebuggerEvent.TerminateClient).GUID, OnTerminateClient);
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (CLangDebuggerEvent.TerminateClient)), OnTerminateClient);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

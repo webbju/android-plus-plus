@@ -169,7 +169,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     [InheritGuid (typeof (IDebugProgramCreateEvent2))]
-    public sealed class ProgramCreate : AsynchronousDebugEvent, IDebugProgramCreateEvent2
+    public sealed class ProgramCreate : SynchronousDebugEvent, IDebugProgramCreateEvent2
     {
     }
 

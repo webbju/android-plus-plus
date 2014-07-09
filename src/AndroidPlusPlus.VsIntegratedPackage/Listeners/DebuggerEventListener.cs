@@ -8,6 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Debugger.Interop;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -33,9 +34,11 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
   interface DebuggerEventListenerInterface
   {
-    int OnSessionCreate (DebugEngine pEngine, DebuggeeProcess pProcess, DebuggeeProgram pProgram, DebuggeeThread pThread, IDebugEvent2 pEvent, uint dwAttrib);
+    int OnEngineCreate (DebugEngine pEngine, DebuggeeProcess pProcess, DebuggeeProgram pProgram, DebuggeeThread pThread, IDebugEvent2 pEvent, uint dwAttrib);
 
-    int OnSessionDestroy (DebugEngine pEngine, DebuggeeProcess pProcess, DebuggeeProgram pProgram, DebuggeeThread pThread, IDebugEvent2 pEvent, uint dwAttrib);
+    int OnProgramCreate (DebugEngine pEngine, DebuggeeProcess pProcess, DebuggeeProgram pProgram, DebuggeeThread pThread, IDebugEvent2 pEvent, uint dwAttrib);
+
+    int OnProgramDestroy (DebugEngine pEngine, DebuggeeProcess pProcess, DebuggeeProgram pProgram, DebuggeeThread pThread, IDebugEvent2 pEvent, uint dwAttrib);
   }
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -69,9 +72,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
       m_debuggerService = debuggerService;
 
-      m_debuggerService.AdviseDebuggerEvents (this, out m_debuggerServiceCookie);
+      LoggingUtils.RequireOk (m_debuggerService.AdviseDebuggerEvents (this, out m_debuggerServiceCookie));
 
-      m_debuggerService.AdviseDebugEventCallback (this);
+      LoggingUtils.RequireOk (m_debuggerService.AdviseDebugEventCallback (this));
 
       // 
       // Register required listener events and paired process function callbacks.
@@ -79,9 +82,11 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
       m_eventCallbacks = new Dictionary<Guid, DebuggerEventListenerDelegate> ();
 
-      m_eventCallbacks.Add (typeof(DebugEngineEvent.SessionCreate).GUID, OnSessionCreate);
+      m_eventCallbacks.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.EngineCreate)), OnEngineCreate);
 
-      m_eventCallbacks.Add (typeof (DebugEngineEvent.SessionDestroy).GUID, OnSessionDestroy);
+      m_eventCallbacks.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.ProgramCreate)), OnProgramCreate);
+
+      m_eventCallbacks.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.ProgramDestroy)), OnProgramDestroy);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -98,7 +103,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     {
       LoggingUtils.Print ("[DebuggerEventListener] OnModeChange: " + dbgmodeNew.ToString ());
 
-      return 0;
+      return VSConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -119,22 +124,35 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     public int Event (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
-      LoggingUtils.Print ("[DebuggerEventListener] Event: " + riidEvent.ToString ());
-
-      DebugEngine debugEngine = pEngine as DebugEngine;
-
-      DebuggeeProcess debugProcess = pProcess as DebuggeeProcess;
-
-      DebuggeeProgram debugProgram = pProgram as DebuggeeProgram;
-
-      DebuggeeThread debugThread = pThread as DebuggeeThread;
-
-      if (m_eventCallbacks.ContainsKey (riidEvent))
+      try
       {
-        m_eventCallbacks [riidEvent] (debugEngine, debugProcess, debugProgram, debugThread, pEvent, dwAttrib);
-      }
+        DebuggerEventListenerDelegate callback;
 
-      return 0;
+        LoggingUtils.Print ("[DebuggerEventListener] Event: " + riidEvent.ToString ());
+
+        if (!m_eventCallbacks.TryGetValue (riidEvent, out callback))
+        {
+          return DebugEngineConstants.E_NOTIMPL;
+        }
+
+        DebugEngine debugEngine = pEngine as DebugEngine;
+
+        DebuggeeProcess debugProcess = pProcess as DebuggeeProcess;
+
+        DebuggeeProgram debugProgram = pProgram as DebuggeeProgram;
+
+        DebuggeeThread debugThread = pThread as DebuggeeThread;
+
+        LoggingUtils.RequireOk (callback (debugEngine, debugProcess, debugProgram, debugThread, pEvent, dwAttrib));
+
+        return VSConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return VSConstants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -153,15 +171,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int OnSessionCreate (DebugEngine pEngine, DebuggeeProcess pProcess, DebuggeeProgram pProgram, DebuggeeThread pThread, IDebugEvent2 pEvent, uint dwAttrib)
+    public int OnEngineCreate (DebugEngine pEngine, DebuggeeProcess pProcess, DebuggeeProgram pProgram, DebuggeeThread pThread, IDebugEvent2 pEvent, uint dwAttrib)
     {
-      /*IDebugSessionEvent2 debugSessionEvent = (IDebugSessionEvent2)pEvent;
-
-      IDebugSession2 currentDebugSession;
-
-      debugSessionEvent.GetSession (out currentDebugSession);
-
-      debugSession.currentDebugSession = currentDebugSession;*/
+      LoggingUtils.PrintFunction ();
 
       throw new NotImplementedException ();
     }
@@ -170,8 +182,21 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int OnSessionDestroy (DebugEngine pEngine, DebuggeeProcess pProcess, DebuggeeProgram pProgram, DebuggeeThread pThread, IDebugEvent2 pEvent, uint dwAttrib)
+    public int OnProgramCreate (DebugEngine pEngine, DebuggeeProcess pProcess, DebuggeeProgram pProgram, DebuggeeThread pThread, IDebugEvent2 pEvent, uint dwAttrib)
     {
+      LoggingUtils.PrintFunction ();
+
+      throw new NotImplementedException ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public int OnProgramDestroy (DebugEngine pEngine, DebuggeeProcess pProcess, DebuggeeProgram pProgram, DebuggeeThread pThread, IDebugEvent2 pEvent, uint dwAttrib)
+    {
+      LoggingUtils.PrintFunction ();
+
       throw new NotImplementedException ();
     }
 

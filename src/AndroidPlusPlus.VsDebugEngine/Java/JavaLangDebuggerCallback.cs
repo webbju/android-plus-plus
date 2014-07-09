@@ -62,15 +62,15 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       m_debuggerCallback = new Dictionary<Guid, JavaLangDebuggerEventDelegate> ();
 
-      m_debuggerCallback.Add (typeof (JavaLangDebuggerEvent.AttachClient).GUID, OnAttachClient);
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (JavaLangDebuggerEvent.AttachClient)), OnAttachClient);
 
-      m_debuggerCallback.Add (typeof (JavaLangDebuggerEvent.DetachClient).GUID, OnDetachClient);
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (JavaLangDebuggerEvent.DetachClient)), OnDetachClient);
 
-      m_debuggerCallback.Add (typeof (JavaLangDebuggerEvent.StopClient).GUID, OnStopClient);
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (JavaLangDebuggerEvent.StopClient)), OnStopClient);
 
-      m_debuggerCallback.Add (typeof (JavaLangDebuggerEvent.ContinueClient).GUID, OnContinueClient);
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (JavaLangDebuggerEvent.ContinueClient)), OnContinueClient);
 
-      m_debuggerCallback.Add (typeof (JavaLangDebuggerEvent.TerminateClient).GUID, OnTerminateClient);
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (JavaLangDebuggerEvent.TerminateClient)), OnTerminateClient);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -85,14 +85,28 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      JavaLangDebuggerEventDelegate eventCallback;
-
-      if (m_debuggerCallback.TryGetValue (riidEvent, out eventCallback))
+      try
       {
-        return eventCallback (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
-      }
+        JavaLangDebuggerEventDelegate eventCallback;
 
-      return DebugEngineConstants.E_FAIL;
+        LoggingUtils.Print ("[JavaLangDebuggerCallback] Event: " + riidEvent.ToString ());
+
+        if (!m_debuggerCallback.TryGetValue (riidEvent, out eventCallback))
+        {
+          return DebugEngineConstants.E_NOTIMPL;
+        }
+
+        LoggingUtils.RequireOk (eventCallback (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib));
+
+        return DebugEngineConstants.S_OK;
+
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return DebugEngineConstants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

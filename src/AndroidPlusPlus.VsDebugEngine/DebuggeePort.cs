@@ -406,7 +406,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      pIID = typeof (IDebugPortEvents2).GUID;
+      pIID = ComUtils.GuidOf (typeof (IDebugPortEvents2));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

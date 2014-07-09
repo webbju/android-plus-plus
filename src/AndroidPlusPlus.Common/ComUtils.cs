@@ -45,21 +45,21 @@ namespace AndroidPlusPlus.Common
 
       Guid result = Guid.Empty;
 
-      object [] attrs = t.GetCustomAttributes (typeof (InheritGuidAttribute), false);
+      object [] attrs = t.GetCustomAttributes (typeof (GuidAttribute), false);
 
       if (attrs.Length > 0)
       {
-        result = GuidOf (((InheritGuidAttribute)attrs [0]).InheritFrom);
+        return new Guid (((GuidAttribute)attrs [0]).Value);
       }
 
-      attrs = t.GetCustomAttributes (typeof (GuidAttribute), false);
+      attrs = t.GetCustomAttributes (typeof (InheritGuidAttribute), false);
 
       if (attrs.Length > 0)
       {
-        result = new Guid (((GuidAttribute)attrs [0]).Value);
+        return GuidOf (((InheritGuidAttribute)attrs [0]).InheritFrom);
       }
 
-      return result;
+      return t.GUID;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -52,7 +52,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private readonly IDebugEventCallback2 m_debugEventCallback;
+    private readonly IDebugEventCallback2 m_ad7EventCallback;
 
     private readonly CLangDebuggerCallback m_cLangEventCallback;
 
@@ -60,11 +60,11 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public DebugEngineCallback (DebugEngine engine, IDebugEventCallback2 debugEventCallback)
+    public DebugEngineCallback (DebugEngine engine, IDebugEventCallback2 ad7EventCallback)
     {
       Engine = engine;
 
-      m_debugEventCallback = debugEventCallback;
+      m_ad7EventCallback = ad7EventCallback;
 
       m_cLangEventCallback = new CLangDebuggerCallback ();
     }
@@ -87,20 +87,20 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int Event (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
-      // 
-      // Custom event handler.
-      // 
+      LoggingUtils.Print ("[DebugEngineCallback] Event: " + riidEvent.ToString ());
 
-      LoggingUtils.PrintFunction ();
+      // 
+      // 
+      // 
 
       int handle = m_cLangEventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
 
-      if (handle == DebugEngineConstants.E_NOTIMPL)
+      /*if (handle != DebugEngineConstants.E_NOTIMPL)
       {
-        handle = m_debugEventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
-      }
+        return handle;
+      }*/
 
-      LoggingUtils.RequireOk (handle);
+      handle = m_ad7EventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
 
       // 
       // (Managed Code) It is strongly advised that ReleaseComObject be invoked on the various interfaces that are passed to IDebugEventCallback2::Event.
