@@ -31,7 +31,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private readonly CLangDebugger m_debugger;
 
-    //private Dictionary<string, MiVariable> m_gdbVariables;
+    private Dictionary<string, MiVariable> m_trackedVariables;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -41,7 +41,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       m_debugger = debugger;
 
-      //m_propertyVariables = new Dictionary<CLangDebuggeeProperty, MiVariable> ();
+      m_trackedVariables = new Dictionary<string, MiVariable> ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -50,28 +50,21 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public CLangDebuggeeProperty CreatePropertyFromVariable (CLangDebuggeeStackFrame stackFrame, MiVariable variable)
     {
-      CLangDebuggeeProperty prop = new CLangDebuggeeProperty (m_debugger, stackFrame, variable);
-
-      /*if (variable.HasChildren && (variable.Children.Count > 0))
+      if (string.IsNullOrEmpty (variable.Expression))
       {
-        List<CLangDebuggeeProperty> childProperties = new List<CLangDebuggeeProperty> ();
+        // Child 'public', 'private', 'protected' properties have a zero-length expression. Skip these.
 
-        foreach (MiVariable child in variable.Children.Values)
-        {
-          childProperties.Add (CreatePropertyFromVariable (stackFrame, child));
-        }
+        return null;
+      }
 
-        prop.AddChildren (childProperties.ToArray ());
-      }*/
-
-      return prop;
+      return new CLangDebuggeeProperty (m_debugger, stackFrame, variable);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public MiVariable CreateVariableFromExpression (CLangDebuggeeStackFrame stackFrame, string expression, int childProbeDepth = 2)
+    public MiVariable CreateVariableFromExpression (CLangDebuggeeStackFrame stackFrame, string expression)
     {
       IDebugThread2 stackThread;
 
@@ -88,14 +81,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         return null;
       }
 
-      MiVariable variable = new MiVariable (expression, resultRecord.Results);
-
-      if ((childProbeDepth > 0) && (variable.HasChildren))
-      {
-        CreateChildVariables (variable, childProbeDepth);
-      }
-
-      return variable;
+      return new MiVariable (expression, resultRecord.Results);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -119,15 +105,28 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           for (int i = 0; i < childrenList.Count; ++i)
           {
+            MiVariable childVariable = null;
+
             MiResultValueTuple childTuple = childrenList [i] as MiResultValueTuple;
 
             string variableName = childTuple ["name"] [0].GetString ();
 
-            string variableExpression = childTuple ["exp"] [0].GetString ();
+            if (childTuple.HasField ("exp"))
+            {
+              string variableExpression = childTuple ["exp"] [0].GetString ();
 
-            MiVariable childVariable = new MiVariable (variableName, variableExpression);
+              if (!string.IsNullOrEmpty (variableExpression))
+              {
+                childVariable = new MiVariable (variableName, variableExpression);
 
-            childVariable.Populate (childTuple.Values);
+                childVariable.Populate (childTuple.Values);
+              }
+            }
+
+            if (childVariable == null)
+            {
+              childVariable = new MiVariable (variableName, childTuple.Values);
+            }
 
             if (childVariable.HasChildren)
             {

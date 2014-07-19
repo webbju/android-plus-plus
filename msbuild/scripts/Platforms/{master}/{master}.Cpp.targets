@@ -114,7 +114,8 @@
     </ItemGroup>
 
     <!-- 
-      Compile each of the identified PCH dependencies first, as these will likely be used in the sources below.
+      We differ slightly from Win32 targets here due to CL compiling both PCH and OBJ at the same time.
+      To mimic this we need to first process the PCH export, and then follow this with actual OBJ compilation.
     -->
 
     <GccCompile
@@ -139,7 +140,7 @@
     </GccCompile>
 
     <!--
-      Compile all sources (even those flagged to 'create' PCH output).
+      Compile all sources, including those flagged to 'Create' PCH files (Reasoning above). 
     -->
 
     <GccCompile
@@ -331,12 +332,14 @@
       Overwrite="false"
     />
 
+    <!--
     <WriteLinesToFile 
       Condition="'$(GdbDebugFileDirectories)' != ''" 
       File="$(GdbSetupExecutionScript)"
       Lines="set solib-search-path $(GdbDebugFileDirectories);set debug-file-directory $(GdbDebugFileDirectories);"
       Overwrite="false"
     />
+    -->
 
     <Exec 
       Condition="('@(LinkOutputFiles)' != '' and '$(_LinkStripSymbolsRequired)' == 'true' and Exists('$(GdbSetupExecutionScript)'))"

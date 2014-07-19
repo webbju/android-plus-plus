@@ -139,7 +139,9 @@ namespace AndroidPlusPlus.Common
 
       m_exitMutex = new ManualResetEvent (false);
 
-      Process = Process.Start (StartInfo);
+      Process = new Process ();
+
+      Process.StartInfo = StartInfo;
 
       Process.OutputDataReceived += new DataReceivedEventHandler (ProcessStdout);
 
@@ -147,11 +149,18 @@ namespace AndroidPlusPlus.Common
 
       Process.Exited += new EventHandler (ProcessExited);
 
+      Process.EnableRaisingEvents = true;
+
+      if (!Process.Start ())
+      {
+        m_exitMutex.Set ();
+
+        throw new InvalidOperationException ("Could not spawn async process - " + Process.StartInfo.FileName);
+      }
+
       Process.BeginOutputReadLine ();
 
       Process.BeginErrorReadLine ();
-
-      Process.EnableRaisingEvents = true;
 
       m_stdInputWriter = TextWriter.Synchronized (Process.StandardInput);
     }

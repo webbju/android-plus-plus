@@ -46,6 +46,15 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    protected override int TrackedExecuteTool (string pathToTool, string responseFileCommands, string commandLineCommands)
+    {
+
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     protected override void TrackedExecuteToolOutput (KeyValuePair<string, List<ITaskItem>> commandAndSourceFiles, string singleLine)
     {
       if (ToolExe.StartsWith ("clang"))
@@ -107,11 +116,13 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
       {
         if (!string.IsNullOrWhiteSpace (source.GetMetadata ("ForcedIncludeFiles")))
         {
-          string [] forcedIncludeFiles = source.GetMetadata ("ForcedIncludeFiles").Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-
-          foreach (string file in forcedIncludeFiles)
+          try
           {
-            try
+            string [] forcedIncludeFiles = source.GetMetadata ("ForcedIncludeFiles").Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+
+            List<ITaskItem> forcedIncludeItems = new List<ITaskItem> ();
+
+            foreach (string file in forcedIncludeFiles)
             {
               // 
               // Clang supports including pre-compiled headers via '-include' but they are referenced without ".pch". Fix this.
@@ -133,12 +144,14 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
                 throw new FileNotFoundException ("Could not find task specific dependency: " + fileFullPath);
               }
 
-              trackedFileManager.AddDependencyForSources (fileFullPath, new ITaskItem [] { source });
+              forcedIncludeItems.Add (new TaskItem (fileFullPath));
             }
-            catch (System.Exception e)
-            {
-              Log.LogWarningFromException (e, true);
-            }
+
+            trackedFileManager.AddDependencyForSources (forcedIncludeItems.ToArray (), new ITaskItem [] { source });
+          }
+          catch (System.Exception e)
+          {
+            Log.LogWarningFromException (e, true);
           }
         }
       }

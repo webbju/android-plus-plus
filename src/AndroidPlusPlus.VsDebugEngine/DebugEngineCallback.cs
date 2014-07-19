@@ -95,10 +95,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int handle = m_cLangEventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
 
-      /*if (handle != DebugEngineConstants.E_NOTIMPL)
+      if (handle != DebugEngineConstants.E_NOTIMPL)
       {
         return handle;
-      }*/
+      }
 
       handle = m_ad7EventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
 

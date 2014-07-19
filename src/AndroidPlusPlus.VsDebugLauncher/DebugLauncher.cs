@@ -89,7 +89,23 @@ namespace AndroidPlusPlus.VsDebugLauncher
     {
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+#if VS2010
+      DebugLaunchSettings nonDebuglaunchSettings = (DebugLaunchSettings) StartWithDebugging (launchOptionsFlags, projectProperties, startupProject);
+#else
+      DebugLaunchSettings nonDebuglaunchSettings = (DebugLaunchSettings) StartWithDebugging (launchOptionsFlags, projectProperties);
+#endif
+
+      nonDebuglaunchSettings.LaunchOptions |= DebugLaunchOptions.NoDebug;
+
+      LaunchConfiguration launchConfiguration = new LaunchConfiguration ();
+
+      launchConfiguration.FromString (nonDebuglaunchSettings.Options);
+
+      launchConfiguration ["DebugMode"] = "false"; // launch without waiting for a JDB instance.
+
+      nonDebuglaunchSettings.Options = launchConfiguration.ToString ();
+
+      return nonDebuglaunchSettings;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -114,14 +130,14 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       if (connectedDevices.Length == 0)
       {
-        throw new InvalidOperationException ("No device(s) connected.");
+        throw new InvalidOperationException ("No devices found/connected.");
       }
 
       bool shouldAttach = false;
 
       AndroidDevice debuggingDevice = connectedDevices [0];
 
-#if FALSE
+#if false
       AndroidProcess [] debuggingDeviceProcesses = debuggingDevice.GetProcesses ();
 
       foreach (AndroidProcess process in debuggingDeviceProcesses)
@@ -145,7 +161,11 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       debugLaunchSettings.LaunchOptions = ((DebugLaunchOptions)launchOptionsFlags) | DebugLaunchOptions.Silent;
 
+#if VS2010
       LaunchConfiguration launchConfig = GetLaunchConfigurationFromProjectProperties (projectProperties, startupProject);
+#else
+      LaunchConfiguration launchConfig = GetLaunchConfigurationFromProjectProperties (projectProperties);
+#endif
 
       debugLaunchSettings.Options = launchConfig.ToString ();
 
@@ -169,7 +189,11 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#if VS2010
     private static LaunchConfiguration GetLaunchConfigurationFromProjectProperties (Dictionary<string, string> projectProperties, Project startupProject)
+#else
+    private static LaunchConfiguration GetLaunchConfigurationFromProjectProperties (Dictionary<string, string> projectProperties)
+#endif
     {
       // 
       // Retrieve standard project macro values, and determine the preferred debugger configuration.
@@ -228,35 +252,14 @@ namespace AndroidPlusPlus.VsDebugLauncher
       }
 
       // 
-      // Validate project properties.
+      // Ensure we can actually find the target APK.
       // 
-
-      string androidSdkRoot = EvaluateProjectProperty (projectProperties, "ConfigurationGeneral", "AndroidSdkRoot");
-
-      string androidSdkBuildToolsVersion = EvaluateProjectProperty (projectProperties, "ConfigurationGeneral", "AndroidSdkBuildToolsVersion");
-
-      if (string.IsNullOrWhiteSpace (androidSdkRoot))
-      {
-        throw new DirectoryNotFoundException ("'AndroidSdkRoot' property is empty.");
-      }
-
-      if (!Directory.Exists (androidSdkRoot))
-      {
-        throw new DirectoryNotFoundException ("'AndroidSdkRoot' property references a directory which does not exist. (" + androidSdkRoot + ")");
-      }
-
-      string androidSdkBuildToolsPath = Path.Combine (androidSdkRoot, "build-tools", androidSdkBuildToolsVersion);
-
-      if (!Directory.Exists (androidSdkBuildToolsPath))
-      {
-        throw new DirectoryNotFoundException ("Could not locate Android SDK build-tools. Expected " + androidSdkBuildToolsPath);
-      }
 
       if (string.IsNullOrEmpty (debuggerTargetApk))
       {
         throw new FileNotFoundException ("No target APK path provided.");
       }
-      else
+      else if (!File.Exists (debuggerTargetApk))
       {
         if (!Path.IsPathRooted (debuggerTargetApk))
         {
@@ -275,6 +278,30 @@ namespace AndroidPlusPlus.VsDebugLauncher
       }
 
       // 
+      // Find the selected Android SDK (and associated build-tools) deployment.
+      // 
+
+      string androidSdkRoot = EvaluateProjectProperty (projectProperties, "ConfigurationGeneral", "AndroidSdkRoot");
+
+      if (string.IsNullOrWhiteSpace (androidSdkRoot))
+      {
+        throw new DirectoryNotFoundException ("Could not locate Android SDK. Specified property is empty.");
+      }
+      else if (!Directory.Exists (androidSdkRoot))
+      {
+        throw new DirectoryNotFoundException ("Could not locate Android SDK. Property references a directory which does not exist (" + androidSdkRoot + ").");
+      }
+
+      string androidSdkBuildToolsVersion = EvaluateProjectProperty (projectProperties, "ConfigurationGeneral", "AndroidSdkBuildToolsVersion");
+
+      string androidSdkBuildToolsPath = Path.Combine (androidSdkRoot, "build-tools", androidSdkBuildToolsVersion);
+
+      if (!Directory.Exists (androidSdkBuildToolsPath))
+      {
+        throw new DirectoryNotFoundException (string.Format ("Could not locate Android SDK build-tools (v{0}). Expected: {1}", androidSdkBuildToolsVersion, androidSdkBuildToolsPath));
+      }
+
+      // 
       // Spawn a AAPT.exe instance to gain some extra information about the APK we are trying to load.
       // 
 
@@ -284,37 +311,40 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       using (SyncRedirectProcess getApkDetails = new SyncRedirectProcess (Path.Combine (androidSdkBuildToolsPath, "aapt.exe"), "dump --values badging " + PathUtils.SantiseWindowsPath (debuggerTargetApk)))
       {
-        getApkDetails.StartAndWaitForExit ();
+        int exitCode = getApkDetails.StartAndWaitForExit ();
 
-        string [] apkDetails = getApkDetails.StandardOutput.Replace ("\r", "").Split (new char [] { '\n' });
-
-        foreach (string singleLine in apkDetails)
+        if (exitCode == 0)
         {
-          if (singleLine.StartsWith ("package: "))
+          string [] apkDetails = getApkDetails.StandardOutput.Replace ("\r", "").Split (new char [] { '\n' });
+
+          foreach (string singleLine in apkDetails)
           {
-            // 
-            // Retrieve package name from format: "package: name='com.example.hellogdbserver' versionCode='1' versionName='1.0'"
-            // 
-
-            string [] packageData = singleLine.Substring ("package: ".Length).Split (' ');
-
-            foreach (string data in packageData)
+            if (singleLine.StartsWith ("package: "))
             {
-              if (data.StartsWith ("name="))
+              // 
+              // Retrieve package name from format: "package: name='com.example.hellogdbserver' versionCode='1' versionName='1.0'"
+              // 
+
+              string [] packageData = singleLine.Substring ("package: ".Length).Split (' ');
+
+              foreach (string data in packageData)
               {
-                applicationPackageName = data.Substring ("name=".Length).Trim ('\'');
+                if (data.StartsWith ("name="))
+                {
+                  applicationPackageName = data.Substring ("name=".Length).Trim ('\'');
+                }
               }
             }
-          }
-          else if (singleLine.StartsWith ("launchable-activity: "))
-          {
-            string [] launchActivityData = singleLine.Substring ("launchable-activity: ".Length).Split (' ');
-
-            foreach (string data in launchActivityData)
+            else if (singleLine.StartsWith ("launchable-activity: "))
             {
-              if (data.StartsWith ("name="))
+              string [] launchActivityData = singleLine.Substring ("launchable-activity: ".Length).Split (' ');
+
+              foreach (string data in launchActivityData)
               {
-                applicationLaunchActivity = data.Substring ("name=".Length).Trim ('\'');
+                if (data.StartsWith ("name="))
+                {
+                  applicationLaunchActivity = data.Substring ("name=".Length).Trim ('\'');
+                }
               }
             }
           }

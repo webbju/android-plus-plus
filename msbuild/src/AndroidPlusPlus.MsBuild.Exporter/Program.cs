@@ -32,11 +32,11 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
     private static bool s_killMsBuildInstances = false;
 
-    private static List<string> s_templateDirs = new List<string> ();
+    private static HashSet<string> s_templateDirs = new HashSet<string> ();
 
-    private static List<string> s_vsVersions = new List<string> ();
+    private static HashSet<string> s_vsVersions = new HashSet<string> ();
 
-    private static List<string> s_exportDirectories = new List<string> ();
+    private static HashSet<string> s_exportDirectories = new HashSet<string> ();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -59,11 +59,126 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
         textSubstitution.Add ("{master-verbose}", "AndroidPlusPlus");
 
+        // 
+        // Decide whether to validate MSBuild installed directories if the user specified particular VS version(s).
+        // 
+
+        bool validateMsBuildInstallations = true;
+
+        if (s_vsVersions.Contains ("all"))
+        {
+          if (!s_vsVersions.Contains ("2010"))
+          {
+            s_vsVersions.Add ("2010");
+          }
+
+          if (!s_vsVersions.Contains ("2012"))
+          {
+            s_vsVersions.Add ("2012");
+          }
+
+          if (!s_vsVersions.Contains ("2013"))
+          {
+            s_vsVersions.Add ("2013");
+          }
+
+          validateMsBuildInstallations = false;
+        }
+
+        // 
+        // Accumulate additional export locations for each requested MSBuild directory/version.
+        // 
+
+        foreach (string version in s_vsVersions)
+        {
+          switch (version)
+          {
+            case "2010":
+            {
+              string msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\";
+
+              if (!Directory.Exists (msBuildInstallationDir))
+              {
+                msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\";
+              }
+
+              if (Directory.Exists (msBuildInstallationDir))
+              {
+                if (!s_exportDirectories.Contains (msBuildInstallationDir))
+                {
+                  s_exportDirectories.Add (msBuildInstallationDir);
+                }
+              }
+              else if (validateMsBuildInstallations)
+              {
+                throw new DirectoryNotFoundException ("Could not locate required MSBuild platforms directory. This should have been installed with VS2010. Tried: " + msBuildInstallationDir);
+              }
+
+              break;
+            }
+
+            case "2012":
+            {
+              string msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\V110\";
+
+              if (!Directory.Exists (msBuildInstallationDir))
+              {
+                msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\V110\";
+              }
+
+              if (Directory.Exists (msBuildInstallationDir))
+              {
+                if (!s_exportDirectories.Contains (msBuildInstallationDir))
+                {
+                  s_exportDirectories.Add (msBuildInstallationDir);
+                }
+              }
+              else if (validateMsBuildInstallations)
+              {
+                throw new DirectoryNotFoundException ("Could not locate required MSBuild platforms directory. This should have been installed with VS2012. Tried: " + msBuildInstallationDir);
+              }
+
+              break;
+            }
+
+            case "2013":
+            {
+              string msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\V120\";
+
+              if (!Directory.Exists (msBuildInstallationDir))
+              {
+                msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\V120\";
+              }
+
+              if (Directory.Exists (msBuildInstallationDir))
+              {
+                if (!s_exportDirectories.Contains (msBuildInstallationDir))
+                {
+                  s_exportDirectories.Add (msBuildInstallationDir);
+                }
+              }
+              else if (validateMsBuildInstallations)
+              {
+                throw new DirectoryNotFoundException ("Could not locate required MSBuild platforms directory. This should have been installed with VS2013. Tried: " + msBuildInstallationDir);
+              }
+
+              break;
+            }
+          }
+        }
+
+        // 
+        // Install/Uninstall scripts for each specified VS version.
+        // 
+
         foreach (string version in s_vsVersions)
         {
           UninstallMsBuildTemplates (version, ref textSubstitution);
 
-          ExportMsBuildTemplateForVersion (version, ref textSubstitution);
+          if (!s_uninstall)
+          {
+            ExportMsBuildTemplateForVersion (version, ref textSubstitution);
+          }
         }
       }
       catch (Exception e)
@@ -138,108 +253,30 @@ namespace AndroidPlusPlus.MsBuild.Exporter
               Directory.CreateDirectory (exportDir);
             }
 
-            s_exportDirectories.Add (exportDir);
+            if (!s_exportDirectories.Contains (exportDir))
+            {
+              s_exportDirectories.Add (exportDir);
+            }
 
             break;
           }
 
           case "--vs-version":
           {
-            bool validateMsBuildInstallations = true;
-
             string [] versions = args [++i].Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-
-            if (versions.Length == 0)
-            {
-              throw new ArgumentException ("--vs-version not defined correctly. Expected: 'all', '2010', '2012' or '2013'.");
-            }
-            else if (versions.Length == 1)
-            {
-              if (versions [0].Equals ("all"))
-              {
-                versions = new string [] { "2010", "2012", "2013" };
-
-                validateMsBuildInstallations = false;
-              }
-            }
 
             foreach (string version in versions)
             {
               switch (version)
               {
+                case "all":
                 case "2010":
-                {
-                  string msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\";
-
-                  if (!Directory.Exists (msBuildInstallationDir))
-                  {
-                    msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\";
-                  }
-
-                  if (Directory.Exists (msBuildInstallationDir))
-                  {
-                    s_vsVersions.Add (version);
-
-                    if (!s_exportDirectories.Contains (msBuildInstallationDir))
-                    {
-                      s_exportDirectories.Add (msBuildInstallationDir);
-                    }
-                  }
-                  else if (validateMsBuildInstallations)
-                  {
-                    throw new DirectoryNotFoundException ("Could not locate required MSBuild platforms directory. This should have been installed with VS2010. Tried: " + msBuildInstallationDir);
-                  }
-
-                  break;
-                }
-
                 case "2012":
-                {
-                  string msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\V110\";
-
-                  if (!Directory.Exists (msBuildInstallationDir))
-                  {
-                    msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\V110\";
-                  }
-
-                  if (Directory.Exists (msBuildInstallationDir))
-                  {
-                    s_vsVersions.Add (version);
-
-                    if (!s_exportDirectories.Contains (msBuildInstallationDir))
-                    {
-                      s_exportDirectories.Add (msBuildInstallationDir);
-                    }
-                  }
-                  else if (validateMsBuildInstallations)
-                  {
-                    throw new DirectoryNotFoundException ("Could not locate required MSBuild platforms directory. This should have been installed with VS2012. Tried: " + msBuildInstallationDir);
-                  }
-
-                  break;
-                }
-
                 case "2013":
                 {
-                  string msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\V120\";
-
-                  if (!Directory.Exists (msBuildInstallationDir))
-                  {
-                    msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\V120\";
-                  }
-
-                  if (Directory.Exists (msBuildInstallationDir))
+                  if (!s_vsVersions.Contains (version))
                   {
                     s_vsVersions.Add (version);
-
-                    if (!s_exportDirectories.Contains (msBuildInstallationDir))
-                    {
-                      s_exportDirectories.Add (msBuildInstallationDir);
-                    }
-                  }
-                  else if (validateMsBuildInstallations)
-                  {
-                    throw new DirectoryNotFoundException ("Could not locate required MSBuild platforms directory. This should have been installed with VS2013. Tried: " + msBuildInstallationDir);
                   }
 
                   break;
@@ -272,16 +309,11 @@ namespace AndroidPlusPlus.MsBuild.Exporter
         {
           throw new ArgumentException ("Please only specify a single target --template-dir.");
         }
-
-        if (s_exportDirectories.Count () == 0)
-        {
-          throw new ArgumentException ("--export-dir not specified.");
-        }
       }
 
       if (s_vsVersions.Count () == 0)
       {
-        throw new ArgumentException ("--vs-version not specified.");
+        throw new ArgumentException ("--vs-version not defined correctly. Expected: 'all', '2010', '2012' or '2013'.");
       }
     }
 

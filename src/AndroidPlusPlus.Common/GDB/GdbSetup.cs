@@ -33,13 +33,18 @@ namespace AndroidPlusPlus.Common
 
       Process = process;
 
-      Socket = "debug-socket";
-
       Host = "localhost";
 
       Port = 5039;
 
-      CacheDirectory = string.Format (@"{0}\Android++\Cache\{1}\{2}", Environment.GetFolderPath (Environment.SpecialFolder.ApplicationData), Process.HostDevice.ID, Process.Name);
+      if (!Process.HostDevice.IsOverWiFi)
+      {
+        Socket = "debug-socket";
+      }
+
+      string deviceDir = Process.HostDevice.ID.Replace (':', '-');
+
+      CacheDirectory = string.Format (@"{0}\Android++\Cache\{1}\{2}", Environment.GetFolderPath (Environment.SpecialFolder.ApplicationData), deviceDir, Process.Name);
 
       Directory.CreateDirectory (CacheDirectory);
 
@@ -113,7 +118,7 @@ namespace AndroidPlusPlus.Common
 
       using (SyncRedirectProcess adbPortForward = AndroidAdb.AdbCommand (Process.HostDevice, "forward", commandLineArgumentsBuilder.ToString ()))
       {
-        adbPortForward.StartAndWaitForExit (1000);
+        adbPortForward.StartAndWaitForExit ();
       }
     }
 
@@ -152,6 +157,8 @@ namespace AndroidPlusPlus.Common
       string [] remoteBinaries = 
       {
         "/system/bin/app_process",
+        "/system/bin/app_process32",
+        "/system/bin/app_process64",
         "/system/bin/linker",
         "/system/lib/libandroid.so",
         "/system/lib/libandroid_runtime.so",
@@ -174,14 +181,25 @@ namespace AndroidPlusPlus.Common
 
         if (File.Exists (cahedBinaryFullPath))
         {
+          deviceBinaries.Add (cahedBinaryFullPath);
+
           LoggingUtils.Print (string.Format ("[GdbSetup] Using cached {0}.", binary));
         }
-        else if (Process.HostDevice.Pull (binary, cachedBinary))
+        else
         {
-          LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", binary));
-        }
+          try
+          {
+            Process.HostDevice.Pull (binary, cachedBinary);
 
-        deviceBinaries.Add (cahedBinaryFullPath);
+            deviceBinaries.Add (cahedBinaryFullPath);
+
+            LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", binary));
+          }
+          catch (Exception e)
+          {
+            LoggingUtils.HandleException (e);
+          }
+        }
       }
 
       return deviceBinaries.ToArray ();
@@ -200,17 +218,23 @@ namespace AndroidPlusPlus.Common
 
       LoggingUtils.PrintFunction ();
 
-      string libraryCachePath = Path.Combine (CacheSysRoot, Process.InternalCacheDirectory.Substring (1), "lib");
-
-      Directory.CreateDirectory (libraryCachePath);
-
-      if (Process.HostDevice.Pull (string.Format ("{0}/lib/", Process.InternalCacheDirectory), libraryCachePath))
+      try
       {
+        string libraryCachePath = Path.Combine (CacheSysRoot, Process.InternalCacheDirectory.Substring (1), "lib");
+
+        Directory.CreateDirectory (libraryCachePath);
+
+        Process.HostDevice.Pull (string.Format ("{0}/lib/", Process.InternalCacheDirectory), libraryCachePath);
+
         LoggingUtils.Print (string.Format ("[GdbSetup] Pulled application libraries from device/emulator."));
 
         string [] additionalLibraries = Directory.GetFiles (libraryCachePath, "lib*.so", SearchOption.AllDirectories);
 
         return additionalLibraries;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
       }
 
       return new string [] {};

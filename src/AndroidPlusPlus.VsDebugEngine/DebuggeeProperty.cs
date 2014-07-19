@@ -359,7 +359,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE) != 0)
         {
-#if FALSE
+#if false
           if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND) != 0)
           {
           }

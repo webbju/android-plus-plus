@@ -16,7 +16,7 @@
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidApk.targets" />
 
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidApkSign.targets" />
-
+  
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -29,16 +29,9 @@
 
   <PropertyGroup>
 
-    <BuildLibTargets Condition="'$(ConfigurationType)'!='Utility'">
-      $(BuildLibTargets);
-      AndroidJava;
-    </BuildLibTargets>
+    <BuildLibTargets Condition="'$(ConfigurationType)'!='Utility'">$(BuildLibTargets);AndroidJava;</BuildLibTargets>
 
-    <BuildLinkTargets Condition="'$(ConfigurationType)'!='Utility'">
-      $(BuildLinkTargets);
-      AndroidApk;
-      AndroidApkSign;
-    </BuildLinkTargets>
+    <BuildLinkTargets Condition="'$(ConfigurationType)'!='Utility'">$(BuildLinkTargets);AndroidApk;AndroidApkSign;</BuildLinkTargets>
 
     <AfterBuildCompileTargets Condition="'$(ConfigurationType)'!='Utility'">$(AfterBuildCompileTargets)</AfterBuildCompileTargets>
 

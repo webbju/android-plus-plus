@@ -130,6 +130,7 @@
     <Compile Include="CommandTable.cs" />
     <Compile Include="Guids.cs" />
     <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="Interface\DebugOutputWindow.cs" />
     <Compile Include="Package.cs" />
     <Compile Include="ProjectFactory.cs" />
     <Compile Include="Interface\GdbConsoleWindow.cs" />

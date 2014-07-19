@@ -101,13 +101,19 @@
       <AndroidApkSign Include="@(AndroidApkSignSignedOutputFile)"  />
     </ItemGroup>
 
+    <PropertyGroup>
+      <!-- Evaluate tool path because Google keep tinkering. -->
+      <_ZipAlignToolRoot>$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)</_ZipAlignToolRoot>
+      <_ZipAlignToolRoot Condition="!Exists('$(_ZipAlignToolRoot)\zipalign.exe')">$(AndroidSdkRoot)\tools</_ZipAlignToolRoot>
+    </PropertyGroup>
+    
     <AndroidZipAlign
       BuildingInIDE="$(BuildingInsideVisualStudio)"
       Condition="'@(AndroidApkSign)' != ''"
       Sources="@(AndroidApkSign)"
       TrackerLogDirectory="%(AndroidApkSign.TrackerLogDirectory)"
       TrackFileAccess="$(TrackFileAccess)"
-      ToolPath="$(AndroidSdkRoot)\tools"
+      ToolPath="$(_ZipAlignToolRoot)"
       ToolExe="zipalign.exe"
       OutputCommandLine="%(AndroidApkSign.OutputCommandLine)"
       AlignedZip="%(AndroidApkSign.SignedAlignedOutputFile)"

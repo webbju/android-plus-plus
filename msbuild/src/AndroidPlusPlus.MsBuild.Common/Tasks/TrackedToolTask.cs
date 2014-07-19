@@ -39,8 +39,6 @@ namespace AndroidPlusPlus.MsBuild.Common
 
     protected Dictionary<string, List<ITaskItem>> m_commandBuffer = new Dictionary<string, List<ITaskItem>> ();
 
-    protected List<Process> m_trackedProcesses = new List<Process> ();
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -111,26 +109,6 @@ namespace AndroidPlusPlus.MsBuild.Common
       try
       {
         ToolCanceled.Set ();
-
-        lock (m_trackedProcesses)
-        {
-          foreach (Process process in m_trackedProcesses)
-          {
-            try
-            {
-              if (!process.HasExited)
-              {
-                process.Kill ();
-              }
-            }
-            catch (Exception e)
-            {
-              Log.LogWarningFromException (e, true);
-            }
-          }
-        }
-
-        m_trackedProcesses.Clear ();
       }
       catch (Exception e)
       {
@@ -144,6 +122,8 @@ namespace AndroidPlusPlus.MsBuild.Common
 
     public override bool Execute ()
     {
+      //System.Diagnostics.Debugger.Launch ();
+
       try
       {
         if (Setup ())
@@ -267,7 +247,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
       long numberOfActiveThreads = 0;
 
-      Log.LogMessageFromText (string.Format ("[{0}] --> Preparing to compile with {1} thread(s).", ToolName, numberOfThreads), MessageImportance.Low);
+      Log.LogMessageFromText (string.Format ("[{0}] --> Preparing to execute with {1} thread(s).", ToolName, numberOfThreads), MessageImportance.Low);
 
       // 
       // Concurrency of multiple compilation jobs is achieved by creating an OS semaphore for restricting instances (across multiple MSBuild agents).
@@ -305,7 +285,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
             if (!gotSemaphore)
             {
-              Thread.Sleep (10);
+              Thread.Yield ();
             }
           }
 
@@ -324,7 +304,7 @@ namespace AndroidPlusPlus.MsBuild.Common
               // Thread body. Generate required command line and launch tool.
               // 
 
-              int threadExitCode = 0;
+              int threadExitCode = -1;
 
               KeyValuePair<string, List<ITaskItem>> threadKeyPair = (KeyValuePair<string, List<ITaskItem>>) arg;
 
@@ -392,49 +372,70 @@ namespace AndroidPlusPlus.MsBuild.Common
 
                 using (Process trackedProcess = new Process ())
                 {
-                  trackedProcess.StartInfo = base.GetProcessStartInfo (pathToTool, bufferedCommandWithFiles.ToString (), responseFileCommands ?? string.Empty);
-
-                  trackedProcess.StartInfo.UseShellExecute = false;
-
-                  trackedProcess.StartInfo.RedirectStandardOutput = true;
-
-                  trackedProcess.StartInfo.RedirectStandardError = true;
-
-                  trackedProcess.OutputDataReceived += (sender, e) =>
+                  using (ManualResetEvent trackedProcessSignal = new ManualResetEvent (false))
                   {
-                    if (!string.IsNullOrWhiteSpace (e.Data))
-                    {
-                      TrackedExecuteToolOutput (threadKeyPair, e.Data);
-                    }
-                  };
+                    trackedProcess.StartInfo = base.GetProcessStartInfo (pathToTool, bufferedCommandWithFiles.ToString (), responseFileCommands ?? string.Empty);
 
-                  trackedProcess.ErrorDataReceived += (sender, e) =>
-                  {
-                    if (!string.IsNullOrWhiteSpace (e.Data))
-                    {
-                      TrackedExecuteToolOutput (threadKeyPair, e.Data);
-                    }
-                  };
+                    trackedProcess.StartInfo.UseShellExecute = false;
 
-                  if (trackedProcess.Start ())
-                  {
-                    lock (m_trackedProcesses)
+                    trackedProcess.StartInfo.RedirectStandardOutput = true;
+
+                    trackedProcess.StartInfo.RedirectStandardError = true;
+
+                    trackedProcess.OutputDataReceived += delegate (object sender, DataReceivedEventArgs e)
                     {
-                      m_trackedProcesses.Add (trackedProcess);
+                      if (!string.IsNullOrWhiteSpace (e.Data))
+                      {
+                        TrackedExecuteToolOutput (threadKeyPair, e.Data);
+                      }
+                    };
+
+                    trackedProcess.ErrorDataReceived += delegate (object sender, DataReceivedEventArgs e)
+                    {
+                      if (!string.IsNullOrWhiteSpace (e.Data))
+                      {
+                        TrackedExecuteToolOutput (threadKeyPair, e.Data);
+                      }
+                    };
+
+                    trackedProcess.Exited += delegate (object sender, EventArgs e)
+                    {
+                      trackedProcessSignal.Set ();
+                    };
+
+                    trackedProcess.EnableRaisingEvents = true;
+
+                    if (!trackedProcess.Start ())
+                    {
+                      throw new InvalidOperationException ("Could not start tracked child process.");
                     }
 
                     trackedProcess.BeginOutputReadLine ();
 
                     trackedProcess.BeginErrorReadLine ();
 
-                    trackedProcess.WaitForExit ();
+                    bool responseSignaled = false;
 
-                    lock (m_trackedProcesses)
+                    while (!responseSignaled)
                     {
-                      m_trackedProcesses.Remove (trackedProcess);
-                    }
+                      if (trackedProcessSignal.WaitOne (0))
+                      {
+                        responseSignaled = true;
 
-                    threadExitCode = trackedProcess.ExitCode;
+                        threadExitCode = trackedProcess.ExitCode;
+                      }
+                      else if (ToolCanceled.WaitOne (0))
+                      {
+                        responseSignaled = true;
+
+                        threadExitCode = -1;
+                      }
+
+                      if (!responseSignaled)
+                      {
+                        Thread.Yield ();
+                      }
+                    }
                   }
                 }
               }
@@ -488,7 +489,7 @@ namespace AndroidPlusPlus.MsBuild.Common
               break;
             }
 
-            Thread.Sleep (10);
+            Thread.Yield ();
           }
         }
 
@@ -819,8 +820,6 @@ namespace AndroidPlusPlus.MsBuild.Common
           throw new InvalidOperationException ("TLogReadFiles is missing or does not have a length of 1");
         }
 
-        //System.Diagnostics.Debugger.Break ();
-
         TrackedFileManager trackedFileManager = new TrackedFileManager ();
 
         if (trackedFileManager != null)
@@ -845,141 +844,93 @@ namespace AndroidPlusPlus.MsBuild.Common
           // Create dependency mappings for 'global' task outputs. Assume these relate to all processed sources.
           // 
 
-          foreach (KeyValuePair<string, List<ITaskItem>> keyPair in commandDictionary)
+          Dictionary<string, List<ITaskItem>> cachedOutputDependencies = new Dictionary<string, List<ITaskItem>> ();
+
+          foreach (KeyValuePair<string, List<ITaskItem>> commandKeyPair in commandDictionary)
           {
-            foreach (ITaskItem source in keyPair.Value)
+            foreach (ITaskItem source in commandKeyPair.Value)
             {
               string dependantOutputFile = source.GetMetadata ("OutputFile");
 
               string dependantObjectFileName = source.GetMetadata ("ObjectFileName");
 
-              List<string> potentialDependencyFilePaths = new List<string> ();
+              Dictionary<string, string> dependencyFilePermutations = new Dictionary<string, string> ();
+
+              // 
+              // Evaluate potential exported dependency files (each use slightly different conventions).
+              // 
+              // - C style: 'SRC.d'
+              // - Java (or Unix) style: 'SRC.java.d' 'FILE.EXT.d'
+              // 
 
               if (!string.IsNullOrWhiteSpace (dependantOutputFile))
               {
-                // C style: 'SRC.d'
-                potentialDependencyFilePaths.Add (Path.ChangeExtension (dependantOutputFile, ".d"));
-                // Java (or Unix) style: 'SRC.java.d' 'FILE.EXT.d'
-                potentialDependencyFilePaths.Add (dependantOutputFile + ".d");
+                dependencyFilePermutations.Add (Path.ChangeExtension (dependantOutputFile, ".d"), dependantOutputFile);
+
+                dependencyFilePermutations.Add (dependantOutputFile + ".d", dependantOutputFile);
               }
 
-              if (!string.IsNullOrWhiteSpace (dependantObjectFileName))
+              if (string.IsNullOrWhiteSpace (dependantObjectFileName))
               {
-                // C style: 'SRC.d'
-                potentialDependencyFilePaths.Add (Path.ChangeExtension (dependantObjectFileName, ".d"));
-                // Java (or Unix) style: 'SRC.java.d' 'FILE.EXT.d'
-                potentialDependencyFilePaths.Add (dependantObjectFileName + ".d");
+                dependencyFilePermutations.Add (Path.ChangeExtension (dependantObjectFileName, ".d"), dependantObjectFileName);
+
+                dependencyFilePermutations.Add (dependantObjectFileName + ".d", dependantObjectFileName);
               }
 
-              foreach (string dependencyFilePath in potentialDependencyFilePaths)
+              foreach (KeyValuePair<string, string> dependencyKeyPair in dependencyFilePermutations)
               {
-                if (File.Exists (dependencyFilePath))
+                List <ITaskItem> dependencies;
+
+                string dependencyFile = dependencyKeyPair.Key;
+
+                if (string.IsNullOrWhiteSpace (dependencyFile))
                 {
-                  try
-                  {
-                    GccUtilities.DependencyParser parser = new GccUtilities.DependencyParser (dependencyFilePath);
+                  continue;
+                }
+                else if (string.IsNullOrWhiteSpace (Path.GetFileNameWithoutExtension (dependencyFile)))
+                {
+                  continue;
+                }
+                else if (!File.Exists (dependencyFile))
+                {
+                  continue;
+                }
+
+                // 
+                // Probe and cache each dependency file. Saves re-parsing identical file references each time.
+                // 
+
+                if (!cachedOutputDependencies.TryGetValue (dependencyFile, out dependencies))
+                {
+                  GccUtilities.DependencyParser parser = new GccUtilities.DependencyParser (dependencyFile);
 
 #if DEBUG
-                    Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : {1} ({2})", ToolName, dependencyFilePath, parser.Dependencies.Count), MessageImportance.Low);
+                  Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : {1} ({2})", ToolName, dependencyFile, parser.Dependencies.Count), MessageImportance.Low);
 
-                    for (int i = 0; i < parser.Dependencies.Count; ++i)
-                    {
-                      Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : [{1}] '{2}'", ToolName, i, parser.Dependencies [i]), MessageImportance.Low);
-                    }
-#endif
-
-                    foreach (ITaskItem file in parser.Dependencies)
-                    {
-                      string dependencyFileFullPath = file.GetMetadata ("FullPath");
-
-                      if (!dependencyFileFullPath.Equals (source.GetMetadata ("FullPath")))
-                      {
-                        if (!File.Exists (dependencyFileFullPath))
-                        {
-                          Log.LogMessage (MessageImportance.High, "Could not find dependency: " + dependencyFileFullPath);
-                        }
-
-                        trackedFileManager.AddDependencyForSources (dependencyFileFullPath, keyPair.Value.ToArray ());
-                      }
-                    }
-                  }
-                  catch (Exception e)
+                  for (int i = 0; i < parser.Dependencies.Count; ++i)
                   {
-                    Log.LogMessage (MessageImportance.High, "Could not parse dependency file: " + dependencyFilePath);
-
-                    Log.LogErrorFromException (e, true);
+                    Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : [{1}] '{2}'", ToolName, i, parser.Dependencies [i]), MessageImportance.Low);
                   }
+#endif
+                  dependencies = parser.Dependencies;
+
+                  cachedOutputDependencies.Add (dependencyFile, dependencies);
                 }
               }
-
             }
-          }
 
-#if FALSE
-          if (OutputFiles != null)
-          {
-            foreach (KeyValuePair<string, List<ITaskItem>> keyPair in commandDictionary)
+            foreach (KeyValuePair<string, List<ITaskItem>> dependencyKeyPair in cachedOutputDependencies)
             {
-              List<string> sourcesAsFullPaths = keyPair.Value.ConvertAll<string> (element => element.GetMetadata ("FullPath"));
-
-              foreach (ITaskItem output in OutputFiles)
+              try
               {
-                string outputFullPath = output.GetMetadata ("FullPath");
-
-                string [] potentialDependencyFilePaths =
-                {
-                  // C style: 'SRC.d'
-                  Path.ChangeExtension (outputFullPath, ".d"), 
-
-                  // Java (or Unix) style: 'SRC.java.d' 'FILE.EXT.d'
-                  outputFullPath + ".d" 
-                };
-
-                foreach (string dependencyFilePath in potentialDependencyFilePaths)
-                {
-                  if (File.Exists (dependencyFilePath))
-                  {
-                    try
-                    {
-                      GccUtilities.DependencyParser parser = new GccUtilities.DependencyParser (dependencyFilePath);
-
-#if DEBUG
-                      Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : {1} ({2})", ToolName, dependencyFilePath, parser.Dependencies.Count), MessageImportance.Low);
-
-                      for (int i = 0; i < parser.Dependencies.Count; ++i)
-                      {
-                        Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : [{1}] '{2}'", ToolName, i, parser.Dependencies [i]), MessageImportance.Low);
-                      }
-#endif
-
-                      foreach (ITaskItem file in parser.Dependencies)
-                      {
-                        string dependencyFileFullPath = file.GetMetadata ("FullPath");
-
-                        if (!sourcesAsFullPaths.Contains (dependencyFileFullPath))
-                        {
-                          if (!dependencyFileFullPath.Equals (dependencyFilePath) && !dependencyFileFullPath.Equals (outputFullPath))
-                          {
-                            if (!File.Exists (dependencyFileFullPath))
-                            {
-                              Log.LogMessage (MessageImportance.High, "Could not find dependency: " + dependencyFileFullPath);
-                            }
-
-                            trackedFileManager.AddDependencyForSources (dependencyFileFullPath, keyPair.Value.ToArray ());
-                          }
-                        }
-                      }
-                    }
-                    catch (Exception)
-                    {
-                      Log.LogMessage (MessageImportance.High, "Could not parse dependency file: " + dependencyFilePath);
-                    }
-                  }
-                }
+                trackedFileManager.AddDependencyForSources (dependencyKeyPair.Value.ToArray (), commandKeyPair.Value.ToArray ());
+              }
+              catch (Exception e)
+              {
+                Log.LogErrorFromException (e, true);
               }
             }
           }
-#endif
 
           trackedFileManager.Save (TLogReadFiles [0]);
         }
@@ -1042,78 +993,31 @@ namespace AndroidPlusPlus.MsBuild.Common
           // Create dependency mappings between source and explicit output file (object-file type relationship).
           // 
 
+          List<ITaskItem> dependantFiles = new List<ITaskItem> (2);
+
           foreach (KeyValuePair<string, List<ITaskItem>> keyPair in commandDictionary)
           {
             foreach (ITaskItem source in keyPair.Value)
             {
+              dependantFiles.Clear ();
+
               string dependantOutputFile = source.GetMetadata ("OutputFile");
 
               string dependantObjectFileName = source.GetMetadata ("ObjectFileName");
 
               if (!string.IsNullOrWhiteSpace (dependantOutputFile))
               {
-                trackedFileManager.AddDependencyForSources (Path.GetFullPath (dependantOutputFile), new ITaskItem [] { source });
+                dependantFiles.Add (new TaskItem (Path.GetFullPath (dependantOutputFile)));
               }
 
               if (!string.IsNullOrWhiteSpace (dependantObjectFileName))
               {
-                trackedFileManager.AddDependencyForSources (Path.GetFullPath (dependantObjectFileName), new ITaskItem [] { source });
+                dependantFiles.Add (new TaskItem (Path.GetFullPath (dependantObjectFileName)));
               }
+
+              trackedFileManager.AddDependencyForSources (dependantFiles.ToArray (), new ITaskItem [] { source });
             }
           }
-
-          // 
-          // Create dependency mappings for 'global' task outputs. Assume these relate to all processed sources.
-          // 
-
-#if FALSE
-          if (OutputFiles != null)
-          {
-            foreach (KeyValuePair<string, List<ITaskItem>> keyPair in commandDictionary)
-            {
-              foreach (ITaskItem output in OutputFiles)
-              {
-                string outputFullPath = output.GetMetadata ("FullPath");
-
-                trackedFileManager.AddDependencyForSources (outputFullPath, keyPair.Value.ToArray ());
-
-                string [] potentialDependencyFilePaths =
-                {
-                  // C style: 'SRC.d'
-                  Path.ChangeExtension (outputFullPath, ".d"), 
-
-                  // Java (or Unix) style: 'SRC.java.d' 'FILE.EXT.d'
-                  outputFullPath + ".d" 
-                };
-                
-                foreach (string dependencyFilePath in potentialDependencyFilePaths)
-                {
-                  if (File.Exists (dependencyFilePath))
-                  {
-                    try
-                    {
-                      GccUtilities.DependencyParser parser = new GccUtilities.DependencyParser (dependencyFilePath);
-
-#if DEBUG
-                      Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Write) : {1}", ToolName, dependencyFilePath), MessageImportance.Low);
-
-                      Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Write) : [{1}] '{2}'", ToolName, 0, parser.OutputFile), MessageImportance.Low);
-#endif
-
-                      trackedFileManager.AddDependencyForSources (parser.OutputFile.GetMetadata ("FullPath"), keyPair.Value.ToArray ());
-                    }
-                    catch (Exception)
-                    {
-                      Log.LogMessage (MessageImportance.High, "Could not parse dependency file: " + dependencyFilePath);
-
-                      throw;
-                    }
-                  }
-                }
-              }
-            }
-          }
-#endif
 
           trackedFileManager.Save (TLogWriteFiles [0]);
         }
@@ -1211,7 +1115,7 @@ namespace AndroidPlusPlus.MsBuild.Common
     {
       get
       {
-        return ToolName + ".command.tlog";
+        return ToolName + ".command.1.tlog";
       }
     }
 
@@ -1223,7 +1127,7 @@ namespace AndroidPlusPlus.MsBuild.Common
     {
       get
       {
-        return new string [] { ToolName + ".read.tlog" };
+        return new string [] { ToolName + ".read.1.tlog" };
       }
     }
 
@@ -1235,7 +1139,7 @@ namespace AndroidPlusPlus.MsBuild.Common
     {
       get
       {
-        return new string [] { ToolName + ".write.tlog" };
+        return new string [] { ToolName + ".write.1.tlog" };
       }
     }
 

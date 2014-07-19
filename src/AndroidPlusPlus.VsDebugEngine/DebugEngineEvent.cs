@@ -468,9 +468,9 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           MODULE_INFO [] moduleInfo = new MODULE_INFO [1];
 
-          LoggingUtils.RequireOk (module.GetInfo (enum_MODULE_INFO_FIELDS.MIF_NAME, moduleInfo));
+          LoggingUtils.RequireOk (module.GetInfo (enum_MODULE_INFO_FIELDS.MIF_DEBUGMESSAGE, moduleInfo));
 
-          debugMessage = ((m_loadModule) ? "Loaded '" : "Unloaded '") + moduleInfo [0].m_bstrName + "'.";
+          debugMessage = string.Format ("{0}: {1}", ((m_loadModule) ? "Loaded" : "Unloaded"), moduleInfo [0].m_bstrDebugMessage);
 
           fIsLoad = (m_loadModule) ? 1 : 0;
 

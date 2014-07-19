@@ -217,9 +217,9 @@ namespace AndroidPlusPlus.Common
           {
             if ((gdbProcess != process) && (gdbProcess.User.Equals (process.User)))
             {
-              LoggingUtils.Print (string.Format ("[GdbServer] Attempting to terminate existing debugging session: ({0}).", gdbProcess.Name));
+              LoggingUtils.Print (string.Format ("[GdbServer] Attempting to terminate existing GDB debugging session: {0} ({1}).", gdbProcess.Name, gdbProcess.Pid));
 
-              m_gdbSetup.Process.HostDevice.Shell ("run-as " + process.Name, "kill -9 " + process.Pid);
+              m_gdbSetup.Process.HostDevice.Shell ("run-as", string.Format ("{0} kill -9 {1}", process.Name, gdbProcess.Pid));
             }
           }
         }

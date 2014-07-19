@@ -315,10 +315,22 @@ namespace AndroidPlusPlus.Common
       SetSetting ("debug-file-directory", string.Join (";", sharedLibrarySearchPaths.ToArray ()), true);
 
       // 
-      // Connect to the remote target and '/system/bin/app_process' binary.
+      // Connect to the remote target. Choose an architecture appropriate app_process to spawn.
       // 
 
-      MiResultRecord resultRecord = SendCommand ("-file-exec-and-symbols " + PathUtils.SantiseWindowsPath (Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\app_process")));
+      string cachedTargetBinary = Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\app_process64");
+
+      if (!File.Exists (cachedTargetBinary))
+      {
+        cachedTargetBinary = Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\app_process32");
+      }
+
+      if (!File.Exists (cachedTargetBinary))
+      {
+        cachedTargetBinary = Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\app_process");
+      }
+
+      MiResultRecord resultRecord = SendCommand ("-file-exec-and-symbols " + PathUtils.SantiseWindowsPath (cachedTargetBinary));
 
       if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
       {
@@ -419,10 +431,22 @@ namespace AndroidPlusPlus.Common
         throw new InvalidOperationException ();
       }
 
+      // 
+      // If the program has already terminated, the 'kill' command will error with a description - treat this as success.
+      // 
+
       resultRecord = SendCommand ("kill");
 
       if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
       {
+        foreach (MiStreamRecord record in resultRecord.Records)
+        {
+          if (record.Stream.ToLowerInvariant ().Contains ("The program is not being run"))
+          {
+            return;
+          }
+        }
+
         throw new InvalidOperationException ();
       }
     }

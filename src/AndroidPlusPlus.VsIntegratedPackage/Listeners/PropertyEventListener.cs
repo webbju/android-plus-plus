@@ -39,7 +39,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     {
       m_shellService = shellService;
 
-      m_shellService.AdviseShellPropertyChanges (this, out m_listenerCookie);
+      LoggingUtils.RequireOk (m_shellService.AdviseShellPropertyChanges (this, out m_listenerCookie));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -62,7 +62,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
       if ((propId == (int)__VSSPROPID.VSSPROPID_Zombie) && !((bool)var))
       {
-        m_shellService.UnadviseShellPropertyChanges (m_listenerCookie);
+        LoggingUtils.RequireOk (m_shellService.UnadviseShellPropertyChanges (m_listenerCookie));
 
         m_listenerCookie = 0;
       }

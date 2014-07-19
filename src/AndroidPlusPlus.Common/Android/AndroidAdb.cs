@@ -82,7 +82,7 @@ namespace AndroidPlusPlus.Common
 
             foreach (string line in deviceOutputLines)
             {
-              if (Regex.IsMatch (line, "^[A-Za-z0-9]+[\t][a-z]+$"))
+              if (Regex.IsMatch (line, "^[A-Za-z0-9.:\\-]+[\t][a-z]+$"))
               {
                 string [] segments = line.Split (new char [] { '\t' });
 

@@ -99,7 +99,12 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             foreach (MiVariable child in m_gdbVariable.Children.Values)
             {
-              m_children.Add (m_debugger.VariableManager.CreatePropertyFromVariable (m_stackFrame as CLangDebuggeeStackFrame, child));
+              CLangDebuggeeProperty childProperty = m_debugger.VariableManager.CreatePropertyFromVariable (m_stackFrame as CLangDebuggeeStackFrame, child);
+
+              if (childProperty != null)
+              {
+                m_children.Add (childProperty);
+              }
             }
           }
         }
@@ -197,7 +202,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.RequireOk (base.GetPropertyInfo (requestedFields, radix, timeout, debugReferenceArray, argumentCount, propertyInfoArray));
 
-#if FALSE
+#if false
         if ((m_gdbVariable != null) && (requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_FULLNAME) != 0)
         {
           propertyInfoArray [0].bstrFullName = m_gdbVariable.Name;
@@ -222,7 +227,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((m_gdbVariable != null) && (requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE) != 0)
         {
-#if FALSE
+#if false
           if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND) != 0)
           {
           }
@@ -256,12 +261,10 @@ namespace AndroidPlusPlus.VsDebugEngine
           else if (string.IsNullOrEmpty (m_gdbVariable.Type))
           {
             propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_PROPERTY;
-
-            propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_VALUE_AUTOEXPANDED;
           }
           else if (m_gdbVariable.Value.Equals ("{...}"))
           {
-            propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_CLASS;
+            propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_PROPERTY;
           }
           else if (m_gdbVariable.Type.Contains ("(")) // Function. 'bool (void)'
           {

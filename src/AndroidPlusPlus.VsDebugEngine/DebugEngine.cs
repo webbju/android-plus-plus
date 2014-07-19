@@ -44,8 +44,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private AutoResetEvent m_broadcastHandleLock;
 
-    private AsyncRedirectProcess m_adbLogcatInstance;
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -55,8 +53,6 @@ namespace AndroidPlusPlus.VsDebugEngine
       m_sdmCallback = null;
 
       m_broadcastHandleLock = new AutoResetEvent (false);
-
-      m_adbLogcatInstance = null;
 
       BreakpointManager = new DebugBreakpointManager (this);
 
@@ -172,46 +168,6 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private class DeviceLogcatListener : AsyncRedirectProcess.EventListener
-    {
-      private readonly DebugEngine m_debugEngine;
-
-      private readonly DebuggeeProgram m_debuggeeProgram;
-
-      public DeviceLogcatListener (DebugEngine debugEngine, DebuggeeProgram debuggeeProgram)
-      {
-        m_debugEngine = debugEngine;
-
-        m_debuggeeProgram = debuggeeProgram;
-      }
-
-      public void ProcessStdout (object sendingProcess, DataReceivedEventArgs args)
-      {
-        if (!string.IsNullOrWhiteSpace (args.Data))
-        {
-          //Trace.WriteLine (args.Data);
-          //m_debugEngine.Broadcast (new DebugEngineEvent.OutputString (string.Format ("[Logcat] {0}", args.Data)), m_debuggeeProgram, null);
-        }
-      }
-
-      public void ProcessStderr (object sendingProcess, DataReceivedEventArgs args)
-      {
-        if (!string.IsNullOrWhiteSpace (args.Data))
-        {
-          //Trace.WriteLine (args.Data);
-          //m_debugEngine.Broadcast (new DebugEngineEvent.OutputString (string.Format ("[Logcat] {0}", args.Data)), m_debuggeeProgram, null);
-        }
-      }
-
-      public void ProcessExited (object sendingProcess, EventArgs args)
-      {
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     #region IDebugEngine3 Members
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -255,8 +211,6 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           throw new InvalidOperationException ("Can not debug native code on a Android 4.3 device/emulator.");
         }
-
-        m_adbLogcatInstance = Program.DebugProcess.NativeProcess.HostDevice.Logcat (new DeviceLogcatListener (this, Program));
 
         NativeDebugger = new CLangDebugger (this, Program);
 
@@ -675,21 +629,17 @@ namespace AndroidPlusPlus.VsDebugEngine
           symbolSearchPaths.AddRange (szSymbolSearchPath.Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries));
         }
 
-#if DEBUG
-      symbolSearchPaths.Add (@"C:\nm\SuptechClient_2\build\bin\android\vs10.0\debug");
-#endif
-
         NativeDebugger.GdbClient.SetSetting ("solib-search-path", string.Join (";", symbolSearchPaths.ToArray ()), true);
 
         NativeDebugger.GdbClient.SetSetting ("debug-file-directory", string.Join (";", symbolSearchPaths.ToArray ()), true);
 
-        throw new NotImplementedException ();
+        return DebugEngineConstants.S_OK;
       }
-      catch (NotImplementedException e)
+      catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return DebugEngineConstants.E_FAIL;
       }
     }
 
@@ -741,6 +691,8 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new ArgumentNullException ("port");
         }
 
+        DebuggeePort debuggeePort = port as DebuggeePort;
+
         // 
         // Evaluate options; including current debugger target application.
         // 
@@ -766,29 +718,35 @@ namespace AndroidPlusPlus.VsDebugEngine
         // Check for an installed application matching the package name, install provided APK if not found.
         // 
 
-        DebuggeePort debuggeePort = port as DebuggeePort;
-
-        bool appIsInstalled = debuggeePort.PortDevice.Shell ("pm", "path " + packageName, 5000).Contains ("package:");
+        bool appIsInstalled = false;
 
         bool appIsRunning = false;
 
-#if FALSE
-        if (!appIsInstalled)
-#endif
+        try
         {
-          //debuggeePort.PortDevice.Uninstall (packageName, keepData);
+#if false
+          appIsInstalled = debuggeePort.PortDevice.Shell ("pm", "path " + packageName, 5000).Contains ("package:");
 
-          if (!File.Exists (exe))
+          if (!appIsInstalled)
+#endif
           {
-            throw new FileNotFoundException ("Failed to find target application: " + exe);
-          }
+            //debuggeePort.PortDevice.Uninstall (packageName, keepData);
 
-          if (!debuggeePort.PortDevice.Install (exe, keepData))
-          {
-            throw new InvalidOperationException ("Failed to install target application: " + exe);
-          }
+            if (!File.Exists (exe))
+            {
+              throw new FileNotFoundException ("Failed to find target application: " + exe);
+            }
 
-          appIsInstalled = true;
+            debuggeePort.PortDevice.Install (exe, keepData);
+
+            appIsInstalled = true;
+          }
+        }
+        catch (Exception e)
+        {
+          LoggingUtils.HandleException (e);
+
+          throw e;
         }
 
         // 
@@ -807,10 +765,15 @@ namespace AndroidPlusPlus.VsDebugEngine
             {
               launchArgumentsBuilder.Append ("-D "); // debug
             }
-            /*else
+            else
             {
               launchArgumentsBuilder.Append ("-W "); // wait
-            }*/
+            }
+
+            if (openGlTrace)
+            {
+              launchArgumentsBuilder.Append ("--opengl-trace ");
+            }
 
             launchArgumentsBuilder.Append (packageName + "/" + launchActivity);
 
@@ -893,6 +856,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
+
+        Broadcast (new DebugEngineEvent.Error (e.Message, true), null, null);
 
         process = null;
 

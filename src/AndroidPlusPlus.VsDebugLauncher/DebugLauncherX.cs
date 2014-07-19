@@ -88,7 +88,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
     {
       LoggingUtils.PrintFunction ();
 
-#if FALSE
+#if false
       // 
       // Print verbose details of the project being launched.
       // 
@@ -99,10 +99,10 @@ namespace AndroidPlusPlus.VsDebugLauncher
       }
 #endif
 
-      DebugLaunchSettings debugLaunchSettings = null;
-
       try
       {
+        DebugLaunchSettings debugLaunchSettings = new DebugLaunchSettings (launchOptions);
+
         Project startupProject = DebugLauncher.GetStartupSolutionProject (ServiceProvider, (Dictionary <string, string>) projectProperties);
 
         if (startupProject == null)
@@ -120,15 +120,17 @@ namespace AndroidPlusPlus.VsDebugLauncher
         {
           debugLaunchSettings = (DebugLaunchSettings) DebugLauncher.StartWithDebugging ((int)launchOptions, (Dictionary<string, string>) projectProperties, startupProject);
         }
+
+        return new IDebugLaunchSettings [] { debugLaunchSettings };
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        DebugLauncher.ShowErrorDialog (ServiceProvider, string.Format ("Debugging failed to launch, encountered exception: {0}", e.Message));
+        DebugLauncher.ShowErrorDialog (ServiceProvider, string.Format ("Debugging failed to launch, encountered exception:\n\n {0}", e.Message));
       }
 
-      return new IDebugLaunchSettings [] { debugLaunchSettings };
+      return null;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

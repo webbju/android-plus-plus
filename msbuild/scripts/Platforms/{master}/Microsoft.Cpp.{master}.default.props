@@ -23,17 +23,30 @@
     <DefaultPlatformToolset Condition="'$(DefaultPlatformToolset)' == ''">$(PlatformToolset)</DefaultPlatformToolset>
 
     <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">armv7-a</TargetArchitecture>
-    
+
     <STLSupport Condition="'$(STLSupport)' == ''">gnustl_static</STLSupport>
 
-    <IntDir Condition="'$(IntDir)'=='' AND '$(IntermediateOutputPath)'!=''">$(IntermediateOutputPath)</IntDir>
-    <IntDir Condition="'$(IntDir)'=='' AND '$(IntermediateOutputPath)'==''">$(Platform)\$(Configuration)\</IntDir>
-    <OutDir Condition="'$(OutDir)'=='' AND '$(SolutionDir)' != ''">$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
-    <OutDir Condition="'$(OutDir)'=='' AND '$(SolutionDir)' == ''">$(IntDir)</OutDir>
-
-    <!-- 
-      Set properties which are typically controlled within Microsoft.Cl.Common.props to non-empty values to customise later.
+    <!--
+      Explictly disable MSBuild's fast up-to-date functionality. 
+      
+      With this enabled, MSBuild checks for the presence of a '<proj>.lastbuildstate' file - instead of evaluating dependency trees.
+      
+      TODO: Disabled for now, needs more dev effort to properly ensure all scripts play happy with it set.
     -->
+
+    <!-- <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck> -->
+
+    <!--
+      Default intermediate and output directories.
+    -->
+
+    <IntDir Condition="'$(IntDir)'=='' AND '$(IntermediateOutputPath)'!=''">$(IntermediateOutputPath)</IntDir>
+
+    <IntDir Condition="'$(IntDir)'=='' AND '$(IntermediateOutputPath)'==''">$(Platform)\$(Configuration)\</IntDir>
+
+    <OutDir Condition="'$(OutDir)'=='' AND '$(SolutionDir)' != ''">$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+
+    <OutDir Condition="'$(OutDir)'=='' AND '$(SolutionDir)' == ''">$(IntDir)</OutDir>
 
   </PropertyGroup>
 

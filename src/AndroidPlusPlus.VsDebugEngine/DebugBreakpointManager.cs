@@ -236,8 +236,7 @@ namespace AndroidPlusPlus.VsDebugEngine
             }
             else
             {
-              // Unrecognised breakpoint type.
-              throw new NotImplementedException ();
+              throw new NotImplementedException ("Unrecognised breakpoint type");
             }
           }
         }

@@ -35,7 +35,7 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private Dictionary<string, List<string>> m_sourceDependencyTable;
+    private Dictionary<string, HashSet<string>> m_sourceDependencyTable;
 
     private Encoding m_defaultEncoding = Encoding.Unicode;
 
@@ -45,7 +45,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
     public TrackedFileManager ()
     {
-      m_sourceDependencyTable = new Dictionary<string, List<string>> ();
+      m_sourceDependencyTable = new Dictionary<string, HashSet<string>> ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -102,7 +102,7 @@ namespace AndroidPlusPlus.MsBuild.Common
                   {
                     if (!m_sourceDependencyTable.ContainsKey (ConvertToTrackerFormat (source)))
                     {
-                      m_sourceDependencyTable.Add (ConvertToTrackerFormat (source), new List<string> ());
+                      m_sourceDependencyTable.Add (ConvertToTrackerFormat (source), new HashSet<string> ());
                     }
                   }
 
@@ -181,13 +181,11 @@ namespace AndroidPlusPlus.MsBuild.Common
       {
         foreach (ITaskItem source in sources)
         {
-          string sourceFullPath = source.GetMetadata ("FullPath");
+          string sourceFileTrackerFormat = ConvertToTrackerFormat (source.GetMetadata ("FullPath"));
 
-          string sourceFilePathTrackerFormat = ConvertToTrackerFormat (sourceFullPath);
-
-          if (!m_sourceDependencyTable.ContainsKey (sourceFilePathTrackerFormat))
+          if (!m_sourceDependencyTable.ContainsKey (sourceFileTrackerFormat))
           {
-            m_sourceDependencyTable.Add (sourceFilePathTrackerFormat, new List<string> ());
+            m_sourceDependencyTable.Add (sourceFileTrackerFormat, new HashSet<string> ());
           }
         }
       }
@@ -201,7 +199,7 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void AddDependencyForSources (string dependency, ITaskItem [] sources)
+    public void AddDependencyForSources (ITaskItem [] dependencies, ITaskItem [] sources)
     {
       // 
       // Register a dependency for a set of provided sources. Will add unregistered sources to table if required.
@@ -211,17 +209,32 @@ namespace AndroidPlusPlus.MsBuild.Common
       {
         AddSourcesToTable (sources);
 
-        string dependencyTrackerFormat = ConvertToTrackerFormat (dependency);
-
-        foreach (ITaskItem source in sources)
+        foreach (ITaskItem dependency in dependencies)
         {
-          string sourceFullPath = source.GetMetadata ("FullPath");
+          string dependencyFullPath = dependency.GetMetadata ("FullPath");
 
-          string sourceFilePathTrackerFormat = ConvertToTrackerFormat (sourceFullPath);
-
-          if (!m_sourceDependencyTable [sourceFilePathTrackerFormat].Contains (dependencyTrackerFormat))
+          if (!File.Exists (dependencyFullPath))
           {
-            m_sourceDependencyTable [sourceFilePathTrackerFormat].Add (dependencyTrackerFormat);
+            throw new FileNotFoundException ("Could not find specified dependency: " + dependencyFullPath);
+          }
+
+          foreach (ITaskItem source in sources)
+          {
+            string sourceFullPath = source.GetMetadata ("FullPath");
+
+            if (dependencyFullPath.Equals (sourceFullPath))
+            {
+              continue; // Don't list sources as their own dependencies.
+            }
+
+            string sourceFileTrackerFormat = ConvertToTrackerFormat (sourceFullPath);
+
+            string dependencyFileTrackerFormat = ConvertToTrackerFormat (dependencyFullPath);
+
+            if (!m_sourceDependencyTable [sourceFileTrackerFormat].Contains (dependencyFileTrackerFormat))
+            {
+              m_sourceDependencyTable [sourceFileTrackerFormat].Add (dependencyFileTrackerFormat);
+            }
           }
         }
       }
@@ -245,11 +258,9 @@ namespace AndroidPlusPlus.MsBuild.Common
       {
         foreach (ITaskItem source in sources)
         {
-          string sourceFullPath = source.GetMetadata ("FullPath");
+          string sourceFileTrackerFormat = ConvertToTrackerFormat (source.GetMetadata ("FullPath"));
 
-          string sourceFilePathTrackerFormat = ConvertToTrackerFormat (sourceFullPath);
-
-          m_sourceDependencyTable.Remove (sourceFilePathTrackerFormat);
+          m_sourceDependencyTable.Remove (sourceFileTrackerFormat);
         }
       }
       catch (Exception e)
@@ -292,7 +303,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
         using (StreamWriter writer = new StreamWriter (tlogFullPath, false, Encoding.Unicode))
         {
-          foreach (KeyValuePair<string, List<string>> sourceEntry in m_sourceDependencyTable)
+          foreach (KeyValuePair<string, HashSet<string>> sourceEntry in m_sourceDependencyTable)
           {
             writer.WriteLine ('^' + sourceEntry.Key);
 

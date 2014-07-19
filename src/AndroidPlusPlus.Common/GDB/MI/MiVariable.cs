@@ -34,6 +34,11 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
+      if (string.IsNullOrEmpty (name))
+      {
+        throw new ArgumentNullException ("name");
+      }
+
       Name = name;
 
       Expression = expression;
@@ -47,9 +52,19 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
+      if (string.IsNullOrEmpty (expression))
+      {
+        throw new ArgumentNullException ("expression");
+      }
+
       Expression = expression;
 
       Populate (variableValues);
+
+      if (string.IsNullOrEmpty (Name))
+      {
+        throw new InvalidOperationException ("Variable has invalid/empty name");
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -98,6 +113,11 @@ namespace AndroidPlusPlus.Common
     public void Populate (List<MiResultValue> variableValues)
     {
       LoggingUtils.PrintFunction ();
+
+      if (variableValues == null)
+      {
+        throw new ArgumentNullException ("variableValues");
+      }
 
       foreach (MiResultValue resultValue in variableValues)
       {
@@ -162,6 +182,11 @@ namespace AndroidPlusPlus.Common
     public void AddChild (MiVariable variable)
     {
       LoggingUtils.PrintFunction ();
+
+      if (variable == null)
+      {
+        throw new ArgumentNullException ("variable");
+      }
 
       m_children [variable.Name] = variable;
     }

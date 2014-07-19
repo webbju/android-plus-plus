@@ -235,6 +235,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           DebuggeeProperty property = m_debugger.VariableManager.CreatePropertyFromVariable (this, variable);
 
+          if (property == null)
+          {
+            continue;
+          }
+
           if (localVariables [i].HasField ("arg"))
           {
             m_stackArguments.TryAdd (variableName, property);
@@ -361,9 +366,12 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           property = m_debugger.VariableManager.CreatePropertyFromVariable (this, customExpressionVariable);
 
-          m_customExpressions.TryAdd (expression, property);
+          if (property != null)
+          {
+            m_customExpressions.TryAdd (expression, property);
 
-          m_property.AddChildren (new DebuggeeProperty [] { property });
+            m_property.AddChildren (new DebuggeeProperty [] { property });
+          }
         }
       }
       catch (Exception e)

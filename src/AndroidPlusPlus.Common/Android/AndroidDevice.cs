@@ -45,6 +45,18 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    public bool IsOverWiFi
+    {
+      get
+      {
+        return ID.Contains (".");
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public void Refresh ()
     {
       LoggingUtils.PrintFunction ();
@@ -78,9 +90,25 @@ namespace AndroidPlusPlus.Common
     {
       using (SyncRedirectProcess adbShellCommand = AndroidAdb.AdbCommand (this, "shell", string.Format ("{0} {1}", command, arguments)))
       {
-        adbShellCommand.StartAndWaitForExit (timeout);
+        int exitCode = -1;
+        
+        try
+        {
+          exitCode = adbShellCommand.StartAndWaitForExit (timeout);
+        }
+        catch (TimeoutException e)
+        {
+          LoggingUtils.HandleException (e);
+
+          throw new InvalidOperationException ("Shell request failed: Timed out.");
+        }
 
         LoggingUtils.Print ("[AndroidDevice] Shell (" + command + " " + arguments + "): " + adbShellCommand.StandardOutput);
+
+        if (exitCode != 0)
+        {
+          throw new InvalidOperationException ("Shell request failed: " + adbShellCommand.StandardOutput);
+        }
 
         return adbShellCommand.StandardOutput;
       }
@@ -90,28 +118,37 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public bool Pull (string remotePath, string localPath)
+    public void Pull (string remotePath, string localPath)
     {
       using (SyncRedirectProcess adbPullCommand = AndroidAdb.AdbCommand (this, "pull", string.Format ("{0} {1}", remotePath, PathUtils.SantiseWindowsPath (localPath))))
       {
-        adbPullCommand.StartAndWaitForExit (60000);
+        int exitCode = -1;
 
-        LoggingUtils.Print ("[AndroidDevice] Pull: " + adbPullCommand.StandardOutput);
-
-        if (adbPullCommand.StandardOutput.ToLower ().Contains ("not found"))
+        try
         {
-          return false;
+          exitCode = adbPullCommand.StartAndWaitForExit ();
+        }
+        catch (TimeoutException e)
+        {
+          LoggingUtils.HandleException (e);
+
+          throw new InvalidOperationException ("Pull request failed: Timed out.");
+        }
+
+        LoggingUtils.Print (string.Format ("[AndroidDevice] Pull: '{0}' => '{1}' - {2}", remotePath, localPath, adbPullCommand.StandardOutput));
+
+        if (exitCode != 0)
+        {
+          throw new InvalidOperationException ("Pull request failed: " + adbPullCommand.StandardOutput);
         }
       }
-
-      return true;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public bool Install (string filename, bool reinstall)
+    public void Install (string filename, bool reinstall)
     {
       // 
       // Install applications to internal storage (-l). Apps in /mnt/asec/ and other locations cause 'run-as' to fail regarding permissions.
@@ -125,54 +162,92 @@ namespace AndroidPlusPlus.Common
 
         string temporaryStoredFile = temporaryStorage + "/" + Path.GetFileName (filename);
 
+        // 
+        // Push APK to temporary device/emulator storage.
+        // 
+
         using (SyncRedirectProcess adbPushToTemporaryCommand = AndroidAdb.AdbCommand (this, "push", string.Format ("{0} {1}", PathUtils.SantiseWindowsPath (filename), temporaryStorage)))
         {
-          if (adbPushToTemporaryCommand.StartAndWaitForExit (120000) != 0)
+          int exitCode = -1;
+
+          try
           {
-            throw new InvalidOperationException ("Failed transferring to temporary storage.");
+            exitCode = adbPushToTemporaryCommand.StartAndWaitForExit ();
+          }
+          catch (TimeoutException)
+          {
+            throw new InvalidOperationException ("Installation failed: Transfer timed out.");
+          }
+
+          if (exitCode != 0)
+          {
+            throw new InvalidOperationException ("Installation failed: Could not transfer to temporary storage.");
           }
         }
+
+        // 
+        // Run a custom (package managed based) install request, bypassing /mnt/app-asec/ install locations.
+        // 
 
         using (SyncRedirectProcess adbInstallCommand = AndroidAdb.AdbCommand (this, "shell", string.Format ("pm install -f {0} {1}", ((reinstall) ? "-r " : ""), temporaryStoredFile)))
         {
-          if (adbInstallCommand.StartAndWaitForExit (120000) != 0)
+          int exitCode = -1;
+
+          try
           {
-            throw new InvalidOperationException ("Failed to install from temporary storage.");
+            exitCode = adbInstallCommand.StartAndWaitForExit ();
+          }
+          catch (TimeoutException)
+          {
+            throw new InvalidOperationException ("Installation failed: Install timed out.");
           }
 
-          if (!adbInstallCommand.StandardOutput.ToLower ().Contains ("success"))
+          if ((exitCode != 0) || !adbInstallCommand.StandardOutput.ToLower ().Contains ("success"))
           {
-            throw new InvalidOperationException ("Failed to install from temporary storage. (" + adbInstallCommand.StandardOutput + ")");
+            throw new InvalidOperationException ("Installation failed: " + adbInstallCommand.StandardOutput);
           }
         }
 
+        // 
+        // Clear uploaded APK from temporary storage.
+        // 
+
         using (SyncRedirectProcess adbClearTemporary = AndroidAdb.AdbCommand (this, "shell", "rm " + temporaryStoredFile))
         {
-          if (adbClearTemporary.StartAndWaitForExit (1000) != 0)
+          int exitCode = -1;
+
+          try
           {
-            throw new InvalidOperationException ("Failed clearing temporary files.");
+            exitCode = adbClearTemporary.StartAndWaitForExit ();
+          }
+          catch (TimeoutException)
+          {
+            throw new InvalidOperationException ("Installation failed: Clearing cache timed out.");
+          }
+
+          if (exitCode != 0)
+          {
+            throw new InvalidOperationException ("Installation failed: Failed clearing cached files.");
           }
         }
 
         LoggingUtils.Print ("[AndroidDevice] " + filename + " installed successfully.");
 
-        return true;
+        return;
       }
       catch (Exception e)
       {
+        LoggingUtils.Print ("[AndroidDevice] " + filename + " installation failed.");
+
         LoggingUtils.HandleException (e);
       }
-
-      LoggingUtils.Print ("[AndroidDevice] " + filename + " installation failed.");
-
-      return false;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public bool Uninstall (string package, bool keepCache)
+    public void Uninstall (string package, bool keepCache)
     {
       LoggingUtils.PrintFunction ();
 
@@ -180,32 +255,40 @@ namespace AndroidPlusPlus.Common
       {
         using (SyncRedirectProcess adbUninstallCommand = AndroidAdb.AdbCommand (this, "install", ((keepCache) ? "-k " : "") + package))
         {
-          if (adbUninstallCommand.StartAndWaitForExit (60000) != 0)
+          int exitCode = -1;
+
+          try
           {
-            throw new InvalidOperationException ("Failed to uninstall '"+ package + "'.");
+            exitCode = adbUninstallCommand.StartAndWaitForExit (30000);
+          }
+          catch (TimeoutException)
+          {
+            throw new InvalidOperationException ("Uninstall failed: Clearing app timed out.");
           }
 
-          LoggingUtils.Print ("[AndroidDevice] Uninstall: " + adbUninstallCommand.StandardOutput);
-
-          if (adbUninstallCommand.StandardOutput.ToLower ().Contains ("success"))
+          if ((exitCode != 0) || adbUninstallCommand.StandardOutput.ToLower ().Contains ("success"))
           {
-            return true;
+            throw new InvalidOperationException ("Uninstall failed: " + adbUninstallCommand.StandardOutput);
           }
+
+          LoggingUtils.Print ("[AndroidDevice] " + package + " uninstalled successfully.");
+
+          return;
         }
       }
       catch (Exception e)
       {
+        LoggingUtils.Print ("[AndroidDevice] " + package + " uninstall failed.");
+
         LoggingUtils.HandleException (e);
       }
-
-      return false;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public AsyncRedirectProcess Logcat (AsyncRedirectProcess.EventListener listener)
+    public AsyncRedirectProcess Logcat (AsyncRedirectProcess.EventListener listener, bool clearCache)
     {
       LoggingUtils.PrintFunction ();
 
@@ -214,6 +297,14 @@ namespace AndroidPlusPlus.Common
         if (listener == null)
         {
           throw new ArgumentNullException ("listener");
+        }
+
+        if (clearCache)
+        {
+          using (SyncRedirectProcess adbLogcatClearCommand = AndroidAdb.AdbCommand ("logcat", "-c"))
+          {
+            adbLogcatClearCommand.StartAndWaitForExit ();
+          }
         }
 
         AsyncRedirectProcess adbLogcatCommand = AndroidAdb.AdbCommandAsync (this, "logcat", "");

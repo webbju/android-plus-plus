@@ -26,7 +26,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public delegate int DebuggerEventListenerDelegate (DebugEngine pEngine, DebuggeeProcess pProcess, DebuggeeProgram pProgram, DebuggeeThread pThread, IDebugEvent2 pEvent, uint dwAttrib);
+  public delegate int DebuggerEventListenerDelegate (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -34,11 +34,11 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
   interface DebuggerEventListenerInterface
   {
-    int OnEngineCreate (DebugEngine pEngine, DebuggeeProcess pProcess, DebuggeeProgram pProgram, DebuggeeThread pThread, IDebugEvent2 pEvent, uint dwAttrib);
+    int OnEngineCreate (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
 
-    int OnProgramCreate (DebugEngine pEngine, DebuggeeProcess pProcess, DebuggeeProgram pProgram, DebuggeeThread pThread, IDebugEvent2 pEvent, uint dwAttrib);
+    int OnProgramCreate (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
 
-    int OnProgramDestroy (DebugEngine pEngine, DebuggeeProcess pProcess, DebuggeeProgram pProgram, DebuggeeThread pThread, IDebugEvent2 pEvent, uint dwAttrib);
+    int OnProgramDestroy (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
   }
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -61,6 +61,8 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     private uint m_debuggerServiceCookie;
 
     private Dictionary<Guid, DebuggerEventListenerDelegate> m_eventCallbacks;
+
+    private AsyncRedirectProcess m_adbLogcatInstance;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -87,6 +89,34 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       m_eventCallbacks.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.ProgramCreate)), OnProgramCreate);
 
       m_eventCallbacks.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.ProgramDestroy)), OnProgramDestroy);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private class DeviceLogcatListener : AsyncRedirectProcess.EventListener
+    {
+      public void ProcessStdout (object sendingProcess, DataReceivedEventArgs args)
+      {
+        if (!string.IsNullOrWhiteSpace (args.Data))
+        {
+          DebugOutputWindow.WriteLine (args.Data);
+        }
+      }
+
+      public void ProcessStderr (object sendingProcess, DataReceivedEventArgs args)
+      {
+        if (!string.IsNullOrWhiteSpace (args.Data))
+        {
+          DebugOutputWindow.WriteLine (args.Data);
+        }
+      }
+
+      public void ProcessExited (object sendingProcess, EventArgs args)
+      {
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -135,15 +165,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
           return DebugEngineConstants.E_NOTIMPL;
         }
 
-        DebugEngine debugEngine = pEngine as DebugEngine;
-
-        DebuggeeProcess debugProcess = pProcess as DebuggeeProcess;
-
-        DebuggeeProgram debugProgram = pProgram as DebuggeeProgram;
-
-        DebuggeeThread debugThread = pThread as DebuggeeThread;
-
-        LoggingUtils.RequireOk (callback (debugEngine, debugProcess, debugProgram, debugThread, pEvent, dwAttrib));
+        LoggingUtils.RequireOk (callback (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib));
 
         return VSConstants.S_OK;
       }
@@ -171,33 +193,87 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int OnEngineCreate (DebugEngine pEngine, DebuggeeProcess pProcess, DebuggeeProgram pProgram, DebuggeeThread pThread, IDebugEvent2 pEvent, uint dwAttrib)
+    public int OnEngineCreate (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      return VSConstants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int OnProgramCreate (DebugEngine pEngine, DebuggeeProcess pProcess, DebuggeeProgram pProgram, DebuggeeThread pThread, IDebugEvent2 pEvent, uint dwAttrib)
+    public int OnProgramCreate (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      try
+      {
+        /*DebuggeeProgram p = pProgram as DebuggeeProgram;
+
+        bool worked = false;
+
+        if (pProgram is DebuggeeProgram)
+        {
+          worked = true;
+        }
+
+        Type t = pProgram.GetType ();
+
+        IntPtr pUnk = Marshal.GetIUnknownForObject (pProgram);
+
+        Guid guidDebuggeeProgram = ComUtils.GuidOf (typeof (IDebugProgram2));
+
+        IDebugProgram2 debuggeeProgramObj = (IDebugProgram2) Marshal.GetTypedObjectForIUnknown (pUnk, typeof (IDebugProgram2));
+
+        DebuggeeProgram debuggeeProgram = debuggeeProgramObj as DebuggeeProgram;
+
+        debuggeeProgram = (DebuggeeProgram) Marshal.CreateWrapperOfType (debuggeeProgramObj, typeof (IDebugProgram2));
+        */
+
+        m_adbLogcatInstance = AndroidAdb.GetConnectedDevices () [0].Logcat (new DeviceLogcatListener (), true);
+
+        return VSConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return VSConstants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int OnProgramDestroy (DebugEngine pEngine, DebuggeeProcess pProcess, DebuggeeProgram pProgram, DebuggeeThread pThread, IDebugEvent2 pEvent, uint dwAttrib)
+    public int OnProgramDestroy (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      try
+      {
+        if (m_adbLogcatInstance != null)
+        {
+          if (!m_adbLogcatInstance.Process.HasExited)
+          {
+            m_adbLogcatInstance.Kill ();
+          }
+
+          m_adbLogcatInstance.Dispose ();
+
+          m_adbLogcatInstance = null;
+        }
+
+        return VSConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return VSConstants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

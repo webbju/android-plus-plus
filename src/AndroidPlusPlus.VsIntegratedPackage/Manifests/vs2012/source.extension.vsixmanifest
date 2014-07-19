@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Id="AndroidPlusPlus.VsIntegratedPackage..baec2848-0d7c-4c57-a156-d0a340cb993a" Version="0.1.0.0" Language="en-US" Publisher="Justin Webb" />
+    <Identity Id="AndroidPlusPlus.VsIntegratedPackage..baec2848-0d7c-4c57-a156-d0a340cb993a" Version="0.2.0.0" Language="en-US" Publisher="Justin Webb" />
     <DisplayName>Android++</DisplayName>
     <Description xml:space="preserve">Native development and debugging extension for Visual Studio.</Description>
     <MoreInfo>http://www.android-plus-plus.com</MoreInfo>
