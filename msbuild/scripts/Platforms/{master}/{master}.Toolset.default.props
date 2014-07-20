@@ -86,7 +86,7 @@
 
       <PrecompiledHeaderFile Condition="'%(ClCompile.PrecompiledHeaderFile)' == ''">StdAfx.h</PrecompiledHeaderFile>
 
-      <PrecompiledHeaderOutputFile Condition="'%(ClCompile.PrecompiledHeaderOutputFile)' == ''">$(IntDir)$(TargetName)</PrecompiledHeaderOutputFile>
+      <PrecompiledHeaderOutputFile Condition="'%(ClCompile.PrecompiledHeaderOutputFile)' == ''">$(IntDir)%(PrecompiledHeaderFile).pch</PrecompiledHeaderOutputFile>
 
       <ProcessorNumber Condition="'$(CL_MPCount)' != ''">$(CL_MPCount)</ProcessorNumber>
 

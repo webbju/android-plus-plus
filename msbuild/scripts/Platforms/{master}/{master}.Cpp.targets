@@ -99,8 +99,8 @@
     <ItemGroup>
       <!-- Create a list of PCH requirements for each of the registered sources. Add a new item for each PCH input on sources flagged 'create'. -->
       <ClCompilePch Include="@(ClCompile->'%(RelativeDir)%(PrecompiledHeaderFile)')" Condition="'%(PrecompiledHeader)' == 'Create'">
-        <ObjectFileName Condition="'$(LlvmVersion)' == ''">%(ClCompile.PrecompiledHeaderFile).gch</ObjectFileName>
-        <ObjectFileName Condition="'$(LlvmVersion)' != ''">$(IntDir)%(ClCompile.PrecompiledHeaderOutputFile).pch</ObjectFileName>
+        <ObjectFileName Condition="'$(LlvmVersion)' == ''">%(ClCompile.PrecompiledHeaderOutputFile)</ObjectFileName>
+        <ObjectFileName Condition="'$(LlvmVersion)' != ''">%(ClCompile.PrecompiledHeaderOutputFile)</ObjectFileName>
         <CompileAs Condition="'%(ClCompile.CompileAs)' == 'CompileAsC'">CompileAsCHeader</CompileAs>
         <CompileAs Condition="'%(ClCompile.CompileAs)' != 'CompileAsC'">CompileAsCppHeader</CompileAs>
         <LinkCompiled Condition="'%(ClCompile.PrecompiledHeader)' == 'Create'">false</LinkCompiled>
@@ -108,8 +108,10 @@
 
       <!-- GCC and Clang use slightly different methods of including PCHs. Clang also allows them to be placed in intermediate directories. -->
       <ClCompile>
-        <ForcedIncludeFiles Condition="('%(ClCompile.PrecompiledHeader)' == 'Use' and '$(LlvmVersion)' == '')">%(ClCompile.PrecompiledHeaderFile);%(ForcedIncludeFiles)</ForcedIncludeFiles>
-        <ForcedIncludeFiles Condition="('%(ClCompile.PrecompiledHeader)' == 'Use' and '$(LlvmVersion)' != '')">$(IntDir)%(ClCompile.PrecompiledHeaderOutputFile);%(ForcedIncludeFiles)</ForcedIncludeFiles>
+        <OutputFile Condition="('%(ClCompile.PrecompiledHeader)' == 'Create' and '$(LlvmVersion)' == '')">%(ClCompile.PrecompiledHeaderOutputFile)</OutputFile>
+        <OutputFile Condition="('%(ClCompile.PrecompiledHeader)' == 'Create' and '$(LlvmVersion)' != '')">%(ClCompile.PrecompiledHeaderOutputFile)</OutputFile>
+        <ForcedIncludeFiles Condition="('%(ClCompile.PrecompiledHeader)' == 'Use' and '$(LlvmVersion)' == '')">$([System.String]::Copy('%(ClCompile.PrecompiledHeaderOutputFile)').Replace('.gch',''));%(ForcedIncludeFiles)</ForcedIncludeFiles>
+        <ForcedIncludeFiles Condition="('%(ClCompile.PrecompiledHeader)' == 'Use' and '$(LlvmVersion)' != '')">$([System.String]::Copy('%(ClCompile.PrecompiledHeaderOutputFile)').Replace('.pch',''));%(ForcedIncludeFiles);%(ForcedIncludeFiles)</ForcedIncludeFiles>
       </ClCompile>
     </ItemGroup>
 

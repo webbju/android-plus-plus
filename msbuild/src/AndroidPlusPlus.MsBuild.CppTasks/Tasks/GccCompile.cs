@@ -46,15 +46,6 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected override int TrackedExecuteTool (string pathToTool, string responseFileCommands, string commandLineCommands)
-    {
-
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     protected override void TrackedExecuteToolOutput (KeyValuePair<string, List<ITaskItem>> commandAndSourceFiles, string singleLine)
     {
       if (ToolExe.StartsWith ("clang"))
@@ -114,9 +105,9 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
 
       foreach (ITaskItem source in sources)
       {
-        if (!string.IsNullOrWhiteSpace (source.GetMetadata ("ForcedIncludeFiles")))
+        try
         {
-          try
+          if (!string.IsNullOrWhiteSpace (source.GetMetadata ("ForcedIncludeFiles")))
           {
             string [] forcedIncludeFiles = source.GetMetadata ("ForcedIncludeFiles").Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
 
@@ -125,7 +116,7 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
             foreach (string file in forcedIncludeFiles)
             {
               // 
-              // Clang supports including pre-compiled headers via '-include' but they are referenced without ".pch". Fix this.
+              // Supports including pre-compiled headers via '-include' when they need to be referenced without '.pch'/'.gch'. Fix this.
               // 
 
               string fileFullPath = Path.GetFullPath (file);
@@ -134,6 +125,10 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
               {
                 fileFullPath = fileFullPath + ".pch";
               }
+              else if (File.Exists (fileFullPath + ".gch"))
+              {
+                fileFullPath = fileFullPath + ".gch";
+              }
 
               // 
               // Also validate that we don't try adding dependencies to missing files, as this breaks tracking.
@@ -141,7 +136,7 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
 
               if (!File.Exists (fileFullPath))
               {
-                throw new FileNotFoundException ("Could not find task specific dependency: " + fileFullPath);
+                throw new FileNotFoundException ("Could not find 'forced include' dependency: " + fileFullPath);
               }
 
               forcedIncludeItems.Add (new TaskItem (fileFullPath));
@@ -149,10 +144,10 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
 
             trackedFileManager.AddDependencyForSources (forcedIncludeItems.ToArray (), new ITaskItem [] { source });
           }
-          catch (System.Exception e)
-          {
-            Log.LogWarningFromException (e, true);
-          }
+        }
+        catch (Exception e)
+        {
+          Log.LogWarningFromException (e, false);
         }
       }
     }

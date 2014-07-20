@@ -1001,18 +1001,24 @@ namespace AndroidPlusPlus.MsBuild.Common
             {
               dependantFiles.Clear ();
 
-              string dependantOutputFile = source.GetMetadata ("OutputFile");
-
-              string dependantObjectFileName = source.GetMetadata ("ObjectFileName");
-
-              if (!string.IsNullOrWhiteSpace (dependantOutputFile))
+              if (!string.IsNullOrWhiteSpace (source.GetMetadata ("OutputFile")))
               {
-                dependantFiles.Add (new TaskItem (Path.GetFullPath (dependantOutputFile)));
+                dependantFiles.Add (new TaskItem (Path.GetFullPath (source.GetMetadata ("OutputFile"))));
               }
 
-              if (!string.IsNullOrWhiteSpace (dependantObjectFileName))
+              if (!string.IsNullOrWhiteSpace (source.GetMetadata ("ObjectFileName")))
               {
-                dependantFiles.Add (new TaskItem (Path.GetFullPath (dependantObjectFileName)));
+                dependantFiles.Add (new TaskItem (Path.GetFullPath (source.GetMetadata ("ObjectFileName"))));
+              }
+
+              if (!string.IsNullOrWhiteSpace (source.GetMetadata ("OutputFiles")))
+              {
+                string [] files = source.GetMetadata ("OutputFiles").Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+
+                foreach (string file in files)
+                {
+                  dependantFiles.Add (new TaskItem (Path.GetFullPath (file)));
+                }
               }
 
               trackedFileManager.AddDependencyForSources (dependantFiles.ToArray (), new ITaskItem [] { source });
