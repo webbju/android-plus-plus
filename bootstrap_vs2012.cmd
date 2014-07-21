@@ -6,7 +6,7 @@
 
 cd %~dp0
 
-set ANDROID_PLUS_PLUS=%CD%
+setx ANDROID_PLUS_PLUS "%CD%"
 
 setlocal
 

@@ -36,7 +36,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    List<string> m_outputClassPackages;
+    HashSet<string> m_outputClassPackages;
 
     List<ITaskItem> m_outputClassSourceFiles;
 
@@ -67,7 +67,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     {
       if (base.Setup ())
       {
-        m_outputClassPackages = new List<string> ();
+        m_outputClassPackages = new HashSet<string> ();
 
         m_outputClassSourceFiles = new List<ITaskItem> ();
 

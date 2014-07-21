@@ -122,8 +122,6 @@ namespace AndroidPlusPlus.MsBuild.Common
 
     public override bool Execute ()
     {
-      //System.Diagnostics.Debugger.Launch ();
-
       try
       {
         if (Setup ())
@@ -153,7 +151,7 @@ namespace AndroidPlusPlus.MsBuild.Common
         // Construct list of target output files for all valid sources.
         // 
 
-        List<string> outputFiles = new List<string> ();
+        HashSet<string> outputFiles = new HashSet<string> ();
 
         foreach (ITaskItem source in Sources)
         {
@@ -187,7 +185,18 @@ namespace AndroidPlusPlus.MsBuild.Common
           }
         }
 
-        OutputFiles = outputFiles.ConvertAll<ITaskItem> (element => new TaskItem (Path.GetFullPath (element))).ToArray ();
+        // 
+        // Convert all output file paths to exportable items.
+        // 
+
+        List<ITaskItem> outputFileItems = new List<ITaskItem> ();
+
+        foreach (string outputFile in outputFiles)
+        {
+          outputFileItems.Add (new TaskItem (Path.GetFullPath (outputFile)));
+        }
+
+        OutputFiles = outputFileItems.ToArray ();
       }
       catch (Exception e)
       {
@@ -870,7 +879,7 @@ namespace AndroidPlusPlus.MsBuild.Common
                 dependencyFilePermutations.Add (dependantOutputFile + ".d", dependantOutputFile);
               }
 
-              if (string.IsNullOrWhiteSpace (dependantObjectFileName))
+              if (!string.IsNullOrWhiteSpace (dependantObjectFileName))
               {
                 dependencyFilePermutations.Add (Path.ChangeExtension (dependantObjectFileName, ".d"), dependantObjectFileName);
 
@@ -905,7 +914,7 @@ namespace AndroidPlusPlus.MsBuild.Common
                   GccUtilities.DependencyParser parser = new GccUtilities.DependencyParser (dependencyFile);
 
 #if DEBUG
-                  Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : {1} ({2})", ToolName, dependencyFile, parser.Dependencies.Count), MessageImportance.Low);
+                  Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : {1} (Entries: {2})", ToolName, dependencyFile, parser.Dependencies.Count), MessageImportance.Low);
 
                   for (int i = 0; i < parser.Dependencies.Count; ++i)
                   {

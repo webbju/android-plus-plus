@@ -51,7 +51,7 @@ namespace AndroidPlusPlus.Common
 
       if (!File.Exists (filename))
       {
-        throw new ArgumentException ();
+        throw new ArgumentException ("filename");
       }
 
       StartInfo = CreateDefaultStartInfo ();

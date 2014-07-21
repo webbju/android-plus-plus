@@ -134,7 +134,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (m_debugModules.Contains (module))
         {
-          throw new ArgumentException ();
+          throw new ArgumentException ("module");
         }
 
         m_debugModules.Add (module);
@@ -191,7 +191,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (!m_debugModules.Contains (module))
         {
-          throw new ArgumentException ();
+          throw new ArgumentException ("module");
         }
 
         m_debugModules.Remove (module);
@@ -219,7 +219,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (m_debugThreads.ContainsKey (threadId))
         {
-          throw new ArgumentException ();
+          throw new ArgumentException ("threadId");
         }
 
         m_debugThreads.Add (threadId, thread);
@@ -250,7 +250,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (m_debugThreads.ContainsKey (threadId))
         {
-          throw new ArgumentException ();
+          throw new ArgumentException ("threadId");
         }
 
         m_debugThreads.Remove (threadId);

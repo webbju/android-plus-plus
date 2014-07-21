@@ -140,7 +140,7 @@ namespace AndroidPlusPlus.MsBuild.Common
         // Construct list of target output files for all valid sources.
         // 
 
-        List<string> outputFiles = new List<string> ();
+        HashSet<string> outputFiles = new HashSet<string> ();
 
         foreach (ITaskItem source in OutOfDateSources)
         {
@@ -174,7 +174,18 @@ namespace AndroidPlusPlus.MsBuild.Common
           }
         }
 
-        OutputFiles = outputFiles.ConvertAll <ITaskItem> (element => new TaskItem (Path.GetFullPath (element))).ToArray ();
+        // 
+        // Convert all output file paths to exportable items.
+        // 
+
+        List<ITaskItem> outputFileItems = new List<ITaskItem> ();
+
+        foreach (string outputFile in outputFiles)
+        {
+          outputFileItems.Add (new TaskItem (Path.GetFullPath (outputFile)));
+        }
+
+        OutputFiles = outputFileItems.ToArray ();
       }
       catch (Exception e)
       {

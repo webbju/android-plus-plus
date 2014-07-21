@@ -38,7 +38,7 @@ namespace AndroidPlusPlus.MsBuild.Common
     public static Dictionary<string, List <string>> GetDependencyTableFromTLog (ITaskItem tLogItem)
     {
       // 
-      // Parse and collate a TLog. It's best to achieve this by associating dependancy graph 'entries' with associated sources.
+      // Parse and collate a TLog. It's best to achieve this by associating dependency graph 'entries' with associated sources.
       // 
       // Format:
       // 

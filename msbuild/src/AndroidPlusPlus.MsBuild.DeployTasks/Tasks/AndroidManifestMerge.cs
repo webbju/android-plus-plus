@@ -157,9 +157,9 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
         if (MergedManifest != null)
         {
-          List<string> extraPackages = new List<string> ();
+          HashSet<string> extraPackages = new HashSet<string> ();
 
-          List<string> extraResourcePaths = new List<string> ();
+          HashSet<string> extraResourcePaths = new HashSet<string> ();
 
           extraResourcePaths.Add (MergedManifest.GetMetadata ("IncludeResourceDirectories"));
 

@@ -171,7 +171,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (compareToItems.Length != compareToLength)
         {
-          throw new ArgumentException ();
+          throw new ArgumentException ("Comparing contexts of different sizes.");
         }
 
         for (uint i = 0; i < compareToLength; ++i)

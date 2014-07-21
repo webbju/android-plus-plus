@@ -96,7 +96,7 @@ namespace AndroidPlusPlus.MsBuild.Common
                   // Encountered a canonical source root node. Add each of the sources referenced here to the dependency graph.
                   // 
 
-                  List<string> trackedSources = new List<string> (trackedSourceLineData.Substring (1).ToUpperInvariant ().Split ('|'));
+                  HashSet<string> trackedSources = new HashSet<string> (trackedSourceLineData.Substring (1).ToUpperInvariant ().Split ('|'));
 
                   foreach (string source in trackedSources)
                   {
@@ -117,7 +117,7 @@ namespace AndroidPlusPlus.MsBuild.Common
                     continue;
                   }
 
-                  List<string> trackedSourceDependencies = new List<string> ();
+                  HashSet<string> trackedSourceDependencies = new HashSet<string> ();
 
                   while (!string.IsNullOrWhiteSpace (trackedSourceLineData))
                   {

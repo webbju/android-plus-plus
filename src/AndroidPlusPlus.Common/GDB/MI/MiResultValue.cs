@@ -35,7 +35,7 @@ namespace AndroidPlusPlus.Common
     {
       if (string.IsNullOrEmpty (variable))
       {
-        throw new ArgumentException ();
+        throw new ArgumentException ("variable");
       }
 
       Variable = variable;
@@ -85,7 +85,7 @@ namespace AndroidPlusPlus.Common
     {
       if (!HasField (field))
       {
-        throw new ArgumentException ();
+        throw new ArgumentException ("field");
       }
 
       return m_fieldDictionary [field];

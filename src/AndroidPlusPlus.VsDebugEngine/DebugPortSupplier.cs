@@ -236,7 +236,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (!(pPort is DebuggeePort))
         {
-          throw new ArgumentException ();
+          throw new ArgumentException ("pPort");
         }
 
         m_registeredPorts.Remove (pPort as DebuggeePort);
