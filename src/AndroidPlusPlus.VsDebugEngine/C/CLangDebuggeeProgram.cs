@@ -77,12 +77,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand ("-thread-list-ids");
+        string command = "-thread-list-ids";
 
-        if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
-        {
-          throw new InvalidOperationException ();
-        }
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+
+        MiResultRecord.RequireOk (resultRecord, command);
 
         if (resultRecord.HasField ("thread-ids"))
         {
@@ -223,7 +222,6 @@ namespace AndroidPlusPlus.VsDebugEngine
         }
 
         m_debugThreads.Add (threadId, thread);
-
       }
 
       m_debugger.Engine.Broadcast (new DebugEngineEvent.ThreadCreate (), DebugProgram, thread);
@@ -898,12 +896,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         LoggingUtils.RequireOk (thread.GetThreadId (out threadId));
 
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand ("-thread-select " + threadId);
+        string command = "-thread-select " + threadId;
 
-        if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
-        {
-          throw new InvalidOperationException ();
-        }
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+
+        MiResultRecord.RequireOk (resultRecord, command);
 
         CurrentThreadId = threadId;
 

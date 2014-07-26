@@ -73,12 +73,11 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         DebuggeeCodeContext codeContext = pStartContext as DebuggeeCodeContext;
 
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-data-read-memory-bytes {0} {1}", codeContext.Address.ToString (), dwCount));
+        string command = string.Format ("-data-read-memory-bytes {0} {1}", codeContext.Address.ToString (), dwCount);
 
-        if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
-        {
-          throw new InvalidOperationException ();
-        }
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+
+        MiResultRecord.RequireOk (resultRecord, command);
 
         MiResultValue byteStream = resultRecord ["memory"] [0] ["contents"] [0];
 
@@ -135,12 +134,11 @@ namespace AndroidPlusPlus.VsDebugEngine
           stringBuilder.Append (rgbMemory [i].ToString ("x"));
         }
 
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-data-write-memory {0} {1} {2}", codeContext.Address.ToString (), stringBuilder.ToString (), dwCount));
+        string command = string.Format ("-data-write-memory {0} {1} {2}", codeContext.Address.ToString (), stringBuilder.ToString (), dwCount);
 
-        if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
-        {
-          throw new InvalidOperationException ();
-        }
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+
+        MiResultRecord.RequireOk (resultRecord, command);
 
         return DebugEngineConstants.S_OK;
       }

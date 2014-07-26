@@ -49,6 +49,10 @@
 
       <KeystoreAlias Condition="'%(AndroidApkSign.KeystoreAlias)' == ''">androiddebugkey</KeystoreAlias>
 
+      <!--
+        Default TrackedToolTask properties.
+      -->
+
       <OutputCommandLine Condition="'%(AndroidApkSign.OutputCommandLine)' == ''">false</OutputCommandLine>
 
       <TrackerLogDirectory Condition="'%(AndroidApkSign.TrackerLogDirectory)' == ''">$(IntDir)</TrackerLogDirectory>

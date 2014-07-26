@@ -52,13 +52,15 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SystemLibraryDependencies>dl;GLESv1_CM;GLESv2;%(SystemLibraryDependencies)</SystemLibraryDependencies>
-      <AdditionalLibraryDirectories>$(OutDir)\$(TargetPlatformArchitectureEabi)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL2</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+      <AdditionalLibraries>SDL2</AdditionalLibraries>
     </Link>
     <AndroidManifest>
       <IncludeJarOrZip>
       </IncludeJarOrZip>
-      <IncludeRawAssetsDirectory>%(RelativeDir)assets</IncludeRawAssetsDirectory>
+      <IncludeRawAssetsDirectory>$(ProjectDir)assets</IncludeRawAssetsDirectory>
     </AndroidManifest>
     <AndroidJava />
   </ItemDefinitionGroup>
@@ -74,12 +76,15 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SystemLibraryDependencies>dl;GLESv1_CM;GLESv2;%(SystemLibraryDependencies)</SystemLibraryDependencies>
-      <AdditionalLibraryDirectories>$(OutDir)\$(TargetPlatformArchitectureEabi)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL2</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+      <AdditionalLibraries>SDL2</AdditionalLibraries>
     </Link>
     <AndroidManifest>
-      <IncludeJarOrZip>%(RelativeDir)contrib\libs\libsdl-lib.jar</IncludeJarOrZip>
-      <IncludeRawAssetsDirectory>%(RelativeDir)assets</IncludeRawAssetsDirectory>
+      <IncludeJarOrZip>
+      </IncludeJarOrZip>
+      <IncludeRawAssetsDirectory>$(ProjectDir)assets</IncludeRawAssetsDirectory>
     </AndroidManifest>
     <AndroidJava />
   </ItemDefinitionGroup>

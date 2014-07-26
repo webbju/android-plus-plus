@@ -32,6 +32,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private List <DebuggeeBreakpointPending> m_pendingBreakpoints;
 
+    private bool m_requiresRefresh = false;
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -141,7 +143,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void ClearBoundBreakpoints ()
+    public void ClearBreakpoints ()
     {
       // 
       // Called from the debug engine's Detach method to remove the active (bound) breakpoint instructions.
@@ -153,10 +155,12 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         lock (m_pendingBreakpoints)
         {
-          foreach (DebuggeeBreakpointPending breakpoint in m_pendingBreakpoints)
+          for (int i = m_pendingBreakpoints.Count - 1; i >= 0; --i)
           {
-            breakpoint.ClearBoundBreakpoints ();
+            m_pendingBreakpoints [i].Delete ();
           }
+
+          m_pendingBreakpoints.Clear ();
         }
       }
       catch (Exception e)
@@ -171,7 +175,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void RefreshBoundBreakpoints ()
+    public void RefreshBreakpoints (bool immediateMode)
     {
       // 
       // Searches registered pending breakpoints to determine whether their status has changed.
@@ -181,12 +185,26 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        lock (m_pendingBreakpoints)
+        bool shouldRefresh = immediateMode | m_requiresRefresh;
+
+        if (shouldRefresh)
         {
-          foreach (DebuggeeBreakpointPending breakpoint in m_pendingBreakpoints)
+          lock (m_pendingBreakpoints)
           {
-            breakpoint.RefreshBoundBreakpoints ();
+            foreach (DebuggeeBreakpointPending breakpoint in m_pendingBreakpoints)
+            {
+              breakpoint.RefreshBoundBreakpoints ();
+
+              breakpoint.RefreshErrorBreakpoints ();
+            }
           }
+
+          m_requiresRefresh = false;
+        }
+
+        if (!shouldRefresh && !immediateMode)
+        {
+          m_requiresRefresh = true;
         }
       }
       catch (Exception e)
@@ -213,7 +231,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         IEnumDebugBoundBreakpoints2 enumeratedBreakpoints;
 
-        pending.EnumBoundBreakpoints (out enumeratedBreakpoints);
+        LoggingUtils.RequireOk (pending.EnumBoundBreakpoints (out enumeratedBreakpoints));
 
         LoggingUtils.RequireOk (enumeratedBreakpoints.GetCount (out numBoundBreakpoints));
 

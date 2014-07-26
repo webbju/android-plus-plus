@@ -323,7 +323,7 @@
 
   <!-- <FileExtension Name="*.apk" ContentType="AndroidApkSign" /> -->
 
-  <ContentType  Name="AndroidApkSign" DisplayName="Android Apk Signing Tool" ItemType="AndroidApkSign" />
+  <ContentType Name="AndroidApkSign" DisplayName="Android Apk Signing Tool" ItemType="AndroidApkSign" />
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

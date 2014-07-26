@@ -107,12 +107,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\native-library-b.cpp" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\native-library-a\native-library-a.vcxproj">
       <Project>{94272158-481e-439f-8996-6c49cf6bd211}</Project>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="src\native-library-b.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

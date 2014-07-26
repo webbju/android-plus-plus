@@ -37,61 +37,84 @@ namespace AndroidPlusPlus.MsBuild.Common
       // 
       // Parse and reformat GCC error and warning output into a Visual Studio 'jump to line' style.
       // 
-      //    CppSource/demo.c:51: error: conflicting types for 'seedRandom'
-      // becomes:
-      //    c:\Projects\san-angeles\CppSource\demo.c(51) error: conflicting types for 'seedRandom'
-      // 
 
-      string [] GCC_REGEX_ERROR_MATCH = 
+      StringBuilder vsOutputBuilder = new StringBuilder (line);
+
+      string [] patterns = new string []
       {
-        @"^\s*In file included from (.?.?[^:]*.*?):([1-9]\d*):(.*$)",   // "In file included from CppSource/demo.c:32:"
-        @"^\s*(.?.?[^:]*.*?):([1-9]\d*):([1-9]\d*):(.*$)",              // "CppSource/importgl.c:25:17: error: new.h: No such file or directory"
-        @"^\s*(.?.?[^:]*.*?):([1-9]\d*):(.*$)",                         // "CppSource/demo.c:51: error: conflicting types for 'seedRandom'"
-        @"^\s*(.?.?[^:]*.*?):(.?.?[^:]*.*?):([1-9]\d*):(.*$)",          // "Android/Debug/app-android.o:C:\Projects\vs-android_samples\san-angeles/CppSource/app-android.c:38: first defined here"
+        // "src/foo.c:25: error: new.h: No such file or directory"
+        // "src/foo.c:13:15: error: undefined reference to 'native_library_a_dummy()'"
+        "^(?<sourcefile>.?.?[^:]*.*?):(?<row>[0-9]*):?(?<column>[0-9]*)?: (?<message>.*$)",
+
+        // "debug/foo.obj:src/foo.c:38: first defined here"
+        "^(?<objectfile>.?.?[^:]*.*?):(?<sourcefile>.?.?[^:]*.*?):?(?<row>[0-9]*)?: (?<message>.*$)",
+
+        // debug/libFoobar.a(foo.obj):src/foo.c:function AnExampleFunction::nativeMethodDefs: error: undefined reference to 'nativeCallback(_JNIEnv*, _jobject*, _jstring*)'
+        "^(?<objectfile>.?.?[^:]*.*?):(?<sourcefile>.?.?[^:]*.*?):function (?<function>[^ ]*)(?<message>.*$)",
       };
 
-      string [] GCC_REGEX_FILENAME_GROUP = 
+      foreach (string pattern in patterns)
       {
-        @"$1",
-        @"$1",
-        @"$1",
-        @"$2",
-      };
+        Regex regExMatcher = new Regex (pattern, RegexOptions.Compiled);
 
-      string [] GCC_REGEX_ERROR_TO_VS_REPLACE = 
-      {
-        @"($2): includes this header: $3",
-        @"($2,$3): $4",
-        @"($2): $3",
-        @"($3): '$1' $4",
-      };
+        Match regExMatch = regExMatcher.Match (line);
 
-      for (int i = 0; i < GCC_REGEX_ERROR_MATCH.Length; ++i)
-      {
-        Regex regExMatcher = new Regex (GCC_REGEX_ERROR_MATCH [i]);
-
-        if (regExMatcher.IsMatch (line))
+        if (regExMatch.Success)
         {
-          string filename = regExMatcher.Replace (line, GCC_REGEX_FILENAME_GROUP [i]);
+          string sourcefile = regExMatch.Result ("${sourcefile}");
 
-          filename = PathUtils.ConvertPathCygwinToWindows (filename);
+          string objectfile = regExMatch.Result ("${objectfile}");
 
-          string description = regExMatcher.Replace (line, GCC_REGEX_ERROR_TO_VS_REPLACE [i]);
+          string row = regExMatch.Result ("${row}");
 
-          try
+          string column = regExMatch.Result ("${column}");
+
+          string function = regExMatch.Result ("${function}");
+
+          string message = regExMatch.Result ("${message}");
+
+          vsOutputBuilder.Clear ();
+
+          if (!string.IsNullOrWhiteSpace (sourcefile))
           {
-            filename = Path.GetFullPath (filename);
-          }
-          catch (Exception)
-          {
-            // Not really concerned if this fails at the moment.
+            vsOutputBuilder.Append (PathUtils.ConvertPathCygwinToWindows (sourcefile));
           }
 
-          return filename + description;
+          if (!string.IsNullOrWhiteSpace (row))
+          {
+            if (!string.IsNullOrWhiteSpace (column))
+            {
+              vsOutputBuilder.AppendFormat ("({0},{1})", row, column);
+            }
+            else
+            {
+              vsOutputBuilder.AppendFormat ("({0})", row);
+            }
+          }
+
+          vsOutputBuilder.Append (": ");
+
+          if (!string.IsNullOrWhiteSpace (message))
+          {
+            vsOutputBuilder.Append (message);
+          }
+
+#if false
+          if (!string.IsNullOrWhiteSpace (function))
+          {
+            vsOutputBuilder.AppendFormat (" ({0})", function.Trim (new char [] { ':' }));
+          }
+#endif
+
+          break;
         }
       }
 
-      return line;
+      vsOutputBuilder.Replace ("error: ", "error :");
+
+      vsOutputBuilder.Replace ("warning: ", "warning :");
+
+      return vsOutputBuilder.ToString ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

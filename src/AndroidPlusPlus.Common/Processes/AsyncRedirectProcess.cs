@@ -48,6 +48,12 @@ namespace AndroidPlusPlus.Common
 
     protected TextWriter m_stdInputWriter = null;
 
+    protected Process m_process;
+
+    protected ProcessStartInfo m_processStartInfo;
+
+    protected EventListener m_listener = null;
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -59,25 +65,18 @@ namespace AndroidPlusPlus.Common
         throw new ArgumentNullException ("filename");
       }
 
-      if (arguments == null)
-      {
-        throw new ArgumentNullException ("arguments");
-      }
-
       if (!File.Exists (filename))
       {
         throw new FileNotFoundException ("Could not find target executable.", filename);
       }
 
-      Listener = null;
+      m_processStartInfo = CreateDefaultStartInfo ();
 
-      StartInfo = CreateDefaultStartInfo ();
+      m_processStartInfo.FileName = filename;
 
-      StartInfo.FileName = filename;
+      m_processStartInfo.Arguments = arguments;
 
-      StartInfo.Arguments = arguments;
-
-      StartInfo.WorkingDirectory = workingDirectory ?? Path.GetDirectoryName (filename);
+      m_processStartInfo.WorkingDirectory = workingDirectory ?? Path.GetDirectoryName (filename);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -90,7 +89,7 @@ namespace AndroidPlusPlus.Common
 
       try
       {
-        Process.Dispose ();
+        m_process.Dispose ();
       }
       catch (Exception e)
       {
@@ -129,9 +128,9 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void Start ()
+    public void Start (EventListener listener)
     {
-      LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] Start: {0} (Args=\"{1}\" Pwd=\"{2}\")", StartInfo.FileName, StartInfo.Arguments, StartInfo.WorkingDirectory));
+      LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] Start: {0} (Args=\"{1}\" Pwd=\"{2}\")", m_processStartInfo.FileName, m_processStartInfo.Arguments, m_processStartInfo.WorkingDirectory));
 
       m_startTicks = Environment.TickCount;
 
@@ -139,30 +138,32 @@ namespace AndroidPlusPlus.Common
 
       m_exitMutex = new ManualResetEvent (false);
 
-      Process = new Process ();
+      m_listener = listener;
 
-      Process.StartInfo = StartInfo;
+      m_process = new Process ();
 
-      Process.OutputDataReceived += new DataReceivedEventHandler (ProcessStdout);
+      m_process.StartInfo = m_processStartInfo;
 
-      Process.ErrorDataReceived += new DataReceivedEventHandler (ProcessStderr);
+      m_process.OutputDataReceived += new DataReceivedEventHandler (ProcessStdout);
 
-      Process.Exited += new EventHandler (ProcessExited);
+      m_process.ErrorDataReceived += new DataReceivedEventHandler (ProcessStderr);
 
-      Process.EnableRaisingEvents = true;
+      m_process.Exited += new EventHandler (ProcessExited);
 
-      if (!Process.Start ())
+      m_process.EnableRaisingEvents = true;
+
+      if (!m_process.Start ())
       {
         m_exitMutex.Set ();
 
-        throw new InvalidOperationException ("Could not spawn async process - " + Process.StartInfo.FileName);
+        throw new InvalidOperationException ("Could not spawn async process - " + m_process.StartInfo.FileName);
       }
 
-      Process.BeginOutputReadLine ();
+      m_process.BeginOutputReadLine ();
 
-      Process.BeginErrorReadLine ();
+      m_process.BeginErrorReadLine ();
 
-      m_stdInputWriter = TextWriter.Synchronized (Process.StandardInput);
+      m_stdInputWriter = TextWriter.Synchronized (m_process.StandardInput);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -177,7 +178,7 @@ namespace AndroidPlusPlus.Common
       {
         if (!m_exitMutex.WaitOne (0))
         {
-          Process.Kill ();
+          m_process.Kill ();
         }
       }
       catch (Exception e)
@@ -218,9 +219,9 @@ namespace AndroidPlusPlus.Common
       }
       finally
       {
-        if (Listener != null)
+        if (m_listener != null)
         {
-          Listener.ProcessStdout (sendingProcess, args);
+          m_listener.ProcessStdout (sendingProcess, args);
         }
       }
     }
@@ -246,9 +247,9 @@ namespace AndroidPlusPlus.Common
       }
       finally
       {
-        if (Listener != null)
+        if (m_listener != null)
         {
-          Listener.ProcessStderr (sendingProcess, args);
+          m_listener.ProcessStderr (sendingProcess, args);
         }
       }
     }
@@ -275,30 +276,12 @@ namespace AndroidPlusPlus.Common
       }
       finally
       {
-        if (Listener != null)
+        if (m_listener != null)
         {
-          Listener.ProcessExited (sendingProcess, args);
+          m_listener.ProcessExited (sendingProcess, args);
         }
       }
     }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public Process Process { get; protected set; }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public ProcessStartInfo StartInfo { get; protected set; }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public EventListener Listener { get; set; }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

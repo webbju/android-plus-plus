@@ -218,38 +218,40 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         LoggingUtils.RequireOk (m_thread.GetThreadId (out threadId));
 
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-stack-list-variables --thread {0} --frame {1} --no-values", threadId, StackLevel));
+        string command = string.Format ("-stack-list-variables --thread {0} --frame {1} --no-values", threadId, StackLevel);
 
-        if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+
+        MiResultRecord.RequireOk (resultRecord, command);
+
+        if (resultRecord.HasField ("variables"))
         {
-          throw new InvalidOperationException ();
-        }
+          MiResultValue localVariables = resultRecord ["variables"] [0];
 
-        MiResultValue localVariables = resultRecord ["variables"] [0];
-
-        for (int i = 0; i < localVariables.Values.Count; ++i)
-        {
-          string variableName = localVariables [i] ["name"] [0].GetString ();
-
-          MiVariable variable = m_debugger.VariableManager.CreateVariableFromExpression (this, variableName);
-
-          DebuggeeProperty property = m_debugger.VariableManager.CreatePropertyFromVariable (this, variable);
-
-          if (property == null)
+          for (int i = 0; i < localVariables.Values.Count; ++i)
           {
-            continue;
-          }
+            string variableName = localVariables [i] ["name"] [0].GetString ();
 
-          if (localVariables [i].HasField ("arg"))
-          {
-            m_stackArguments.TryAdd (variableName, property);
-          }
-          else
-          {
-            m_stackLocals.TryAdd (variableName, property);
-          }
+            MiVariable variable = m_debugger.VariableManager.CreateVariableFromExpression (this, variableName);
 
-          m_property.AddChildren (new DebuggeeProperty [] { property });
+            DebuggeeProperty property = m_debugger.VariableManager.CreatePropertyFromVariable (this, variable);
+
+            if (property == null)
+            {
+              continue;
+            }
+
+            if (localVariables [i].HasField ("arg"))
+            {
+              m_stackArguments.TryAdd (variableName, property);
+            }
+            else
+            {
+              m_stackLocals.TryAdd (variableName, property);
+            }
+
+            m_property.AddChildren (new DebuggeeProperty [] { property });
+          }
         }
 
         return DebugEngineConstants.S_OK;

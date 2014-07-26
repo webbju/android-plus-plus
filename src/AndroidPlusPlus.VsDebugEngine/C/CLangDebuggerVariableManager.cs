@@ -50,13 +50,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public CLangDebuggeeProperty CreatePropertyFromVariable (CLangDebuggeeStackFrame stackFrame, MiVariable variable)
     {
-      if (string.IsNullOrEmpty (variable.Expression))
-      {
-        // Child 'public', 'private', 'protected' properties have a zero-length expression. Skip these.
-
-        return null;
-      }
-
       return new CLangDebuggeeProperty (m_debugger, stackFrame, variable);
     }
 
@@ -74,12 +67,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.RequireOk (stackThread.GetThreadId (out stackThreadId));
 
-      MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-var-create --thread {0} --frame {1} - * {2} ", stackThreadId, stackFrame.StackLevel, PathUtils.EscapePath (expression)));
+      string command = string.Format ("-var-create --thread {0} --frame {1} - * {2} ", stackThreadId, stackFrame.StackLevel, PathUtils.EscapePath (expression));
 
-      if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
-      {
-        return null;
-      }
+      MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+
+      MiResultRecord.RequireOk (resultRecord, command);
 
       return new MiVariable (expression, resultRecord.Results);
     }
@@ -92,12 +84,11 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       if (depth > 0)
       {
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-var-list-children --all-values {0}", parentVariable.Name));
+        string command = string.Format ("-var-list-children --all-values {0}", parentVariable.Name);
 
-        if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
-        {
-          throw new InvalidOperationException ();
-        }
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+
+        MiResultRecord.RequireOk (resultRecord, command);
 
         if (resultRecord.HasField ("children"))
         {
@@ -145,19 +136,16 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void UpdateVariable (MiVariable variable)
     {
-      MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-var-update --all-values {0}", variable.Name));
+      string command = string.Format ("-var-update --all-values {0}", variable.Name);
 
-      if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
+      MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+
+      MiResultRecord.RequireOk (resultRecord, command);
+
+      if (resultRecord.HasField ("changelist"))
       {
-        throw new InvalidOperationException ();
+        variable.Populate (resultRecord ["changelist"]);
       }
-
-      if (!resultRecord.HasField ("changelist"))
-      {
-        throw new InvalidOperationException ();
-      }
-
-      variable.Populate (resultRecord ["changelist"]);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -166,12 +154,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private void DeleteGdbVariable (MiVariable gdbVariable)
     {
-      MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-var-delete {0}", gdbVariable.Name));
+      string command = string.Format ("-var-delete {0}", gdbVariable.Name);
 
-      if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
-      {
-        throw new InvalidOperationException ();
-      }
+      MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+
+      MiResultRecord.RequireOk (resultRecord, command);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

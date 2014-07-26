@@ -77,12 +77,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         m_debugger.RunInterruptOperation (delegate ()
         {
-          MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand ("-break-delete " + GdbBreakpoint.ID);
+          string command = "-break-delete " + GdbBreakpoint.ID;
 
-          if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
-          {
-            throw new InvalidOperationException ();
-          }
+          MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+
+          MiResultRecord.RequireOk (resultRecord, command);
         });
 
         return DebugEngineConstants.S_OK;
@@ -120,12 +119,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         m_debugger.RunInterruptOperation (delegate ()
         {
-          MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand ((m_breakpointEnabled ? "-break-enable " : "-break-disable ") + GdbBreakpoint.ID);
+          string command = (m_breakpointEnabled ? "-break-enable " : "-break-disable ") + GdbBreakpoint.ID;
 
-          if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
-          {
-            throw new InvalidOperationException ();
-          }
+          MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+
+          MiResultRecord.RequireOk (resultRecord, command);
         });
 
         return DebugEngineConstants.S_OK;
@@ -180,12 +178,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         m_debugger.RunInterruptOperation (delegate ()
         {
-          MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-break-condition {0} {1}", GdbBreakpoint.ID, condition));
+          string command = string.Format ("-break-condition {0} {1}", GdbBreakpoint.ID, condition);
 
-          if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
-          {
-            throw new InvalidOperationException ();
-          }
+          MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+
+          MiResultRecord.RequireOk (resultRecord, command);
         });
 
         return DebugEngineConstants.S_OK;
@@ -251,12 +248,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         m_debugger.RunInterruptOperation (delegate ()
         {
-          MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-break-after {0} {1}", GdbBreakpoint.ID, passCount));
+          string command = string.Format ("-break-after {0} {1}", GdbBreakpoint.ID, passCount);
 
-          if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
-          {
-            throw new InvalidOperationException ();
-          }
+          MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+
+          MiResultRecord.RequireOk (resultRecord, command);
         });
 
         return DebugEngineConstants.S_OK;

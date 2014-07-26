@@ -153,7 +153,7 @@
 
   <!-- <FileExtension Name="*.apk" ContentType="AndroidApk" /> -->
 
-  <ContentType  Name="AndroidApk" DisplayName="Android Apk Tool" ItemType="AndroidApk" />
+  <ContentType Name="AndroidApk" DisplayName="Android Apk Tool" ItemType="AndroidApk" />
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

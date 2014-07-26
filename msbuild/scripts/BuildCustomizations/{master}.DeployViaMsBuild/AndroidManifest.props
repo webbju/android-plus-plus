@@ -121,6 +121,10 @@
 
       <IncludeRawDirectories Condition="'%(AndroidManifest.IncludeRawDirectories)' == ''"></IncludeRawDirectories>
 
+      <!--
+        Default TrackedToolTask properties.
+      -->
+
       <OutputCommandLine Condition="'%(AndroidManifest.OutputCommandLine)' == ''">false</OutputCommandLine>
 
       <TrackerLogDirectory Condition="'%(AndroidManifest.TrackerLogDirectory)' == ''">$(IntDir)</TrackerLogDirectory>

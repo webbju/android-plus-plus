@@ -213,7 +213,7 @@ namespace AndroidPlusPlus.MsBuild.Common
         }
 #endif
 
-        if (TrackFileAccess)
+        if ((retCode == 0) && TrackFileAccess)
         {
           OutputWriteTLog (m_commandBuffer, OutOfDateSources);
 

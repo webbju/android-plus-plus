@@ -75,7 +75,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public DebuggeeBreakpointError (DebugBreakpointManager breakpointManager, DebuggeeBreakpointPending pendingBreakpoint, DebuggeeCodeContext codeContext, string error)
     {
+      m_breakpointManager = breakpointManager;
+
       m_pendingBreakpoint = pendingBreakpoint;
+
+      m_codeContext = codeContext;
 
       m_breakpointResolution = new DebuggeeBreakpointResolution (m_codeContext, error);
     }

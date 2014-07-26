@@ -224,7 +224,7 @@ namespace AndroidPlusPlus.MsBuild.Common
         }
 #endif
 
-        if (TrackFileAccess)
+        if ((retCode == 0) && TrackFileAccess)
         {
           OutputWriteTLog (m_commandBuffer, OutputFiles);
 
@@ -381,71 +381,62 @@ namespace AndroidPlusPlus.MsBuild.Common
 
                 using (Process trackedProcess = new Process ())
                 {
-                  using (ManualResetEvent trackedProcessSignal = new ManualResetEvent (false))
+                  trackedProcess.StartInfo = base.GetProcessStartInfo (pathToTool, bufferedCommandWithFiles.ToString (), responseFileCommands ?? string.Empty);
+
+                  trackedProcess.StartInfo.CreateNoWindow = true;
+
+                  trackedProcess.StartInfo.UseShellExecute = false;
+
+                  trackedProcess.StartInfo.ErrorDialog = false;
+
+                  trackedProcess.StartInfo.RedirectStandardOutput = true;
+
+                  trackedProcess.StartInfo.RedirectStandardError = true;
+
+                  trackedProcess.OutputDataReceived += delegate (object sender, DataReceivedEventArgs args)
                   {
-                    trackedProcess.StartInfo = base.GetProcessStartInfo (pathToTool, bufferedCommandWithFiles.ToString (), responseFileCommands ?? string.Empty);
-
-                    trackedProcess.StartInfo.UseShellExecute = false;
-
-                    trackedProcess.StartInfo.RedirectStandardOutput = true;
-
-                    trackedProcess.StartInfo.RedirectStandardError = true;
-
-                    trackedProcess.OutputDataReceived += delegate (object sender, DataReceivedEventArgs e)
+                    try
                     {
-                      if (!string.IsNullOrWhiteSpace (e.Data))
+                      if (!String.IsNullOrWhiteSpace (args.Data))
                       {
-                        TrackedExecuteToolOutput (threadKeyPair, e.Data);
-                      }
-                    };
-
-                    trackedProcess.ErrorDataReceived += delegate (object sender, DataReceivedEventArgs e)
-                    {
-                      if (!string.IsNullOrWhiteSpace (e.Data))
-                      {
-                        TrackedExecuteToolOutput (threadKeyPair, e.Data);
-                      }
-                    };
-
-                    trackedProcess.Exited += delegate (object sender, EventArgs e)
-                    {
-                      trackedProcessSignal.Set ();
-                    };
-
-                    trackedProcess.EnableRaisingEvents = true;
-
-                    if (!trackedProcess.Start ())
-                    {
-                      throw new InvalidOperationException ("Could not start tracked child process.");
-                    }
-
-                    trackedProcess.BeginOutputReadLine ();
-
-                    trackedProcess.BeginErrorReadLine ();
-
-                    bool responseSignaled = false;
-
-                    while (!responseSignaled)
-                    {
-                      if (trackedProcessSignal.WaitOne (0))
-                      {
-                        responseSignaled = true;
-
-                        threadExitCode = trackedProcess.ExitCode;
-                      }
-                      else if (ToolCanceled.WaitOne (0))
-                      {
-                        responseSignaled = true;
-
-                        threadExitCode = -1;
-                      }
-
-                      if (!responseSignaled)
-                      {
-                        Thread.Yield ();
+                        TrackedExecuteToolOutput (threadKeyPair, args.Data);
                       }
                     }
+                    catch (Exception e)
+                    {
+                      Log.LogErrorFromException (e, true);
+                    }
+                  };
+
+                  trackedProcess.ErrorDataReceived += delegate (object sender, DataReceivedEventArgs args)
+                  {
+                    try
+                    {
+                      if (!String.IsNullOrWhiteSpace (args.Data))
+                      {
+                        TrackedExecuteToolOutput (threadKeyPair, args.Data);
+                      }
+                    }
+                    catch (Exception e)
+                    {
+                      Log.LogErrorFromException (e, true);
+                    }
+                  };
+
+                  trackedProcess.EnableRaisingEvents = true;
+
+                  if (!trackedProcess.Start ())
+                  {
+                    throw new InvalidOperationException ("Could not start tracked child process.");
                   }
+
+                  trackedProcess.BeginOutputReadLine ();
+
+                  trackedProcess.BeginErrorReadLine ();
+
+                  trackedProcess.WaitForExit ();
+
+                  threadExitCode = trackedProcess.ExitCode;
                 }
               }
               catch (Exception e)
@@ -456,14 +447,21 @@ namespace AndroidPlusPlus.MsBuild.Common
               }
               finally
               {
-                lock (threadJobQueue)
+                try
                 {
-                  threadJobQueue [threadKeyPair.Key] = threadExitCode;
+                  lock (threadJobQueue)
+                  {
+                    threadJobQueue [threadKeyPair.Key] = threadExitCode;
+                  }
+
+                  Interlocked.Decrement (ref numberOfActiveThreads);
+
+                  threadJobSemaphore.Release ();
                 }
-
-                Interlocked.Decrement (ref numberOfActiveThreads);
-
-                threadJobSemaphore.Release ();
+                catch (Exception e)
+                {
+                  Log.LogErrorFromException (e, true);
+                }
               }
             }).Start (commandKeyPair);
           }
@@ -653,7 +651,7 @@ namespace AndroidPlusPlus.MsBuild.Common
     {
       if (inputSources == null)
       {
-        throw new ArgumentNullException ();
+        throw new ArgumentNullException ("inputSources");
       }
 
       Dictionary<string, List<ITaskItem>> commandBuffer = new Dictionary<string, List<ITaskItem>> ();
@@ -729,7 +727,7 @@ namespace AndroidPlusPlus.MsBuild.Common
       {
         if (source == null)
         {
-          throw new ArgumentNullException ();
+          throw new ArgumentNullException ("source");
         }
 
         builder.Append (m_parsedProperties.Parse (source));
@@ -759,7 +757,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
       if (commandDictionary == null)
       {
-        throw new ArgumentNullException ();
+        throw new ArgumentNullException ("commandDictionary");
       }
 
       if (TLogCommandFile == null)
@@ -816,12 +814,12 @@ namespace AndroidPlusPlus.MsBuild.Common
 
         if (commandDictionary == null)
         {
-          throw new ArgumentNullException ();
+          throw new ArgumentNullException ("commandDictionary");
         }
 
         if (sources == null)
         {
-          throw new ArgumentNullException ();
+          throw new ArgumentNullException ("sources");
         }
 
         if ((TLogReadFiles == null) || (TLogReadFiles.Length != 1))
@@ -965,12 +963,12 @@ namespace AndroidPlusPlus.MsBuild.Common
 
         if (commandDictionary == null)
         {
-          throw new ArgumentNullException ();
+          throw new ArgumentNullException ("commandDictionary");
         }
 
         if (sources == null)
         {
-          throw new ArgumentNullException ();
+          throw new ArgumentNullException ("sources");
         }
 
         if ((TLogWriteFiles == null) || (TLogWriteFiles.Length != 1))
@@ -1071,12 +1069,12 @@ namespace AndroidPlusPlus.MsBuild.Common
 
         if (string.IsNullOrWhiteSpace (ToolPath))
         {
-          throw new ArgumentNullException ("ToolPath is empty or invalid.");
+          throw new InvalidOperationException ("ToolPath is empty or invalid: " + ToolPath);
         }
 
         if (string.IsNullOrWhiteSpace (ToolExe))
         {
-          throw new ArgumentNullException ("ToolExe is empty or invalid.");
+          throw new InvalidOperationException ("ToolExe is empty or invalid: " + ToolExe);
         }
 
         return base.ValidateParameters ();

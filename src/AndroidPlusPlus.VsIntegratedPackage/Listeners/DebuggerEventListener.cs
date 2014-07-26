@@ -256,10 +256,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       {
         if (m_adbLogcatInstance != null)
         {
-          if (!m_adbLogcatInstance.Process.HasExited)
-          {
-            m_adbLogcatInstance.Kill ();
-          }
+          m_adbLogcatInstance.Kill ();
 
           m_adbLogcatInstance.Dispose ();
 

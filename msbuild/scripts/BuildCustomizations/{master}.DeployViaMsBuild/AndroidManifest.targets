@@ -182,7 +182,7 @@
     --> 
 
     <Exec
-      Command="fc /B /W $(BuildConfigOutputFile) $(BuildConfigOutputTempFile)"
+      Command="fc /B /W $(BuildConfigOutputFile) $(BuildConfigOutputTempFile) > NUL"
       IgnoreExitCode="true">
       <Output TaskParameter="ExitCode" PropertyName="BuildConfigFileCompareExitCode" />
     </Exec>

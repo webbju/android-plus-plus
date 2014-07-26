@@ -38,6 +38,10 @@ namespace AndroidPlusPlus.Common
 
     protected StringBuilder m_stdErrorBuilder = null;
 
+    protected Process m_process;
+
+    protected ProcessStartInfo m_processStartInfo;
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -51,16 +55,16 @@ namespace AndroidPlusPlus.Common
 
       if (!File.Exists (filename))
       {
-        throw new ArgumentException ("filename");
+        throw new FileNotFoundException ("Could not find target executable.", filename);
       }
 
-      StartInfo = CreateDefaultStartInfo ();
+      m_processStartInfo = CreateDefaultStartInfo ();
 
-      StartInfo.FileName = filename;
+      m_processStartInfo.FileName = filename;
 
-      StartInfo.Arguments = arguments;
+      m_processStartInfo.Arguments = arguments;
 
-      StartInfo.WorkingDirectory = workingDirectory ?? Path.GetDirectoryName (filename);
+      m_processStartInfo.WorkingDirectory = workingDirectory ?? Path.GetDirectoryName (filename);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -73,7 +77,7 @@ namespace AndroidPlusPlus.Common
 
       try
       {
-        Process.Dispose ();
+        m_process.Dispose ();
       }
       catch (Exception e)
       {
@@ -114,7 +118,7 @@ namespace AndroidPlusPlus.Common
 
     public void Start ()
     {
-      LoggingUtils.Print (string.Format ("[SyncRedirectProcess] Start: {0} (Args=\"{1}\" Pwd=\"{2}\")", StartInfo.FileName, StartInfo.Arguments, StartInfo.WorkingDirectory));
+      LoggingUtils.Print (string.Format ("[SyncRedirectProcess] Start: {0} (Args=\"{1}\" Pwd=\"{2}\")", m_processStartInfo.FileName, m_processStartInfo.Arguments, m_processStartInfo.WorkingDirectory));
 
       m_startTicks = Environment.TickCount;
 
@@ -126,19 +130,23 @@ namespace AndroidPlusPlus.Common
 
       m_stdErrorBuilder = new StringBuilder ();
 
-      Process = Process.Start (StartInfo);
+      m_process = new Process ();
 
-      Process.OutputDataReceived += new DataReceivedEventHandler (ProcessStdout);
+      m_process.StartInfo = m_processStartInfo;
 
-      Process.ErrorDataReceived += new DataReceivedEventHandler (ProcessStderr);
+      m_process.OutputDataReceived += new DataReceivedEventHandler (ProcessStdout);
 
-      Process.Exited += new EventHandler (ProcessExited);
+      m_process.ErrorDataReceived += new DataReceivedEventHandler (ProcessStderr);
 
-      Process.BeginOutputReadLine ();
+      m_process.Exited += new EventHandler (ProcessExited);
 
-      Process.BeginErrorReadLine ();
+      m_process.EnableRaisingEvents = true;
 
-      Process.EnableRaisingEvents = true;
+      m_process.Start ();
+
+      m_process.BeginOutputReadLine ();
+
+      m_process.BeginErrorReadLine ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -151,7 +159,7 @@ namespace AndroidPlusPlus.Common
 
       try
       {
-        Process.Kill ();
+        m_process.Kill ();
       }
       catch (Exception e)
       {
@@ -261,18 +269,6 @@ namespace AndroidPlusPlus.Common
 
       m_exitMutex.Set ();
     }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public Process Process { get; protected set; }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public ProcessStartInfo StartInfo { get; protected set; }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -462,7 +462,7 @@
 
   <FileExtension Name="*.jar" ContentType="AndroidJava" />
 
-  <ContentType  Name="AndroidJava" DisplayName="Android Java Tool" ItemType="AndroidJava" />
+  <ContentType Name="AndroidJava" DisplayName="Android Java Tool" ItemType="AndroidJava" />
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

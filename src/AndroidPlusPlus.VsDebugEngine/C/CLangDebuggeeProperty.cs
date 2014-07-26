@@ -319,6 +319,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
+      size = 0;
+
       try
       {
         IDebugThread2 stackThread;
@@ -329,14 +331,18 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         LoggingUtils.RequireOk (stackThread.GetThreadId (out stackThreadId));
 
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-data-evaluate-expression --thread {0} --frame {1} --language c \"sizeof({2})\"", stackThreadId, (m_stackFrame as CLangDebuggeeStackFrame).StackLevel, m_expression));
+        string command = string.Format ("-data-evaluate-expression --thread {0} --frame {1} --language c \"sizeof({2})\"", stackThreadId, (m_stackFrame as CLangDebuggeeStackFrame).StackLevel, m_expression);
 
-        if ((resultRecord == null) || ((resultRecord != null) && (resultRecord.IsError () || (!resultRecord.HasField ("value")))))
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+
+        MiResultRecord.RequireOk (resultRecord, command);
+
+        if (resultRecord.HasField ("value"))
         {
-          throw new InvalidOperationException ();
-        }
+          size = resultRecord ["value"] [0].GetUnsignedInt ();
 
-        size = resultRecord ["value"] [0].GetUnsignedInt ();
+          return DebugEngineConstants.S_GETSIZE_NO_SIZE;
+        }
 
         return DebugEngineConstants.S_OK;
       }
@@ -344,9 +350,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        size = 0;
-
-        return DebugEngineConstants.S_GETSIZE_NO_SIZE;
+        return DebugEngineConstants.E_FAIL;
       }
     }
 
@@ -364,18 +368,22 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-var-assign {0} \"{1}\"", m_gdbVariable.Name, value));
+        string command = string.Format ("-var-assign {0} \"{1}\"", m_gdbVariable.Name, value);
 
-        if ((resultRecord == null) || ((resultRecord != null) && (resultRecord.IsError () || (!resultRecord.HasField ("value")))))
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+
+        MiResultRecord.RequireOk (resultRecord, command);
+
+        if (resultRecord.HasField ("value"))
         {
-          throw new InvalidOperationException ();
+          m_gdbVariable.Populate (resultRecord.Results);
+
+          m_debugger.VariableManager.UpdateVariable (m_gdbVariable);
+
+          return DebugEngineConstants.S_OK;
         }
 
-        m_gdbVariable.Populate (resultRecord.Results);
-
-        m_debugger.VariableManager.UpdateVariable (m_gdbVariable);
-
-        return DebugEngineConstants.S_OK;
+        return DebugEngineConstants.S_FALSE;
       }
       catch (Exception e)
       {

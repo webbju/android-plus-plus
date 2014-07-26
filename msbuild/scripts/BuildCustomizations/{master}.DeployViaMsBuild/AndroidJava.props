@@ -78,7 +78,7 @@
       <JarManifestFile Condition="'%(AndroidJava.JarManifestFile)' == ''"></JarManifestFile>
 
       <!--
-        Default (non {master} specific) properties.
+        Default TrackedToolTask properties.
       -->
 
       <MultiProcessorCompilation Condition="'%(AndroidJava.MultiProcessorCompilation)' == ''">true</MultiProcessorCompilation>

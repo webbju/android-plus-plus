@@ -82,7 +82,7 @@
       LibrarySearchPaths="
         %(Link.AdditionalLibraryDirectories);
         @(_TargetElfFiles->'%(RootDir)%(Directory)');
-        @(_TargetElfFiles->'$(IntDir)raw\lib\$(TargetPlatformArchitectureEabi)');"
+        $(IntDir)raw\lib\$(TargetPlatformArchitectureEabi);"
       NdkDependsTool="$(AndroidNdkRoot)\ndk-depends.exe"
       Verbose="true">
       <Output TaskParameter="DependentLibraries" ItemName="AndroidApkDependentLibraries" />

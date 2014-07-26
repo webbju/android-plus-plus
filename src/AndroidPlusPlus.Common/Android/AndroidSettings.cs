@@ -113,6 +113,8 @@ namespace AndroidPlusPlus.Common
           androidSdkPossibleLocations.Add (Environment.GetEnvironmentVariable ("ANDROID_SDK"));
 
           androidSdkPossibleLocations.Add (Environment.GetEnvironmentVariable ("ANDROID_SDK_ROOT"));
+
+          androidSdkPossibleLocations.Add (Environment.GetEnvironmentVariable ("ANDROID_HOME"));
         }
         catch (SecurityException e)
         {

@@ -106,9 +106,7 @@ namespace AndroidPlusPlus.Common
 
         m_gdbServerInstance = AndroidAdb.AdbCommandAsync (m_gdbSetup.Process.HostDevice, "shell", commandLineArgumentsBuilder.ToString ());
 
-        m_gdbServerInstance.Listener = this;
-
-        m_gdbServerInstance.Start ();
+        m_gdbServerInstance.Start (this);
 
         LoggingUtils.Print (string.Format ("[GdbServer] Waiting to attach..."));
 

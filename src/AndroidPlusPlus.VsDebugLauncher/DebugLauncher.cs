@@ -215,14 +215,30 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       string debuggerKeepAppData = EvaluateProjectProperty (projectProperties, "AndroidPlusPlusDebugger", "DebuggerKeepAppData");
 
-      // 
-      // Additional support for vs-android. Rather hacky for VS2010.
-      // 
-
       if (string.IsNullOrEmpty (debuggerConfiguration))
       {
         debuggerConfiguration = "Custom";
       }
+
+      LoggingUtils.Print ("ConfigurationGeneral.TargetName: " + projectTargetName);
+
+      LoggingUtils.Print ("ConfigurationGeneral.ProjectDir: " + projectProjectDir);
+
+      LoggingUtils.Print ("AndroidPlusPlusDebugger.DebuggerConfiguration: " + debuggerConfiguration);
+
+      LoggingUtils.Print ("AndroidPlusPlusDebugger.DebuggerTargetApk: " + debuggerTargetApk);
+
+      LoggingUtils.Print ("AndroidPlusPlusDebugger.DebuggerCustomLaunchActivity: " + debuggerCustomLaunchActivity);
+
+      LoggingUtils.Print ("AndroidPlusPlusDebugger.DebuggerDebugMode: " + debuggerDebugMode);
+
+      LoggingUtils.Print ("AndroidPlusPlusDebugger.DebuggerOpenGlTrace: " + debuggerOpenGlTrace);
+
+      LoggingUtils.Print ("AndroidPlusPlusDebugger.DebuggerKeepAppData: " + debuggerKeepAppData);
+
+      // 
+      // Support for vs-android. Rather hacky for VS2010.
+      // 
 
       if (debuggerConfiguration.Equals ("vs-android"))
       {
@@ -252,29 +268,28 @@ namespace AndroidPlusPlus.VsDebugLauncher
       }
 
       // 
-      // Ensure we can actually find the target APK.
+      // Ensure the provided target APK is found and absolute.
       // 
 
       if (string.IsNullOrEmpty (debuggerTargetApk))
       {
-        throw new FileNotFoundException ("No target APK path provided.");
+        throw new FileNotFoundException ("Could not locate target application. Empty path provided.");
       }
-      else if (!File.Exists (debuggerTargetApk))
+      else if (!Path.IsPathRooted (debuggerTargetApk) && !string.IsNullOrWhiteSpace (projectProjectDir))
       {
-        if (!Path.IsPathRooted (debuggerTargetApk))
-        {
-          debuggerTargetApk = Path.Combine (projectProjectDir, debuggerTargetApk);
-        }
+        debuggerTargetApk = Path.Combine (projectProjectDir, debuggerTargetApk);
+      }
 
-        if (!Path.IsPathRooted (debuggerTargetApk))
-        {
-          debuggerTargetApk = Path.GetFullPath (debuggerTargetApk);
-        }
+      if (!Path.IsPathRooted (debuggerTargetApk))
+      {
+        throw new InvalidOperationException ("Could not evaluate an absolute path to the target application. Tried: " + debuggerTargetApk);
+      }
 
-        if (!File.Exists (debuggerTargetApk))
-        {
-          throw new FileNotFoundException ("Could not find required target .apk. Expected: " + debuggerTargetApk);
-        }
+      debuggerTargetApk = Path.GetFullPath (debuggerTargetApk); // normalises relative paths.
+
+      if (!File.Exists (debuggerTargetApk))
+      {
+        throw new FileNotFoundException ("Could not find required target application. Expected: " + debuggerTargetApk);
       }
 
       // 
@@ -285,11 +300,11 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       if (string.IsNullOrWhiteSpace (androidSdkRoot))
       {
-        throw new DirectoryNotFoundException ("Could not locate Android SDK. Specified property is empty.");
+        throw new DirectoryNotFoundException ("Could not locate Android SDK. 'AndroidSdkRoot' property is empty.");
       }
       else if (!Directory.Exists (androidSdkRoot))
       {
-        throw new DirectoryNotFoundException ("Could not locate Android SDK. Property references a directory which does not exist (" + androidSdkRoot + ").");
+        throw new DirectoryNotFoundException ("Could not locate Android SDK. 'AndroidSdkRoot' property references a directory which does not exist. Expected: " + androidSdkRoot);
       }
 
       string androidSdkBuildToolsVersion = EvaluateProjectProperty (projectProperties, "ConfigurationGeneral", "AndroidSdkBuildToolsVersion");
@@ -309,42 +324,51 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       string applicationLaunchActivity = string.Empty;
 
-      using (SyncRedirectProcess getApkDetails = new SyncRedirectProcess (Path.Combine (androidSdkBuildToolsPath, "aapt.exe"), "dump --values badging " + PathUtils.SantiseWindowsPath (debuggerTargetApk)))
+      string aaptToolPath = Path.Combine (androidSdkBuildToolsPath, "aapt.exe");
+
+      if (!File.Exists (aaptToolPath))
+      {
+        throw new FileNotFoundException ("Could not locate AAPT tool (under Android SDK build-tools).", aaptToolPath);
+      }
+
+      using (SyncRedirectProcess getApkDetails = new SyncRedirectProcess (aaptToolPath, "dump --values badging " + PathUtils.SantiseWindowsPath (debuggerTargetApk)))
       {
         int exitCode = getApkDetails.StartAndWaitForExit ();
 
-        if (exitCode == 0)
+        if (exitCode != 0)
         {
-          string [] apkDetails = getApkDetails.StandardOutput.Replace ("\r", "").Split (new char [] { '\n' });
+          throw new InvalidOperationException ("AAPT failed to dump required application badging information. Exit-code: " + exitCode);
+        }
 
-          foreach (string singleLine in apkDetails)
+        string [] apkDetails = getApkDetails.StandardOutput.Replace ("\r", "").Split (new char [] { '\n' });
+
+        foreach (string singleLine in apkDetails)
+        {
+          if (singleLine.StartsWith ("package: "))
           {
-            if (singleLine.StartsWith ("package: "))
+            // 
+            // Retrieve package name from format: "package: name='com.example.hellogdbserver' versionCode='1' versionName='1.0'"
+            // 
+
+            string [] packageData = singleLine.Substring ("package: ".Length).Split (' ');
+
+            foreach (string data in packageData)
             {
-              // 
-              // Retrieve package name from format: "package: name='com.example.hellogdbserver' versionCode='1' versionName='1.0'"
-              // 
-
-              string [] packageData = singleLine.Substring ("package: ".Length).Split (' ');
-
-              foreach (string data in packageData)
+              if (data.StartsWith ("name="))
               {
-                if (data.StartsWith ("name="))
-                {
-                  applicationPackageName = data.Substring ("name=".Length).Trim ('\'');
-                }
+                applicationPackageName = data.Substring ("name=".Length).Trim ('\'');
               }
             }
-            else if (singleLine.StartsWith ("launchable-activity: "))
-            {
-              string [] launchActivityData = singleLine.Substring ("launchable-activity: ".Length).Split (' ');
+          }
+          else if (singleLine.StartsWith ("launchable-activity: "))
+          {
+            string [] launchActivityData = singleLine.Substring ("launchable-activity: ".Length).Split (' ');
 
-              foreach (string data in launchActivityData)
+            foreach (string data in launchActivityData)
+            {
+              if (data.StartsWith ("name="))
               {
-                if (data.StartsWith ("name="))
-                {
-                  applicationLaunchActivity = data.Substring ("name=".Length).Trim ('\'');
-                }
+                applicationLaunchActivity = data.Substring ("name=".Length).Trim ('\'');
               }
             }
           }

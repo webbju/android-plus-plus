@@ -204,10 +204,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (disassemblyCommand);
 
-        if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
-        {
-          throw new InvalidOperationException ();
-        }
+        MiResultRecord.RequireOk (resultRecord, disassemblyCommand);
 
         MiResultValue assemblyInstructions = resultRecord ["asm_insns"] [0];
 

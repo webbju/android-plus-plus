@@ -143,10 +143,21 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
       try
       {
-        builder.Append ("-Xms32m -Xss1m ");
+        // 
+        // JavaVM options need to go at the start of the command line.
+        // 
 
-        // By default, give dx a max heap size of 1 gig (2 gig on 64bit systems) and a stack size of 1meg.
-        builder.Append (string.Format ("-Xmx{0}M ", (System.Environment.Is64BitOperatingSystem) ? 2048 : 1024));
+        string jvmInitialHeapSize = m_parsedProperties.ParseProperty (Sources [0], "JvmInitialHeapSize");
+
+        string jvmMaximumHeapSize = m_parsedProperties.ParseProperty (Sources [0], "JvmMaximumHeapSize");
+
+        string jvmThreadStackSize = m_parsedProperties.ParseProperty (Sources [0], "JvmThreadStackSize");
+
+        builder.Append (jvmInitialHeapSize + " ");
+
+        builder.Append (jvmMaximumHeapSize + " ");
+
+        builder.Append (jvmThreadStackSize + " ");
 
         string frameworkDir = Path.GetDirectoryName (DexJar);
 
@@ -154,9 +165,19 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
         builder.Append ("-jar \"" + DexJar + "\" ");
 
-        builder.Append ("--dex ");
+        // 
+        // Ensure the JVM options aren't duplicated.
+        // 
 
-        builder.Append (m_parsedProperties.Parse (Sources [0]));
+        StringBuilder parsedProperties = new StringBuilder (m_parsedProperties.Parse (Sources [0]));
+
+        parsedProperties.Replace (jvmInitialHeapSize, "");
+
+        parsedProperties.Replace (jvmMaximumHeapSize, "");
+
+        parsedProperties.Replace (jvmThreadStackSize, "");
+
+        builder.Append (parsedProperties.ToString ());
       }
       catch (Exception e)
       {

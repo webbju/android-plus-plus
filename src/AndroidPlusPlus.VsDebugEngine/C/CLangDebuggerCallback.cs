@@ -205,6 +205,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         CLangDebuggerEvent.DetachClient debuggeeEvent = (pEvent as CLangDebuggerEvent.DetachClient);
 
+        bool shouldContinue = false;
+
         ManualResetEvent detachLock = new ManualResetEvent (false);
 
         debuggeeEvent.Debugger.RunInterruptOperation (delegate ()
@@ -212,7 +214,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           debuggeeEvent.Debugger.GdbClient.Detach ();
 
           detachLock.Set ();
-        });
+        }, shouldContinue);
 
         bool detachedSignaled = detachLock.WaitOne (1000);
 
@@ -290,6 +292,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       try
       {
         CLangDebuggerEvent.TerminateClient debuggeeEvent = (pEvent as CLangDebuggerEvent.TerminateClient);
+
+        debuggeeEvent.Debugger.GdbClient.Stop ();
 
         debuggeeEvent.Debugger.GdbClient.Terminate ();
 

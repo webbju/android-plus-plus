@@ -43,6 +43,24 @@
 
     <AndroidDalvik>
 
+      <!--
+        JavaVM configuration.
+      -->
+
+      <JvmInitialHeapSize Condition="'%(AndroidDalvik.JvmInitialHeapSize)' == ''">32m</JvmInitialHeapSize>
+
+      <JvmMaximumHeapSize Condition="('%(AndroidDalvik.JvmMaximumHeapSize)' == '' and '$(SixtyFourBit)' == 'true')">2048m</JvmMaximumHeapSize>
+
+      <JvmMaximumHeapSize Condition="'%(AndroidDalvik.JvmMaximumHeapSize)' == ''">1024m</JvmMaximumHeapSize>
+
+      <JvmThreadStackSize Condition="'%(AndroidDalvik.JvmThreadStackSize)' == ''">1m</JvmThreadStackSize>
+
+      <!--
+        Dex configuration.
+      -->
+
+      <CreateDex Condition="'%(AndroidDalvik.CreateDex)' == ''">true</CreateDex>
+
       <Debug Condition="'%(AndroidDalvik.Debug)' == ''">false</Debug>
 
       <Optimize Condition="'%(AndroidDalvik.Optimize)' == ''">true</Optimize>
@@ -56,6 +74,10 @@
       <Verbose Condition="'%(AndroidDalvik.Verbose)' == ''">false</Verbose>
 
       <OutputFile Condition="'%(AndroidDalvik.OutputFile)' == ''">$(ProjectDir)$(IntDir)bin\classes.dex</OutputFile>
+
+      <!--
+        Default TrackedToolTask properties.
+      -->
 
       <TrackerLogDirectory Condition="'%(AndroidDalvik.TrackerLogDirectory)' == ''">$(IntDir)</TrackerLogDirectory>
 

@@ -59,31 +59,28 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           LoggingUtils.RequireOk (GetThreadId (out threadId));
 
-          MiResultRecord resultRecord = m_debugProgram.AttachedEngine.NativeDebugger.GdbClient.SendCommand (string.Format ("-stack-list-frames --thread {0}", threadId));
+          string command = string.Format ("-stack-list-frames --thread {0}", threadId);
 
-          if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
+          MiResultRecord resultRecord = m_debugProgram.AttachedEngine.NativeDebugger.GdbClient.SendCommand (command);
+
+          MiResultRecord.RequireOk (resultRecord, command);
+
+          if (resultRecord.HasField ("stack"))
           {
-            throw new InvalidOperationException ();
-          }
+            MiResultValueList stackRecord = resultRecord ["stack"] [0] as MiResultValueList;
 
-          if (!resultRecord.HasField ("stack"))
-          {
-            throw new InvalidOperationException ();
-          }
-
-          MiResultValueList stackRecord = resultRecord ["stack"] [0] as MiResultValueList;
-
-          for (int i = 0; i < stackRecord.Values.Count; ++i)
-          {
-            string stackFrameId = m_threadName + "#" + i;
-
-            MiResultValueTuple frameTuple = stackRecord [i] as MiResultValueTuple;
-
-            CLangDebuggeeStackFrame stackFrame = new CLangDebuggeeStackFrame (m_debugProgram.AttachedEngine.NativeDebugger, this, frameTuple, stackFrameId);
-
-            lock (m_threadStackFrames)
+            for (int i = 0; i < stackRecord.Values.Count; ++i)
             {
-              m_threadStackFrames.Add (stackFrame);
+              string stackFrameId = m_threadName + "#" + i;
+
+              MiResultValueTuple frameTuple = stackRecord [i] as MiResultValueTuple;
+
+              CLangDebuggeeStackFrame stackFrame = new CLangDebuggeeStackFrame (m_debugProgram.AttachedEngine.NativeDebugger, this, frameTuple, stackFrameId);
+
+              lock (m_threadStackFrames)
+              {
+                m_threadStackFrames.Add (stackFrame);
+              }
             }
           }
         }

@@ -122,14 +122,37 @@ namespace AndroidPlusPlus.MsBuild.Common
 
     public string Parse (ITaskItem taskItem)
     {
+      // 
+      // Build a command line in the order defined by the source XML file.
+      // 
+
       CommandLineBuilder builder = new CommandLineBuilder ();
 
-      foreach (string name in taskItem.MetadataNames)
+      foreach (string key in ToolProperties.Keys)
       {
-        string value = taskItem.GetMetadata (name);
+        string value = taskItem.GetMetadata (key);
 
-        AppendArgumentForProperty (builder, name, value);
+        AppendArgumentForProperty (builder, key, value);
       }
+
+      return builder.ToString ().Replace ('\\', '/');
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public string ParseProperty (ITaskItem taskItem, string metadataKey)
+    {
+      // 
+      // Build command line for a single metadata property.
+      // 
+
+      CommandLineBuilder builder = new CommandLineBuilder ();
+
+      string value = taskItem.GetMetadata (metadataKey);
+
+      AppendArgumentForProperty (builder, metadataKey, value);
 
       return builder.ToString ().Replace ('\\', '/');
     }

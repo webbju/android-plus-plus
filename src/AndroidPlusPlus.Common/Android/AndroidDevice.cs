@@ -309,9 +309,7 @@ namespace AndroidPlusPlus.Common
 
         AsyncRedirectProcess adbLogcatCommand = AndroidAdb.AdbCommandAsync (this, "logcat", "");
 
-        adbLogcatCommand.Listener = listener;
-
-        adbLogcatCommand.Start ();
+        adbLogcatCommand.Start (listener);
 
         return adbLogcatCommand;
       }

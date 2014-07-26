@@ -115,7 +115,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\..\buildtools\android-ndk-r9c\sources\android\cpufeatures\cpu-features.c" />
+    <ClCompile Include="$(AndroidNdkRoot)\sources\android\cpufeatures\cpu-features.c" />
     <ClCompile Include="src\helloneon-intrinsics.c" />
     <ClCompile Include="src\helloneon.c" />
   </ItemGroup>

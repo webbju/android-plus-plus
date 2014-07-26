@@ -210,7 +210,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void RunInterruptOperation (InterruptOperation operation)
+    public void RunInterruptOperation (InterruptOperation operation, bool shouldContinue = true)
     {
       // 
       // Interrupt the GDB session in order to execute the provided delegate in a 'stopped' state.
@@ -257,9 +257,18 @@ namespace AndroidPlusPlus.VsDebugEngine
       }
       finally
       {
-        if ((--m_interruptOperationCounter == 0) && m_interruptOperationWasRunning)
+        try
         {
-          GdbClient.Continue ();
+          if ((--m_interruptOperationCounter == 0) && m_interruptOperationWasRunning && shouldContinue)
+          {
+            GdbClient.Continue ();
+          }
+        }
+        catch (Exception e)
+        {
+          LoggingUtils.HandleException (e);
+
+          throw;
         }
       }
     }
@@ -467,6 +476,8 @@ namespace AndroidPlusPlus.VsDebugEngine
                 }
               }
 
+              bool ignoreStoppedSignal = false;
+
               if (m_interruptOperationCompleted != null)
               {
                 // 
@@ -474,8 +485,17 @@ namespace AndroidPlusPlus.VsDebugEngine
                 // 
 
                 m_interruptOperationCompleted.Set ();
+
+                ignoreStoppedSignal = true;
               }
-              else
+
+              // 
+              // Process any pending requests to refresh registered breakpoints.
+              // 
+
+              Engine.BreakpointManager.RefreshBreakpoints (true);
+
+              if (!ignoreStoppedSignal)
               {
                 // 
                 // The reason field can have one of the following values:
@@ -741,7 +761,7 @@ namespace AndroidPlusPlus.VsDebugEngine
                   Engine.Broadcast (new DebugEngineEvent.SymbolSearch (module as IDebugModule3, module.Name), NativeProgram.DebugProgram, null);
                 }
 
-                Engine.BreakpointManager.RefreshBoundBreakpoints ();
+                Engine.BreakpointManager.RefreshBreakpoints (false);
               }
               catch (Exception e)
               {
@@ -767,7 +787,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                 Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, false), NativeProgram.DebugProgram, null);
 
-                Engine.BreakpointManager.RefreshBoundBreakpoints ();
+                Engine.BreakpointManager.RefreshBreakpoints (false);
               }
               catch (Exception e)
               {
@@ -808,12 +828,11 @@ namespace AndroidPlusPlus.VsDebugEngine
           location = "*" + location;
         }
 
-        MiResultRecord resultRecord = GdbClient.SendCommand ("info line " + location);
+        string command = "info line " + location;
 
-        if ((resultRecord == null) || ((resultRecord != null) && resultRecord.IsError ()))
-        {
-          throw new InvalidOperationException ();
-        }
+        MiResultRecord resultRecord = GdbClient.SendCommand (command);
+
+        MiResultRecord.RequireOk (resultRecord, command);
 
         string infoRegExPattern = "Line (?<line>[0-9]+) of \"(?<file>[^\\\"]+?)\" starts at address (?<start>[^ ]+) [<]?(?<startsym>[^>]+)[>]? and ends at (?<end>[^ ]+) [<]?(?<endsym>[^>.]+)[>]?";
 

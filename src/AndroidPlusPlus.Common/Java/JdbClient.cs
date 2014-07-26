@@ -132,11 +132,9 @@ namespace AndroidPlusPlus.Common
 
       m_jdbClientInstance = new AsyncRedirectProcess (Path.Combine (JavaSettings.JdkRoot, @"bin\jdb.exe"), argumentBuilder.ToString ());
 
-      m_jdbClientInstance.Listener = this;
-
       m_lastOperationTimestamp = Environment.TickCount;
 
-      m_jdbClientInstance.Start ();
+      m_jdbClientInstance.Start (this);
 
       return true;
     }

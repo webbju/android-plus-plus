@@ -76,7 +76,7 @@ namespace app_javac_dependencies
 
           trackedProcess.OutputDataReceived += (sender, e) =>
           {
-            if (!string.IsNullOrWhiteSpace (e.Data))
+            if (e.Data != null)
             {
               ProcessJavacOutput (e.Data, ref filesRead, ref filesWritten);
             }
@@ -84,7 +84,7 @@ namespace app_javac_dependencies
 
           trackedProcess.ErrorDataReceived += (sender, e) =>
           {
-            if (!string.IsNullOrWhiteSpace (e.Data))
+            if (e.Data != null)
             {
               ProcessJavacOutput (e.Data, ref filesRead, ref filesWritten);
             }
@@ -263,7 +263,11 @@ namespace app_javac_dependencies
 
       Console.WriteLine (singleLine);
 
-      if (singleLine.StartsWith ("["))
+      if (string.IsNullOrWhiteSpace (singleLine))
+      {
+        return;
+      }
+      else if (singleLine.StartsWith ("["))
       {
         string sanitisedOutput = singleLine.Trim (new char [] { ' ', '[', ']' });
 

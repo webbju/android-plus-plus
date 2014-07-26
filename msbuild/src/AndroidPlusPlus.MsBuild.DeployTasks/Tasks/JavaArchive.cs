@@ -75,7 +75,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
           sourceTreeHash += source.GetHashCode ();
         }
 
-        m_tempWorkingDirectory = Path.Combine (Path.GetTempPath (), sourceTreeHash.ToString ());
+        m_tempWorkingDirectory = Path.Combine (Path.GetTempPath (), "Android++", ToolName + "_" + sourceTreeHash.ToString ());
 
         if (Directory.Exists (m_tempWorkingDirectory))
         {

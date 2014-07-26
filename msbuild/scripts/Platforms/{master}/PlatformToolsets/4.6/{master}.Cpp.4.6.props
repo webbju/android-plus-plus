@@ -90,6 +90,8 @@
 
     <ClCompile>
 
+      <AdditionalOptions>-fno-diagnostics-show-caret %(ClCompile.AdditionalOptions)</AdditionalOptions>
+
       <NoCanonicalPrefixes Condition="'%(ClCompile.NoCanonicalPrefixes)' == ''">true</NoCanonicalPrefixes>
 
     </ClCompile>

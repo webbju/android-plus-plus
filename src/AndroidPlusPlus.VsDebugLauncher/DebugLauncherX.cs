@@ -127,7 +127,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
       {
         LoggingUtils.HandleException (e);
 
-        DebugLauncher.ShowErrorDialog (ServiceProvider, string.Format ("Debugging failed to launch, encountered exception:\n\n {0}", e.Message));
+        DebugLauncher.ShowErrorDialog (ServiceProvider, string.Format ("Failed to launch. Reason:\n\n[Exception] {0}\n", e.Message, e.StackTrace));
       }
 
       return null;

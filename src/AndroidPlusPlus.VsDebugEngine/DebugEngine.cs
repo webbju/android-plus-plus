@@ -626,12 +626,22 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (!string.IsNullOrWhiteSpace (szSymbolSearchPath))
         {
-          symbolSearchPaths.AddRange (szSymbolSearchPath.Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries));
+          string [] symbolsPaths = szSymbolSearchPath.Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+
+          foreach (string path in symbolsPaths)
+          {
+            symbolSearchPaths.Add (PathUtils.SantiseWindowsPath (path));
+          }
         }
 
-        NativeDebugger.GdbClient.SetSetting ("solib-search-path", string.Join (";", symbolSearchPaths.ToArray ()), true);
+        NativeDebugger.RunInterruptOperation (delegate ()
+        {
+          NativeDebugger.GdbClient.SetSetting ("solib-search-path", string.Join (";", symbolSearchPaths.ToArray ()), true);
 
-        NativeDebugger.GdbClient.SetSetting ("debug-file-directory", string.Join (";", symbolSearchPaths.ToArray ()), true);
+          NativeDebugger.GdbClient.SetSetting ("debug-file-directory", string.Join (";", symbolSearchPaths.ToArray ()), true);
+
+          BreakpointManager.RefreshBreakpoints (true);
+        });
 
         return DebugEngineConstants.S_OK;
       }

@@ -687,7 +687,7 @@
 
   <!-- <FileExtension Name="*.asm" ContentType="AndroidManifest" /> -->
 
-  <ContentType  Name="AndroidManifest" DisplayName="Android Manifest Tool" ItemType="AndroidManifest" />
+  <ContentType Name="AndroidManifest" DisplayName="Android Manifest Tool" ItemType="AndroidManifest" />
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
