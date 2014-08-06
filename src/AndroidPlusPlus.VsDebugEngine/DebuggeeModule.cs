@@ -249,13 +249,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        infoArray [0] = new MODULE_SYMBOL_SEARCH_INFO ();
-
         if ((requestedFields & enum_SYMBOL_SEARCH_INFO_FIELDS.SSIF_VERBOSE_SEARCH_INFO) != 0)
         {
           if (SymbolsLoaded)
           {
-            infoArray [0].bstrVerboseSearchInfo = string.Format ("Symbols loaded for {0} from {1}.", Name, SymbolsPath);
+            infoArray [0].bstrVerboseSearchInfo = string.Format ("Symbols loaded for {0} from {1}", Name, SymbolsPath);
 
             infoArray [0].dwValidFields = (uint)enum_SYMBOL_SEARCH_INFO_FIELDS.SSIF_VERBOSE_SEARCH_INFO;
           }

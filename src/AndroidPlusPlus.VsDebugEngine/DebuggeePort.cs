@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
+using Microsoft.VisualStudio;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -50,7 +51,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private Dictionary<int, IDebugPortEvents2> m_eventConnectionPoints;
 
-    private int m_eventConnectionPointCookie = 0;
+    private int m_eventConnectionPointCookie = 1;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -282,6 +283,16 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [InheritGuid (typeof (IDebugProgramCreateEvent2))]
+    public sealed class ProgramCreate : ImmediateDebugEvent, IDebugProgramCreateEvent2
+    {
+      // Immediate-mode implementation of a 'ProgramCreate' event.
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public int AddProgramNode (IDebugProgramNode2 pProgramNode)
     {
       // 
@@ -300,11 +311,18 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         foreach (IDebugPortEvents2 connectionPoint in m_eventConnectionPoints.Values)
         {
-          DebugEngineEvent.ProgramCreate debugEvent = new DebugEngineEvent.ProgramCreate ();
+          ProgramCreate debugEvent = new ProgramCreate ();
 
           Guid eventGuid = ComUtils.GuidOf (debugEvent);
 
-          /*LoggingUtils.RequireOk*/ connectionPoint.Event (null, this, process, program, debugEvent, eventGuid);
+          int handle = connectionPoint.Event (null, this, process, program, debugEvent, eventGuid);
+
+          if (handle == unchecked ((int)0x80010108)) // RPC_E_DISCONNECTED
+          {
+            continue; // Connection point was previously used.
+          }
+
+          LoggingUtils.RequireOk (handle);
         }
 
         return DebugEngineConstants.S_OK;
@@ -365,18 +383,20 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      IDebugPortEvents2 portEvent = (IDebugPortEvents2) pUnkSink;
-
-      if (portEvent != null)
+      try
       {
+        IDebugPortEvents2 portEvent = (IDebugPortEvents2) pUnkSink;
+
         m_eventConnectionPoints.Add (m_eventConnectionPointCookie, portEvent);
 
         pdwCookie = m_eventConnectionPointCookie++;
-
-        return;
       }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
 
-      pdwCookie = 0;
+        pdwCookie = 0;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -436,7 +456,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      m_eventConnectionPoints.Remove (dwCookie);
+      try
+      {
+        m_eventConnectionPoints.Remove (dwCookie);
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -473,24 +500,29 @@ namespace AndroidPlusPlus.VsDebugEngine
     public void FindConnectionPoint (ref Guid riid, out IConnectionPoint ppCP)
     {
       // 
-      // Asks the connectable object if it has a connection point for a particular IID, 
+      // Asks the connectible object if it has a connection point for a particular IID, 
       // and if so, returns the IConnectionPoint interface pointer to that connection point.
       // 
 
       LoggingUtils.PrintFunction ();
 
-      Guid connectionPort;
-
-      GetConnectionInterface (out connectionPort);
-
-      if (riid.Equals (connectionPort))
-      {
-        ppCP = this;
-
-        return;
-      }
-
       ppCP = null;
+
+      try
+      {
+        Guid connectionPort;
+
+        GetConnectionInterface (out connectionPort);
+
+        if (riid.Equals (connectionPort))
+        {
+          ppCP = this;
+        }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

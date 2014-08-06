@@ -42,7 +42,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       DebugProgram = debugProgram;
 
-      IsRunning = true;
+      IsRunning = false;
 
       m_debugModules = new List<DebuggeeModule> ();
 
@@ -83,26 +83,32 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         MiResultRecord.RequireOk (resultRecord, command);
 
-        if (resultRecord.HasField ("thread-ids"))
+        if (!resultRecord.HasField ("thread-ids"))
         {
-          MiResultValue threadIdsContainer = resultRecord ["thread-ids"] [0];
+          throw new InvalidOperationException ("-thread-list-ids result missing 'thread-ids' field");
+        }
 
-          if (threadIdsContainer.HasField ("thread-id"))
+        List<MiResultValue> threadIds = resultRecord ["thread-ids"] [0] ["thread-id"];
+
+        List<uint> invalidThreadIds = new List<uint> (m_debugThreads.Keys);
+
+        for (int i = 0; i < threadIds.Count; ++i)
+        {
+          uint id = threadIds [i].GetUnsignedInt ();
+
+          CLangDebuggeeThread thread = GetThread (id);
+
+          if (thread == null)
           {
-            List<MiResultValue> threadIds = threadIdsContainer ["thread-id"];
-
-            for (int i = 0; i < threadIds.Count; ++i)
-            {
-              uint id = threadIds [i].GetUnsignedInt ();
-
-              if (GetThread (id) == null)
-              {
-                CLangDebuggeeThread thread = new CLangDebuggeeThread (this, id);
-
-                AddThread (thread);
-              }
-            }
+            thread = AddThread (id);
           }
+
+          invalidThreadIds.Remove (id);
+        }
+
+        foreach (uint id in invalidThreadIds)
+        {
+          RemoveThread (id, uint.MaxValue);
         }
 
         if (resultRecord.HasField ("current-thread"))
@@ -201,54 +207,44 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void AddThread (CLangDebuggeeThread thread)
+    public CLangDebuggeeThread AddThread (uint threadId)
     {
       LoggingUtils.PrintFunction ();
 
-      if (thread == null)
-      {
-        throw new ArgumentNullException ("thread");
-      }
-
-      uint threadId;
-
-      LoggingUtils.RequireOk (thread.GetThreadId (out threadId));
+      CLangDebuggeeThread thread = new CLangDebuggeeThread (this, threadId);
 
       lock (m_debugThreads)
       {
         if (m_debugThreads.ContainsKey (threadId))
         {
-          throw new ArgumentException ("threadId");
+          throw new ArgumentException ("Thread matching id (" + threadId + ") already exists");
         }
+
+        //thread.Refresh ();
 
         m_debugThreads.Add (threadId, thread);
       }
 
       m_debugger.Engine.Broadcast (new DebugEngineEvent.ThreadCreate (), DebugProgram, thread);
+
+      return thread;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void RemoveThread (CLangDebuggeeThread thread, uint exitCode)
+    public void RemoveThread (uint threadId, uint exitCode)
     {
       LoggingUtils.PrintFunction ();
 
-      if (thread == null)
-      {
-        throw new ArgumentNullException ("thread");
-      }
-
-      uint threadId;
-
-      LoggingUtils.RequireOk (thread.GetThreadId (out threadId));
+      DebuggeeThread thread = null;
 
       lock (m_debugThreads)
       {
-        if (m_debugThreads.ContainsKey (threadId))
+        if (!m_debugThreads.TryGetValue (threadId, out thread))
         {
-          throw new ArgumentException ("threadId");
+          throw new ArgumentException ("Thread matching id (" + threadId + ") does not exist");
         }
 
         m_debugThreads.Remove (threadId);
@@ -265,17 +261,14 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
+      DebuggeeThread thread = null;
+
       lock (m_debugThreads)
       {
-        DebuggeeThread thread;
-
-        if (m_debugThreads.TryGetValue (threadId, out thread))
-        {
-          return thread as CLangDebuggeeThread;
-        }
+        m_debugThreads.TryGetValue (threadId, out thread);
       }
 
-      return null;
+      return (CLangDebuggeeThread) thread;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -452,15 +445,38 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        throw new NotImplementedException ();
+        string fileName;
+
+        TEXT_POSITION [] startPos = new TEXT_POSITION [1];
+
+        TEXT_POSITION [] endPos = new TEXT_POSITION [1];
+
+        LoggingUtils.RequireOk (pDocPos.GetFileName (out fileName));
+
+        LoggingUtils.RequireOk (pDocPos.GetRange (startPos, endPos));
+
+        string location = string.Format ("\"{0}:{1}\"", fileName, startPos [0].dwLine + 1);
+
+        DebuggeeCodeContext codeContext = m_debugger.GetCodeContextForLocation (location);
+
+        ppEnum = null;
+
+        if (codeContext != null)
+        {
+          ppEnum = new DebuggeeCodeContext.Enumerator (new DebuggeeCodeContext [] { codeContext });
+
+          return DebugEngineConstants.S_OK;
+        }
+
+        return DebugEngineConstants.E_FAIL;
       }
-      catch (NotImplementedException e)
+      catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
         ppEnum = null;
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return DebugEngineConstants.E_FAIL;
       }
     }
 
@@ -478,9 +494,53 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        throw new NotImplementedException ();
+        // 
+        // Get the entire call-stack for the current thread, and enumerate.
+        // 
+
+        CLangDebuggeeStackFrame stackFrame = pFrame as CLangDebuggeeStackFrame;
+
+        IDebugThread2 thread;
+
+        LoggingUtils.RequireOk (stackFrame.GetThread (out thread));
+
+        CLangDebuggeeThread stackFrameThread = thread as CLangDebuggeeThread;
+
+        List<DebuggeeStackFrame> threadCallStack = stackFrameThread.StackTrace ();
+
+        List <CODE_PATH> threadCodePaths = new List <CODE_PATH> ();
+
+        for (int i = 0; i < threadCallStack.Count; ++i)
+        {
+          string frameName;
+
+          IDebugCodeContext2 codeContext;
+
+          DebuggeeStackFrame frame = threadCallStack [i] as DebuggeeStackFrame;
+
+          LoggingUtils.RequireOk (frame.GetName (out frameName));
+
+          LoggingUtils.RequireOk (frame.GetCodeContext (out codeContext));
+
+          if (codeContext != null)
+          {
+            CODE_PATH codePath = new CODE_PATH ();
+
+            codePath.bstrName = frameName;
+
+            codePath.pCode = codeContext;
+
+            threadCodePaths.Add (codePath);
+          }
+        }
+
+        ppEnum = new DebuggeeProgram.EnumeratorCodePaths (threadCodePaths);
+
+        ppSafety = null;
+
+        return DebugEngineConstants.S_OK;
       }
-      catch (NotImplementedException e)
+      catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
@@ -488,7 +548,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         ppSafety = null;
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return DebugEngineConstants.E_FAIL;
       }
     }
 

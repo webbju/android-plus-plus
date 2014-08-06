@@ -449,12 +449,12 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        m_breakpointEnabled = (fEnable != 0);
-
         if (m_breakpointDeleted)
         {
           return DebugEngineConstants.E_BP_DELETED;
         }
+
+        m_breakpointEnabled = (fEnable != 0);
 
         return DebugEngineConstants.S_OK;
       }

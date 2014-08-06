@@ -332,10 +332,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        propertyInfoArray [0] = new DEBUG_PROPERTY_INFO ();
-
-        propertyInfoArray [0].dwFields = enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NONE;
-
         if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_FULLNAME) != 0)
         {
           propertyInfoArray [0].bstrFullName = m_fullExpression;
@@ -352,7 +348,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_TYPE) != 0)
         {
-          propertyInfoArray [0].bstrType = "[type]";
+          propertyInfoArray [0].bstrType = "<unknown type>";
 
           propertyInfoArray [0].dwFields |= enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_TYPE;
         }

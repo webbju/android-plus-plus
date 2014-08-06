@@ -474,7 +474,7 @@ namespace AndroidPlusPlus.Common
 
       try
       {
-        string command = "kill";
+        string command = "-interpreter-exec console \"kill\"";
 
         MiResultRecord resultRecord = SendCommand (command);
 
@@ -984,6 +984,10 @@ namespace AndroidPlusPlus.Common
             foreach (KeyValuePair<uint, AsyncCommandData> asyncCommand in m_asyncCommandData)
             {
               if (!asyncCommand.Value.Command.StartsWith ("-"))
+              {
+                asyncCommand.Value.StreamRecords.Add (streamRecord);
+              }
+              else if (asyncCommand.Value.Command.StartsWith ("-interpreter-exec console"))
               {
                 asyncCommand.Value.StreamRecords.Add (streamRecord);
               }

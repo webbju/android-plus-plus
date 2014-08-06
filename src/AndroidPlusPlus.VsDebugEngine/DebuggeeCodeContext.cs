@@ -17,6 +17,7 @@ using AndroidPlusPlus.Common;
 
 namespace AndroidPlusPlus.VsDebugEngine
 {
+
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -45,6 +46,11 @@ namespace AndroidPlusPlus.VsDebugEngine
         : base (contexts)
       {
       }
+
+      public Enumerator (IDebugCodeContext2 [] contexts)
+        : base (contexts)
+      {
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -59,8 +65,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public DebuggeeCodeContext (DebugEngine engine, DebuggeeDocumentContext documentContext, DebuggeeAddress address)
     {
-      m_engine = engine;
-
       if (documentContext == null)
       {
         throw new ArgumentNullException ("documentContext");
@@ -70,6 +74,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         throw new ArgumentNullException ("address");
       }
+
+      m_engine = engine;
 
       DocumentContext = documentContext;
 
@@ -111,6 +117,8 @@ namespace AndroidPlusPlus.VsDebugEngine
         DebuggeeAddress offsetAddress = Address.Add (count);
 
         offsetAddressContext = new DebuggeeCodeContext (m_engine, DocumentContext, offsetAddress);
+
+       return DebugEngineConstants.S_OK;
       }
       catch (Exception e)
       {
@@ -120,8 +128,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         return DebugEngineConstants.E_FAIL;
       }
-
-      return DebugEngineConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -141,6 +147,8 @@ namespace AndroidPlusPlus.VsDebugEngine
         DebuggeeAddress offsetAddress = Address.Subtract (count);
 
         offsetAddressContext = new DebuggeeCodeContext (m_engine, DocumentContext, offsetAddress);
+
+        return DebugEngineConstants.S_OK;
       }
       catch (Exception e)
       {
@@ -150,8 +158,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         return DebugEngineConstants.E_FAIL;
       }
-
-      return DebugEngineConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -309,27 +315,6 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         infoArray [0] = new CONTEXT_INFO ();
 
-        if ((Address != null) && (requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS) != 0)
-        {
-          infoArray [0].bstrAddress = Address.ToString ();
-
-          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS;
-        }
-
-        if ((Address != null) && (requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSOFFSET) != 0)
-        {
-          infoArray [0].bstrAddressOffset = Address.ToString ();
-
-          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSOFFSET;
-        }
-
-        if ((Address != null) && (requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSABSOLUTE) != 0)
-        {
-          infoArray [0].bstrAddressAbsolute = Address.ToString ();
-
-          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSABSOLUTE;
-        }
-
         if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_MODULEURL) != 0)
         {
           infoArray [0].bstrModuleUrl = "file://";
@@ -339,7 +324,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION) != 0)
         {
-          infoArray [0].bstrFunction = "<not implemented>";
+          infoArray [0].bstrFunction = "<unknown function>";
 
           infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION;
         }
@@ -356,6 +341,29 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_FUNCTIONOFFSET;
         }
+
+        if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS) != 0)
+        {
+          infoArray [0].bstrAddress = Address.ToString ();
+
+          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS;
+        }
+
+        if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSOFFSET) != 0)
+        {
+          infoArray [0].bstrAddressOffset = Address.ToString ();
+
+          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSOFFSET;
+        }
+
+        if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSABSOLUTE) != 0)
+        {
+          infoArray [0].bstrAddressAbsolute = Address.ToString ();
+
+          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSABSOLUTE;
+        }
+
+        return DebugEngineConstants.S_OK;
       }
       catch (Exception e)
       {
@@ -363,8 +371,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         return DebugEngineConstants.E_FAIL;
       }
-
-      return DebugEngineConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -394,11 +400,6 @@ namespace AndroidPlusPlus.VsDebugEngine
       try
       {
         documentContext = DocumentContext;
-
-        if (documentContext == null)
-        {
-          return DebugEngineConstants.S_FALSE;
-        }
 
         return DebugEngineConstants.S_OK;
       }
@@ -432,14 +433,16 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         IDebugDocumentContext2 documentContext = null;
 
-        GetDocumentContext (out documentContext);
+        LoggingUtils.RequireOk (GetDocumentContext (out documentContext));
 
         if (documentContext == null)
         {
-          return DebugEngineConstants.S_FALSE;
+          throw new InvalidOperationException ();
         }
 
-        return documentContext.GetLanguageInfo (ref languageName, ref languageGuid);
+        LoggingUtils.RequireOk (documentContext.GetLanguageInfo (ref languageName, ref languageGuid));
+
+        return DebugEngineConstants.S_OK;
       }
       catch (Exception e)
       {
@@ -469,14 +472,25 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      program = m_engine.Program;
-
-      if (program == null)
+      try
       {
+        program = m_engine.Program;
+
+        if (program == null)
+        {
+          throw new InvalidOperationException ();
+        }
+
+        return DebugEngineConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        program = null;
+
         return DebugEngineConstants.E_FAIL;
       }
-
-      return DebugEngineConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

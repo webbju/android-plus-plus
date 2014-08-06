@@ -44,6 +44,28 @@ namespace AndroidPlusPlus.VsDebugEngine
         : base (programs)
       {
       }
+
+      public Enumerator (IDebugProgram2 [] programs)
+        : base (programs)
+      {
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public class EnumeratorCodePaths : DebugEnumerator<CODE_PATH, IEnumCodePaths2>, IEnumCodePaths2
+    {
+      public EnumeratorCodePaths (List<CODE_PATH> codePaths)
+        : base (codePaths)
+      {
+      }
+
+      public EnumeratorCodePaths (CODE_PATH [] codePaths)
+        : base (codePaths)
+      {
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -896,7 +918,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (dwHostNameType == enum_GETHOSTNAME_TYPE.GHN_FRIENDLY_NAME)
         {
-          LoggingUtils.RequireOk (DebugProcess.GetName (enum_GETNAME_TYPE.GN_NAME, out pbstrHostName));
+          LoggingUtils.RequireOk (DebugProcess.GetName (enum_GETNAME_TYPE.GN_MONIKERNAME, out pbstrHostName));
 
           return DebugEngineConstants.S_OK;
         }

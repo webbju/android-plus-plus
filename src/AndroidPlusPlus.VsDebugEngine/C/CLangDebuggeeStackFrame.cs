@@ -43,6 +43,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private bool m_locationIsSymbolicated;
 
+    private bool m_queriedArgumentsAndLocals;
+
+    private bool m_queriedRegisters;
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -57,11 +61,13 @@ namespace AndroidPlusPlus.VsDebugEngine
         throw new ArgumentNullException ("frameTuple");
       }
 
+      m_queriedArgumentsAndLocals = false;
+
+      m_queriedRegisters = false;
+
       GetInfoFromCurrentLevel (frameTuple);
 
       LoggingUtils.RequireOk (QueryArgumentsAndLocals ());
-
-      LoggingUtils.RequireOk (QueryRegisters ());
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -156,14 +162,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         StringBuilder locationBuilder = new StringBuilder ();
 
-        locationBuilder.Append ("[" + m_locationAddress.ToString () + "]");
-
-        locationBuilder.Append (" " + m_locationFunction);
+        locationBuilder.Append ("[" + m_locationAddress.ToString () + "] ");
 
         if (!string.IsNullOrEmpty (m_locationModule))
         {
-          locationBuilder.Append (" (" + m_locationModule + ")");
+          locationBuilder.Append (m_locationModule + "!");
         }
+
+        locationBuilder.Append (m_locationFunction);
 
         m_locationId = locationBuilder.ToString ();
 
@@ -173,6 +179,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (frameTuple.HasField ("fullname") && frameTuple.HasField ("line"))
         {
+          // 
+          // If the symbol table isn't yet loaded, we'll need to specify exactly the location of this stack frame.
+          // 
+
           TEXT_POSITION [] textPositions = new TEXT_POSITION [2];
 
           textPositions [0].dwLine = frameTuple ["line"] [0].GetUnsignedInt () - 1;
@@ -188,15 +198,17 @@ namespace AndroidPlusPlus.VsDebugEngine
           m_documentContext = new DebuggeeDocumentContext (m_debugger.Engine, filename, textPositions [0], textPositions [1], DebugEngineGuids.guidLanguageCpp, m_locationAddress);
 
           m_codeContext = m_documentContext.GetCodeContext ();
+
+          if (m_codeContext == null)
+          {
+            throw new InvalidOperationException ();
+          }
         }
         else
         {
           m_codeContext = m_debugger.GetCodeContextForLocation ("*" + m_locationAddress.ToString ());
 
-          if (m_codeContext != null)
-          {
-            m_documentContext = m_codeContext.DocumentContext;
-          }
+          m_documentContext = (m_codeContext != null) ? m_codeContext.DocumentContext : null;
         }
       }
       catch (Exception e)
@@ -214,44 +226,49 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        uint threadId;
-
-        LoggingUtils.RequireOk (m_thread.GetThreadId (out threadId));
-
-        string command = string.Format ("-stack-list-variables --thread {0} --frame {1} --no-values", threadId, StackLevel);
-
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
-
-        MiResultRecord.RequireOk (resultRecord, command);
-
-        if (resultRecord.HasField ("variables"))
+        if (!m_queriedArgumentsAndLocals)
         {
-          MiResultValue localVariables = resultRecord ["variables"] [0];
+          uint threadId;
 
-          for (int i = 0; i < localVariables.Values.Count; ++i)
+          LoggingUtils.RequireOk (m_thread.GetThreadId (out threadId));
+
+          string command = string.Format ("-stack-list-variables --thread {0} --frame {1} --no-values", threadId, StackLevel);
+
+          MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+
+          MiResultRecord.RequireOk (resultRecord, command);
+
+          if (resultRecord.HasField ("variables"))
           {
-            string variableName = localVariables [i] ["name"] [0].GetString ();
+            MiResultValue localVariables = resultRecord ["variables"] [0];
 
-            MiVariable variable = m_debugger.VariableManager.CreateVariableFromExpression (this, variableName);
-
-            DebuggeeProperty property = m_debugger.VariableManager.CreatePropertyFromVariable (this, variable);
-
-            if (property == null)
+            for (int i = 0; i < localVariables.Values.Count; ++i)
             {
-              continue;
-            }
+              string variableName = localVariables [i] ["name"] [0].GetString ();
 
-            if (localVariables [i].HasField ("arg"))
-            {
-              m_stackArguments.TryAdd (variableName, property);
-            }
-            else
-            {
-              m_stackLocals.TryAdd (variableName, property);
-            }
+              MiVariable variable = m_debugger.VariableManager.CreateVariableFromExpression (this, variableName);
 
-            m_property.AddChildren (new DebuggeeProperty [] { property });
+              DebuggeeProperty property = m_debugger.VariableManager.CreatePropertyFromVariable (this, variable);
+
+              if (property == null)
+              {
+                continue;
+              }
+
+              if (localVariables [i].HasField ("arg"))
+              {
+                m_stackArguments.TryAdd (variableName, property);
+              }
+              else
+              {
+                m_stackLocals.TryAdd (variableName, property);
+              }
+
+              m_property.AddChildren (new DebuggeeProperty [] { property });
+            }
           }
+
+          m_queriedArgumentsAndLocals = true;
         }
 
         return DebugEngineConstants.S_OK;
@@ -278,38 +295,47 @@ namespace AndroidPlusPlus.VsDebugEngine
         // Returns a list of registers for the current stack level.
         // 
 
-        uint threadId;
-
-        LoggingUtils.RequireOk (m_thread.GetThreadId (out threadId));
-
-        MiResultRecord registerValueRecord = m_debugger.GdbClient.SendCommand (string.Format ("-data-list-register-values --thread {0} --frame {1} r", threadId, StackLevel));
-
-        if ((registerValueRecord == null) || (registerValueRecord.IsError ()) || (!registerValueRecord.HasField ("register-values")))
+        if (!m_queriedRegisters)
         {
-          throw new InvalidOperationException ("Failed to retrieve list of register values");
-        }
+          uint threadId;
 
-        MiResultValue registerValues = registerValueRecord ["register-values"] [0];
+          LoggingUtils.RequireOk (m_thread.GetThreadId (out threadId));
 
-        Dictionary<uint, string> registerIdMapping = m_debugger.GdbClient.GetRegisterIdMapping ();
+          string command = string.Format ("-data-list-register-values --thread {0} --frame {1} r", threadId, StackLevel);
 
-        for (int i = 0; i < registerValues.Values.Count; ++i)
-        {
-          uint registerId = registerValues [i] ["number"] [0].GetUnsignedInt ();
+          MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
 
-          string registerValue = registerValues [i] ["value"] [0].GetString ();
+          MiResultRecord.RequireOk (resultRecord, command);
 
-          string registerName = "$" + registerIdMapping [registerId];
+          if (!resultRecord.HasField ("register-values"))
+          {
+            throw new InvalidOperationException ("Failed to retrieve list of register values");
+          }
 
-          string registerNamePrettified = "$" + registerName;
+          MiResultValue registerValues = resultRecord ["register-values"] [0];
 
-          CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, registerNamePrettified);
+          Dictionary<uint, string> registerIdMapping = m_debugger.GdbClient.GetRegisterIdMapping ();
 
-          property.Value = registerValue;
+          for (int i = 0; i < registerValues.Values.Count; ++i)
+          {
+            uint registerId = registerValues [i] ["number"] [0].GetUnsignedInt ();
 
-          m_stackRegisters.TryAdd (registerNamePrettified, property);
+            string registerValue = registerValues [i] ["value"] [0].GetString ();
 
-          m_property.AddChildren (new DebuggeeProperty [] { property });
+            string registerName = registerIdMapping [registerId];
+
+            string registerNamePrettified = "$" + registerName;
+
+            CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, registerNamePrettified);
+
+            property.Value = registerValue;
+
+            m_stackRegisters.TryAdd (registerNamePrettified, property);
+
+            m_property.AddChildren (new DebuggeeProperty [] { property });
+          }
+
+          m_queriedRegisters = true;
         }
 
         return DebugEngineConstants.S_OK;
@@ -417,13 +443,13 @@ namespace AndroidPlusPlus.VsDebugEngine
           frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_ARGS;
         }
 
-        if (((requestedFlags & enum_FRAMEINFO_FLAGS.FIF_LANGUAGE) != 0) && (m_documentContext != null))
+        if ((requestedFlags & enum_FRAMEINFO_FLAGS.FIF_LANGUAGE) != 0)
         {
           string languageName = string.Empty;
 
           Guid languageGuid = Guid.Empty;
 
-          m_documentContext.GetLanguageInfo (ref languageName, ref languageGuid);
+          GetLanguageInfo (ref languageName, ref languageGuid);
 
           frameInfo.m_bstrLanguage = languageName;
 
@@ -439,9 +465,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFlags & enum_FRAMEINFO_FLAGS.FIF_STACKRANGE) != 0)
         {
-          frameInfo.m_addrMin = 0L;
+          frameInfo.m_addrMin = 0ul;
 
-          frameInfo.m_addrMax = 0L;
+          frameInfo.m_addrMax = 0ul;
 
           frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_STACKRANGE;
         }
@@ -469,31 +495,34 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFlags & enum_FRAMEINFO_FLAGS.FIF_DEBUG_MODULEP) != 0)
         {
-          IDebugProgram2 debugProgram;
-
-          IEnumDebugModules2 debugProgramModules;
-
-          uint debugModulesCount = 0;
-
-          LoggingUtils.RequireOk (m_thread.GetProgram (out debugProgram));
-
-          LoggingUtils.RequireOk (debugProgram.EnumModules (out debugProgramModules));
-
-          LoggingUtils.RequireOk (debugProgramModules.GetCount (out debugModulesCount));
-
-          DebuggeeModule [] debugModules = new DebuggeeModule [debugModulesCount];
-
-          LoggingUtils.RequireOk (debugProgramModules.Next (debugModulesCount, debugModules, ref debugModulesCount));
-
-          for (int i = 0; i < debugModulesCount; ++i)
+          if (!string.IsNullOrEmpty (m_locationModule))
           {
-            if (m_locationModule.Equals (debugModules [i].Name))
+            IDebugProgram2 debugProgram;
+
+            IEnumDebugModules2 debugProgramModules;
+
+            uint debugModulesCount = 0;
+
+            LoggingUtils.RequireOk (m_thread.GetProgram (out debugProgram));
+
+            LoggingUtils.RequireOk (debugProgram.EnumModules (out debugProgramModules));
+
+            LoggingUtils.RequireOk (debugProgramModules.GetCount (out debugModulesCount));
+
+            DebuggeeModule [] debugModules = new DebuggeeModule [debugModulesCount];
+
+            LoggingUtils.RequireOk (debugProgramModules.Next (debugModulesCount, debugModules, ref debugModulesCount));
+
+            for (int i = 0; i < debugModulesCount; ++i)
             {
-              frameInfo.m_pModule = debugModules [i];
+              if (m_locationModule.Equals (debugModules [i].Name))
+              {
+                frameInfo.m_pModule = debugModules [i];
 
-              frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_DEBUG_MODULEP;
+                frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_DEBUG_MODULEP;
 
-              break;
+                break;
+              }
             }
           }
         }
@@ -512,6 +541,35 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    public override int EnumProperties (enum_DEBUGPROP_INFO_FLAGS requestedFields, uint radix, ref Guid guidFilter, uint timeout, out uint elementsReturned, out IEnumDebugPropertyInfo2 enumDebugProperty)
+    {
+      try
+      {
+        if ((guidFilter == DebuggeeProperty.Filters.guidFilterRegisters) || (guidFilter == DebuggeeProperty.Filters.guidFilterAutoRegisters))
+        {
+          QueryRegisters ();
+        }
+
+        LoggingUtils.RequireOk (base.EnumProperties (requestedFields, radix, ref guidFilter, timeout, out elementsReturned, out enumDebugProperty));
+
+        return DebugEngineConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        elementsReturned = 0;
+
+        enumDebugProperty = null;
+
+        return DebugEngineConstants.E_FAIL;
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public override int GetLanguageInfo (ref string languageName, ref Guid languageGuid)
     {
       // 
@@ -520,20 +578,18 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      languageName = "C++";
-
-      languageGuid = DebugEngineGuids.guidLanguageCpp;
-
       try
       {
         IDebugDocumentContext2 documentContext = null;
 
-        GetDocumentContext (out documentContext);
+        LoggingUtils.RequireOk (GetDocumentContext (out documentContext));
 
-        if (documentContext != null)
+        if (documentContext == null)
         {
-          LoggingUtils.RequireOk (documentContext.GetLanguageInfo (ref languageName, ref languageGuid));
+          throw new InvalidOperationException ();
         }
+
+        LoggingUtils.RequireOk (documentContext.GetLanguageInfo (ref languageName, ref languageGuid));
 
         return DebugEngineConstants.S_OK;
       }

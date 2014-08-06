@@ -3,3 +3,5 @@
 :: 
 
 "%VS110COMNTOOLS%..\IDE\VSIXInstaller.exe" /admin "%ANDROID_PLUS_PLUS%\bin\v11.0\AndroidPlusPlus.VsIntegratedPackage.vsix"
+
+"%VS110COMNTOOLS%..\IDE\devenv.exe" /setup /nosetupvstemplates

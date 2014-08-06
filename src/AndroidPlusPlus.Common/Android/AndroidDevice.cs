@@ -95,19 +95,19 @@ namespace AndroidPlusPlus.Common
         try
         {
           exitCode = adbShellCommand.StartAndWaitForExit (timeout);
+
+          if (exitCode != 0)
+          {
+            throw new InvalidOperationException ("Shell request failed: " + adbShellCommand.StandardError);
+          }
+
+          LoggingUtils.Print ("[AndroidDevice] Shell: " + command + " (" + arguments + "): " + adbShellCommand.StandardOutput);
         }
         catch (TimeoutException e)
         {
           LoggingUtils.HandleException (e);
 
           throw new InvalidOperationException ("Shell request failed: Timed out.");
-        }
-
-        LoggingUtils.Print ("[AndroidDevice] Shell (" + command + " " + arguments + "): " + adbShellCommand.StandardOutput);
-
-        if (exitCode != 0)
-        {
-          throw new InvalidOperationException ("Shell request failed: " + adbShellCommand.StandardOutput);
         }
 
         return adbShellCommand.StandardOutput;
@@ -118,7 +118,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void Pull (string remotePath, string localPath)
+    public string Pull (string remotePath, string localPath)
     {
       using (SyncRedirectProcess adbPullCommand = AndroidAdb.AdbCommand (this, "pull", string.Format ("{0} {1}", remotePath, PathUtils.SantiseWindowsPath (localPath))))
       {
@@ -127,6 +127,13 @@ namespace AndroidPlusPlus.Common
         try
         {
           exitCode = adbPullCommand.StartAndWaitForExit ();
+
+          if (exitCode != 0)
+          {
+            throw new InvalidOperationException ("Pull request failed: " + adbPullCommand.StandardError);
+          }
+
+          LoggingUtils.Print (string.Format ("[AndroidDevice] Pull: '{0}' => '{1}' - {2}", remotePath, localPath, adbPullCommand.StandardOutput));
         }
         catch (TimeoutException e)
         {
@@ -135,12 +142,7 @@ namespace AndroidPlusPlus.Common
           throw new InvalidOperationException ("Pull request failed: Timed out.");
         }
 
-        LoggingUtils.Print (string.Format ("[AndroidDevice] Pull: '{0}' => '{1}' - {2}", remotePath, localPath, adbPullCommand.StandardOutput));
-
-        if (exitCode != 0)
-        {
-          throw new InvalidOperationException ("Pull request failed: " + adbPullCommand.StandardOutput);
-        }
+        return adbPullCommand.StandardOutput;
       }
     }
 
@@ -158,6 +160,8 @@ namespace AndroidPlusPlus.Common
 
       try
       {
+        int exitCode = -1;
+
         string temporaryStorage = "/data/local/tmp";
 
         string temporaryStoredFile = temporaryStorage + "/" + Path.GetFileName (filename);
@@ -168,8 +172,6 @@ namespace AndroidPlusPlus.Common
 
         using (SyncRedirectProcess adbPushToTemporaryCommand = AndroidAdb.AdbCommand (this, "push", string.Format ("{0} {1}", PathUtils.SantiseWindowsPath (filename), temporaryStorage)))
         {
-          int exitCode = -1;
-
           try
           {
             exitCode = adbPushToTemporaryCommand.StartAndWaitForExit ();
@@ -191,8 +193,6 @@ namespace AndroidPlusPlus.Common
 
         using (SyncRedirectProcess adbInstallCommand = AndroidAdb.AdbCommand (this, "shell", string.Format ("pm install -f {0} {1}", ((reinstall) ? "-r " : ""), temporaryStoredFile)))
         {
-          int exitCode = -1;
-
           try
           {
             exitCode = adbInstallCommand.StartAndWaitForExit ();
@@ -214,8 +214,6 @@ namespace AndroidPlusPlus.Common
 
         using (SyncRedirectProcess adbClearTemporary = AndroidAdb.AdbCommand (this, "shell", "rm " + temporaryStoredFile))
         {
-          int exitCode = -1;
-
           try
           {
             exitCode = adbClearTemporary.StartAndWaitForExit ();
@@ -240,6 +238,8 @@ namespace AndroidPlusPlus.Common
         LoggingUtils.Print ("[AndroidDevice] " + filename + " installation failed.");
 
         LoggingUtils.HandleException (e);
+
+        throw;
       }
     }
 
@@ -281,6 +281,8 @@ namespace AndroidPlusPlus.Common
         LoggingUtils.Print ("[AndroidDevice] " + package + " uninstall failed.");
 
         LoggingUtils.HandleException (e);
+
+        throw;
       }
     }
 

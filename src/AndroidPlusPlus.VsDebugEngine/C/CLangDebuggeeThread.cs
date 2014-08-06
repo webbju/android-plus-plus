@@ -28,7 +28,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public CLangDebuggeeThread (CLangDebuggeeProgram program, uint id)
-      : base (program.DebugProgram, id)
+      : base (program.DebugProgram, id, string.Empty)
     {
       NativeProgram = program;
     }
@@ -43,7 +43,54 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public override void StackTrace ()
+    public override void Refresh ()
+    {
+      m_debugProgram.AttachedEngine.NativeDebugger.RunInterruptOperation (delegate ()
+      {
+        string command = string.Format ("-thread-info {0}", m_threadId);
+
+        MiResultRecord resultRecord = m_debugProgram.AttachedEngine.NativeDebugger.GdbClient.SendCommand (command);
+
+        MiResultRecord.RequireOk (resultRecord, command);
+
+        if (!resultRecord.HasField ("threads"))
+        {
+          throw new InvalidOperationException ("-thread-info result missing 'threads' field");
+        }
+
+        List<MiResultValue> threadDataList = resultRecord ["threads"];
+
+        for (int i = 0; i < threadDataList.Count; ++i)
+        {
+          if (threadDataList [i].Values.Count > 0)
+          {
+            MiResultValueTuple threadData = (MiResultValueTuple) threadDataList [i] [0];
+
+            uint threadId = threadData ["id"] [0].GetUnsignedInt ();
+
+            if (threadId == m_threadId)
+            {
+              if (threadData.HasField ("name"))
+              {
+                m_threadName = threadData ["name"] [0].GetString (); // user-specified name
+              }
+              else if (threadData.HasField ("target-id"))
+              {
+                m_threadName = threadData ["target-id"] [0].GetString (); // usually the raw name, i.e. 'Thread 18771'
+              }
+
+              break;
+            }
+          }
+        }
+      });
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public override List<DebuggeeStackFrame> StackTrace ()
     {
       // 
       // Each thread maintains an internal cache of the last reported stack-trace. This is only cleared when threads are resumed via 'SetRunning(true)'.
@@ -59,37 +106,95 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           LoggingUtils.RequireOk (GetThreadId (out threadId));
 
-          string command = string.Format ("-stack-list-frames --thread {0}", threadId);
-
-          MiResultRecord resultRecord = m_debugProgram.AttachedEngine.NativeDebugger.GdbClient.SendCommand (command);
-
-          MiResultRecord.RequireOk (resultRecord, command);
-
-          if (resultRecord.HasField ("stack"))
+          m_debugProgram.AttachedEngine.NativeDebugger.RunInterruptOperation (delegate ()
           {
-            MiResultValueList stackRecord = resultRecord ["stack"] [0] as MiResultValueList;
+            string command = string.Format ("-stack-list-frames --thread {0}", threadId);
 
-            for (int i = 0; i < stackRecord.Values.Count; ++i)
+            MiResultRecord resultRecord = m_debugProgram.AttachedEngine.NativeDebugger.GdbClient.SendCommand (command);
+
+            MiResultRecord.RequireOk (resultRecord, command);
+
+            if (resultRecord.HasField ("stack"))
             {
-              string stackFrameId = m_threadName + "#" + i;
+              MiResultValueList stackRecord = resultRecord ["stack"] [0] as MiResultValueList;
 
-              MiResultValueTuple frameTuple = stackRecord [i] as MiResultValueTuple;
-
-              CLangDebuggeeStackFrame stackFrame = new CLangDebuggeeStackFrame (m_debugProgram.AttachedEngine.NativeDebugger, this, frameTuple, stackFrameId);
-
-              lock (m_threadStackFrames)
+              for (int i = 0; i < stackRecord.Values.Count; ++i)
               {
-                m_threadStackFrames.Add (stackFrame);
+                string stackFrameId = m_threadName + "#" + i;
+
+                MiResultValueTuple frameTuple = stackRecord [i] as MiResultValueTuple;
+
+                CLangDebuggeeStackFrame stackFrame = new CLangDebuggeeStackFrame (m_debugProgram.AttachedEngine.NativeDebugger, this, frameTuple, stackFrameId);
+
+                lock (m_threadStackFrames)
+                {
+                  m_threadStackFrames.Add (stackFrame);
+                }
               }
             }
-          }
+          });
         }
+
+        return m_threadStackFrames;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
         throw;
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public override int SetNextStatement (IDebugStackFrame2 stackFrame, IDebugCodeContext2 codeContext)
+    {
+      // 
+      // Sets the next statement to the given stack frame and code context.
+      // 
+
+      LoggingUtils.PrintFunction ();
+
+      try
+      {
+        CONTEXT_INFO [] contextInfo = new CONTEXT_INFO [1];
+
+        LoggingUtils.RequireOk (codeContext.GetInfo (enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSABSOLUTE, contextInfo));
+
+        string location = "*" + contextInfo [0].bstrAddressAbsolute;
+
+        m_debugProgram.AttachedEngine.NativeDebugger.RunInterruptOperation (delegate ()
+        {
+          // 
+          // Create a temporary breakpoint to stop -exec-jump continuing when we'd rather it didn't.
+          // 
+
+          string command = string.Format ("-break-insert -t {0}", location);
+
+          MiResultRecord resultRecord = m_debugProgram.AttachedEngine.NativeDebugger.GdbClient.SendCommand (command);
+
+          MiResultRecord.RequireOk (resultRecord, command);
+
+          // 
+          // Jump to the specified address location.
+          // 
+
+          command = string.Format ("-exec-jump --thread {0} {1}", m_threadId, location);
+
+          resultRecord = m_debugProgram.AttachedEngine.NativeDebugger.GdbClient.SendCommand (command);
+
+          MiResultRecord.RequireOk (resultRecord, command);
+        });
+
+        return DebugEngineConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return DebugEngineConstants.E_FAIL;
       }
     }
 

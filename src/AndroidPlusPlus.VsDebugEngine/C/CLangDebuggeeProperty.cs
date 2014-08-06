@@ -162,11 +162,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           string [] valueSegments = m_gdbVariable.Value.Split (' ');
 
-          memoryContext = new DebuggeeCodeContext (m_debugger.Engine, null, new DebuggeeAddress (valueSegments [0]));
+          memoryContext = m_debugger.GetCodeContextForLocation (valueSegments [0]);
         }
         else if (m_expression.StartsWith ("0x"))
         {
-          memoryContext = new DebuggeeCodeContext (m_debugger.Engine, null, new DebuggeeAddress (m_expression));
+          memoryContext = m_debugger.GetCodeContextForLocation (m_expression);
         }
 
         return DebugEngineConstants.S_OK;

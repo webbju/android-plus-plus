@@ -134,7 +134,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       AndroidAdb.Refresh ();
 
-      foreach (AndroidDevice device in AndroidAdb.GetConnectedDevices ())
+      AndroidDevice [] connectedDevices = AndroidAdb.GetConnectedDevices ();
+
+      foreach (AndroidDevice device in connectedDevices)
       {
         DebuggeePort debugPort = new DebuggeePort (this, device);
 

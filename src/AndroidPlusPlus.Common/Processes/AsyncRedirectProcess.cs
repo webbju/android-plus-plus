@@ -268,7 +268,7 @@ namespace AndroidPlusPlus.Common
 
         m_exitMutex.Set ();
 
-        LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] exited ({0}) in {1} ms", m_exitCode, Environment.TickCount - m_startTicks));
+        LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] {0} exited ({1}) in {2} ms", m_processStartInfo.FileName, m_exitCode, Environment.TickCount - m_startTicks));
       }
       catch (Exception e)
       {

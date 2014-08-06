@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Threading;
 using System.Text.RegularExpressions;
 using System.IO;
@@ -37,9 +38,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private GdbSetup m_gdbSetup = null;
 
-    private uint m_interruptOperationCounter = 0;
-
-    private bool m_interruptOperationWasRunning = false;
+    private int m_interruptOperationCounter = 0;
 
     private ManualResetEvent m_interruptOperationCompleted = null;
 
@@ -218,32 +217,34 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      if (m_interruptOperationCounter++ == 0)
-      {
-        m_interruptOperationWasRunning = NativeProgram.IsRunning;
-
-        if (m_interruptOperationWasRunning)
-        {
-          // 
-          // GDB 'stopped' events usually don't provide a token to which they are associated (only get ^done confirmation).
-          // This should block until the requested interrupt has been received and completely handled by VS.
-          // 
-
-          m_interruptOperationCompleted = new ManualResetEvent (false);
-
-          GdbClient.Stop ();
-
-          while (!m_interruptOperationCompleted.WaitOne (0))
-          {
-            Thread.Yield ();
-          }
-
-          m_interruptOperationCompleted = null;
-        }
-      }
+      bool targetWasRunning = false;
 
       try
       {
+        if (Interlocked.Increment (ref m_interruptOperationCounter) == 1)
+        {
+          targetWasRunning = NativeProgram.IsRunning;
+
+          if (targetWasRunning)
+          {
+            // 
+            // GDB 'stopped' events usually don't provide a token to which they are associated (only get ^done confirmation).
+            // This should block until the requested interrupt has been received and completely handled by VS.
+            // 
+
+            m_interruptOperationCompleted = new ManualResetEvent (false);
+
+            GdbClient.Stop ();
+
+            while (!m_interruptOperationCompleted.WaitOne (0))
+            {
+              Thread.Yield ();
+            }
+
+            m_interruptOperationCompleted = null;
+          }
+        }
+
         if (operation != null)
         {
           operation ();
@@ -259,7 +260,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         try
         {
-          if ((--m_interruptOperationCounter == 0) && m_interruptOperationWasRunning && shouldContinue)
+          if ((Interlocked.Decrement (ref m_interruptOperationCounter) == 0) && targetWasRunning && shouldContinue)
           {
             GdbClient.Continue ();
           }
@@ -391,9 +392,12 @@ namespace AndroidPlusPlus.VsDebugEngine
               {
                 Dictionary<uint, DebuggeeThread> programThreads = NativeProgram.GetThreads ();
 
-                foreach (DebuggeeThread thread in programThreads.Values)
+                lock (programThreads)
                 {
-                  thread.SetRunning (true);
+                  foreach (DebuggeeThread thread in programThreads.Values)
+                  {
+                    thread.SetRunning (true);
+                  }
                 }
               }
               else
@@ -429,9 +433,22 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                 stoppedThread = NativeProgram.GetThread (threadId);
 
-                stoppedThread.SetRunning (false);
+                if (stoppedThread != null)
+                {
+                  stoppedThread.SetRunning (false);
+                }
 
                 NativeProgram.CurrentThreadId = threadId;
+              }
+
+              if (stoppedThread == null)
+              {
+                stoppedThread = NativeProgram.GetThread (NativeProgram.CurrentThreadId);
+              }
+
+              if (stoppedThread == null)
+              {
+                throw new InvalidOperationException ("Could not evaluate a thread on which we stopped");
               }
 
               // 
@@ -469,33 +486,36 @@ namespace AndroidPlusPlus.VsDebugEngine
                 {
                   Dictionary<uint, DebuggeeThread> programThreads = NativeProgram.GetThreads ();
 
-                  foreach (DebuggeeThread thread in programThreads.Values)
+                  lock (programThreads)
                   {
-                    thread.SetRunning (false);
+                    foreach (DebuggeeThread thread in programThreads.Values)
+                    {
+                      thread.SetRunning (false);
+                    }
                   }
                 }
               }
 
-              bool ignoreStoppedSignal = false;
+              // 
+              // Unblocks waiting for 'stopped' to be processed. Skipping event handling during interrupt requests as it confuses VS debugger flow.
+              // 
+
+              bool ignoreInterruptSignal = false;
 
               if (m_interruptOperationCompleted != null)
               {
-                // 
-                // Unblocks waiting for 'stopped' to be processed. Skipping event handling during interrupt requests as it confuses VS debugger flow.
-                // 
-
                 m_interruptOperationCompleted.Set ();
 
-                ignoreStoppedSignal = true;
+                ignoreInterruptSignal = true;
               }
 
               // 
               // Process any pending requests to refresh registered breakpoints.
               // 
 
-              Engine.BreakpointManager.RefreshBreakpoints (true);
+              Engine.BreakpointManager.RefreshBreakpoints ();
 
-              if (!ignoreStoppedSignal)
+              if (true)
               {
                 // 
                 // The reason field can have one of the following values:
@@ -512,36 +532,51 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                       uint breakpointId = asyncRecord ["bkptno"] [0].GetUnsignedInt ();
 
-                      DebuggeeBreakpointBound boundBreakpoint = Engine.BreakpointManager.GetBoundBreakpoint (breakpointId);
+                      string breakpointMode = asyncRecord ["disp"] [0].GetString ();
 
-                      if (boundBreakpoint == null)
-                      {
-                        throw new InvalidOperationException ("Could not locate a registered breakpoint with matching id: " + breakpointId);
-                      }
-
-                      enum_BP_STATE [] breakpointState = new enum_BP_STATE [1];
-
-                      LoggingUtils.RequireOk (boundBreakpoint.GetState (breakpointState));
-
-                      if (breakpointState [0] == enum_BP_STATE.BPS_DELETED)
+                      if (breakpointMode.Equals ("del"))
                       {
                         // 
-                        // Hit a breakpoint which internally is flagged as deleted. Oh noes!
+                        // For temporary breakpoints, we won't have a valid managed object - so will just enforce a break event.
                         // 
 
-                        DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, "Breakpoint #" + breakpointId, asyncRecord ["reason"] [0].GetString (), 0x80000000, canContinue);
+                        //Engine.Broadcast (new DebugEngineEvent.Break (), NativeProgram.DebugProgram, stoppedThread);
 
-                        Engine.Broadcast (exception, NativeProgram.DebugProgram, stoppedThread);
+                        Engine.Broadcast (new DebugEngineEvent.BreakpointHit (null), NativeProgram.DebugProgram, stoppedThread);
                       }
                       else
                       {
-                        // 
-                        // Hit a breakpoint which is known about. Issue break event.
-                        // 
+                        DebuggeeBreakpointBound boundBreakpoint = Engine.BreakpointManager.GetBoundBreakpoint (breakpointId);
 
-                        IEnumDebugBoundBreakpoints2 enumeratedBoundBreakpoint = new DebuggeeBreakpointBound.Enumerator (new List<IDebugBoundBreakpoint2> { boundBreakpoint });
+                        if (boundBreakpoint == null)
+                        {
+                          throw new InvalidOperationException ("Could not locate a registered breakpoint with matching id: " + breakpointId);
+                        }
 
-                        Engine.Broadcast (new DebugEngineEvent.BreakpointHit (enumeratedBoundBreakpoint), NativeProgram.DebugProgram, stoppedThread);
+                        enum_BP_STATE [] breakpointState = new enum_BP_STATE [1];
+
+                        LoggingUtils.RequireOk (boundBreakpoint.GetState (breakpointState));
+
+                        if (breakpointState [0] == enum_BP_STATE.BPS_DELETED)
+                        {
+                          // 
+                          // Hit a breakpoint which internally is flagged as deleted. Oh noes!
+                          // 
+
+                          DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, "Breakpoint #" + breakpointId, asyncRecord ["reason"] [0].GetString (), 0x80000000, canContinue);
+
+                          Engine.Broadcast (exception, NativeProgram.DebugProgram, stoppedThread);
+                        }
+                        else
+                        {
+                          // 
+                          // Hit a breakpoint which is known about. Issue break event.
+                          // 
+
+                          IEnumDebugBoundBreakpoints2 enumeratedBoundBreakpoint = new DebuggeeBreakpointBound.Enumerator (new List<IDebugBoundBreakpoint2> { boundBreakpoint });
+
+                          Engine.Broadcast (new DebugEngineEvent.BreakpointHit (enumeratedBoundBreakpoint), NativeProgram.DebugProgram, stoppedThread);
+                        }
                       }
 
                       break;
@@ -566,7 +601,10 @@ namespace AndroidPlusPlus.VsDebugEngine
                         case null:
                         case "SIGINT":
                         {
-                          Engine.Broadcast (new DebugEngineEvent.Break (), NativeProgram.DebugProgram, stoppedThread);
+                          if (!ignoreInterruptSignal)
+                          {
+                            Engine.Broadcast (new DebugEngineEvent.Break (), NativeProgram.DebugProgram, stoppedThread);
+                          }
 
                           break;
                         }
@@ -609,9 +647,9 @@ namespace AndroidPlusPlus.VsDebugEngine
                     {
                       //Engine.Broadcast (new DebugEngineEvent.Break (), NativeProgram.DebugProgram, NativeProgram.GetThread (NativeProgram.CurrentThreadId));
 
-                      uint exitCode = 0;
+                      //uint exitCode = 0;
 
-                      Engine.Broadcast (new DebugEngineEvent.ProgramDestroy (exitCode), NativeProgram.DebugProgram, null);
+                      //Engine.Broadcast (new DebugEngineEvent.ProgramDestroy (exitCode), NativeProgram.DebugProgram, null);
 
                       break;
                     }
@@ -685,11 +723,9 @@ namespace AndroidPlusPlus.VsDebugEngine
               {
                 uint threadId = asyncRecord ["id"] [0].GetUnsignedInt ();
 
-                string threadGroupId = asyncRecord ["group-id"] [0].GetString ();
+                //string threadGroupId = asyncRecord ["group-id"] [0].GetString ();
 
-                CLangDebuggeeThread createdThread = new CLangDebuggeeThread (NativeProgram, threadId);
-
-                NativeProgram.AddThread (createdThread);
+                NativeProgram.AddThread (threadId);
               }
               catch (Exception e)
               {
@@ -713,9 +749,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                 uint exitCode = m_threadGroupStatus [threadGroupId];
 
-                CLangDebuggeeThread exitedThread = NativeProgram.GetThread (threadId);
-
-                NativeProgram.RemoveThread (exitedThread, exitCode);
+                NativeProgram.RemoveThread (threadId, exitCode);
               }
               catch (Exception e)
               {
@@ -761,7 +795,7 @@ namespace AndroidPlusPlus.VsDebugEngine
                   Engine.Broadcast (new DebugEngineEvent.SymbolSearch (module as IDebugModule3, module.Name), NativeProgram.DebugProgram, null);
                 }
 
-                Engine.BreakpointManager.RefreshBreakpoints (false);
+                Engine.BreakpointManager.SetDirty ();
               }
               catch (Exception e)
               {
@@ -787,7 +821,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                 Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, false), NativeProgram.DebugProgram, null);
 
-                Engine.BreakpointManager.RefreshBreakpoints (false);
+                Engine.BreakpointManager.SetDirty ();
               }
               catch (Exception e)
               {
@@ -827,46 +861,65 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           location = "*" + location;
         }
+        else if (location.StartsWith ("\""))
+        {
+          location = location.Replace ("\\", "/");
 
-        string command = "info line " + location;
+          location = location.Replace ("\"", "\\\""); // required to escape the nested string.
+        }
+
+        string command = string.Format ("-interpreter-exec console \"info line {0}\"", location);
 
         MiResultRecord resultRecord = GdbClient.SendCommand (command);
 
         MiResultRecord.RequireOk (resultRecord, command);
 
-        string infoRegExPattern = "Line (?<line>[0-9]+) of \"(?<file>[^\\\"]+?)\" starts at address (?<start>[^ ]+) [<]?(?<startsym>[^>]+)[>]? and ends at (?<end>[^ ]+) [<]?(?<endsym>[^>.]+)[>]?";
-
-        Regex regExMatcher = new Regex (infoRegExPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-        foreach (MiStreamRecord record in resultRecord.Records)
+        string [] infoPatterns = new string []
         {
-          string unescapedStream = Regex.Unescape (record.Stream);
+          "Line (?<line>[0-9]+) of \"(?<file>[^\\\"]+?)\" starts at address (?<start>[^ ]+) [<]?(?<startsym>[^>]+)[>]? and ends at (?<end>[^ ]+) [<]?(?<endsym>[^>.]+)[>]?",
+          "Line (?<line>[0-9]+) of \"(?<file>[^\\\"]+?)\" is at address (?<start>[^ ]+) [<]?(?<startsym>[^>]+)[>]? but contains no code"
+        };
 
-          Match regExLineMatch = regExMatcher.Match (unescapedStream);
+        foreach (string pattern in infoPatterns)
+        {
+          Regex regExMatcher = new Regex (pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-          if (regExLineMatch.Success)
+          foreach (MiStreamRecord record in resultRecord.Records)
           {
-            uint line = uint.Parse (regExLineMatch.Result ("${line}"));
+            string unescapedStream = Regex.Unescape (record.Stream);
 
-            string filename = regExLineMatch.Result ("${file}");
+            Match regExLineMatch = regExMatcher.Match (unescapedStream);
 
-            DebuggeeAddress startAddress = new DebuggeeAddress (regExLineMatch.Result ("${start}"));
+            if (regExLineMatch.Success)
+            {
+              string line = regExLineMatch.Result ("${line}");
 
-            DebuggeeAddress endAddress = new DebuggeeAddress (regExLineMatch.Result ("${end}"));
+              string file = regExLineMatch.Result ("${file}");
 
-            TEXT_POSITION [] documentPositions = new TEXT_POSITION [2];
+              string start = regExLineMatch.Result ("${start}");
 
-            documentPositions [0].dwLine = line - 1;
+              string startsym = regExLineMatch.Result ("${startsym}");
 
-            documentPositions [0].dwColumn = 0;
+              string end = regExLineMatch.Result ("${end}");
 
-            documentPositions [1].dwLine = documentPositions [0].dwLine;
+              string endsym = regExLineMatch.Result ("${endsym}");
 
-            documentPositions [1].dwColumn = uint.MaxValue;
+              TEXT_POSITION [] documentPositions = new TEXT_POSITION [2];
 
-            DebuggeeDocumentContext documentContext = new DebuggeeDocumentContext (Engine, filename, documentPositions [0], documentPositions [1], DebugEngineGuids.guidLanguageCpp, startAddress);
+              documentPositions [0].dwLine = uint.Parse (line) - 1;
 
-            return new DebuggeeCodeContext (Engine, documentContext, startAddress);
+              documentPositions [0].dwColumn = 0;
+
+              documentPositions [1].dwLine = documentPositions [0].dwLine;
+
+              documentPositions [1].dwColumn = uint.MaxValue;
+
+              DebuggeeAddress startAddress = new DebuggeeAddress (start);
+
+              DebuggeeDocumentContext documentContext = new DebuggeeDocumentContext (Engine, file, documentPositions [0], documentPositions [1], DebugEngineGuids.guidLanguageCpp, startAddress);
+
+              return new DebuggeeCodeContext (Engine, documentContext, startAddress);
+            }
           }
         }
       }

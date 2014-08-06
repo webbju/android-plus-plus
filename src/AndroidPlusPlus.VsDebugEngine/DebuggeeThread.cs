@@ -41,13 +41,14 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    // Specified here to avoid referencing EnvDTE90 assembly.
     public enum enum_THREADCATEGORY
     {
-      THREADCATEGORY_Worker,
-      THREADCATEGORY_UI,
-      THREADCATEGORY_Main,
-      THREADCATEGORY_RPC,
-      THREADCATEGORY_Unknown
+      THREADCATEGORY_Worker = 0,
+      THREADCATEGORY_UI = (THREADCATEGORY_Worker + 1),
+      THREADCATEGORY_Main = (THREADCATEGORY_UI + 1),
+      THREADCATEGORY_RPC = (THREADCATEGORY_Main + 1),
+      THREADCATEGORY_Unknown = (THREADCATEGORY_RPC + 1)
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -66,19 +67,26 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     protected uint m_threadSuspendCount;
 
+    protected uint m_threadFlags;
+
     protected List<DebuggeeStackFrame> m_threadStackFrames;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public DebuggeeThread (DebuggeeProgram program, uint threadId)
+    public DebuggeeThread (DebuggeeProgram program, uint threadId, string threadName)
     {
       m_debugProgram = program;
 
       m_threadId = threadId;
 
-      m_threadName = "Thread-" + m_threadId;
+      m_threadName = threadName;
+
+      if (string.IsNullOrEmpty (threadName))
+      {
+        m_threadName = "Thread-" + m_threadId;
+      }
 
       m_threadDisplayName = m_threadName;
 
@@ -123,7 +131,16 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public virtual void StackTrace ()
+    public virtual void Refresh ()
+    {
+      throw new NotImplementedException ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public virtual List<DebuggeeStackFrame> StackTrace ()
     {
       throw new NotImplementedException ();
     }
@@ -146,7 +163,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.S_FALSE; 
+      return DebugEngineConstants.S_OK; 
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -169,20 +186,16 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         StackTrace ();
 
-        List<FRAMEINFO> frames = new List<FRAMEINFO> ();
-
         DebuggeeStackFrame [] stackFrames = m_threadStackFrames.ToArray ();
 
-        foreach (DebuggeeStackFrame stackFrame in stackFrames)
+        FRAMEINFO [] frameInfo = new FRAMEINFO [stackFrames.Length];
+
+        for (int i = 0; i < stackFrames.Length; ++i)
         {
-          FRAMEINFO frameInfo = new FRAMEINFO ();
-
-          LoggingUtils.RequireOk (stackFrame.SetFrameInfo (requestedFields, radix, ref frameInfo));
-
-          frames.Add (frameInfo);
+          LoggingUtils.RequireOk (stackFrames [i].SetFrameInfo (requestedFields, radix, ref frameInfo [i]));
         }
 
-        enumDebugFrame = new DebuggeeStackFrame.Enumerator (frames);
+        enumDebugFrame = new DebuggeeStackFrame.Enumerator (frameInfo);
 
         return DebugEngineConstants.S_OK;
       }
@@ -253,8 +266,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        propertiesArray [0] = new THREADPROPERTIES ();
-
         if ((requestedFields & enum_THREADPROPERTY_FIELDS.TPF_ID) != 0)
         {
           propertiesArray [0].dwThreadId = m_threadId;
@@ -285,7 +296,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFields & enum_THREADPROPERTY_FIELDS.TPF_PRIORITY) != 0)
         {
-          propertiesArray [0].bstrPriority = "Normal";
+          propertiesArray [0].bstrPriority = "<unknown priority>";
 
           propertiesArray [0].dwFields |= enum_THREADPROPERTY_FIELDS.TPF_PRIORITY;
         }
@@ -384,7 +395,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.S_OK;
+      return DebugEngineConstants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -416,7 +427,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.E_NOTIMPL;
+      m_threadName = name;
+
+      return DebugEngineConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -469,7 +482,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.S_FALSE;
+      return DebugEngineConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -484,9 +497,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      flags = 0;
+      flags = m_threadFlags;
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return DebugEngineConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -496,12 +509,14 @@ namespace AndroidPlusPlus.VsDebugEngine
     int IDebugThread100.SetFlags (uint flags)
     {
       // 
-      // Set flags. Not implemented.
+      // Set flags. 
       // 
 
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.E_NOTIMPL;
+      m_threadFlags = flags;
+
+      return DebugEngineConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -528,8 +543,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         LoggingUtils.RequireOk (GetThreadProperties (requestedFields90, threadProperties9));
 
-        propertiesArray [0] = new THREADPROPERTIES100 ();
-
         propertiesArray [0].bstrLocation = threadProperties9 [0].bstrLocation;
 
         propertiesArray [0].bstrName = threadProperties9 [0].bstrName;
@@ -542,53 +555,49 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         propertiesArray [0].dwThreadState = threadProperties9 [0].dwThreadState;
 
-        propertiesArray [0].dwFields = (uint)threadProperties9 [0].dwFields;
+        propertiesArray [0].dwFields |= (uint)threadProperties9 [0].dwFields;
 
         // 
         // 10.0 (2010) thread properties.
         // 
 
-        if (requestedFields != (uint)threadProperties9 [0].dwFields)
+        if ((requestedFields & (uint) enum_THREADPROPERTY_FIELDS100.TPF100_DISPLAY_NAME) != 0)
         {
-          if ((requestedFields & (uint)enum_THREADPROPERTY_FIELDS100.TPF100_DISPLAY_NAME) != 0)
+          propertiesArray [0].bstrDisplayName = m_threadDisplayName;
+
+          propertiesArray [0].dwFields |= (uint) enum_THREADPROPERTY_FIELDS100.TPF100_DISPLAY_NAME;
+
+          propertiesArray [0].DisplayNamePriority = (uint) enum_DISPLAY_NAME_PRIORITY100.DISPLAY_NAM_PRI_DEFAULT_100;
+
+          propertiesArray [0].dwFields |= (uint) enum_THREADPROPERTY_FIELDS100.TPF100_DISPLAY_NAME_PRIORITY;
+        }
+
+        if ((requestedFields & (uint) enum_THREADPROPERTY_FIELDS100.TPF100_CATEGORY) != 0)
+        {
+          if (m_threadId == 1)
           {
-            propertiesArray [0].bstrDisplayName = m_threadName;
-
-            propertiesArray [0].dwFields |= (uint)enum_THREADPROPERTY_FIELDS100.TPF100_DISPLAY_NAME;
-
-            // Give this display name a higher priority than the default (0) so that it will actually be displayed
-            propertiesArray [0].DisplayNamePriority = (uint)enum_DISPLAY_NAME_PRIORITY100.DISPLAY_NAME_PRI_NORMAL_100;
-
-            propertiesArray [0].dwFields |= (uint)enum_THREADPROPERTY_FIELDS100.TPF100_DISPLAY_NAME_PRIORITY;
+            propertiesArray [0].dwThreadCategory = (uint) enum_THREADCATEGORY.THREADCATEGORY_Main;
+          }
+          else
+          {
+            propertiesArray [0].dwThreadCategory = (uint) enum_THREADCATEGORY.THREADCATEGORY_Worker;
           }
 
-          if ((requestedFields & (uint)enum_THREADPROPERTY_FIELDS100.TPF100_CATEGORY) != 0)
-          {
-            if (m_threadId == 1)
-            {
-              propertiesArray [0].dwThreadCategory = (uint)enum_THREADCATEGORY.THREADCATEGORY_Main;
-            }
-            else
-            {
-              propertiesArray [0].dwThreadCategory = (uint)enum_THREADCATEGORY.THREADCATEGORY_Worker;
-            }
+          propertiesArray [0].dwFields |= (uint) enum_THREADPROPERTY_FIELDS100.TPF100_CATEGORY;
+        }
 
-            propertiesArray [0].dwFields |= (uint)enum_THREADPROPERTY_FIELDS100.TPF100_CATEGORY;
-          }
+        if ((requestedFields & (uint) enum_THREADPROPERTY_FIELDS100.TPF100_AFFINITY) != 0)
+        {
+          propertiesArray [0].AffinityMask = 0;
 
-          if ((requestedFields & (uint)enum_THREADPROPERTY_FIELDS100.TPF100_AFFINITY) != 0)
-          {
-            propertiesArray [0].AffinityMask = 0;
+          propertiesArray [0].dwFields |= (uint) enum_THREADPROPERTY_FIELDS100.TPF100_AFFINITY;
+        }
 
-            propertiesArray [0].dwFields |= (uint)enum_THREADPROPERTY_FIELDS100.TPF100_AFFINITY;
-          }
+        if ((requestedFields & (uint) enum_THREADPROPERTY_FIELDS100.TPF100_PRIORITY_ID) != 0)
+        {
+          propertiesArray [0].priorityId = 0;
 
-          if ((requestedFields & (uint)enum_THREADPROPERTY_FIELDS100.TPF100_PRIORITY_ID) != 0)
-          {
-            propertiesArray [0].priorityId = 0;
-
-            propertiesArray [0].dwFields |= (uint)enum_THREADPROPERTY_FIELDS100.TPF100_PRIORITY_ID;
-          }
+          propertiesArray [0].dwFields |= (uint) enum_THREADPROPERTY_FIELDS100.TPF100_PRIORITY_ID;
         }
 
         return DebugEngineConstants.S_OK;

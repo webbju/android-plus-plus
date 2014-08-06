@@ -68,7 +68,7 @@ namespace AndroidPlusPlus.Common
     {
       if (!CheckOk (handle))
       {
-        throw new InvalidOperationException ();
+        throw new InvalidOperationException (string.Format ("RequireOk received unexpected error handle (0x{0})", handle.ToString ("X8")));
       }
     }
 
@@ -91,6 +91,10 @@ namespace AndroidPlusPlus.Common
     public static void HandleException (Exception e)
     {
       Print (string.Format ("[Exception] {0}\n{1}", e.Message, e.StackTrace));
+
+#if DEBUG && false
+      System.Diagnostics.Debugger.Break ();
+#endif
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -291,12 +291,13 @@ namespace AndroidPlusPlus.VsDebugEngine
     public int GetAttachedSessionName (out string pbstrSessionName)
     {
       // 
-      // Gets the name of the session that is debugging the process. [DEPRECATED. SHOULD ALWAYS RETURN E_NOTIMPL.]
+      // Gets the name of the session that is debugging the process. 
+      // DEPRECATED. SHOULD ALWAYS RETURN E_NOTIMPL.
       // 
 
       LoggingUtils.PrintFunction ();
 
-      pbstrSessionName = null;
+      pbstrSessionName = string.Empty;
 
       return DebugEngineConstants.E_NOTIMPL;
     }
@@ -440,8 +441,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((Fields & enum_PROCESS_INFO_FIELDS.PIF_FLAGS) != 0)
         {
-          infoArray [0].Flags = 0;
-
           infoArray [0].Flags |= enum_PROCESS_INFO_FLAGS.PIFLAG_PROCESS_RUNNING;
 
           if (DebuggeeProgram.AttachedEngine != null)
@@ -500,11 +499,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      pProcessId [0] = new AD_PROCESS_ID ();
-
       pProcessId [0].dwProcessId = NativeProcess.Pid;
-
-      pProcessId [0].guidProcessId = Guid;
 
       pProcessId [0].ProcessIdType = (uint)enum_AD_PROCESS_ID.AD_PROCESS_ID_SYSTEM;
 

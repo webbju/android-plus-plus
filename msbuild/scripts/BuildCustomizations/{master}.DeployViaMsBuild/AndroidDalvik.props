@@ -49,8 +49,6 @@
 
       <JvmInitialHeapSize Condition="'%(AndroidDalvik.JvmInitialHeapSize)' == ''">32m</JvmInitialHeapSize>
 
-      <JvmMaximumHeapSize Condition="('%(AndroidDalvik.JvmMaximumHeapSize)' == '' and '$(SixtyFourBit)' == 'true')">2048m</JvmMaximumHeapSize>
-
       <JvmMaximumHeapSize Condition="'%(AndroidDalvik.JvmMaximumHeapSize)' == ''">1024m</JvmMaximumHeapSize>
 
       <JvmThreadStackSize Condition="'%(AndroidDalvik.JvmThreadStackSize)' == ''">1m</JvmThreadStackSize>

@@ -105,40 +105,43 @@ namespace AndroidPlusPlus.Common
 
             string deviceType = connectedDevicePair.Value;
 
-            if (m_connectedDevices.ContainsKey (connectedDevicePair.Key))
+            if (!deviceType.Equals ("offline"))
             {
-              // 
-              // Device is pervasive. Refresh internal properties.
-              // 
-
-              LoggingUtils.Print (string.Format ("[AndroidAdb] Device pervaded: {0} - {1}", deviceName, deviceType));
-
-              AndroidDevice pervasiveDevice = (m_connectedDevices [connectedDevicePair.Key] as AndroidDevice);
-
-              pervasiveDevice.Refresh ();
-
-              foreach (StateListener deviceListener in m_registeredDeviceStateListeners)
+              if (m_connectedDevices.ContainsKey (deviceName))
               {
-                deviceListener.DevicePervasive (pervasiveDevice);
+                // 
+                // Device is pervasive. Refresh internal properties.
+                // 
+
+                LoggingUtils.Print (string.Format ("[AndroidAdb] Device pervaded: {0} - {1}", deviceName, deviceType));
+
+                AndroidDevice pervasiveDevice = (m_connectedDevices [connectedDevicePair.Key] as AndroidDevice);
+
+                pervasiveDevice.Refresh ();
+
+                foreach (StateListener deviceListener in m_registeredDeviceStateListeners)
+                {
+                  deviceListener.DevicePervasive (pervasiveDevice);
+                }
               }
-            }
-            else
-            {
-              // 
-              // Device connected.
-              // 
-
-              LoggingUtils.Print (string.Format ("[AndroidAdb] Device connected: {0} - {1}", deviceName, deviceType));
-
-              AndroidDevice connectedDevice = new AndroidDevice (deviceName);
-
-              connectedDevice.Refresh ();
-
-              m_connectedDevices.Add (deviceName, connectedDevice);
-
-              foreach (StateListener deviceListener in m_registeredDeviceStateListeners)
+              else
               {
-                deviceListener.DeviceConnected (connectedDevice);
+                // 
+                // Device connected.
+                // 
+
+                LoggingUtils.Print (string.Format ("[AndroidAdb] Device connected: {0} - {1}", deviceName, deviceType));
+
+                AndroidDevice connectedDevice = new AndroidDevice (deviceName);
+
+                connectedDevice.Refresh ();
+
+                m_connectedDevices.Add (deviceName, connectedDevice);
+
+                foreach (StateListener deviceListener in m_registeredDeviceStateListeners)
+                {
+                  deviceListener.DeviceConnected (connectedDevice);
+                }
               }
             }
           }

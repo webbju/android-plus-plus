@@ -79,18 +79,26 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         MiResultRecord.RequireOk (resultRecord, command);
 
-        MiResultValue byteStream = resultRecord ["memory"] [0] ["contents"] [0];
+        MiResultValueList memoryStreamList = (MiResultValueList) resultRecord ["memory"] [0];
 
-        string hexValue = byteStream.GetString ();
-
-        if ((hexValue.Length / 2) != dwCount)
+        for (int s = 0; s < memoryStreamList.Values.Count; ++s)
         {
-          throw new InvalidOperationException ();
-        }
+          if (!memoryStreamList [s].HasField ("contents"))
+          {
+            throw new InvalidOperationException ("-data-read-memory-bytes result missing 'contents' field");
+          }
 
-        for (int i = 0; i < dwCount; ++i)
-        {
-          rgbMemory [i] = byte.Parse (hexValue.Substring (i * 2, 2), NumberStyles.HexNumber);
+          string hexValue = memoryStreamList [s] ["contents"] [0].GetString ();
+
+          if ((hexValue.Length / 2) != dwCount)
+          {
+            throw new InvalidOperationException ();
+          }
+
+          for (int i = 0; i < dwCount; ++i)
+          {
+            rgbMemory [i] = byte.Parse (hexValue.Substring (i * 2, 2), NumberStyles.HexNumber);
+          }
         }
 
         pdwRead = dwCount;
@@ -134,7 +142,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           stringBuilder.Append (rgbMemory [i].ToString ("x"));
         }
 
-        string command = string.Format ("-data-write-memory {0} {1} {2}", codeContext.Address.ToString (), stringBuilder.ToString (), dwCount);
+        string command = string.Format ("-data-write-memory-bytes {0} {1} {2}", codeContext.Address.ToString (), stringBuilder.ToString (), dwCount);
 
         MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
 

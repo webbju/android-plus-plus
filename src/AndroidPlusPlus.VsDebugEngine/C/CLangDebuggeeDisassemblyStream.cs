@@ -34,8 +34,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private readonly DebuggeeCodeContext m_codeContext;
 
-    private DebuggeeAddress m_currentPosition;
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -47,8 +45,6 @@ namespace AndroidPlusPlus.VsDebugEngine
       m_streamScope = streamScope;
 
       m_codeContext = codeContext as DebuggeeCodeContext;
-
-      m_currentPosition = m_codeContext.Address;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -65,11 +61,22 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        IDebugDocumentContext2 documentContext;
+        string location = string.Format ("0x{0}", uCodeLocationId);
 
-        LoggingUtils.RequireOk (m_codeContext.GetDocumentContext (out documentContext));
+        ppCodeContext = m_debugger.GetCodeContextForLocation (location.ToString ());
 
-        ppCodeContext = new DebuggeeCodeContext (m_debugger.Engine, documentContext as DebuggeeDocumentContext, new DebuggeeAddress (uCodeLocationId));
+        if (ppCodeContext == null)
+        {
+          IDebugDocumentContext2 documentContext;
+
+          LoggingUtils.RequireOk (m_codeContext.GetDocumentContext (out documentContext));
+
+          DebuggeeDocumentContext debuggeeDocumentContext = documentContext as DebuggeeDocumentContext;
+
+          ppCodeContext = new DebuggeeCodeContext (m_debugger.Engine, debuggeeDocumentContext, new DebuggeeAddress (uCodeLocationId));
+        }
+
+        return DebugEngineConstants.S_OK;
       }
       catch (Exception e)
       {
@@ -79,8 +86,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         return DebugEngineConstants.E_FAIL;
       }
-
-      return DebugEngineConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -112,7 +117,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      puCodeLocationId = m_currentPosition.MemoryAddress;
+      puCodeLocationId = m_codeContext.Address.MemoryAddress;
 
       return DebugEngineConstants.S_OK;
     }
@@ -172,7 +177,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      pnSize = ulong.MaxValue;
+      pnSize = 1024; // TODO: this seems a reasonable amount, right now.
 
       return DebugEngineConstants.S_OK;
     }
@@ -191,131 +196,154 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        DebuggeeCodeContext addressCodeContext = m_debugger.GetCodeContextForLocation (m_currentPosition.ToString ());
+        ulong startAddress = m_codeContext.Address.MemoryAddress;
 
-        if (addressCodeContext == null)
-        {
-          throw new InvalidOperationException ();
-        }
+        ulong endAddress = startAddress + ((ulong)(dwInstructions) * 4); // TODO: 4 for a 32-bit instruction set?
 
-        DebuggeeAddress endAddress = m_currentPosition.Add ((ulong)(dwInstructions));
-
-        string disassemblyCommand = string.Format ("-data-disassemble -s {0} -e {1} -- 1", m_currentPosition.ToString (), endAddress.ToString ());
+        string disassemblyCommand = string.Format ("-data-disassemble -s 0x{0} -e 0x{1} -- 1", startAddress.ToString ("X8"), endAddress.ToString ("X8"));
 
         MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (disassemblyCommand);
 
         MiResultRecord.RequireOk (resultRecord, disassemblyCommand);
 
-        MiResultValue assemblyInstructions = resultRecord ["asm_insns"] [0];
-
-        for (int i = 0; i < Math.Min (assemblyInstructions.Values.Count, dwInstructions); ++i)
+        if (!resultRecord.HasField ("asm_insns"))
         {
-          MiResultValue instruction = assemblyInstructions [i];
+          throw new InvalidOperationException ("-data-disassemble result missing 'asm_insns' field");
+        }
 
-          DebuggeeAddress instructionAddress = new DebuggeeAddress (instruction ["address"] [0].GetString ());
+        MiResultValueList assemblyRecords = (MiResultValueList) resultRecord ["asm_insns"] [0];
 
-          if ((dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_ADDRESS) != 0)
+        int currentInstruction = 0;
+
+        long maxInstructions = Math.Min (assemblyRecords.Values.Count, dwInstructions);
+
+        for (int i = 0; i < assemblyRecords.Values.Count; ++i)
+        {
+          MiResultValue recordValue = assemblyRecords [i];
+
+          if (recordValue.Variable.Equals ("src_and_asm_line"))
           {
-            prgDisassembly [i].bstrAddress = instructionAddress.ToString ();
+            // 
+            // Parse mixed-mode disassembly reports.
+            // 
 
-            prgDisassembly [i].dwFields |= enum_DISASSEMBLY_STREAM_FIELDS.DSF_ADDRESS;
-          }
+            uint line = recordValue ["line"] [0].GetUnsignedInt ();
 
-          if ((dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_ADDRESSOFFSET) != 0)
-          {
-          }
+            string file = recordValue ["file"] [0].GetString ();
 
-          if ((dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_CODEBYTES) != 0)
-          {
-          }
+            MiResultValueList lineAsmInstructionValues = (MiResultValueList) recordValue ["line_asm_insn"] [0];
 
-          if (instruction.HasField ("inst"))
-          {
-            string [] operation = instruction ["inst"] [0].GetString ().Split (new string [] { "\\t"}, StringSplitOptions.None);
-
-            if (instruction.HasField ("inst") && (dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_OPCODE) != 0)
+            foreach (MiResultValue instructionValue in lineAsmInstructionValues.Values)
             {
-              prgDisassembly [i].bstrOpcode = operation [0];
+              string address = instructionValue ["address"] [0].GetString ();
 
-              prgDisassembly [i].dwFields |= enum_DISASSEMBLY_STREAM_FIELDS.DSF_OPCODE;
-            }
-
-            if ((operation.Length > 1) && (dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_OPERANDS) != 0)
-            {
-              StringBuilder operandsBuilder = new StringBuilder ();
-
-              for (int o = 1; o < operation.Length; ++o)
+              if ((dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_ADDRESS) != 0)
               {
-                operandsBuilder.Append (operation [o] + " ");
+                prgDisassembly [currentInstruction].bstrAddress = address;
+
+                prgDisassembly [currentInstruction].dwFields |= enum_DISASSEMBLY_STREAM_FIELDS.DSF_ADDRESS;
               }
 
-              operandsBuilder.Append ("<*symbol*>");
+              if ((dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_ADDRESSOFFSET) != 0)
+              {
+                string offset = instructionValue ["offset"] [0].GetString ();
 
-              prgDisassembly [i].bstrOperands = operandsBuilder.ToString ();
+                prgDisassembly [currentInstruction].bstrAddressOffset = offset;
 
-              prgDisassembly [i].dwFields |= enum_DISASSEMBLY_STREAM_FIELDS.DSF_OPERANDS;
+                prgDisassembly [currentInstruction].dwFields |= enum_DISASSEMBLY_STREAM_FIELDS.DSF_ADDRESSOFFSET;
+              }
 
-              prgDisassembly [i].dwFields |= enum_DISASSEMBLY_STREAM_FIELDS.DSF_OPERANDS_SYMBOLS;
+              if (((dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_OPCODE) != 0) || ((dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_OPERANDS) != 0) || ((dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_OPERANDS_SYMBOLS) != 0))
+              {
+                string inst = instructionValue ["inst"] [0].GetString ();
+
+                string [] operations = inst.Split (new string [] { "\\t" }, StringSplitOptions.None);
+
+                if (operations.Length > 0)
+                {
+                  prgDisassembly [currentInstruction].bstrOpcode = operations [0];
+
+                  prgDisassembly [currentInstruction].dwFields |= enum_DISASSEMBLY_STREAM_FIELDS.DSF_OPCODE;
+                }
+
+                if (operations.Length > 1)
+                {
+                  prgDisassembly [currentInstruction].bstrOperands = operations [1];
+
+                  prgDisassembly [currentInstruction].dwFields |= enum_DISASSEMBLY_STREAM_FIELDS.DSF_OPERANDS;
+                }
+
+                if (operations.Length > 2)
+                {
+                  prgDisassembly [currentInstruction].bstrOperands += " " + operations [2];
+
+                  prgDisassembly [currentInstruction].dwFields |= enum_DISASSEMBLY_STREAM_FIELDS.DSF_OPERANDS_SYMBOLS;
+                }
+              }
+
+              if ((dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_SYMBOL) != 0)
+              {
+                string functionName = instructionValue ["func-name"] [0].GetString ();
+
+                prgDisassembly [currentInstruction].bstrSymbol = functionName;
+
+                prgDisassembly [currentInstruction].dwFields |= enum_DISASSEMBLY_STREAM_FIELDS.DSF_SYMBOL;
+              }
+
+              if ((dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_CODELOCATIONID) != 0)
+              {
+                DebuggeeAddress instructionAddress = new DebuggeeAddress (address);
+
+                prgDisassembly [currentInstruction].uCodeLocationId = instructionAddress.MemoryAddress;
+
+                prgDisassembly [currentInstruction].dwFields |= enum_DISASSEMBLY_STREAM_FIELDS.DSF_CODELOCATIONID;
+              }
+
+              if ((dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_POSITION) != 0)
+              {
+                prgDisassembly [currentInstruction].posBeg.dwLine = line;
+
+                prgDisassembly [currentInstruction].posBeg.dwColumn = 0;
+
+                prgDisassembly [currentInstruction].posEnd.dwLine = line;
+
+                prgDisassembly [currentInstruction].posEnd.dwColumn = uint.MaxValue;
+
+                prgDisassembly [currentInstruction].dwFields |= enum_DISASSEMBLY_STREAM_FIELDS.DSF_POSITION;
+              }
+
+              if ((dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_DOCUMENTURL) != 0)
+              {
+                prgDisassembly [currentInstruction].bstrDocumentUrl = "file://" + file;
+
+                prgDisassembly [currentInstruction].dwFields |= enum_DISASSEMBLY_STREAM_FIELDS.DSF_DOCUMENTURL;
+              }
+
+              if ((dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_BYTEOFFSET) != 0)
+              {
+                uint offset = instructionValue ["offset"] [0].GetUnsignedInt ();
+
+                prgDisassembly [currentInstruction].dwByteOffset = offset;
+
+                prgDisassembly [currentInstruction].dwFields |= enum_DISASSEMBLY_STREAM_FIELDS.DSF_BYTEOFFSET;
+              }
+
+              if ((dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_FLAGS) != 0)
+              {
+                prgDisassembly [currentInstruction].dwFlags |= enum_DISASSEMBLY_FLAGS.DF_HASSOURCE;
+
+                prgDisassembly [currentInstruction].dwFields |= enum_DISASSEMBLY_STREAM_FIELDS.DSF_FLAGS;
+              }
+
+              if (++currentInstruction >= maxInstructions)
+              {
+                break;
+              }
             }
-          }
-
-          if ((dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_SYMBOL) != 0)
-          {
-            prgDisassembly [i].bstrSymbol = "*symbol*";
-
-            prgDisassembly [i].dwFields |= enum_DISASSEMBLY_STREAM_FIELDS.DSF_SYMBOL;
-          }
-
-          if ((dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_CODELOCATIONID) != 0)
-          {
-            prgDisassembly [i].uCodeLocationId = instructionAddress.MemoryAddress;
-
-            prgDisassembly [i].dwFields |= enum_DISASSEMBLY_STREAM_FIELDS.DSF_CODELOCATIONID;
-          }
-
-          if ((dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_POSITION) != 0)
-          {
-            TEXT_POSITION [] startPos = new TEXT_POSITION [1];
-
-            TEXT_POSITION [] endPos = new TEXT_POSITION [1];
-
-            LoggingUtils.RequireOk (addressCodeContext.DocumentContext.GetStatementRange (startPos, endPos));
-
-            prgDisassembly [i].posBeg = startPos [0];
-
-            prgDisassembly [i].posEnd = endPos [0];
-
-            prgDisassembly [i].dwFields |= enum_DISASSEMBLY_STREAM_FIELDS.DSF_POSITION;
-          }
-
-          if ((dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_DOCUMENTURL) != 0)
-          {
-            prgDisassembly [i].bstrDocumentUrl = string.Empty;
-
-            LoggingUtils.RequireOk (addressCodeContext.DocumentContext.GetName (enum_GETNAME_TYPE.GN_URL, out prgDisassembly [i].bstrDocumentUrl));
-
-            prgDisassembly [i].dwFields |= enum_DISASSEMBLY_STREAM_FIELDS.DSF_DOCUMENTURL;
-          }
-
-          if (instruction.HasField ("offset") && (dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_BYTEOFFSET) != 0)
-          {
-            prgDisassembly [i].dwByteOffset = instruction ["offset"] [0].GetUnsignedInt ();
-
-            prgDisassembly [i].dwFields |= enum_DISASSEMBLY_STREAM_FIELDS.DSF_BYTEOFFSET;
-          }
-
-          if ((dwFields & enum_DISASSEMBLY_STREAM_FIELDS.DSF_FLAGS) != 0)
-          {
-            if (!string.IsNullOrEmpty (prgDisassembly [i].bstrDocumentUrl))
-            {
-              prgDisassembly [i].dwFlags |= enum_DISASSEMBLY_FLAGS.DF_HASSOURCE;
-            }
-
-            prgDisassembly [i].dwFields |= enum_DISASSEMBLY_STREAM_FIELDS.DSF_FLAGS;
           }
         }
 
-        pdwInstructionsRead = (uint)assemblyInstructions.Values.Count;
+        pdwInstructionsRead = (uint) currentInstruction;
 
         return DebugEngineConstants.S_OK;
       }
@@ -351,60 +379,94 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        /*switch (dwSeekStart)
+        switch (dwSeekStart)
         {
           case enum_SEEK_START.SEEK_START_BEGIN:
+          {
+            // 
+            // Starts seeking at the beginning of the current document.
+            // 
+
+            throw new NotImplementedException ();
+          }
+
           case enum_SEEK_START.SEEK_START_END:
           {
+            // 
+            // Starts seeking at the end of the current document.
+            // 
+
             throw new NotImplementedException ();
           }
 
           case enum_SEEK_START.SEEK_START_CURRENT:
           {
+            // 
+            // Starts seeking at the current position of the current document.
+            // 
+
+            ulong offsetAddress = m_codeContext.Address.MemoryAddress;
+
             if (iInstructions > 0)
             {
-              m_currentPosition = m_currentPosition.Add ((ulong)(iInstructions * 4));
+              offsetAddress += (ulong)(iInstructions * 4);
             }
             else if (iInstructions < 0)
             {
-              m_currentPosition = m_currentPosition.Subtract ((ulong)(Math.Abs (iInstructions) * 4));
+              offsetAddress += (ulong)(Math.Abs (iInstructions) * 4);
             }
+
+            m_codeContext.Address = new DebuggeeAddress (offsetAddress);
 
             break;
           }
 
           case enum_SEEK_START.SEEK_START_CODECONTEXT:
           {
+            // 
+            // Starts seeking at the given code context of the current document.
+            // 
+
             DebuggeeCodeContext codeContext = (pCodeContext as DebuggeeCodeContext);
+
+            ulong offsetAddress = codeContext.Address.MemoryAddress;
 
             if (iInstructions > 0)
             {
-              m_currentPosition = codeContext.Address.Add ((ulong)(iInstructions * 4));
+              offsetAddress += (ulong)(iInstructions * 4);
             }
             else if (iInstructions < 0)
             {
-              m_currentPosition = codeContext.Address.Subtract ((ulong)(Math.Abs (iInstructions) * 4));
+              offsetAddress += (ulong)(Math.Abs (iInstructions) * 4);
             }
+
+            m_codeContext.Address = new DebuggeeAddress (offsetAddress);
 
             break;
           }
 
           case enum_SEEK_START.SEEK_START_CODELOCID:
           {
-            DebuggeeAddress codeLocAddress = new DebuggeeAddress (uCodeLocationId);
+            // 
+            // Starts seeking at the given code location identifier. 
+            // 
+
+            ulong offsetAddress = uCodeLocationId;
 
             if (iInstructions > 0)
             {
-              m_currentPosition = codeLocAddress.Add ((ulong)(iInstructions * 4));
+              offsetAddress += (ulong)(iInstructions * 4);
             }
             else if (iInstructions < 0)
             {
-              m_currentPosition = codeLocAddress.Subtract ((ulong)(Math.Abs (iInstructions) * 4));
+              offsetAddress += (ulong)(Math.Abs (iInstructions) * 4);
             }
+
+            m_codeContext.Address = new DebuggeeAddress (offsetAddress);
 
             break;
           }
-        }*/
+        }
 
         return DebugEngineConstants.S_OK;
       }

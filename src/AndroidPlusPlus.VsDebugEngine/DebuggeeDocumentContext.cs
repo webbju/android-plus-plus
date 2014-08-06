@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
 
@@ -208,41 +209,89 @@ namespace AndroidPlusPlus.VsDebugEngine
         switch (type)
         {
           case enum_GETNAME_TYPE.GN_NAME:
-          case enum_GETNAME_TYPE.GN_FILENAME:
-          case enum_GETNAME_TYPE.GN_BASENAME:
-          case enum_GETNAME_TYPE.GN_TITLE:
           {
+            // 
+            // Specifies a friendly name of the document or context.
+            // 
+
+            fileName = Path.GetFileNameWithoutExtension (m_fileName);
+
+            break;
+          }
+
+          case enum_GETNAME_TYPE.GN_FILENAME:
+          {
+            // 
+            // Specifies the full path of the document or context.
+            // 
+
             fileName = m_fileName;
 
-            if (string.IsNullOrEmpty (fileName))
-            {
-              throw new InvalidOperationException ();
-            }
+            break;
+          }
+
+          case enum_GETNAME_TYPE.GN_BASENAME:
+          {
+            // 
+            // Specifies a base file name instead of a full path of the document or context.
+            // 
+
+            fileName = Path.GetFileName (m_fileName);
+
+            break;
+          }
+
+          case enum_GETNAME_TYPE.GN_MONIKERNAME:
+          {
+            // 
+            // Specifies a unique name of the document or context in the form of a moniker.
+            // 
+
+            fileName = m_fileName;
 
             break;
           }
 
           case enum_GETNAME_TYPE.GN_URL:
           {
-            fileName = "file://" + m_fileName;
+            // 
+            // Specifies a URL name of the document or context.
+            // 
+
+            fileName = "file://" + m_fileName.Replace ("\\", "/");
 
             break;
           }
 
-          case enum_GETNAME_TYPE.GN_MONIKERNAME:
+          case enum_GETNAME_TYPE.GN_TITLE:
+          {
+            // 
+            // Specifies a title of the document, if one exists.
+            // 
+
+            fileName = Path.GetFileName (m_fileName);
+
+            break;
+          }
+
           case enum_GETNAME_TYPE.GN_STARTPAGEURL:
           {
-            throw new NotImplementedException ();
+            // 
+            // Gets the starting page URL for processes.
+            // 
+
+            fileName = "file://" + m_fileName.Replace ("\\", "/");
+
+            break;
           }
         }
 
-        return DebugEngineConstants.S_OK;
-      }
-      catch (NotImplementedException e)
-      {
-        LoggingUtils.HandleException (e);
+        if (string.IsNullOrEmpty (fileName))
+        {
+          throw new InvalidOperationException ();
+        }
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return DebugEngineConstants.S_OK;
       }
       catch (Exception e)
       {
@@ -323,7 +372,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int Seek (int count, out IDebugDocumentContext2 documentContext)
+    public int Seek (int nCount, out IDebugDocumentContext2 ppDocContext)
     {
       // 
       // Moves the document context by a given number of statements or lines.
@@ -331,7 +380,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      documentContext = null;
+      ppDocContext = null;
 
       return DebugEngineConstants.E_NOTIMPL;
     }
@@ -345,6 +394,8 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
   }
 

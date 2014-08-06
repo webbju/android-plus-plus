@@ -32,6 +32,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public class Enumerator : DebugEnumerator<FRAMEINFO, IEnumDebugFrameInfo2>, IEnumDebugFrameInfo2
     {
+      public Enumerator (FRAMEINFO [] frames)
+        : base (frames)
+      {
+      }
+
       public Enumerator (List<FRAMEINFO> frames)
         : base (frames)
       {
@@ -210,9 +215,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           DebuggeeProperty registersPropertyList = new DebuggeeProperty (m_debugEngine, this, "CPU");
 
-          List<DebuggeeProperty> registers = new List<DebuggeeProperty> ();
-
-          LoggingUtils.RequireOk (registersPropertyList.AddChildren (registers.ToArray ()));
+          foreach (KeyValuePair<string, DebuggeeProperty> register in m_stackRegisters)
+          {
+            LoggingUtils.RequireOk (registersPropertyList.AddChildren (new DebuggeeProperty [] { register.Value }));
+          }
 
           DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
 
@@ -243,7 +249,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int GetCodeContext (out IDebugCodeContext2 memoryAddress)
+    public int GetCodeContext (out IDebugCodeContext2 codeContext)
     {
       // 
       // Gets the code context for this stack frame. 
@@ -252,14 +258,20 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      memoryAddress = m_codeContext;
-
-      if (m_codeContext == null)
+      try
       {
+        codeContext = m_codeContext;
+
+        return DebugEngineConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        codeContext = null;
+
         return DebugEngineConstants.E_FAIL;
       }
-
-      return DebugEngineConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -297,11 +309,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       documentContext = m_documentContext;
 
-      if (m_documentContext == null)
-      {
-        return DebugEngineConstants.S_FALSE;
-      }
-
       return DebugEngineConstants.S_OK;
     }
 
@@ -336,8 +343,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        frameInfoArray [0] = new FRAMEINFO ();
-
         LoggingUtils.RequireOk (SetFrameInfo (requestedFields, radix, ref frameInfoArray [0]));
 
         return DebugEngineConstants.S_OK;
@@ -362,14 +367,24 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
+      languageName = "Unknown";
+
+      languageGuid = Guid.Empty;
+
       try
       {
         IDebugDocumentContext2 documentContext = null;
 
-        if ((GetDocumentContext (out documentContext) == DebugEngineConstants.S_OK) && (documentContext == null))
+        LoggingUtils.RequireOk (GetDocumentContext (out documentContext));
+
+        if (documentContext == null)
         {
-          return documentContext.GetLanguageInfo (ref languageName, ref languageGuid);
+          throw new InvalidOperationException ();
         }
+
+        LoggingUtils.RequireOk (documentContext.GetLanguageInfo (ref languageName, ref languageGuid));
+
+        return DebugEngineConstants.S_OK;
       }
       catch (Exception e)
       {
@@ -377,12 +392,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         return DebugEngineConstants.E_FAIL;
       }
-
-      languageName = "Unknown";
-
-      languageGuid = Guid.Empty;
-
-      return DebugEngineConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

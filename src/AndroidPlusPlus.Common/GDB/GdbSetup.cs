@@ -252,9 +252,17 @@ namespace AndroidPlusPlus.Common
 
       gdbExecutionCommands.Add ("set target-async on");
 
+      //gdbExecutionCommands.Add ("set mi-async on"); // as above, from GDB 7.7
+
       gdbExecutionCommands.Add ("set breakpoint pending on");
 
-#if DEBUG && FALSE
+      gdbExecutionCommands.Add ("set logging file " + PathUtils.SantiseWindowsPath (Path.Combine (CacheDirectory, "gdb.log")));
+
+      gdbExecutionCommands.Add ("set logging overwrite on");
+
+      gdbExecutionCommands.Add ("set logging on");
+
+#if DEBUG && false
       gdbExecutionCommands.Add ("set debug remote 1");
 
       gdbExecutionCommands.Add ("set debug infrun 1");

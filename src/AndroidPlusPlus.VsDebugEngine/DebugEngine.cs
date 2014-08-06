@@ -130,11 +130,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         uint eventAttributes;
 
-        IDebugProcess2 programProcess;
+        //IDebugProcess2 programProcess;
 
         LoggingUtils.RequireOk (debugEvent.GetAttributes (out eventAttributes));
 
-        LoggingUtils.RequireOk (program.GetProcess (out programProcess));
+        //LoggingUtils.RequireOk (program.GetProcess (out programProcess));
 
         if (((eventAttributes & (uint) enum_EVENTATTRIBUTES.EVENT_STOPPING) != 0) && (thread == null))
         {
@@ -146,7 +146,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((eventAttributes & (uint) enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS) != 0)
         {
-          while (m_broadcastHandleLock.WaitOne (0))
+          while (!m_broadcastHandleLock.WaitOne (0))
           {
             Thread.Yield ();
           }
@@ -156,11 +156,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        throw e;
-      }
-      finally
-      {
-        m_broadcastHandleLock.Reset ();
+        throw;
       }
     }
 
@@ -214,40 +210,48 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         NativeDebugger = new CLangDebugger (this, Program);
 
-        LoggingUtils.RequireOk (Program.Attach (m_sdmCallback));
-
-        NativeDebugger.NativeProgram.RefreshThreads ();
-
-        CLangDebuggeeThread currentThread = NativeDebugger.NativeProgram.GetThread (NativeDebugger.NativeProgram.CurrentThreadId);
-
-        if (currentThread == null)
+        ThreadPool.QueueUserWorkItem (delegate (object obj)
         {
-          // Lack of current thread is usually a good indication that connection/attaching failed.
-          throw new InvalidOperationException ("Failed to retrieve program's current thread.");
-        }
+          // 
+          // When this method is called, the DE needs to send these events in sequence:
+          // 1. IDebugEngineCreate2
+          // 2. IDebugProgramCreateEvent2
+          // 3. IDebugLoadCompleteEvent2
+          // 4. (if enum_ATTACH_REASON.ATTACH_REASON_LAUNCH), IDebugEntryPointEvent2
+          // 
 
-        JavaDebugger = new JavaLangDebugger (this, Program);
+          Broadcast (new DebugEngineEvent.EngineCreate (this), Program, null);
 
-        // 
-        // When this method is called, the DE needs to send these events in sequence:
-        // 1. IDebugEngineCreate2
-        // 2. IDebugProgramCreateEvent2
-        // 3. IDebugLoadCompleteEvent2
-        // 4. (if enum_ATTACH_REASON.ATTACH_REASON_LAUNCH), IDebugEntryPointEvent2
-        // 
+          LoggingUtils.RequireOk (Program.Attach (m_sdmCallback));
 
-        Broadcast (new DebugEngineEvent.EngineCreate (this), Program, null);
+          CLangDebuggeeThread currentThread = null;
 
-        Broadcast (new DebugEngineEvent.ProgramCreate (), Program, null);
+          NativeDebugger.RunInterruptOperation (delegate ()
+          {
+            NativeDebugger.NativeProgram.RefreshThreads ();
 
-        Broadcast (new DebugEngineEvent.LoadComplete (), Program, currentThread);
+            currentThread = NativeDebugger.NativeProgram.GetThread (NativeDebugger.NativeProgram.CurrentThreadId);
 
-        if (dwReason == enum_ATTACH_REASON.ATTACH_REASON_LAUNCH)
-        {
-          Broadcast (new DebugEngineEvent.EntryPoint (), Program, currentThread);
-        }
+            if (currentThread == null)
+            {
+              // Lack of current thread is usually a good indication that connection/attaching failed.
+              throw new InvalidOperationException ("Failed to retrieve program's current thread.");
+            }
 
-        //Broadcast (new DebugEngineEvent.AttachComplete (), Program, null);
+            JavaDebugger = new JavaLangDebugger (this, Program);
+          });
+
+          Broadcast (new DebugEngineEvent.ProgramCreate (), Program, null);
+
+          Broadcast (new DebugEngineEvent.LoadComplete (), Program, currentThread);
+
+          if (dwReason == enum_ATTACH_REASON.ATTACH_REASON_LAUNCH)
+          {
+            Broadcast (new DebugEngineEvent.EntryPoint (), Program, currentThread);
+          }
+
+          Broadcast (new DebugEngineEvent.AttachComplete (), Program, null);
+        });
 
         return DebugEngineConstants.S_OK;
       }
@@ -640,7 +644,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           NativeDebugger.GdbClient.SetSetting ("debug-file-directory", string.Join (";", symbolSearchPaths.ToArray ()), true);
 
-          BreakpointManager.RefreshBreakpoints (true);
+          BreakpointManager.SetDirty ();
+
+          BreakpointManager.RefreshBreakpoints ();
         });
 
         return DebugEngineConstants.S_OK;
@@ -701,7 +707,21 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new ArgumentNullException ("port");
         }
 
+        if (string.IsNullOrEmpty (exe))
+        {
+          throw new ArgumentNullException ("exe");
+        }
+
+        if (!File.Exists (exe))
+        {
+          throw new FileNotFoundException ("Failed to find target application: " + exe);
+        }
+
+        m_sdmCallback = new DebugEngineCallback (this, ad7Callback);
+
         DebuggeePort debuggeePort = port as DebuggeePort;
+
+        DebuggeeProcess debugProcess = null;
 
         // 
         // Evaluate options; including current debugger target application.
@@ -724,128 +744,135 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         bool openGlTrace = LaunchConfiguration ["OpenGlTrace"].Equals ("true");
 
-        // 
-        // Check for an installed application matching the package name, install provided APK if not found.
-        // 
-
         bool appIsInstalled = false;
 
         bool appIsRunning = false;
 
         try
         {
-#if false
-          appIsInstalled = debuggeePort.PortDevice.Shell ("pm", "path " + packageName, 5000).Contains ("package:");
-
-          if (!appIsInstalled)
-#endif
-          {
-            //debuggeePort.PortDevice.Uninstall (packageName, keepData);
-
-            if (!File.Exists (exe))
-            {
-              throw new FileNotFoundException ("Failed to find target application: " + exe);
-            }
-
-            debuggeePort.PortDevice.Install (exe, keepData);
-
-            appIsInstalled = true;
-          }
+          appIsInstalled = debuggeePort.PortDevice.Shell ("pm", "path " + packageName).Contains ("package:");
         }
         catch (Exception e)
         {
           LoggingUtils.HandleException (e);
 
-          throw e;
+          appIsInstalled = false;
         }
 
         // 
-        // Launch application on device in a 'suspended' state.
+        // Prevent blocking the main VS thread when launching a suspended application.
         // 
 
-        try
+        ManualResetEvent launchSuspendedMutex = new ManualResetEvent (false);
+
+        Thread asyncLaunchSuspendedThread = new Thread (delegate ()
         {
-          if (!appIsRunning)
+          try
           {
-            StringBuilder launchArgumentsBuilder = new StringBuilder ();
-
-            launchArgumentsBuilder.Append ("start ");
-
-            if (debugMode)
+            //if (!appIsInstalled)
             {
-              launchArgumentsBuilder.Append ("-D "); // debug
-            }
-            else
-            {
-              launchArgumentsBuilder.Append ("-W "); // wait
+              debuggeePort.PortDevice.Install (exe, keepData);
+
+              appIsInstalled = true;
             }
 
-            if (openGlTrace)
+            // 
+            // Launch application on device in a 'suspended' state.
+            // 
+
+            if (!appIsRunning)
             {
-              launchArgumentsBuilder.Append ("--opengl-trace ");
+              StringBuilder launchArgumentsBuilder = new StringBuilder ();
+
+              launchArgumentsBuilder.Append ("start ");
+
+              if (debugMode)
+              {
+                launchArgumentsBuilder.Append ("-D "); // debug
+              }
+              else
+              {
+                launchArgumentsBuilder.Append ("-W "); // wait
+              }
+
+              if (openGlTrace)
+              {
+                launchArgumentsBuilder.Append ("--opengl-trace ");
+              }
+
+              launchArgumentsBuilder.Append (packageName + "/" + launchActivity);
+
+              string launchResponse = debuggeePort.PortDevice.Shell ("am", launchArgumentsBuilder.ToString (), 5000);
+
+              if (string.IsNullOrEmpty (launchResponse) || launchResponse.Contains ("Error:"))
+              {
+                throw new InvalidOperationException ("Launch intent failed. Response: " + launchResponse);
+              }
             }
 
-            launchArgumentsBuilder.Append (packageName + "/" + launchActivity);
+            // 
+            // Query whether the target application is already running. (Double-check)
+            // 
 
-            string launchResponse = debuggeePort.PortDevice.Shell ("am", launchArgumentsBuilder.ToString (), 5000);
-
-            if (string.IsNullOrEmpty (launchResponse) || launchResponse.Contains ("Error:"))
+            while (!appIsRunning)
             {
-              throw new InvalidOperationException ("Launch intent failed. Response: " + launchResponse);
+              IEnumDebugProcesses2 portProcesses;
+
+              uint deviceProcessCount = 0;
+
+              LoggingUtils.RequireOk (debuggeePort.EnumProcesses (out portProcesses));
+
+              LoggingUtils.RequireOk (portProcesses.GetCount (out deviceProcessCount));
+
+              DebuggeeProcess [] deviceProcesses = new DebuggeeProcess [deviceProcessCount];
+
+              LoggingUtils.RequireOk (portProcesses.Next (deviceProcessCount, deviceProcesses, ref deviceProcessCount));
+
+              // 
+              // Our new process is likely to be toward the end, so reverse the process lookup.
+              // 
+
+              for (uint i = (deviceProcessCount - 1); i > 0; --i)
+              {
+                string processName;
+
+                LoggingUtils.RequireOk (deviceProcesses [i].GetName (enum_GETNAME_TYPE.GN_NAME, out processName));
+
+                if (packageName.Equals (processName, StringComparison.OrdinalIgnoreCase))
+                {
+                  debugProcess = deviceProcesses [i];
+
+                  appIsRunning = true;
+
+                  break;
+                }
+              }
+
+              if (!appIsRunning)
+              {
+                Thread.Yield ();
+              }
             }
+
+            launchSuspendedMutex.Set ();
           }
-        }
-        catch (Exception e)
+          catch (Exception e)
+          {
+            LoggingUtils.HandleException (e);
+
+            string error = string.Format ("[Exception] {0}\n{1}", e.Message, e.StackTrace);
+
+            Broadcast (new DebugEngineEvent.Error (error, true), null, null);
+
+            launchSuspendedMutex.Set ();
+          }
+        });
+
+        asyncLaunchSuspendedThread.Start ();
+
+        while (!launchSuspendedMutex.WaitOne (0))
         {
-          LoggingUtils.HandleException (e);
-
-          throw e;
-        }
-
-        // 
-        // Query whether the target application is already running. (Double-check)
-        // 
-
-        DebuggeeProcess debugProcess = null;
-
-        while (!appIsRunning)
-        {
-          IEnumDebugProcesses2 portProcesses;
-
-          uint deviceProcessCount = 0;
-
-          LoggingUtils.RequireOk (debuggeePort.EnumProcesses (out portProcesses));
-
-          LoggingUtils.RequireOk (portProcesses.GetCount (out deviceProcessCount));
-
-          DebuggeeProcess [] deviceProcesses = new DebuggeeProcess [deviceProcessCount];
-
-          LoggingUtils.RequireOk (portProcesses.Next (deviceProcessCount, deviceProcesses, ref deviceProcessCount));
-
-          // 
-          // Our new process is likely to be toward the end, so reverse the process lookup.
-          // 
-
-          for (uint i = (deviceProcessCount - 1); i > 0; --i)
-          {
-            string processName;
-
-            LoggingUtils.RequireOk (deviceProcesses [i].GetName (enum_GETNAME_TYPE.GN_NAME, out processName));
-
-            if (packageName.Equals (processName, StringComparison.OrdinalIgnoreCase))
-            {
-              debugProcess = deviceProcesses [i];
-
-              appIsRunning = true;
-
-              break;
-            }
-          }
-
-          if (!appIsRunning)
-          {
-            Thread.Yield ();
-          }
+          Thread.Yield ();
         }
 
         // 
@@ -859,15 +886,15 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         process = debugProcess;
 
-        m_sdmCallback = new DebugEngineCallback (this, ad7Callback);
-
         return DebugEngineConstants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        Broadcast (new DebugEngineEvent.Error (e.Message, true), null, null);
+        string error = string.Format ("[Exception] {0}\n{1}", e.Message, e.StackTrace);
+
+        Broadcast (new DebugEngineEvent.Error (error, true), null, null);
 
         process = null;
 
@@ -940,9 +967,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         DebuggeeProcess debugProcess = (process as DebuggeeProcess);
 
-        Broadcast (new DebugEngineEvent.ProgramDestroy (0), debugProcess.DebuggeeProgram, null);
+        LoggingUtils.RequireOk (debugProcess.Terminate ());
 
-        debugProcess.Terminate ();
+        Broadcast (new DebugEngineEvent.ProgramDestroy (0), debugProcess.DebuggeeProgram, null);
       }
       catch (Exception e)
       {

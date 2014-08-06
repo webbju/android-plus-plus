@@ -112,7 +112,7 @@
         <OutputFile Condition="('%(ClCompile.PrecompiledHeader)' == 'Create' and '$(LlvmVersion)' != '')">%(ClCompile.PrecompiledHeaderOutputFile)</OutputFile>
         <ForcedIncludeFiles Condition="('%(ClCompile.PrecompiledHeader)' == 'Use' and '$(LlvmVersion)' == '')">$([System.String]::Copy('%(ClCompile.PrecompiledHeaderOutputFile)').Replace('.gch',''));%(ForcedIncludeFiles)</ForcedIncludeFiles>
         <ForcedIncludeFiles Condition="('%(ClCompile.PrecompiledHeader)' == 'Use' and '$(LlvmVersion)' != '')">$([System.String]::Copy('%(ClCompile.PrecompiledHeaderOutputFile)').Replace('.pch',''));%(ForcedIncludeFiles)</ForcedIncludeFiles>
-        <AdditionalOptions Condition="'%(ClCompile.PrecompiledHeader)' == 'Use'">-Winvalid-pch;%(AdditionalOptions)</AdditionalOptions>
+        <AdditionalOptions Condition="'%(ClCompile.PrecompiledHeader)' == 'Use'">-Winvalid-pch %(AdditionalOptions)</AdditionalOptions>
       </ClCompile>
     </ItemGroup>
 
