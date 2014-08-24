@@ -162,9 +162,11 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
             }
             else if (sanitisedOutput.StartsWith ("wrote "))
             {
-              string classFilePath = Path.GetFullPath (sanitisedOutput.Substring ("wrote ".Length));
+              string fileWritten = sanitisedOutput.Substring ("wrote ".Length);
 
-              ITaskItem classFileItem = new TaskItem (classFilePath);
+              fileWritten = StripFileObjectDescriptor (fileWritten);
+
+              ITaskItem classFileItem = new TaskItem (fileWritten);
 
               classFileItem.SetMetadata ("ClassOutputDirectory", Sources [0].GetMetadata ("ClassOutputDirectory"));
 
@@ -222,6 +224,37 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
       }
 
       return builder.ToString ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private static string StripFileObjectDescriptor (string fileObjectDescription)
+    {
+      // 
+      // Convert from JDK 7-style verbose file output to the raw filename.
+      // 
+      // e.g: [wrote RegularFileObject[..\..\build\obj\android\vs10.0\NMG_System\debug_no_assets\bin\classes\com\google\android\gms\R$attr.class]]
+      // 
+
+      int filenameStart = fileObjectDescription.LastIndexOf ('[');
+
+      if (filenameStart != -1)
+      {
+        fileObjectDescription = fileObjectDescription.Substring (filenameStart).Trim (new char [] { '[', ']' });
+      }
+
+      return fileObjectDescription;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override void AddTaskSpecificOutputFiles (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
+    {
+      trackedFileManager.AddDependencyForSources (m_outputClassSourceFiles.ToArray (), sources);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

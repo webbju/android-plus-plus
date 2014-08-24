@@ -281,6 +281,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         return DebugEngineConstants.E_FAIL;
       }
+      finally
+      {
+        AttachedEngine.Broadcast (new DebugEngineEvent.ProgramDestroy (0), this, null);
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

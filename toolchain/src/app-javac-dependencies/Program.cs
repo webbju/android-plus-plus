@@ -4,8 +4,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using System.IO;
 
@@ -144,7 +144,7 @@ namespace app_javac_dependencies
     private static void ProcessArguments (string [] args)
     {
       // 
-      // All arguments which are not '--jdk-home' or a source-file reference, should be passed on to javac invocation.
+      // All arguments which are not '--jdk-home' or a source-file reference, should be passed on to javac.exe invocation.
       // 
 
       for (int i = 0; i < args.Length; ++i)
@@ -277,11 +277,13 @@ namespace app_javac_dependencies
           // Handle parsing of a source file provided through the command-line.
           // 
 
-          string classLoaded = sanitisedOutput.Substring ("parsing started ".Length);
+          string fileLoaded = sanitisedOutput.Substring ("parsing started ".Length);
 
-          if (!filesRead.Contains (classLoaded))
+          fileLoaded = StripFileObjectDescriptor (fileLoaded);
+
+          if (!filesRead.Contains (fileLoaded))
           {
-            filesRead.Add (classLoaded);
+            filesRead.Add (fileLoaded);
           }
         }
         else if (sanitisedOutput.StartsWith ("search path for class files: "))
@@ -309,23 +311,27 @@ namespace app_javac_dependencies
           // Tracking of per-file classes referenced through the class path.
           // 
 
-          string classLoaded = sanitisedOutput.Substring ("loading ".Length);
+          string fileLoaded = sanitisedOutput.Substring ("loading ".Length);
 
-          if (classLoaded.EndsWith (".class") || classLoaded.EndsWith (".java"))
+          fileLoaded = StripFileObjectDescriptor (fileLoaded);
+
+          if (fileLoaded.EndsWith (".class") || fileLoaded.EndsWith (".java"))
           {
-            if (!filesRead.Contains (classLoaded))
+            if (!filesRead.Contains (fileLoaded))
             {
-              filesRead.Add (classLoaded);
+              filesRead.Add (fileLoaded);
             }
           }
         }
         else if (sanitisedOutput.StartsWith ("wrote "))
         {
-          string classFileWritten = Path.GetFullPath (sanitisedOutput.Substring ("wrote ".Length));
+          string fileWritten = sanitisedOutput.Substring ("wrote ".Length);
 
-          if (!filesWritten.Contains (classFileWritten))
+          fileWritten = StripFileObjectDescriptor (fileWritten);
+
+          if (!filesWritten.Contains (fileWritten))
           {
-            filesWritten.Add (classFileWritten);
+            filesWritten.Add (fileWritten);
           }
         }
       }
@@ -335,18 +341,40 @@ namespace app_javac_dependencies
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public static string ConvertPathWindowsToGccDependency (string path)
+    private static string StripFileObjectDescriptor (string fileObjectDescription)
     {
-      string rtn = path.Replace ('\\', '/');
+      // 
+      // Convert from JDK 7-style verbose file output to the raw filename.
+      // 
+      // e.g: [wrote RegularFileObject[..\..\build\obj\bin\classes\com\google\android\gms\R$attr.class]]
+      // 
 
-      return Escape (path);
+      int filenameStart = fileObjectDescription.LastIndexOf ('[');
+
+      if (filenameStart != -1)
+      {
+        fileObjectDescription = fileObjectDescription.Substring (filenameStart).Trim (new char [] { '[', ']' });
+      }
+
+      return fileObjectDescription;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public static string Escape (string input)
+    private static string ConvertPathWindowsToGccDependency (string path)
+    {
+      string rtn = path.Replace ('\\', '/');
+
+      return Escape (rtn);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private static string Escape (string input)
     {
       StringBuilder escapedStringBuilder = new StringBuilder (input);
 
@@ -361,7 +389,7 @@ namespace app_javac_dependencies
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public static string QuotePathIfNeeded (string arg)
+    private static string QuotePathIfNeeded (string arg)
     {
       // 
       // Add quotes around a string, if they are needed.

@@ -89,34 +89,39 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.Print ("[DebugEngineCallback] Event: " + riidEvent.ToString ());
 
-      // 
-      // 
-      // 
-
-      int handle = m_cLangEventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
-
-      if (handle != DebugEngineConstants.E_NOTIMPL)
+      try
       {
+        int handle = m_cLangEventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
+
+        if (handle != DebugEngineConstants.E_NOTIMPL)
+        {
+          return handle;
+        }
+
+        handle = m_ad7EventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
+
+        // 
+        // (Managed Code) It is strongly advised that ReleaseComObject be invoked on the various interfaces that are passed to IDebugEventCallback2::Event.
+        // 
+
+        /*Marshal.ReleaseComObject (pEngine);
+
+        Marshal.ReleaseComObject (pProcess);
+
+        Marshal.ReleaseComObject (pProgram);
+
+        Marshal.ReleaseComObject (pThread);
+
+        Marshal.ReleaseComObject (pEvent);*/
+
         return handle;
       }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
 
-      handle = m_ad7EventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
-
-      // 
-      // (Managed Code) It is strongly advised that ReleaseComObject be invoked on the various interfaces that are passed to IDebugEventCallback2::Event.
-      // 
-
-      /*Marshal.ReleaseComObject (pEngine);
-
-      Marshal.ReleaseComObject (pProcess);
-
-      Marshal.ReleaseComObject (pProgram);
-
-      Marshal.ReleaseComObject (pThread);
-
-      Marshal.ReleaseComObject (pEvent);*/
-
-      return handle;
+        throw;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

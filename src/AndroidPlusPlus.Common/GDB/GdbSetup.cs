@@ -52,9 +52,11 @@ namespace AndroidPlusPlus.Common
 
       Directory.CreateDirectory (CacheSysRoot);
 
+      SymbolDirectories = new List<string> ();
+
       GdbToolPath = gdbToolPath;
 
-      GdbToolArguments = "--interpreter=mi";
+      GdbToolArguments = "--interpreter=mi ";
 
       if (!File.Exists (gdbToolPath))
       {
@@ -75,21 +77,23 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public AndroidProcess Process { get; private set; }
+    public AndroidProcess Process { get; set; }
 
-    public string Socket { get; private set; }
+    public string Socket { get; set; }
 
-    public string Host { get; private set; }
+    public string Host { get; set; }
 
-    public uint Port { get; private set; }
+    public uint Port { get; set; }
 
-    public string CacheDirectory { get; private set; }
+    public string CacheDirectory { get; set; }
 
-    public string CacheSysRoot { get; private set; }
+    public string CacheSysRoot { get; set; }
 
-    public string GdbToolPath { get; private set; }
+    public List<string> SymbolDirectories { get; set; }
 
-    public string GdbToolArguments { get; private set; }
+    public string GdbToolPath { get; set; }
+
+    public string GdbToolArguments { get; set; }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

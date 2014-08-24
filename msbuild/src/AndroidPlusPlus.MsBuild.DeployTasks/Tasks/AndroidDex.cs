@@ -56,18 +56,19 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
     protected override int TrackedExecuteTool (string pathToTool, string responseFileCommands, string commandLineCommands)
     {
-      int retCode = base.TrackedExecuteTool (pathToTool, responseFileCommands, commandLineCommands);
 
-      if (retCode == 0)
+      int retCode = -1;
+
+      try
       {
-        OutputFiles = new ITaskItem [] { OutputFile };
+        retCode = base.TrackedExecuteTool (pathToTool, responseFileCommands, commandLineCommands);
 
-        // 
-        // Create a dependency file containing references to each .jar and .class used during execution.
-        // 
-
-        try
+        if (retCode == 0)
         {
+          // 
+          // Create a dependency file containing references to each .jar and .class used during execution.
+          // 
+
           using (StreamWriter writer = new StreamWriter (OutputFile.GetMetadata ("FullPath") + ".d", false, Encoding.Unicode))
           {
             writer.WriteLine (string.Format ("{0}: \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (OutputFile.GetMetadata ("FullPath"))));
@@ -92,12 +93,14 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
             }
           }
         }
-        catch (Exception e)
-        {
-          Log.LogErrorFromException (e, true);
 
-          retCode = -1;
-        }
+        OutputFiles = new ITaskItem [] { OutputFile };
+      }
+      catch (Exception e)
+      {
+        Log.LogErrorFromException (e, true);
+
+        retCode = -1;
       }
 
       return retCode;

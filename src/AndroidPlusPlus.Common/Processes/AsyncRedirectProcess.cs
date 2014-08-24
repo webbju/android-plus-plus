@@ -50,8 +50,6 @@ namespace AndroidPlusPlus.Common
 
     protected Process m_process;
 
-    protected ProcessStartInfo m_processStartInfo;
-
     protected EventListener m_listener = null;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -70,14 +68,20 @@ namespace AndroidPlusPlus.Common
         throw new FileNotFoundException ("Could not find target executable.", filename);
       }
 
-      m_processStartInfo = CreateDefaultStartInfo ();
+      StartInfo = CreateDefaultStartInfo ();
 
-      m_processStartInfo.FileName = filename;
+      StartInfo.FileName = filename;
 
-      m_processStartInfo.Arguments = arguments;
+      StartInfo.Arguments = arguments;
 
-      m_processStartInfo.WorkingDirectory = workingDirectory ?? Path.GetDirectoryName (filename);
+      StartInfo.WorkingDirectory = workingDirectory ?? Path.GetDirectoryName (filename);
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public ProcessStartInfo StartInfo { get; set; }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -130,8 +134,6 @@ namespace AndroidPlusPlus.Common
 
     public void Start (EventListener listener)
     {
-      LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] Start: {0} (Args=\"{1}\" Pwd=\"{2}\")", m_processStartInfo.FileName, m_processStartInfo.Arguments, m_processStartInfo.WorkingDirectory));
-
       m_startTicks = Environment.TickCount;
 
       m_lastOutputTimestamp = m_startTicks;
@@ -142,7 +144,7 @@ namespace AndroidPlusPlus.Common
 
       m_process = new Process ();
 
-      m_process.StartInfo = m_processStartInfo;
+      m_process.StartInfo = StartInfo;
 
       m_process.OutputDataReceived += new DataReceivedEventHandler (ProcessStdout);
 
@@ -151,6 +153,8 @@ namespace AndroidPlusPlus.Common
       m_process.Exited += new EventHandler (ProcessExited);
 
       m_process.EnableRaisingEvents = true;
+
+      LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] Start: {0} (Args=\"{1}\" Pwd=\"{2}\")", m_process.StartInfo.FileName, m_process.StartInfo.Arguments, m_process.StartInfo.WorkingDirectory));
 
       if (!m_process.Start ())
       {
@@ -268,7 +272,7 @@ namespace AndroidPlusPlus.Common
 
         m_exitMutex.Set ();
 
-        LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] {0} exited ({1}) in {2} ms", m_processStartInfo.FileName, m_exitCode, Environment.TickCount - m_startTicks));
+        LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] {0} exited ({1}) in {2} ms", StartInfo.FileName, m_exitCode, Environment.TickCount - m_startTicks));
       }
       catch (Exception e)
       {

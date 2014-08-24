@@ -90,25 +90,28 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         List<MiResultValue> threadIds = resultRecord ["thread-ids"] [0] ["thread-id"];
 
-        List<uint> invalidThreadIds = new List<uint> (m_debugThreads.Keys);
-
-        for (int i = 0; i < threadIds.Count; ++i)
+        lock (m_debugThreads)
         {
-          uint id = threadIds [i].GetUnsignedInt ();
+          List<uint> invalidThreadIds = new List<uint> (m_debugThreads.Keys);
 
-          CLangDebuggeeThread thread = GetThread (id);
-
-          if (thread == null)
+          for (int i = 0; i < threadIds.Count; ++i)
           {
-            thread = AddThread (id);
+            uint id = threadIds [i].GetUnsignedInt ();
+
+            CLangDebuggeeThread thread = GetThread (id);
+
+            if (thread == null)
+            {
+              thread = AddThread (id);
+            }
+
+            invalidThreadIds.Remove (id);
           }
 
-          invalidThreadIds.Remove (id);
-        }
-
-        foreach (uint id in invalidThreadIds)
-        {
-          RemoveThread (id, uint.MaxValue);
+          foreach (uint id in invalidThreadIds)
+          {
+            RemoveThread (id, uint.MaxValue);
+          }
         }
 
         if (resultRecord.HasField ("current-thread"))

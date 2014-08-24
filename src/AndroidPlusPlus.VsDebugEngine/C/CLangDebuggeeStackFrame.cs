@@ -66,8 +66,6 @@ namespace AndroidPlusPlus.VsDebugEngine
       m_queriedRegisters = false;
 
       GetInfoFromCurrentLevel (frameTuple);
-
-      LoggingUtils.RequireOk (QueryArgumentsAndLocals ());
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -247,6 +245,11 @@ namespace AndroidPlusPlus.VsDebugEngine
               string variableName = localVariables [i] ["name"] [0].GetString ();
 
               MiVariable variable = m_debugger.VariableManager.CreateVariableFromExpression (this, variableName);
+
+              if (variable == null)
+              {
+                continue;
+              }
 
               DebuggeeProperty property = m_debugger.VariableManager.CreatePropertyFromVariable (this, variable);
 
@@ -545,9 +548,19 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       try
       {
+
+        if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals) ||
+            (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) ||
+            (guidFilter == DebuggeeProperty.Filters.guidFilterArgs) ||
+            (guidFilter == DebuggeeProperty.Filters.guidFilterLocals) ||
+            (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
+        {
+          LoggingUtils.RequireOk (QueryArgumentsAndLocals ());
+        }
+
         if ((guidFilter == DebuggeeProperty.Filters.guidFilterRegisters) || (guidFilter == DebuggeeProperty.Filters.guidFilterAutoRegisters))
         {
-          QueryRegisters ();
+          LoggingUtils.RequireOk (QueryRegisters ());
         }
 
         LoggingUtils.RequireOk (base.EnumProperties (requestedFields, radix, ref guidFilter, timeout, out elementsReturned, out enumDebugProperty));

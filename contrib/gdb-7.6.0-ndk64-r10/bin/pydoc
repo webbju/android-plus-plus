@@ -1,0 +1,5 @@
+#!/home/ray/ndk-gdb-work/buildpython/install/prebuilt/windows-x86_64/bin/python2.7.exe
+
+import pydoc
+if __name__ == '__main__':
+    pydoc.cli()

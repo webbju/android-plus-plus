@@ -97,7 +97,7 @@ namespace AndroidPlusPlus.Common
 
     private Dictionary<string, ManualResetEvent> m_syncCommandLocks = new Dictionary<string, ManualResetEvent> ();
 
-    private int m_lastOperationTimestamp = 0;
+    private Stopwatch m_timeSinceLastOperation = new Stopwatch ();
 
     private uint m_sessionCommandToken = 1; // Start at 1 so 0 can represent an invalid token.
 
@@ -171,7 +171,7 @@ namespace AndroidPlusPlus.Common
       // Spawn a new GDB instance which executes gdb.setup and begins debugging file 'app_process'.
       // 
 
-      m_lastOperationTimestamp = Environment.TickCount;
+      m_timeSinceLastOperation.Start ();
 
       string clientArguments = m_gdbSetup.GdbToolArguments + string.Format (@" -fullname -x {0}", PathUtils.SantiseWindowsPath (Path.Combine (m_gdbSetup.CacheDirectory, "gdb.setup")));
 
@@ -279,23 +279,17 @@ namespace AndroidPlusPlus.Common
 #endif
 
       // 
-      // Configure default shared library settings.
-      // 
-
-      SetSetting ("sysroot", PathUtils.SantiseWindowsPath (m_gdbSetup.CacheSysRoot), false);
-
-      SetSetting ("solib-search-path", PathUtils.SantiseWindowsPath (m_gdbSetup.CacheSysRoot), true);
-
-      SetSetting ("debug-file-directory", PathUtils.SantiseWindowsPath (m_gdbSetup.CacheSysRoot), true);
-
-      // 
       // Pull required system and application binaries from the device.
       // TODO: Use 'ndk-depends' to figure out which system shared libraries are used and pull these.
       // 
 
-      string [] cachedSystemBinaries = m_gdbSetup.CacheSystemBinaries ();
-
       List<string> sharedLibrarySearchPaths = new List<string> ();
+
+      List<string> debugFileDirectoryPaths = new List<string> ();
+
+      sharedLibrarySearchPaths.Add (PathUtils.SantiseWindowsPath (m_gdbSetup.CacheSysRoot));
+
+      string [] cachedSystemBinaries = m_gdbSetup.CacheSystemBinaries ();
 
       foreach (string systemBinary in cachedSystemBinaries)
       {
@@ -317,9 +311,21 @@ namespace AndroidPlusPlus.Common
         }
       }
 
+      foreach (string symbolDir in m_gdbSetup.SymbolDirectories)
+      {
+        string path = PathUtils.SantiseWindowsPath (symbolDir);
+
+        if (!debugFileDirectoryPaths.Contains (path))
+        {
+          debugFileDirectoryPaths.Add (path);
+        }
+      }
+
+      SetSetting ("sysroot", PathUtils.SantiseWindowsPath (m_gdbSetup.CacheSysRoot), false);
+
       SetSetting ("solib-search-path", string.Join (";", sharedLibrarySearchPaths.ToArray ()), true);
 
-      SetSetting ("debug-file-directory", string.Join (";", sharedLibrarySearchPaths.ToArray ()), true);
+      SetSetting ("debug-file-directory", string.Join (";", debugFileDirectoryPaths.ToArray ()), true);
 
       // 
       // Specify the executable file to be debugged. 'ndk-gdb' uses app_process for this, so we will too.
@@ -335,7 +341,7 @@ namespace AndroidPlusPlus.Common
 
       if (!File.Exists (cachedTargetBinary))
       {
-        cachedTargetBinary = Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\app_process");
+        cachedTargetBinary = Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\linker");
       }
 
       try
@@ -740,18 +746,14 @@ namespace AndroidPlusPlus.Common
       // Wait for asynchronous record response (or exit), reset timeout each time new activity occurs.
       // 
 
-      int timeoutFromCurrentTick = (timeout + m_lastOperationTimestamp) - Environment.TickCount;
-
       bool responseSignaled = false;
 
-      while ((!responseSignaled) && (timeoutFromCurrentTick > 0))
+      while ((!responseSignaled) && (m_timeSinceLastOperation.ElapsedTicks < timeout))
       {
         responseSignaled = syncCommandLock.WaitOne (0);
 
         if (!responseSignaled)
         {
-          timeoutFromCurrentTick = (timeout + m_lastOperationTimestamp) - Environment.TickCount;
-
           Thread.Yield ();
         }
       }
@@ -783,7 +785,7 @@ namespace AndroidPlusPlus.Common
         return;
       }
 
-      m_lastOperationTimestamp = Environment.TickCount;
+      m_timeSinceLastOperation.Reset ();
 
       Thread asyncCommandThread = new Thread (ProcessGdbMiAsyncInput);
 
@@ -798,7 +800,7 @@ namespace AndroidPlusPlus.Common
 
     public void ProcessStdout (object sendingProcess, DataReceivedEventArgs args)
     {
-      m_lastOperationTimestamp = Environment.TickCount;
+      m_timeSinceLastOperation.Reset ();
 
       if (!string.IsNullOrEmpty (args.Data))
       {
@@ -808,11 +810,10 @@ namespace AndroidPlusPlus.Common
         {
           // 
           // Distribute result records to registered delegate callbacks.
+          // TODO: These operations need to be queued sequentially!
           // 
 
-          Thread resultDelegateThread = new Thread (ProcessGdbMiOutput);
-
-          resultDelegateThread.Start (args.Data);
+          ThreadPool.QueueUserWorkItem (ProcessGdbMiOutput, args.Data);
         }
         catch (Exception e)
         {
@@ -829,7 +830,7 @@ namespace AndroidPlusPlus.Common
     {
       try
       {
-        m_lastOperationTimestamp = Environment.TickCount;
+        m_timeSinceLastOperation.Reset ();
 
         if (!string.IsNullOrWhiteSpace (args.Data))
         {
@@ -850,7 +851,7 @@ namespace AndroidPlusPlus.Common
     {
       try
       {
-        m_lastOperationTimestamp = Environment.TickCount;
+        m_timeSinceLastOperation.Reset ();
 
         LoggingUtils.Print (string.Format ("[GdbClient] ProcessExited: {0}", args));
 
@@ -919,7 +920,7 @@ namespace AndroidPlusPlus.Common
 
         m_gdbClientInstance.SendCommand (command);
 
-        m_lastOperationTimestamp = Environment.TickCount;
+        m_timeSinceLastOperation.Reset ();
       }
       catch (Exception e)
       {

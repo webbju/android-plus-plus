@@ -853,6 +853,8 @@ namespace AndroidPlusPlus.MsBuild.Common
 
           Dictionary<string, List<ITaskItem>> cachedOutputDependencies = new Dictionary<string, List<ITaskItem>> ();
 
+          Dictionary<string, string> dependencyFilePermutations = new Dictionary<string, string> ();
+
           foreach (KeyValuePair<string, List<ITaskItem>> commandKeyPair in commandDictionary)
           {
             foreach (ITaskItem source in commandKeyPair.Value)
@@ -861,14 +863,14 @@ namespace AndroidPlusPlus.MsBuild.Common
 
               string dependantObjectFileName = source.GetMetadata ("ObjectFileName");
 
-              Dictionary<string, string> dependencyFilePermutations = new Dictionary<string, string> ();
-
               // 
               // Evaluate potential exported dependency files (each use slightly different conventions).
               // 
               // - C style: 'SRC.d'
               // - Java (or Unix) style: 'SRC.java.d' 'FILE.EXT.d'
               // 
+
+              dependencyFilePermutations.Clear ();
 
               if (!string.IsNullOrWhiteSpace (dependantOutputFile))
               {
@@ -884,10 +886,12 @@ namespace AndroidPlusPlus.MsBuild.Common
                 dependencyFilePermutations.Add (dependantObjectFileName + ".d", dependantObjectFileName);
               }
 
+              // 
+              // Iterate through each possible dependency file. Cache listings so that similar outputs aren't re-parsed (i.e. static/shared libraries from object files)
+              // 
+
               foreach (KeyValuePair<string, string> dependencyKeyPair in dependencyFilePermutations)
               {
-                List <ITaskItem> dependencies;
-
                 string dependencyFile = dependencyKeyPair.Key;
 
                 if (string.IsNullOrWhiteSpace (dependencyFile))
@@ -907,6 +911,8 @@ namespace AndroidPlusPlus.MsBuild.Common
                 // Probe and cache each dependency file. Saves re-parsing identical file references each time.
                 // 
 
+                List<ITaskItem> dependencies;
+
                 if (!cachedOutputDependencies.TryGetValue (dependencyFile, out dependencies))
                 {
                   GccUtilities.DependencyParser parser = new GccUtilities.DependencyParser (dependencyFile);
@@ -919,22 +925,13 @@ namespace AndroidPlusPlus.MsBuild.Common
                     Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : [{1}] '{2}'", ToolName, i, parser.Dependencies [i]), MessageImportance.Low);
                   }
 #endif
+
                   dependencies = parser.Dependencies;
 
-                  cachedOutputDependencies.Add (dependencyFile, dependencies);
+                  cachedOutputDependencies.Add (dependencyFile, parser.Dependencies);
                 }
-              }
-            }
 
-            foreach (KeyValuePair<string, List<ITaskItem>> dependencyKeyPair in cachedOutputDependencies)
-            {
-              try
-              {
-                trackedFileManager.AddDependencyForSources (dependencyKeyPair.Value.ToArray (), commandKeyPair.Value.ToArray ());
-              }
-              catch (Exception e)
-              {
-                Log.LogErrorFromException (e, true);
+                trackedFileManager.AddDependencyForSources (dependencies.ToArray (), new ITaskItem [] { source });
               }
             }
           }

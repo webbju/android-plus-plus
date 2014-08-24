@@ -266,7 +266,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     {
       LoggingUtils.PrintFunction ();
 
-      string traceLog = Path.ChangeExtension (Assembly.GetExecutingAssembly ().Location, ".log");
+      DateTime logTime = DateTime.Now;
+
+      string traceLog = string.Format (@"{0}\Android++\{1}-{2}-{3}.log", Environment.GetFolderPath (Environment.SpecialFolder.ApplicationData), logTime.Year, logTime.Month, logTime.Day);
 
       Trace.WriteLine ("[Package] Trace Log: " + traceLog);
 

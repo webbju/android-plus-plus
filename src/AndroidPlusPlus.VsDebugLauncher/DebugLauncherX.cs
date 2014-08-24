@@ -121,13 +121,15 @@ namespace AndroidPlusPlus.VsDebugLauncher
           debugLaunchSettings = (DebugLaunchSettings) DebugLauncher.StartWithDebugging ((int)launchOptions, (Dictionary<string, string>) projectProperties, startupProject);
         }
 
+        DebugLauncher.DeployExecutable (debugLaunchSettings, ServiceProvider);
+
         return new IDebugLaunchSettings [] { debugLaunchSettings };
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        DebugLauncher.ShowErrorDialog (ServiceProvider, string.Format ("Failed to launch. Reason:\n\n[Exception] {0}\n", e.Message, e.StackTrace));
+        DebugLauncher.ShowMessageDialog (ServiceProvider, string.Format ("Failed to launch. Reason:\n\n[Exception] {0}\n", e.Message, e.StackTrace));
       }
 
       return null;

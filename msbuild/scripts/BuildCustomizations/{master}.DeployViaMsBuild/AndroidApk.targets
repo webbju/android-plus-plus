@@ -63,7 +63,7 @@
       Register shared libraries (.so) which will need to be copied to the final APK .\lib\[arch] directory.
     -->
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(ConfigurationType)' == 'Application'">
       <!-- First-party (linker output) and third-party provided libraries. -->
       <_TargetElfFiles Include="
         @(LinkOutputFiles->Metadata('FullPath'));
@@ -93,8 +93,8 @@
       Recursively copy registered native libraries/tools to appropriate architecture paths. 
     -->
 
-    <ItemGroup>
-      <_CopyNativeLibrariesAndTools Include="@(AndroidApkDependentLibraries->Distinct())">
+    <ItemGroup Condition="'$(ConfigurationType)' == 'Application'">
+      <_CopyNativeLibrariesAndTools Condition="'@(AndroidApkDependentLibraries)' != ''" Include="@(AndroidApkDependentLibraries->Distinct())">
         <IntermediateDirectory>$(IntDir)raw</IntermediateDirectory>
       </_CopyNativeLibrariesAndTools>
       
@@ -115,7 +115,7 @@
     -->
 
     <ItemGroup>
-      <AndroidApkUnsignedOutputFile 
+      <_UnsignedOutputFile
         Condition="'@(AndroidApk)' != ''" 
         Include="%(AndroidApk.UnsignedOutputFile)"
       />
@@ -124,8 +124,9 @@
     <Copy 
       Condition="'@(AndroidManifestOutputApk)' != ''" 
       SourceFiles="@(AndroidManifestOutputApk)" 
-      DestinationFiles="@(AndroidApkUnsignedOutputFile)" 
-    />
+      DestinationFiles="@(_UnsignedOutputFile)">
+      <Output TaskParameter="CopiedFiles" ItemName="AndroidApkUnsignedOutputFile" />
+    </Copy>
 
     <!-- 
       Add registered files to the final APK using a 7zip deployment (significantly faster than AAPT). 

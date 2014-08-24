@@ -258,14 +258,19 @@ namespace AndroidPlusPlus.MsBuild.Common
 
                 string command = reader.ReadLine ();
 
-                List <ITaskItem> sourceList = new List<ITaskItem> ();
+                List <ITaskItem> sourceList;
+
+                if (!commandLineSourceDictionary.TryGetValue (command, out sourceList))
+                {
+                  sourceList = new List<ITaskItem> ();
+                }
 
                 foreach (string file in trackedFiles)
                 {
                   sourceList.Add (new TaskItem (file));
                 }
 
-                commandLineSourceDictionary.Add (command, sourceList);
+                commandLineSourceDictionary [command] = sourceList;
               }
             }
 
@@ -371,16 +376,26 @@ namespace AndroidPlusPlus.MsBuild.Common
 
         foreach (KeyValuePair<string, List<ITaskItem>> entry in commandDictionary)
         {
-          List <ITaskItem> mergedLogDictionaryList = null;
+          List <ITaskItem> mergedLogDictionaryList;
 
-          if (!mergedCommandLogDictionary.TryGetValue (entry.Key, out mergedLogDictionaryList))
+          HashSet<string> mergedLogDictionaryListAsFullPaths = new HashSet<string> ();
+
+          if (mergedCommandLogDictionary.TryGetValue (entry.Key, out mergedLogDictionaryList))
+          {
+            foreach (ITaskItem source in mergedLogDictionaryList)
+            {
+              string sourceFullPath = TrackedFileManager.ConvertToTrackerFormat (source.GetMetadata ("FullPath"));
+
+              if (!mergedLogDictionaryListAsFullPaths.Contains (sourceFullPath))
+              {
+                mergedLogDictionaryListAsFullPaths.Add (sourceFullPath);
+              }
+            }
+          }
+          else
           {
             mergedLogDictionaryList = new List<ITaskItem> ();
-
-            mergedCommandLogDictionary.Add (entry.Key, mergedLogDictionaryList);
           }
-
-          List<string> mergedLogDictionaryListAsFullPaths = mergedLogDictionaryList.ConvertAll<string> (element => TrackedFileManager.ConvertToTrackerFormat (element.GetMetadata ("FullPath")));
 
           foreach (ITaskItem source in entry.Value)
           {
@@ -403,16 +418,26 @@ namespace AndroidPlusPlus.MsBuild.Common
 
         foreach (KeyValuePair<string, List<ITaskItem>> entry in cachedCommandLogDictionary)
         {
-          List<ITaskItem> mergedLogDictionaryList = null;
+          List<ITaskItem> mergedLogDictionaryList;
 
-          if (!mergedCommandLogDictionary.TryGetValue (entry.Key, out mergedLogDictionaryList))
+          HashSet<string> mergedLogDictionaryListAsFullPaths = new HashSet<string> ();
+
+          if (mergedCommandLogDictionary.TryGetValue (entry.Key, out mergedLogDictionaryList))
+          {
+            foreach (ITaskItem source in mergedLogDictionaryList)
+            {
+              string sourceFullPath = TrackedFileManager.ConvertToTrackerFormat (source.GetMetadata ("FullPath"));
+
+              if (!mergedLogDictionaryListAsFullPaths.Contains (sourceFullPath))
+              {
+                mergedLogDictionaryListAsFullPaths.Add (sourceFullPath);
+              }
+            }
+          }
+          else
           {
             mergedLogDictionaryList = new List<ITaskItem> ();
-
-            mergedCommandLogDictionary.Add (entry.Key, mergedLogDictionaryList);
           }
-
-          List<string> mergedLogDictionaryListAsFullPaths = mergedLogDictionaryList.ConvertAll<string> (element => TrackedFileManager.ConvertToTrackerFormat (element.GetMetadata ("FullPath")));
 
           foreach (ITaskItem source in entry.Value)
           {

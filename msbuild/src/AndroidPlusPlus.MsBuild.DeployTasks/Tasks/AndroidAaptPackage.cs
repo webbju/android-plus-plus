@@ -95,7 +95,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
                 if (!File.Exists (apkOutputFile))
                 {
-                  throw new FileNotFoundException ("Requested APK output file does not exist. Error during packging?");
+                  throw new FileNotFoundException ("Requested APK output file does not exist. Error during packaging?");
                 }
 
                 ITaskItem outputApkItem = new TaskItem (Path.GetFullPath (apkOutputFile));
@@ -291,6 +291,15 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
       }
 
       return (validParameters && base.ValidateParameters ());
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override void AddTaskSpecificOutputFiles (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
+    {
+      trackedFileManager.AddDependencyForSources (OutputFiles, sources);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

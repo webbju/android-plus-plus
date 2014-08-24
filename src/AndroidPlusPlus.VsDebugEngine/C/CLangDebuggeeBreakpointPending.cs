@@ -121,9 +121,19 @@ namespace AndroidPlusPlus.VsDebugEngine
           {
             if (resultRecord.IsError ())
             {
-              DebuggeeBreakpointError errorBreakpoint = new DebuggeeBreakpointError (m_breakpointManager, this, documentContext.GetCodeContext (), resultRecord.Records [1].Stream);
+              string errorReason = "<unknown error>";
 
-              m_errorBreakpoints.Add (errorBreakpoint);
+              if (resultRecord.HasField ("msg"))
+              {
+                errorReason = resultRecord ["msg"] [0].GetString ();
+              }
+
+              DebuggeeBreakpointError errorBreakpoint = new DebuggeeBreakpointError (m_breakpointManager, this, documentContext.GetCodeContext (), errorReason);
+
+              lock (m_errorBreakpoints)
+              {
+                m_errorBreakpoints.Add (errorBreakpoint);
+              }
 
               m_debugger.Engine.Broadcast (new DebugEngineEvent.BreakpointError (errorBreakpoint), m_debugger.NativeProgram.DebugProgram, m_debugger.NativeProgram.GetThread (m_debugger.NativeProgram.CurrentThreadId));
             }
@@ -149,7 +159,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                   CLangDebuggeeBreakpointError errorBreakpoint = new CLangDebuggeeBreakpointError (m_debugger, m_breakpointManager, this, documentContext.GetCodeContext (), boundGdbBreakpoint, "Additional library symbols required.");
 
-                  m_errorBreakpoints.Add (errorBreakpoint);
+                  lock (m_errorBreakpoints)
+                  {
+                    m_errorBreakpoints.Add (errorBreakpoint);
+                  }
 
                   m_debugger.Engine.Broadcast (new DebugEngineEvent.BreakpointError (errorBreakpoint), m_debugger.NativeProgram.DebugProgram, m_debugger.NativeProgram.GetThread (m_debugger.NativeProgram.CurrentThreadId));
                 }
@@ -163,9 +176,12 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                   CLangDebuggeeBreakpointBound boundBreakpoint = new CLangDebuggeeBreakpointBound (m_debugger, m_breakpointManager, this, documentContext.GetCodeContext (), boundGdbBreakpoint);
 
-                  m_boundBreakpoints.Clear ();
+                  lock (m_boundBreakpoints)
+                  {
+                    m_boundBreakpoints.Clear ();
 
-                  m_boundBreakpoints.Add (boundBreakpoint);
+                    m_boundBreakpoints.Add (boundBreakpoint);
+                  }
 
                   m_debugger.Engine.Broadcast (new DebugEngineEvent.BreakpointBound (this, boundBreakpoint), m_debugger.NativeProgram.DebugProgram, m_debugger.NativeProgram.GetThread (m_debugger.NativeProgram.CurrentThreadId));
                 }
@@ -183,9 +199,12 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                   CLangDebuggeeBreakpointBound boundBreakpoint = new CLangDebuggeeBreakpointBound (m_debugger, m_breakpointManager, this, addressContext, boundGdbBreakpoint);
 
-                  m_boundBreakpoints.Clear ();
+                  lock (m_boundBreakpoints)
+                  {
+                    m_boundBreakpoints.Clear ();
 
-                  m_boundBreakpoints.Add (boundBreakpoint);
+                    m_boundBreakpoints.Add (boundBreakpoint);
+                  }
 
                   m_debugger.Engine.Broadcast (new DebugEngineEvent.BreakpointBound (this, boundBreakpoint), m_debugger.NativeProgram.DebugProgram, m_debugger.NativeProgram.GetThread (m_debugger.NativeProgram.CurrentThreadId));
                 }
@@ -216,9 +235,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      foreach (IDebugBoundBreakpoint2 boundBreakpoint in m_boundBreakpoints)
+      lock (m_boundBreakpoints)
       {
-        RefreshBreakpoint (boundBreakpoint);
+        List<IDebugBoundBreakpoint2> boundBreakpoints = new List<IDebugBoundBreakpoint2> (m_boundBreakpoints);
+
+        foreach (IDebugBoundBreakpoint2 boundBreakpoint in boundBreakpoints)
+        {
+          RefreshBreakpoint (boundBreakpoint);
+        }
       }
     }
 
@@ -234,11 +258,16 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      foreach (IDebugErrorBreakpoint2 errorBreakpoint in m_errorBreakpoints)
+      lock (m_errorBreakpoints)
       {
-        if (errorBreakpoint is CLangDebuggeeBreakpointError)
+        List<IDebugErrorBreakpoint2> errorBreakpoints = new List<IDebugErrorBreakpoint2> (m_errorBreakpoints);
+
+        foreach (IDebugErrorBreakpoint2 errorBreakpoint in errorBreakpoints)
         {
-          RefreshBreakpoint (errorBreakpoint);
+          if (errorBreakpoint is CLangDebuggeeBreakpointError)
+          {
+            RefreshBreakpoint (errorBreakpoint);
+          }
         }
       }
     }
@@ -276,8 +305,6 @@ namespace AndroidPlusPlus.VsDebugEngine
         LoggingUtils.RequireOk (boundBreakpoint.GetBreakpointResolution (out boundBreakpointResolution));
 
         resolution = (DebuggeeBreakpointResolution) boundBreakpointResolution;
-
-        m_boundBreakpoints.Remove (boundBreakpoint);
       }
       else if (breakpoint is CLangDebuggeeBreakpointError)
       {
@@ -291,7 +318,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         resolution = (DebuggeeBreakpointResolution) errorBreakpointResolution;
 
-        m_errorBreakpoints.Remove (errorBreakpoint);
+        lock (m_errorBreakpoints)
+        {
+          m_errorBreakpoints.Remove (errorBreakpoint);
+        }
       }
       else
       {
@@ -320,7 +350,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         errorBreakpoint = new CLangDebuggeeBreakpointError (m_debugger, m_breakpointManager, this, (resolution as DebuggeeBreakpointResolution).CodeContext, gdbBreakpoint, resultRecord.Records [1].Stream);
 
-        m_errorBreakpoints.Add (errorBreakpoint);
+        lock (m_errorBreakpoints)
+        {
+          m_errorBreakpoints.Add (errorBreakpoint);
+        }
 
         m_debugger.Engine.Broadcast (new DebugEngineEvent.BreakpointError (errorBreakpoint), m_debugger.NativeProgram.DebugProgram, m_debugger.NativeProgram.GetThread (m_debugger.NativeProgram.CurrentThreadId));
       }
@@ -346,7 +379,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             errorBreakpoint = new CLangDebuggeeBreakpointError (m_debugger, m_breakpointManager, this, (resolution as DebuggeeBreakpointResolution).CodeContext, gdbBreakpoint, "Additional library symbols required.");
 
-            m_errorBreakpoints.Add (errorBreakpoint);
+            lock (m_errorBreakpoints)
+            {
+              m_errorBreakpoints.Add (errorBreakpoint);
+            }
 
             m_debugger.Engine.Broadcast (new DebugEngineEvent.BreakpointError (errorBreakpoint), m_debugger.NativeProgram.DebugProgram, m_debugger.NativeProgram.GetThread (m_debugger.NativeProgram.CurrentThreadId));
           }
@@ -362,7 +398,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             errorBreakpoint = new CLangDebuggeeBreakpointError (m_debugger, m_breakpointManager, this, (resolution as DebuggeeBreakpointResolution).CodeContext, gdbBreakpoint, "Breakpoint satisfied to multiple locations, no single memory address available.");
 
-            m_errorBreakpoints.Add (errorBreakpoint);
+            lock (m_errorBreakpoints)
+            {
+              m_errorBreakpoints.Add (errorBreakpoint);
+            }
 
             m_debugger.Engine.Broadcast (new DebugEngineEvent.BreakpointError (errorBreakpoint), m_debugger.NativeProgram.DebugProgram, m_debugger.NativeProgram.GetThread (m_debugger.NativeProgram.CurrentThreadId));
           }
@@ -376,6 +415,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             if (gdbBreakpoint.Address != boundAddress.MemoryAddress)
             {
+              lock (m_boundBreakpoints)
+              {
+                m_boundBreakpoints.Remove (boundBreakpoint);
+              }
+
               gdbBreakpoint.Address = boundAddress.MemoryAddress;
 
               DebuggeeCodeContext addressContext = (resolution as DebuggeeBreakpointResolution).CodeContext;
@@ -384,7 +428,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
               boundBreakpoint = new CLangDebuggeeBreakpointBound (m_debugger, m_breakpointManager, this, addressContext, gdbBreakpoint);
 
-              m_boundBreakpoints.Add (boundBreakpoint);
+              lock (m_boundBreakpoints)
+              {
+                m_boundBreakpoints.Add (boundBreakpoint);
+              }
 
               m_debugger.Engine.Broadcast (new DebugEngineEvent.BreakpointBound (this, boundBreakpoint), m_debugger.NativeProgram.DebugProgram, m_debugger.NativeProgram.GetThread (m_debugger.NativeProgram.CurrentThreadId));
             }

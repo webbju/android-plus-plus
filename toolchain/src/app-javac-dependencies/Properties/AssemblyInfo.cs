@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle ("app-javac-dependencies")]
 [assembly: AssemblyDescription ("")]
 [assembly: AssemblyConfiguration ("")]
-[assembly: AssemblyCompany ("Microsoft")]
+[assembly: AssemblyCompany ("Justin Webb")]
 [assembly: AssemblyProduct ("app-javac-dependencies")]
-[assembly: AssemblyCopyright ("Copyright © Microsoft 2014")]
+[assembly: AssemblyCopyright ("Copyright © Justin Webb 2014")]
 [assembly: AssemblyTrademark ("")]
 [assembly: AssemblyCulture ("")]
 

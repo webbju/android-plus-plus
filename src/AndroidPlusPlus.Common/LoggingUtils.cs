@@ -27,7 +27,7 @@ namespace AndroidPlusPlus.Common
     {
       DateTime logTime = DateTime.Now;
 
-      Trace.WriteLine (string.Format ("{0:D2}:{1:D2}:{2:D2}.{3:D4} : {4}", logTime.Hour, logTime.Minute, logTime.Second, logTime.Millisecond, format));
+      Trace.WriteLine (string.Format ("{0:D2}-{1:D2}-{2:D4} {3:D2}:{4:D2}:{5:D2}.{6:D4} : {7}", logTime.Day, logTime.Month, logTime.Year, logTime.Hour, logTime.Minute, logTime.Second, logTime.Millisecond, format));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

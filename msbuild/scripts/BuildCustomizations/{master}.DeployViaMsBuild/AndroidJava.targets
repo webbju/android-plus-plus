@@ -137,13 +137,14 @@
     <JavaArchive
       BuildingInIDE="$(BuildingInsideVisualStudio)"
       Condition="'%(AndroidJava.JarOutputFile)' != '' and '@(AndroidJavaOutputClassFiles)' != ''"
-      Sources ="@(AndroidJavaOutputClassFiles)"
+      Sources="@(AndroidJavaOutputClassFiles)"
       TrackerLogDirectory="%(AndroidJava.TrackerLogDirectory)"
       TrackFileAccess="$(TrackFileAccess)"
       MinimalRebuildFromTracking="%(AndroidJava.MinimalRebuildFromTracking)"
       OutputCommandLine="%(AndroidJava.OutputCommandLine)"
-      ToolPath="$(JavaHomeDir)\bin"
-      ToolExe="jar.exe"
+      ToolPath="$(ANDROID_PLUS_PLUS)\toolchain\bin"
+      ToolExe="app-jar-dependencies.exe"
+      JavaHomeDir="$(JavaHomeDir)"
       OutputFile="%(AndroidJava.JarOutputFile)"
       ManifestFile="%(AndroidJava.JarManifestFile)"
       PropertiesFile="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml">

@@ -44,13 +44,17 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private Dictionary<string, uint> m_threadGroupStatus = new Dictionary<string, uint> ();
 
+    private readonly LaunchConfiguration m_launchConfiguration;
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public CLangDebugger (DebugEngine debugEngine, DebuggeeProgram debugProgram)
+    public CLangDebugger (DebugEngine debugEngine, LaunchConfiguration launchConfiguration, DebuggeeProgram debugProgram)
     {
       Engine = debugEngine;
+
+      m_launchConfiguration = launchConfiguration;
 
       NativeProgram = new CLangDebuggeeProgram (this, debugProgram);
 
@@ -59,12 +63,10 @@ namespace AndroidPlusPlus.VsDebugEngine
       VariableManager = new CLangDebuggerVariableManager (this);
 
       // 
-      // Evaluate the most up-to-date deployment of GDB provided in the registered SDK. Look at the target device and determine architecture.
+      // Evaluate target device's architecture triple.
       // 
 
-      string androidNdkRoot = AndroidSettings.NdkRoot;
-
-      string androidNdkToolchains = Path.Combine (androidNdkRoot, "toolchains");
+      bool archIs64Bit = false;
 
       string archGdbToolPrefix = string.Empty;
 
@@ -75,12 +77,34 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           archGdbToolPrefix = "arm-linux-androideabi";
 
+          archIs64Bit = false;
+
+          break;
+        }
+
+        case "arm64-v8a":
+        {
+          archGdbToolPrefix = "aarch64-linux-android";
+
+          archIs64Bit = true;
+
           break;
         }
 
         case "x86":
         {
-          archGdbToolPrefix = "i686";
+          archGdbToolPrefix = "i686-linux-android";
+
+          archIs64Bit = false;
+
+          break;
+        }
+
+        case "x86_64":
+        {
+          archGdbToolPrefix = "x86_64-linux-android";
+
+          archIs64Bit = true;
 
           break;
         }
@@ -89,9 +113,66 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           archGdbToolPrefix = "mipsel-linux-android";
 
+          archIs64Bit = false;
+
+          break;
+        }
+
+        case "mips64":
+        {
+          archGdbToolPrefix = "mips64el-linux-android";
+
+          archIs64Bit = true;
+
           break;
         }
       }
+
+      // 
+      // Android++ bundles its own copies of GDB to get round various NDK issues. Search for these.
+      // 
+
+      string androidPlusPlusRoot = Environment.GetEnvironmentVariable ("ANDROID_PLUS_PLUS");
+
+      string [] contribGdbMatches;
+
+      string contribGdbCommandPath;
+
+      string contribGdbCommandFilePattern = string.Format ("{0}-gdb.cmd", archGdbToolPrefix);
+
+      if (archIs64Bit && Environment.Is64BitOperatingSystem)
+      {
+        contribGdbCommandPath = Path.Combine (androidPlusPlusRoot, "contrib", "gdb-7.6.0-ndk64-r10");
+
+        contribGdbMatches = Directory.GetFiles (contribGdbCommandPath, contribGdbCommandFilePattern, SearchOption.TopDirectoryOnly);
+      }
+      else
+      {
+        contribGdbCommandPath = Path.Combine (androidPlusPlusRoot, "contrib", "gdb-7.6.0-ndk32-r10");
+
+        contribGdbMatches = Directory.GetFiles (contribGdbCommandPath, contribGdbCommandFilePattern, SearchOption.TopDirectoryOnly);
+      }
+
+      if ((contribGdbMatches == null) || (contribGdbMatches.Length == 0))
+      {
+        throw new InvalidOperationException ("Could not locate required 32/64-bit GDB deployment. Tried: " + contribGdbCommandPath);
+      }
+      else if (contribGdbMatches.Length > 1)
+      {
+        throw new InvalidOperationException ("Found multiple files matching GDB search criteria.");
+      }
+      else
+      {
+        m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, contribGdbMatches [0]);
+      }
+
+      // 
+      // Evaluate the most up-to-date deployment of GDB provided in the registered SDK. Look at the target device and determine architecture.
+      // 
+
+      string androidNdkRoot = AndroidSettings.NdkRoot;
+
+      string androidNdkToolchains = Path.Combine (androidNdkRoot, "toolchains");
 
       string gdbExecutablePattern = string.Format ("{0}-gdb.exe", archGdbToolPrefix);
 
@@ -109,17 +190,37 @@ namespace AndroidPlusPlus.VsDebugEngine
           continue;
         }
 
-        m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, gdbMatches [i]);
+        // 
+        // Found a matching (and appropriate) GDB executable. Register this if one wasn't found previously.
+        // 
+
+        if (m_gdbSetup == null)
+        {
+          m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, gdbMatches [i]);
+        }
+
+        string toolchainSysRoot = Path.GetFullPath (Path.Combine (Path.GetDirectoryName (gdbMatches [i]), ".."));
+
+        string pythonGdbScriptsPath = Path.Combine (toolchainSysRoot, "share", "gdb");
+
+        m_gdbSetup.GdbToolArguments += " --data-directory " + PathUtils.SantiseWindowsPath (pythonGdbScriptsPath);
 
         break;
       }
 
-      //m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, @"L:\dev\projects\android-plus-plus\toolchain\bin\gcc-linaro-arm-linux-gnueabihf-4.8\arm-linux-gnueabihf-gdb.exe");
-
-
       if (m_gdbSetup == null)
       {
         throw new InvalidOperationException ("Could not evaluate GDB setup instance.");
+      }
+
+      if (m_launchConfiguration != null)
+      {
+        string launchDirectory;
+
+        if (m_launchConfiguration.TryGetValue ("LaunchSuspendedDir", out launchDirectory))
+        {
+          m_gdbSetup.SymbolDirectories.Add (launchDirectory);
+        }
       }
 
       GdbServer = new GdbServer (m_gdbSetup);
@@ -550,32 +651,40 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                         if (boundBreakpoint == null)
                         {
-                          throw new InvalidOperationException ("Could not locate a registered breakpoint with matching id: " + breakpointId);
-                        }
-
-                        enum_BP_STATE [] breakpointState = new enum_BP_STATE [1];
-
-                        LoggingUtils.RequireOk (boundBreakpoint.GetState (breakpointState));
-
-                        if (breakpointState [0] == enum_BP_STATE.BPS_DELETED)
-                        {
                           // 
-                          // Hit a breakpoint which internally is flagged as deleted. Oh noes!
+                          // Could not locate a registered breakpoint with matching id.
                           // 
 
-                          DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, "Breakpoint #" + breakpointId, asyncRecord ["reason"] [0].GetString (), 0x80000000, canContinue);
+                          DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, "Breakpoint #" + breakpointId, asyncRecord ["reason"] [0].GetString (), 0x00000000, canContinue);
 
                           Engine.Broadcast (exception, NativeProgram.DebugProgram, stoppedThread);
                         }
                         else
                         {
-                          // 
-                          // Hit a breakpoint which is known about. Issue break event.
-                          // 
+                          enum_BP_STATE [] breakpointState = new enum_BP_STATE [1];
 
-                          IEnumDebugBoundBreakpoints2 enumeratedBoundBreakpoint = new DebuggeeBreakpointBound.Enumerator (new List<IDebugBoundBreakpoint2> { boundBreakpoint });
+                          LoggingUtils.RequireOk (boundBreakpoint.GetState (breakpointState));
 
-                          Engine.Broadcast (new DebugEngineEvent.BreakpointHit (enumeratedBoundBreakpoint), NativeProgram.DebugProgram, stoppedThread);
+                          if (breakpointState [0] == enum_BP_STATE.BPS_DELETED)
+                          {
+                            // 
+                            // Hit a breakpoint which internally is flagged as deleted. Oh noes!
+                            // 
+
+                            DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, "Breakpoint #" + breakpointId, asyncRecord ["reason"] [0].GetString (), 0x00000000, canContinue);
+
+                            Engine.Broadcast (exception, NativeProgram.DebugProgram, stoppedThread);
+                          }
+                          else
+                          {
+                            // 
+                            // Hit a breakpoint which is known about. Issue break event.
+                            // 
+
+                            IEnumDebugBoundBreakpoints2 enumeratedBoundBreakpoint = new DebuggeeBreakpointBound.Enumerator (new List<IDebugBoundBreakpoint2> { boundBreakpoint });
+
+                            Engine.Broadcast (new DebugEngineEvent.BreakpointHit (enumeratedBoundBreakpoint), NativeProgram.DebugProgram, stoppedThread);
+                          }
                         }
                       }
 
@@ -645,11 +754,7 @@ namespace AndroidPlusPlus.VsDebugEngine
                     case "exited-normally":
                     case "exited-signalled":
                     {
-                      //Engine.Broadcast (new DebugEngineEvent.Break (), NativeProgram.DebugProgram, NativeProgram.GetThread (NativeProgram.CurrentThreadId));
-
-                      //uint exitCode = 0;
-
-                      //Engine.Broadcast (new DebugEngineEvent.ProgramDestroy (exitCode), NativeProgram.DebugProgram, null);
+                      LoggingUtils.RequireOk (Engine.TerminateProcess (NativeProgram.DebugProgram.DebugProcess));
 
                       break;
                     }

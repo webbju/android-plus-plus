@@ -1,0 +1,7 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <StartArguments>--jdk-home C:\NMSuptech\distros\jdk\1.6.0_45 --jar-output C:\nm\BattleAxe_Gameplay2\build\lib\android\vs10.0\optimised_no_assets\libNMG_System.jar @C:\nm\BattleAxe_Gameplay2\build\obj\android\vs10.0\NMG_System\optimised_no_assets\JavaArchive_ea1d4c8d-28a7-4442-9b60-196dbc127180.rcf</StartArguments>
+    <StartWorkingDirectory>C:\nm\BattleAxe_Gameplay2\NMG_Libs\NMG_System</StartWorkingDirectory>
+  </PropertyGroup>
+</Project>

@@ -50,6 +50,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public CLangDebuggeeProperty CreatePropertyFromVariable (CLangDebuggeeStackFrame stackFrame, MiVariable variable)
     {
+      LoggingUtils.PrintFunction ();
+
       return new CLangDebuggeeProperty (m_debugger, stackFrame, variable);
     }
 
@@ -59,21 +61,32 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public MiVariable CreateVariableFromExpression (CLangDebuggeeStackFrame stackFrame, string expression)
     {
-      IDebugThread2 stackThread;
+      LoggingUtils.PrintFunction ();
 
-      uint stackThreadId;
+      try
+      {
+        IDebugThread2 stackThread;
 
-      LoggingUtils.RequireOk (stackFrame.GetThread (out stackThread));
+        uint stackThreadId;
 
-      LoggingUtils.RequireOk (stackThread.GetThreadId (out stackThreadId));
+        LoggingUtils.RequireOk (stackFrame.GetThread (out stackThread));
 
-      string command = string.Format ("-var-create --thread {0} --frame {1} - * {2} ", stackThreadId, stackFrame.StackLevel, PathUtils.EscapePath (expression));
+        LoggingUtils.RequireOk (stackThread.GetThreadId (out stackThreadId));
 
-      MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+        string command = string.Format ("-var-create --thread {0} --frame {1} - * {2} ", stackThreadId, stackFrame.StackLevel, PathUtils.EscapePath (expression));
 
-      MiResultRecord.RequireOk (resultRecord, command);
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
 
-      return new MiVariable (expression, resultRecord.Results);
+        MiResultRecord.RequireOk (resultRecord, command);
+
+        return new MiVariable (expression, resultRecord.Results);
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return null;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -82,6 +95,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void CreateChildVariables (MiVariable parentVariable, int depth)
     {
+      LoggingUtils.PrintFunction ();
+
       if (depth > 0)
       {
         string command = string.Format ("-var-list-children --all-values {0}", parentVariable.Name);
@@ -136,6 +151,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void UpdateVariable (MiVariable variable)
     {
+      LoggingUtils.PrintFunction ();
+
       string command = string.Format ("-var-update --all-values {0}", variable.Name);
 
       MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
@@ -154,6 +171,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private void DeleteGdbVariable (MiVariable gdbVariable)
     {
+      LoggingUtils.PrintFunction ();
+
       string command = string.Format ("-var-delete {0}", gdbVariable.Name);
 
       MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);

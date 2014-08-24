@@ -54,16 +54,18 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
 
     protected override int TrackedExecuteTool (string pathToTool, string responseFileCommands, string commandLineCommands)
     {
-      int retCode = base.TrackedExecuteTool (pathToTool, responseFileCommands, commandLineCommands);
+      int retCode = -1;
 
-      if (retCode == 0)
+      try
       {
-        // 
-        // Construct a simple dependency file for tracking purposes.
-        // 
+        retCode = base.TrackedExecuteTool (pathToTool, responseFileCommands, commandLineCommands);
 
-        try
+        if (retCode == 0)
         {
+          // 
+          // Construct a simple dependency file for tracking purposes.
+          // 
+
           using (StreamWriter writer = new StreamWriter (SignedOutputFile.GetMetadata ("FullPath") + ".d", false, Encoding.Unicode))
           {
             writer.WriteLine (string.Format ("{0}: \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (SignedOutputFile.GetMetadata ("FullPath"))));
@@ -74,12 +76,12 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
             }
           }
         }
-        catch (Exception e)
-        {
-          Log.LogErrorFromException (e, true);
+      }
+      catch (Exception e)
+      {
+        Log.LogErrorFromException (e, true);
 
-          retCode = -1;
-        }
+        retCode = -1;
       }
 
       return retCode;
@@ -169,6 +171,15 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
       }
 
       return base.ValidateParameters ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override void AddTaskSpecificOutputFiles (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
+    {
+      trackedFileManager.AddDependencyForSources (new ITaskItem [] { SignedOutputFile }, sources);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

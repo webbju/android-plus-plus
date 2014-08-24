@@ -52,6 +52,9 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     [Required]
+    public string JavaHomeDir { get; set; }
+
+    [Required]
     public ITaskItem OutputFile { get; set; }
 
     public ITaskItem ManifestFile { get; set; }
@@ -60,80 +63,25 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected override bool Setup ()
+    protected override int TrackedExecuteTool (string pathToTool, string responseFileCommands, string commandLineCommands)
     {
-      // 
-      // Temporary working directory needs to be consistent between runs of the same source files.
-      // 
+      int retCode = -1;
 
       try
       {
-        int sourceTreeHash = 0;
-
-        foreach (ITaskItem source in Sources)
-        {
-          sourceTreeHash += source.GetHashCode ();
-        }
-
-        m_tempWorkingDirectory = Path.Combine (Path.GetTempPath (), "Android++", ToolName + "_" + sourceTreeHash.ToString ());
-
-        if (Directory.Exists (m_tempWorkingDirectory))
-        {
-          Directory.Delete (m_tempWorkingDirectory, true);
-        }
-
-        Directory.CreateDirectory (m_tempWorkingDirectory);
-
-        if (!Directory.Exists (m_tempWorkingDirectory))
-        {
-          Log.LogError ("Failed to create required working directory. Tried: " + m_tempWorkingDirectory);
-
-          return false;
-        }
-
-        return base.Setup ();
+        retCode = base.TrackedExecuteTool (pathToTool, responseFileCommands, commandLineCommands);
       }
       catch (Exception e)
       {
         Log.LogErrorFromException (e, true);
 
-        return false;
+        retCode = -1;
       }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override int TrackedExecuteTool (string pathToTool, string responseFileCommands, string commandLineCommands)
-    {
-      int retCode = base.TrackedExecuteTool (pathToTool, responseFileCommands, commandLineCommands);
-
-      if (retCode == 0)
+      finally
       {
-        OutputFiles = new ITaskItem [] { OutputFile };
-
-        // 
-        // Construct a simple dependency file for tracking purposes.
-        // 
-
-        try
+        if (retCode == 0)
         {
-          using (StreamWriter writer = new StreamWriter (OutputFile.GetMetadata ("FullPath") + ".d", false, Encoding.Unicode))
-          {
-            writer.WriteLine (string.Format ("{0}: \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (OutputFile.GetMetadata ("FullPath"))));
-
-            foreach (ITaskItem source in Sources)
-            {
-              writer.WriteLine (string.Format ("  {0} \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (source.GetMetadata ("FullPath"))));
-            }
-          }
-        }
-        catch (Exception e)
-        {
-          Log.LogErrorFromException (e, true);
-
-          retCode = -1;
+          OutputFiles = new ITaskItem [] { OutputFile };
         }
       }
 
@@ -144,64 +92,36 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    protected override string GenerateCommandLineCommands ()
+    {
+      StringBuilder commandLineBuilder = new StringBuilder ();
+
+      commandLineBuilder.Append (string.Format ("--jdk-home {0} ", PathUtils.QuoteIfNeeded (JavaHomeDir)));
+
+      commandLineBuilder.Append (string.Format ("--jar-output {0} ", PathUtils.QuoteIfNeeded (OutputFile.GetMetadata ("FullPath"))));
+
+      if (ManifestFile != null)
+      {
+        commandLineBuilder.Append (string.Format ("--jar-manifest {0} ", PathUtils.QuoteIfNeeded (ManifestFile.GetMetadata ("FullPath"))));
+      }
+
+      return commandLineBuilder.ToString ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     protected override string GenerateResponseFileCommands ()
     {
-      StringBuilder responseFileArguments = new StringBuilder ();
+      StringBuilder responseFileBuilder = new StringBuilder ();
 
-      StringBuilder responseFileCommands = new StringBuilder (PathUtils.CommandLineLength);
-
-      try
+      foreach (ITaskItem source in Sources)
       {
-        // 
-        // c    create new archive
-        // f    specify archive file name
-        // m    specify manifest file name
-        // 0    store only; use no ZIP compression
-        // 
-
-        responseFileArguments.Append ("c0");
-
-        if (ManifestFile != null)
-        {
-          responseFileArguments.Append ("m");
-
-          responseFileCommands.Append (PathUtils.SantiseWindowsPath (ManifestFile.GetMetadata ("FullPath")) + " ");
-        }
-
-        if (OutputFile != null)
-        {
-          responseFileArguments.Append ("f");
-
-          responseFileCommands.Append (PathUtils.SantiseWindowsPath (OutputFile.GetMetadata ("FullPath")) + " ");
-        }
-
-        // 
-        // jar tool is a rather pants as it requires classes to be in package mapped directory structures. Use a temp directory for this.
-        // 
-
-        foreach (ITaskItem source in Sources)
-        {
-          string sourceFullPath = Path.GetFullPath (source.ItemSpec);
-
-          string sourceFileName = Path.GetFileName (sourceFullPath);
-
-          string classOutputPath = Path.GetFullPath (source.GetMetadata ("ClassOutputDirectory"));
-
-          string packageDirectories = sourceFullPath.Replace (classOutputPath, "").Replace (sourceFileName, "").Trim (new char [] { '\\', '/' });
-
-          DirectoryInfo packageDirectory = Directory.CreateDirectory (Path.Combine (m_tempWorkingDirectory, packageDirectories));
-
-          File.Copy (sourceFullPath, Path.Combine (packageDirectory.FullName, sourceFileName), true);
-        }
-
-        responseFileCommands.Append (" -C " + PathUtils.SantiseWindowsPath (m_tempWorkingDirectory) + " . ");
-      }
-      catch (Exception e)
-      {
-        Log.LogErrorFromException (e, true);
+        responseFileBuilder.Append (PathUtils.QuoteIfNeeded (source.GetMetadata ("FullPath")) + " ");
       }
 
-      return responseFileArguments.ToString () + " " + responseFileCommands.ToString ();
+      return responseFileBuilder.ToString ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -211,6 +131,30 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     protected override string GetResponseFileSwitch (string responseFilePath)
     {
       return '@' + PathUtils.SantiseWindowsPath (responseFilePath);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override void AddTaskSpecificDependencies (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
+    {
+      if (ManifestFile != null)
+      {
+        trackedFileManager.AddDependencyForSources (new ITaskItem [] { ManifestFile }, sources);
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override void AddTaskSpecificOutputFiles (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
+    {
+      if (OutputFile != null)
+      {
+        trackedFileManager.AddDependencyForSources (new ITaskItem [] { OutputFile }, sources);
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -68,7 +68,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
       if (tlog == null)
       {
-        throw new ArgumentNullException ();
+        throw new ArgumentNullException ("tlog");
       }
 
       string tlogFullPath = (!string.IsNullOrEmpty (tlog.GetMetadata ("FullPath")) ? tlog.GetMetadata ("FullPath") : Path.GetFullPath (tlog.ItemSpec));
@@ -119,16 +119,19 @@ namespace AndroidPlusPlus.MsBuild.Common
 
                   HashSet<string> trackedSourceDependencies = new HashSet<string> ();
 
-                  while (!string.IsNullOrWhiteSpace (trackedSourceLineData))
+                  while (trackedSourceLineData != null)
                   {
                     if (trackedSourceLineData.StartsWith ("^"))
                     {
                       break;
                     }
 
-                    if (!trackedSourceDependencies.Contains (ConvertToTrackerFormat (trackedSourceLineData)))
+                    if (!string.IsNullOrWhiteSpace (trackedSourceLineData))
                     {
-                      trackedSourceDependencies.Add (ConvertToTrackerFormat (trackedSourceLineData));
+                      if (!trackedSourceDependencies.Contains (ConvertToTrackerFormat (trackedSourceLineData)))
+                      {
+                        trackedSourceDependencies.Add (ConvertToTrackerFormat (trackedSourceLineData));
+                      }
                     }
 
                     trackedSourceLineData = reader.ReadLine ();
@@ -151,9 +154,9 @@ namespace AndroidPlusPlus.MsBuild.Common
             }
           }
         }
-        catch (Exception e)
+        catch (Exception)
         {
-          throw e;
+          throw;
         }
       }
     }
@@ -189,9 +192,9 @@ namespace AndroidPlusPlus.MsBuild.Common
           }
         }
       }
-      catch (Exception e)
+      catch (Exception)
       {
-        throw e;
+        throw;
       }
     }
 
@@ -240,7 +243,7 @@ namespace AndroidPlusPlus.MsBuild.Common
       }
       catch (Exception e)
       {
-        throw e;
+        throw;
       }
     }
 
@@ -263,9 +266,9 @@ namespace AndroidPlusPlus.MsBuild.Common
           m_sourceDependencyTable.Remove (sourceFileTrackerFormat);
         }
       }
-      catch (Exception e)
+      catch (Exception)
       {
-        throw e;
+        throw;
       }
     }
 
@@ -291,7 +294,7 @@ namespace AndroidPlusPlus.MsBuild.Common
       {
         if (tlog == null)
         {
-          throw new ArgumentNullException ();
+          throw new ArgumentNullException ("tlog");
         }
 
         string tlogFullPath = (!string.IsNullOrEmpty (tlog.GetMetadata ("FullPath")) ? tlog.GetMetadata ("FullPath") : Path.GetFullPath (tlog.ItemSpec));
@@ -301,6 +304,7 @@ namespace AndroidPlusPlus.MsBuild.Common
           throw new ArgumentException ("Could not get 'FullPath' metadata for TLog. " + tlog);
         }
 
+#if true
         using (StreamWriter writer = new StreamWriter (tlogFullPath, false, Encoding.Unicode))
         {
           foreach (KeyValuePair<string, HashSet<string>> sourceEntry in m_sourceDependencyTable)
@@ -315,12 +319,12 @@ namespace AndroidPlusPlus.MsBuild.Common
 
           writer.Close ();
         }
-
+#else
         // 
         // Reorder the dependency graph data so it can be easily output in a condensed format.
         // 
 
-        /*Dictionary<string, List<string>> condensedDependencyTable = new Dictionary<string, List<string>> ();
+        Dictionary<string, List<string>> condensedDependencyTable = new Dictionary<string, List<string>> ();
 
         StringBuilder sourceFileList = new StringBuilder ();
 
@@ -372,11 +376,12 @@ namespace AndroidPlusPlus.MsBuild.Common
           }
 
           writer.Close ();
-        }*/
+        }
+#endif
       }
       catch (Exception e)
       {
-        throw e;
+        throw;
       }
     }
 
