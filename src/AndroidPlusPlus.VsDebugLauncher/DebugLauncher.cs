@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using System.Windows.Forms;
 
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -34,6 +35,7 @@ using Microsoft.VisualStudio.ProjectSystem.VS.Debuggers;
 #endif
 
 using AndroidPlusPlus.Common;
+using System.Threading;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -46,14 +48,33 @@ namespace AndroidPlusPlus.VsDebugLauncher
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class DebugLauncher
+  public class DebugLauncher : IDebugLauncher
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public static bool CanLaunch (int launchOptionsFlags)
+    private readonly IServiceProvider m_serviceProvider;
+
+    private readonly IUiDebugLaunchService m_debugLaunchService;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public DebugLauncher (IServiceProvider serviceProvider)
+    {
+      m_serviceProvider = serviceProvider;
+
+      m_debugLaunchService = m_serviceProvider.GetService (typeof (IUiDebugLaunchService)) as IUiDebugLaunchService;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public bool CanLaunch (int launchOptionsFlags)
     {
       // 
       // Requirements to satisfy before launching a requested debug session.
@@ -61,149 +82,135 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       LoggingUtils.PrintFunction ();
 
+      return true;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public void PrepareLaunch ()
+    {
+      DateTime logTime = DateTime.Now;
+
+      LoggingUtils.RequireOk (m_debugLaunchService.LaunchDialogShow ());
+
+      LoggingUtils.RequireOk (m_debugLaunchService.LaunchDialogUpdate (string.Format ("Configuring Android++ ({0:D2}-{1:D2}-{2:D4} {3:D2}:{4:D2}.{5:D2})...", logTime.Day, logTime.Month, logTime.Year, logTime.Hour, logTime.Minute, logTime.Second), false));
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public object StartWithoutDebugging (int launchOptionsFlags, LaunchConfiguration launchConfig, IDictionary<string, string> projectProperties)
+    {
+      LoggingUtils.PrintFunction ();
+
       try
       {
-        AndroidAdb.Refresh();
+        DebugLaunchSettings nonDebuglaunchSettings = (DebugLaunchSettings) StartWithDebugging (launchOptionsFlags, launchConfig, projectProperties);
 
-        AndroidDevice[] connectedDevices = AndroidAdb.GetConnectedDevices();
+        nonDebuglaunchSettings.LaunchOptions |= DebugLaunchOptions.NoDebug;
 
-        return (connectedDevices.Length > 0);
+        launchConfig.FromString (nonDebuglaunchSettings.Options);
+
+        launchConfig ["DebugMode"] = "false"; // launch without waiting for a JDB instance.
+
+        nonDebuglaunchSettings.Options = launchConfig.ToString ();
+
+        return nonDebuglaunchSettings;
       }
       catch (Exception e)
       {
-        LoggingUtils.HandleException(e);
+        LoggingUtils.HandleException (e);
+
+        throw;
       }
-
-      return false;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if VS2010
-    public static object StartWithoutDebugging (int launchOptionsFlags, Dictionary <string, string> projectProperties, Project startupProject)
-#else
-    public static object StartWithoutDebugging (int launchOptionsFlags, Dictionary <string, string> projectProperties)
-#endif
+    public object StartWithDebugging (int launchOptionsFlags, LaunchConfiguration launchConfig, IDictionary<string, string> projectProperties)
     {
       LoggingUtils.PrintFunction ();
 
-#if VS2010
-      DebugLaunchSettings nonDebuglaunchSettings = (DebugLaunchSettings) StartWithDebugging (launchOptionsFlags, projectProperties, startupProject);
-#else
-      DebugLaunchSettings nonDebuglaunchSettings = (DebugLaunchSettings) StartWithDebugging (launchOptionsFlags, projectProperties);
-#endif
-
-      nonDebuglaunchSettings.LaunchOptions |= DebugLaunchOptions.NoDebug;
-
-      LaunchConfiguration launchConfiguration = new LaunchConfiguration ();
-
-      launchConfiguration.FromString (nonDebuglaunchSettings.Options);
-
-      launchConfiguration ["DebugMode"] = "false"; // launch without waiting for a JDB instance.
-
-      nonDebuglaunchSettings.Options = launchConfiguration.ToString ();
-
-      return nonDebuglaunchSettings;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#if VS2010
-    public static object StartWithDebugging (int launchOptionsFlags, Dictionary<string, string> projectProperties, Project startupProject)
-#else
-    public static object StartWithDebugging (int launchOptionsFlags, Dictionary<string, string> projectProperties)
-#endif
-    {
-      LoggingUtils.PrintFunction ();
-
-      // 
-      // Check for any currently connected devices, and determine whether the target application is already installed/running.
-      // 
-
-      AndroidAdb.Refresh ();
-
-      AndroidDevice [] connectedDevices = AndroidAdb.GetConnectedDevices ();
-
-      if (connectedDevices.Length == 0)
+      try
       {
-        throw new InvalidOperationException ("No devices found/connected.");
-      }
+        // 
+        // Check for any currently connected devices, and determine whether the target application is already installed/running.
+        // 
 
-      bool shouldAttach = false;
+        AndroidAdb.Refresh ();
 
-      AndroidDevice debuggingDevice = connectedDevices [0];
+        AndroidDevice [] connectedDevices = AndroidAdb.GetConnectedDevices ();
+
+        if (connectedDevices.Length == 0)
+        {
+          throw new InvalidOperationException ("No device/emulator found or connected. Check status via 'adb devices'.");
+        }
+
+        bool shouldAttach = false;
+
+        AndroidDevice debuggingDevice = connectedDevices [0];
 
 #if false
-      AndroidProcess [] debuggingDeviceProcesses = debuggingDevice.GetProcesses ();
+        AndroidProcess [] debuggingDeviceProcesses = debuggingDevice.GetProcesses ();
 
-      foreach (AndroidProcess process in debuggingDeviceProcesses)
-      {
-        if (process.Name.Equals (applicationPackageName))
+        foreach (AndroidProcess process in debuggingDeviceProcesses)
         {
-          shouldAttach = true;
+          if (process.Name.Equals (applicationPackageName))
+          {
+            shouldAttach = true;
 
-          break;
+            break;
+          }
         }
-      }
 #endif
 
-      DebugLaunchSettings debugLaunchSettings = new DebugLaunchSettings ((DebugLaunchOptions) launchOptionsFlags);
+        DebugLaunchSettings debugLaunchSettings = new DebugLaunchSettings ((DebugLaunchOptions) launchOptionsFlags);
 
-      debugLaunchSettings.LaunchDebugEngineGuid = new Guid ("8310DAF9-1043-4C8E-85A0-FF68896E1922");
+        debugLaunchSettings.LaunchDebugEngineGuid = new Guid ("8310DAF9-1043-4C8E-85A0-FF68896E1922");
 
-      debugLaunchSettings.PortSupplierGuid = new Guid ("3AEE417F-E5F9-4B89-BC31-20534C99B7F5");
+        debugLaunchSettings.PortSupplierGuid = new Guid ("3AEE417F-E5F9-4B89-BC31-20534C99B7F5");
 
-      debugLaunchSettings.PortName = "adb://" + debuggingDevice.ID;
+        debugLaunchSettings.PortName = "adb://" + debuggingDevice.ID;
 
-      debugLaunchSettings.LaunchOptions = ((DebugLaunchOptions)launchOptionsFlags) | DebugLaunchOptions.Silent;
+        debugLaunchSettings.LaunchOptions = ((DebugLaunchOptions) launchOptionsFlags) | DebugLaunchOptions.Silent;
 
-#if VS2010
-      LaunchConfiguration launchConfig = GetLaunchConfigurationFromProjectProperties (projectProperties, startupProject);
-#else
-      LaunchConfiguration launchConfig = GetLaunchConfigurationFromProjectProperties (projectProperties);
-#endif
+        debugLaunchSettings.Options = launchConfig.ToString ();
 
-      debugLaunchSettings.Options = launchConfig.ToString ();
+        if (shouldAttach)
+        {
+          debugLaunchSettings.Executable = launchConfig ["PackageName"];
 
-      if (shouldAttach)
-      {
-        debugLaunchSettings.Executable = launchConfig ["PackageName"];
+          debugLaunchSettings.LaunchOperation = DebugLaunchOperation.AlreadyRunning;
+        }
+        else
+        {
+          LoggingUtils.RequireOk (m_debugLaunchService.LaunchDialogUpdate (string.Format ("Installing '{0}' to '{1}'...", launchConfig ["PackageName"], debuggingDevice.ID), false));
 
-        debugLaunchSettings.LaunchOperation = DebugLaunchOperation.AlreadyRunning;
+          InstallApplicationAsync (debuggingDevice, launchConfig);
+
+          LoggingUtils.RequireOk (m_debugLaunchService.LaunchDialogUpdate (string.Format ("Installation completed successfully."), false));
+
+          debugLaunchSettings.Executable = launchConfig ["TargetApk"];
+
+          debugLaunchSettings.LaunchOperation = DebugLaunchOperation.Custom;
+        }
+
+        return debugLaunchSettings;
       }
-      else
+      catch (Exception e)
       {
-        debugLaunchSettings.Executable = launchConfig ["TargetApk"];
+        LoggingUtils.HandleException (e);
 
-        debugLaunchSettings.LaunchOperation = DebugLaunchOperation.Custom;
-      }
+        string description = string.Format ("[Exception] {0}", e.Message);
 
-      return debugLaunchSettings;
-    }
+        LoggingUtils.RequireOk (m_debugLaunchService.LaunchDialogUpdate (description, true));
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public static void DeployExecutable (DebugLaunchSettings launchSettings, IServiceProvider serviceProvider)
-    {
-      AndroidDevice [] connectedDevices = AndroidAdb.GetConnectedDevices ();
-
-      AndroidDevice debuggingDevice = connectedDevices [0];
-
-      LaunchConfiguration launchConfig = new LaunchConfiguration ();
-
-      launchConfig.FromString (launchSettings.Options);
-
-      bool keepData = launchConfig ["KeepAppData"].Equals ("true");
-
-      //if (DebugLauncher.ShowYesNoDialog (serviceProvider, "test"))
-      {
-        debuggingDevice.Install (launchSettings.Executable, keepData);
+        throw;
       }
     }
 
@@ -211,12 +218,65 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    private void InstallApplicationAsync (AndroidDevice debuggingDevice, LaunchConfiguration launchConfig)
+    {
+      // 
+      // Asynchronous installation process, so the UI can be updated appropriately.
+      // 
+
+      ManualResetEvent installCompleteEvent = new ManualResetEvent (false);
+
+      Exception installFailedException = null;
+
+      System.Threading.Thread asyncInstallApplicationThread = new System.Threading.Thread (delegate ()
+      {
+        try
+        {
+          string targetApk = launchConfig ["TargetApk"];
+
+          bool keepData = launchConfig ["KeepAppData"].Equals ("true");
+
+          debuggingDevice.Install (targetApk, keepData, "com.android.vending"); // TODO: Installer needs to be customisable
+        }
+        catch (Exception e)
+        {
+          LoggingUtils.HandleException (e);
+
+          installFailedException = e;
+        }
+        finally
+        {
+          installCompleteEvent.Set ();
+        }
+      });
+
+      asyncInstallApplicationThread.Start ();
+
+      while (!installCompleteEvent.WaitOne (0))
+      {
+        Application.DoEvents ();
+
+        System.Threading.Thread.Sleep (100);
+      }
+
+      if (installFailedException != null)
+      {
+        throw installFailedException;
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 #if VS2010
-    private static LaunchConfiguration GetLaunchConfigurationFromProjectProperties (Dictionary<string, string> projectProperties, Project startupProject)
+    public LaunchConfiguration GetLaunchConfigurationFromProjectProperties (IDictionary<string, string> projectProperties, Project startupProject)
 #else
-    private static LaunchConfiguration GetLaunchConfigurationFromProjectProperties (Dictionary<string, string> projectProperties)
+    public LaunchConfiguration GetLaunchConfigurationFromProjectProperties (IDictionary<string, string> projectProperties)
 #endif
     {
+      LoggingUtils.PrintFunction ();
+
       // 
       // Retrieve standard project macro values, and determine the preferred debugger configuration.
       // 
@@ -242,6 +302,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
         debuggerConfiguration = "Custom";
       }
 
+#if DEBUG
       LoggingUtils.Print ("ConfigurationGeneral.TargetName: " + projectTargetName);
 
       LoggingUtils.Print ("ConfigurationGeneral.ProjectDir: " + projectProjectDir);
@@ -257,6 +318,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
       LoggingUtils.Print ("AndroidPlusPlusDebugger.DebuggerOpenGlTrace: " + debuggerOpenGlTrace);
 
       LoggingUtils.Print ("AndroidPlusPlusDebugger.DebuggerKeepAppData: " + debuggerKeepAppData);
+#endif
 
       // 
       // Support for vs-android. Rather hacky for VS2010.
@@ -427,12 +489,14 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private static string EvaluateProjectProperty (Dictionary <string, string> projectProperties, string schema, string property)
+    private static string EvaluateProjectProperty (IDictionary <string, string> projectProperties, string schema, string property)
     {
       // 
       // VS2010 provides a pre-processed list of project properties. We have to evaluate these manually for VS2012+.
       // - In order to avoid duplicates from similar properties under different schemas, they are prefixed in the list.
       // 
+
+      LoggingUtils.PrintFunction ();
 
       string evaluatedProperty;
 
@@ -458,83 +522,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #if VS2010
-    public static Project GetStartupSolutionProject (IServiceProvider serviceProvider, Dictionary<string, string> projectProperties)
-    {
-      LoggingUtils.PrintFunction ();
-
-      DTE dteService = serviceProvider.GetService (typeof (SDTE)) as DTE;
-
-      Solution solution = dteService.Solution;
-
-      SolutionBuild solutionBuild = solution.SolutionBuild;
-
-      object [] startupProjects = (object []) solutionBuild.StartupProjects;
-
-      Project startupProject = null;
-
-      string startupProjectName = string.Empty;
-
-      if (projectProperties.TryGetValue ("ProjectName", out startupProjectName))
-      {
-        // 
-        // Construct a listing of all the sub-projects in this solution.
-        // 
-
-        List <Project> solutionProjects = new List <Project> ();
-
-        foreach (Project project in solution.Projects)
-        {
-          solutionProjects.Add (project);
-
-          GetProjectSubprojects (project, ref solutionProjects);
-        }
-
-        foreach (Project project in solutionProjects)
-        {
-          if (project.Name.Equals (startupProjectName))
-          {
-            startupProject = project;
-
-            break;
-          }
-        }
-      }
-      else if (startupProjects.Length > 0)
-      {
-        startupProject = startupProjects [0] as Project;
-
-        startupProjectName = startupProject.Name;
-      }
-
-      return startupProject;
-    }
-#endif
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#if VS2010
-    public static void GetProjectSubprojects (Project project, ref List <Project> projectListing)
-    {
-      foreach (ProjectItem item in project.ProjectItems)
-      {
-        if (item.SubProject != null)
-        {
-          projectListing.Add (item.SubProject);
-
-          GetProjectSubprojects (item.SubProject, ref projectListing);
-        }
-      }
-    }
-#endif
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#if VS2010
-    public static VCConfiguration GetActiveConfiguration (Project project)
+    private static VCConfiguration GetActiveConfiguration (Project project)
     {
       LoggingUtils.PrintFunction ();
 
@@ -545,7 +533,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       VCProject vcProject = project.Object as VCProject;
 
-      VCConfiguration [] vcProjectConfigurations = (VCConfiguration [])vcProject.Configurations;
+      VCConfiguration [] vcProjectConfigurations = (VCConfiguration []) vcProject.Configurations;
 
       Configuration activeConfiguration = project.ConfigurationManager.ActiveConfiguration;
 
@@ -560,26 +548,6 @@ namespace AndroidPlusPlus.VsDebugLauncher
       return null;
     }
 #endif
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public static void ShowMessageDialog (IServiceProvider serviceProvider, string message)
-    {
-      VsShellUtilities.ShowMessageBox (serviceProvider, message, "Android++ Debugger", OLEMSGICON.OLEMSGICON_CRITICAL, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public static bool ShowYesNoDialog (IServiceProvider serviceProvider, string message)
-    {
-      IVsUIShell shell = serviceProvider.GetService (typeof (SVsUIShell)) as IVsUIShell;
-
-      return VsShellUtilities.PromptYesNo (message, "Android++ Debugger", OLEMSGICON.OLEMSGICON_QUERY, shell);
-    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

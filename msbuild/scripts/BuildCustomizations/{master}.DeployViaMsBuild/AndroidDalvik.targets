@@ -70,13 +70,20 @@
     </ItemGroup>
 
     <!-- 
-      Ensure requested output directories exist 
+      Configure output path, and ensure requested output directories exist.
     -->
 
-    <MakeDir 
-      Condition="'@(AndroidDalvik)' != ''"
-      Directories="$([System.IO.Path]::GetDirectoryName(%(AndroidDalvik.OutputFile)))"
-    />
+    <PropertyGroup>
+      <_DexOutputFile>$(ProjectDir)$(IntDir)bin\classes.dex</_DexOutputFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <AndroidDalvik>
+        <OutputFile>$(_DexOutputFile)</OutputFile>
+      </AndroidDalvik>
+    </ItemGroup>
+
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(_DexOutputFile)))" />
 
     <!-- 
       Process input class-paths and generate a Dalvik executable (i.e. classes.dex) 
@@ -98,6 +105,11 @@
       <Output TaskParameter="OutputFiles" ItemName="AndroidDalvikOutputFiles" />
       <Output TaskParameter="SkippedExecution" PropertyName="AndroidDalvikSkippedExecution" />
     </AndroidDex>
+
+    <ItemGroup>
+      <!-- Ensure DEX output is referenced even when builds are skipped due to minimal rebuilds. -->
+      <AndroidDalvikOutputFiles Condition="'$(AndroidDalvikSkippedExecution)' == 'true'" Include="$(_DexOutputFile)" />
+    </ItemGroup>
 
   </Target>
 

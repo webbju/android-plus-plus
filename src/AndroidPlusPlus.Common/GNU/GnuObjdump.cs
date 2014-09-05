@@ -53,7 +53,7 @@ namespace AndroidPlusPlus.Common
         {
           StringBuilder dumpContent = new StringBuilder ();
 
-          string dumpRegExPattern = " ([a-f0-9]+) (?<block_a>[a-f0-9]*) (?<block_b>[a-f0-9]*) (?<block_c>[a-f0-9]*) (?<block_d>[a-f0-9]*)";
+          string dumpRegExPattern = " ([0-9a-fA-F]+) (?<block_a>[0-9a-fA-F]*) (?<block_b>[0-9a-fA-F]*) (?<block_c>[0-9a-fA-F]*) (?<block_d>[0-9a-fA-F]*)";
 
           Regex regExMatcher = new Regex (dumpRegExPattern, RegexOptions.Compiled);
 

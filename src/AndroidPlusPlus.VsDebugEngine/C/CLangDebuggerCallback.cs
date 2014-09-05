@@ -23,12 +23,6 @@ namespace AndroidPlusPlus.VsDebugEngine
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public delegate int CLangDebuggerEventDelegate (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   public interface CLangDebuggerEventInterface
   {
     int OnStartServer (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
@@ -57,7 +51,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private readonly Dictionary<Guid, CLangDebuggerEventDelegate> m_debuggerCallback;
+    private readonly Dictionary<Guid, DebuggerEventDelegate> m_debuggerCallback;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -65,7 +59,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public CLangDebuggerCallback ()
     {
-      m_debuggerCallback = new Dictionary<Guid, CLangDebuggerEventDelegate> ();
+      m_debuggerCallback = new Dictionary<Guid, DebuggerEventDelegate> ();
 
       m_debuggerCallback.Add (ComUtils.GuidOf (typeof (CLangDebuggerEvent.StartServer)), OnStartServer);
 
@@ -94,18 +88,16 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        CLangDebuggerEventDelegate eventCallback;
-
         LoggingUtils.Print ("[CLangDebuggerCallback] Event: " + riidEvent.ToString ());
+
+        DebuggerEventDelegate eventCallback;
 
         if (!m_debuggerCallback.TryGetValue (riidEvent, out eventCallback))
         {
           return DebugEngineConstants.E_NOTIMPL;
         }
 
-        LoggingUtils.RequireOk (eventCallback (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib));
-
-        return DebugEngineConstants.S_OK;
+        return eventCallback (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
       }
       catch (Exception e)
       {

@@ -101,12 +101,18 @@ namespace AndroidPlusPlus.VsIntegratedPackage
   // This attribute is needed to let the shell know that this package exposes some menus.
   // 
 
+#if false
   [ProvideMenuResource ("Menus.ctmenu", 1)]
+#endif
 
+  [ProvideService(typeof(IUiDebugLaunchService))]
+
+#if false
   [ProvideToolWindow (typeof (GdbConsoleWindow), 
     Style = VsDockStyle.Tabbed, 
     Window = "{A8792F75-01C3-4AB4-BB10-CFBCF0615A9C}", 
     Orientation = ToolWindowOrientation.Right)]
+#endif
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -127,7 +133,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     private SolutionEventListener m_solutionEventListener;
 
-    private InterfaceEventListener m_interfaceEventListener;
+    private UiCommandEventListener m_interfaceEventListener;
 
     private TextWriterTraceListener m_traceWriterListener;
 
@@ -157,6 +163,8 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       base.Initialize ();
 
       InitialiseTraceListeners ();
+
+      InitialisePackageServices ();
 
       InitialiseInterfaceListeners ();
 
@@ -247,13 +255,36 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    void InitialisePackageServices ()
+    {
+      LoggingUtils.PrintFunction ();
+
+      // 
+      // Create a service to manage the 'attach' status dialog. As we need to access this via VsDebugLauncher/VsDebugEngine.
+      // 
+
+      IServiceContainer serviceContainer = this as IServiceContainer;
+
+      UiDebugLaunchService launchService = new UiDebugLaunchService ();
+
+      serviceContainer.AddService (typeof (IUiDebugLaunchService), launchService, true);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     void InitialiseInterfaceListeners ()
     {
       LoggingUtils.PrintFunction ();
 
+      // 
+      // Register command (UI button/element) listener.
+      // 
+
       OleMenuCommandService menuCommandService = GetService (typeof (IMenuCommandService)) as OleMenuCommandService;
 
-      m_interfaceEventListener = new InterfaceEventListener (this);
+      m_interfaceEventListener = new UiCommandEventListener (this);
 
       m_interfaceEventListener.RegisterCallbacks (menuCommandService);
     }
@@ -268,7 +299,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
       DateTime logTime = DateTime.Now;
 
-      string traceLog = string.Format (@"{0}\Android++\{1}-{2}-{3}.log", Environment.GetFolderPath (Environment.SpecialFolder.ApplicationData), logTime.Year, logTime.Month, logTime.Day);
+      string traceLog = string.Format (@"{0}\Android++\{1:D4}-{2:D2}-{3:D2}.log", Environment.GetFolderPath (Environment.SpecialFolder.ApplicationData), logTime.Year, logTime.Month, logTime.Day);
 
       Trace.WriteLine ("[Package] Trace Log: " + traceLog);
 
@@ -301,7 +332,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     void InitialiseEventListeners ()
     {
       // 
-      // Aquire VisualStudio service references.
+      // Acquire VisualStudio service references.
       // 
 
       LoggingUtils.PrintFunction ();
@@ -315,6 +346,8 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       IVsSolution2 solutionService = GetService (typeof (SVsSolution)) as IVsSolution2;
 
       IVsMonitorSelection monitorSelectionService = GetService (typeof (IVsMonitorSelection)) as IVsMonitorSelection;
+
+      IUiDebugLaunchService debugLaunchService = GetService (typeof (IUiDebugLaunchService)) as IUiDebugLaunchService;
 
       // 
       // Register service listeners.
@@ -347,7 +380,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
       m_propertyEventListener = new PropertyEventListener (shellService);
 
-      m_debuggerEventListener = new DebuggerEventListener (dteService, debuggerService);
+      m_debuggerEventListener = new DebuggerEventListener (dteService, debuggerService, debugLaunchService);
 
       m_solutionEventListener = new SolutionEventListener (dteService, solutionService);
 
@@ -431,42 +464,6 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     #endregion
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    void OnStartupComplete ()
-    {
-      LoggingUtils.PrintFunction ();
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    void OnBeginShutdown ()
-    {
-      LoggingUtils.PrintFunction ();
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    void OnModeChanged (vsIDEMode lastMode)
-    {
-      LoggingUtils.PrintFunction ();
-
-      switch (lastMode)
-      {
-        case vsIDEMode.vsIDEModeDesign:
-        case vsIDEMode.vsIDEModeDebug:
-        {
-          break;
-        }
-      }
-    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -40,18 +40,6 @@
     -->
 
     <!--
-      UnsignedOutputFile
-    -->
-
-    <StringProperty
-      Subtype="file"
-      Name="UnsignedOutputFile"
-      DisplayName="Unsigned Output File"
-      Description="Specify where to output an unsigned APK."
-      Category="General"
-    />
-
-    <!--
       OutputCommandLine
     -->
 

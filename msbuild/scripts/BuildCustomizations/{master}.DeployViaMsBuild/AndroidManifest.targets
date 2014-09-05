@@ -138,10 +138,14 @@
       PropertiesFile="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml">
       <Output TaskParameter="OutputApk" ItemName="AndroidManifestOutputApk" />
       <Output TaskParameter="OutputFiles" ItemName="AndroidManifestOutputFiles" />
+      <Output TaskParameter="SkippedExecution" PropertyName="AndroidManifestSkippedExecution" />
     </AndroidAaptPackage>
 
-    <!-- Filter a list of exported per-manifest .java sources -->
     <ItemGroup>
+      <!-- Ensure APK output is referenced even when builds are skipped due to minimal rebuilds. -->
+      <AndroidManifestOutputApk Condition="'$(AndroidManifestSkippedExecution)' == 'true'" Include="%(AndroidManifestMergedManifest.ApkOutputFile)" />
+      
+      <!-- Filter a list of exported per-manifest .java sources -->
       <AndroidManifestOutputResourceConstantSourceFiles Include="@(AndroidManifestOutputFiles)" Condition="'%(Extension)' == '.java'" />
     </ItemGroup>
 

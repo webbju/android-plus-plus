@@ -52,13 +52,14 @@
     <Compile Include="Android\AndroidSettings.cs" />
     <Compile Include="DebugEngineConstants.cs" />
     <Compile Include="GNU\GnuObjdump.cs" />
+    <Compile Include="IUiDebugLaunchService.cs" />
     <Compile Include="Java\JdbClient.cs" />
     <Compile Include="Java\JdbSetup.cs" />
     <Compile Include="LaunchConfiguration.cs" />
-    <Compile Include="LoggingUtils.cs" />
-    <Compile Include="PathUtils.cs" />
+    <Compile Include="Utils\LoggingUtils.cs" />
+    <Compile Include="Utils\PathUtils.cs" />
     <Compile Include="Processes\AsyncRedirectProcess.cs" />
-    <Compile Include="ComUtils.cs" />
+    <Compile Include="Utils\ComUtils.cs" />
     <Compile Include="GDB\GdbClient.cs" />
     <Compile Include="GDB\MI\MiBreakpoint.cs" />
     <Compile Include="GDB\MI\MiVariable.cs" />

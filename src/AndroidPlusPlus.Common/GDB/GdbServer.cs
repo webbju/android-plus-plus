@@ -156,7 +156,7 @@ namespace AndroidPlusPlus.Common
 
         try
         {
-          using (SyncRedirectProcess checkGdbServer = AndroidAdb.AdbCommand (m_gdbSetup.Process.HostDevice, "shell", string.Format ("ls {0}/lib/gdbserver", m_gdbSetup.Process.InternalCacheDirectory)))
+          using (SyncRedirectProcess checkGdbServer = AndroidAdb.AdbCommand (m_gdbSetup.Process.HostDevice, "shell", string.Format ("ls {0}/gdbserver", m_gdbSetup.Process.InternalNativeLibrariesDirectory)))
           {
             if (checkGdbServer.StartAndWaitForExit (1000) != 0)
             {
@@ -197,7 +197,7 @@ namespace AndroidPlusPlus.Common
         // will always refer to the zygote. This hack uses the sand-boxed 'user' to try all combinations.
         // 
 
-        AndroidProcess [] activeDeviceProcesses = m_gdbSetup.Process.HostDevice.GetProcesses ();
+        AndroidProcess [] activeDeviceProcesses = m_gdbSetup.Process.HostDevice.GetAllProcesses ();
 
         List <AndroidProcess> activeGdbProcesses = new List<AndroidProcess> ();
 

@@ -167,12 +167,14 @@ namespace AndroidPlusPlus.Common
         "/system/lib/libandroid.so",
         "/system/lib/libandroid_runtime.so",
         "/system/lib/libart.so",
+        "/system/lib/libbinder.so",
         "/system/lib/libc.so",
         "/system/lib/libdvm.so",
         "/system/lib/libEGL.so",
         "/system/lib/libGLESv1_CM.so",
         "/system/lib/libGLESv2.so",
-        "/system/lib/libGLESv3.so"
+        //"/system/lib/libGLESv3.so"
+        "/system/lib/libutils.so",
       };
 
       foreach (string binary in remoteBinaries)
@@ -224,11 +226,35 @@ namespace AndroidPlusPlus.Common
 
       try
       {
-        string libraryCachePath = Path.Combine (CacheSysRoot, Process.InternalCacheDirectory.Substring (1), "lib");
+        string libraryCachePath = Path.Combine (CacheSysRoot, Process.InternalNativeLibrariesDirectory.Substring (1));
 
         Directory.CreateDirectory (libraryCachePath);
 
-        Process.HostDevice.Pull (string.Format ("{0}/lib/", Process.InternalCacheDirectory), libraryCachePath);
+        if (Process.HostDevice.SdkVersion == AndroidSettings.VersionCode.L_PREVIEW)
+        {
+          // 
+          // On Android L, Google have broken pull permissions to 'app-lib' content so we use cat to avoid this.
+          // 
+
+          string [] libraries = Process.HostDevice.Shell ("ls", Process.InternalNativeLibrariesDirectory).Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+          foreach (string lib in libraries)
+          {
+            string remoteLib = Process.InternalNativeLibrariesDirectory + "/" + lib;
+
+            string temporaryStorage = "/data/local/tmp/" + lib;
+
+            Process.HostDevice.Shell ("cat", string.Format ("{0} > {1}", remoteLib, temporaryStorage));
+
+            Process.HostDevice.Pull (temporaryStorage, libraryCachePath);
+
+            Process.HostDevice.Shell ("rm", temporaryStorage);
+          }
+        }
+        else
+        {
+          Process.HostDevice.Pull (Process.InternalNativeLibrariesDirectory, libraryCachePath);
+        }
 
         LoggingUtils.Print (string.Format ("[GdbSetup] Pulled application libraries from device/emulator."));
 

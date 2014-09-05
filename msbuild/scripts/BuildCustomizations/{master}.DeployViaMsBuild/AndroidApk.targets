@@ -115,14 +115,10 @@
     -->
 
     <ItemGroup>
-      <_UnsignedOutputFile
-        Condition="'@(AndroidApk)' != ''" 
-        Include="%(AndroidApk.UnsignedOutputFile)"
-      />
+      <_UnsignedOutputFile Include="$(IntDir)bin\$(ProjectName)-$(Configuration.Replace(' ','_'))-Unsigned.apk" />
     </ItemGroup>
 
     <Copy 
-      Condition="'@(AndroidManifestOutputApk)' != ''" 
       SourceFiles="@(AndroidManifestOutputApk)" 
       DestinationFiles="@(_UnsignedOutputFile)">
       <Output TaskParameter="CopiedFiles" ItemName="AndroidApkUnsignedOutputFile" />

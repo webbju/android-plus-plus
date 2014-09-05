@@ -71,7 +71,7 @@
 
       <Verbose Condition="'%(AndroidDalvik.Verbose)' == ''">false</Verbose>
 
-      <OutputFile Condition="'%(AndroidDalvik.OutputFile)' == ''">$(ProjectDir)$(IntDir)bin\classes.dex</OutputFile>
+      <OutputFile Condition="'%(AndroidDalvik.OutputFile)' == ''"></OutputFile>
 
       <!--
         Default TrackedToolTask properties.

@@ -89,9 +89,9 @@ namespace AndroidPlusPlus.Common
 
     private AsyncRedirectProcess m_gdbClientInstance = null;
 
-    private List<string> m_gdbSupportedClientMiFeatures = new List<string> ();
+    private HashSet<string> m_gdbSupportedClientMiFeatures = new HashSet<string> ();
 
-    private List<string> m_gdbSupportedTargetMiFeatures = new List<string> ();
+    private HashSet<string> m_gdbSupportedTargetMiFeatures = new HashSet<string> ();
 
     private Dictionary<uint, AsyncCommandData> m_asyncCommandData = new Dictionary<uint,AsyncCommandData> ();
 
@@ -651,7 +651,12 @@ namespace AndroidPlusPlus.Common
 
     public string GetSetting (string setting)
     {
-      LoggingUtils.Print (string.Format ("[GdbClient] GetSetting: " + setting));
+      LoggingUtils.Print (string.Format ("[GdbClient] GetSetting ({0})", setting));
+
+      if (string.IsNullOrWhiteSpace (setting))
+      {
+        throw new ArgumentNullException ("setting");
+      }
 
       string command = string.Format ("-gdb-show {0}", setting);
 
@@ -673,7 +678,12 @@ namespace AndroidPlusPlus.Common
 
     public void SetSetting (string setting, string value, bool appendToExisting)
     {
-      LoggingUtils.Print (string.Format ("[GdbClient] SetSetting: " + setting + "=" + value));
+      LoggingUtils.Print (string.Format ("[GdbClient] SetSetting ({0}): {1}", setting, value));
+
+      if (string.IsNullOrWhiteSpace (setting))
+      {
+        throw new ArgumentNullException ("setting");
+      }
 
       if (appendToExisting)
       {
@@ -697,7 +707,7 @@ namespace AndroidPlusPlus.Common
             }
           }
 
-          if (appendToExisting)
+          if (appendToExisting && !string.IsNullOrWhiteSpace (value))
           {
             // Prefix the new value so it takes precedence. This is usually what's intended.
             value = string.Join (";", new string [] { value, existingSettingValue });
@@ -723,6 +733,11 @@ namespace AndroidPlusPlus.Common
       // 
 
       LoggingUtils.Print (string.Format ("[GdbClient] SendCommand: {0}", command));
+
+      if (string.IsNullOrWhiteSpace (command))
+      {
+        throw new ArgumentNullException ("command");
+      }
 
       MiResultRecord syncResultRecord = null;
 
@@ -779,6 +794,11 @@ namespace AndroidPlusPlus.Common
       // 
 
       LoggingUtils.PrintFunction ();
+
+      if (string.IsNullOrWhiteSpace (command))
+      {
+        throw new ArgumentNullException ("command");
+      }
 
       if (m_gdbClientInstance == null)
       {

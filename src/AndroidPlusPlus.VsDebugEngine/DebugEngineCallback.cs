@@ -22,23 +22,41 @@ namespace AndroidPlusPlus.VsDebugEngine
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  interface DebugEngineCallbackInterface
+  public delegate int DebuggerEventDelegate (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  public interface DebugEngineCallbackInterface
   {
-    void OnAsyncBreakComplete (DebuggeeThread thread);
-    void OnBreakpoint (DebuggeeThread thread, ReadOnlyCollection<object> clients, uint address);
-    void OnBreakpointBound (DebuggeeBreakpointPending pendingBreakpoint, uint address);
-    void OnError (int errorCode);
-    void OnException (DebuggeeThread thread, uint code);
-    void OnLoadComplete(DebuggeeThread thread);
-    void OnModuleLoad (DebuggeeModule module);
-    void OnModuleUnload (DebuggeeModule module);
-    void OnOutputString (string outputString);
-    void OnProcessExit (uint exitCode);
-    void OnProgramDestroy (uint exitCode);
-    void OnStepComplete (DebuggeeThread thread);
-    void OnSymbolSearch (DebuggeeModule module, string status, uint dwStatsFlags);
-    void OnThreadExit (DebuggeeThread thread, uint exitCode);
-    void OnThreadStart (DebuggeeThread thread);
+    int OnBreakpoint (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+
+    int OnBreakpointBound (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+
+    int OnBreakpointError (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+
+    int OnError (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+
+    int OnException (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+
+    int OnLoadComplete (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+
+    int OnModuleLoad (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+
+    int OnOutputString (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+
+    int OnProgramCreate (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+
+    int OnProgramDestroy (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+
+    int OnStepComplete (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+
+    int OnSymbolSearch (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+
+    int OnThreadCreate (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+
+    int OnThreadDestroy (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
   }
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -56,6 +74,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private readonly CLangDebuggerCallback m_cLangEventCallback;
 
+    private readonly Dictionary<Guid, DebuggerEventDelegate> m_debuggerCallback;
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -67,6 +87,36 @@ namespace AndroidPlusPlus.VsDebugEngine
       m_ad7EventCallback = ad7EventCallback;
 
       m_cLangEventCallback = new CLangDebuggerCallback ();
+
+      m_debuggerCallback = new Dictionary<Guid, DebuggerEventDelegate> ();
+
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.BreakpointHit)), OnBreakpoint);
+
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.BreakpointBound)), OnBreakpointBound);
+
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.BreakpointError)), OnBreakpointError);
+
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.Error)), OnError);
+
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.Exception)), OnException);
+
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.LoadComplete)), OnLoadComplete);
+
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.ModuleLoad)), OnModuleLoad);
+
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.OutputString)), OnOutputString);
+
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.ProcessCreate)), OnProgramCreate);
+
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.ProgramDestroy)), OnProgramDestroy);
+
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.StepComplete)), OnStepComplete);
+
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.SymbolSearch)), OnSymbolSearch);
+
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.ThreadCreate)), OnThreadCreate);
+
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.ThreadDestroy)), OnThreadDestroy);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -91,14 +141,33 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        int handle = m_cLangEventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
+        DebuggerEventDelegate eventCallback;
+
+        int handle = DebugEngineConstants.E_NOTIMPL;
+
+        if (m_debuggerCallback.TryGetValue (riidEvent, out eventCallback))
+        {
+          handle = eventCallback (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
+        }
 
         if (handle != DebugEngineConstants.E_NOTIMPL)
         {
-          return handle;
+          LoggingUtils.RequireOk (handle);
+        }
+
+        handle = m_cLangEventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
+
+        if (handle != DebugEngineConstants.E_NOTIMPL)
+        {
+          LoggingUtils.RequireOk (handle);
         }
 
         handle = m_ad7EventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
+
+        if (handle != DebugEngineConstants.E_NOTIMPL)
+        {
+          LoggingUtils.RequireOk (handle);
+        }
 
         // 
         // (Managed Code) It is strongly advised that ReleaseComObject be invoked on the various interfaces that are passed to IDebugEventCallback2::Event.
@@ -140,40 +209,51 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void OnAsyncBreakComplete (DebuggeeThread thread)
+    public int OnAsyncBreakComplete (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      return DebugEngineConstants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void OnBreakpoint (DebuggeeThread thread, ReadOnlyCollection<object> clients, uint address)
+    public int OnBreakpoint (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      return DebugEngineConstants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void OnBreakpointBound (DebuggeeBreakpointPending pendingBreakpoint, uint address)
+    public int OnBreakpointBound (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      return DebugEngineConstants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void OnError (int errorCode)
+    public int OnBreakpointError (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
+    {
+      LoggingUtils.PrintFunction ();
+
+      return DebugEngineConstants.E_NOTIMPL;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public int OnError (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
       // 
       // IDebugErrorEvent2 is used to report error messages to the user when something goes wrong in the debug engine.
@@ -181,128 +261,117 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      return DebugEngineConstants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void OnException (DebuggeeThread thread, uint code)
+    public int OnException (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      return DebugEngineConstants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void OnLoadComplete (DebuggeeThread thread)
+    public int OnLoadComplete (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      return DebugEngineConstants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void OnModuleLoad (DebuggeeModule module)
+    public int OnModuleLoad (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      return DebugEngineConstants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void OnModuleUnload (DebuggeeModule module)
+    public int OnOutputString (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      return DebugEngineConstants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void OnOutputString (string outputString)
+    public int OnProgramCreate (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      return DebugEngineConstants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void OnProcessExit (uint exitCode)
+    public int OnProgramDestroy (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      return DebugEngineConstants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void OnProgramDestroy (uint exitCode)
+    public int OnStepComplete (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      return DebugEngineConstants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void OnStepComplete (DebuggeeThread thread)
+    public int OnSymbolSearch (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      return DebugEngineConstants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void OnSymbolSearch (DebuggeeModule module, string status, uint dwStatsFlags)
+    public int OnThreadCreate (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
+      return DebugEngineConstants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void OnThreadExit (DebuggeeThread thread, uint exitCode)
+    public int OnThreadDestroy (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
       LoggingUtils.PrintFunction ();
 
-      throw new NotImplementedException ();
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public void OnThreadStart (DebuggeeThread thread)
-    {
-      LoggingUtils.PrintFunction ();
-
-      throw new NotImplementedException ();
+      return DebugEngineConstants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

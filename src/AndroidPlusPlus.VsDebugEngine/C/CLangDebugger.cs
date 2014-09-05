@@ -44,6 +44,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private Dictionary<string, uint> m_threadGroupStatus = new Dictionary<string, uint> ();
 
+    private Dictionary<string, Tuple<ulong, ulong, bool>> m_mappedSharedLibraries = new Dictionary<string, Tuple<ulong, ulong, bool>> ();
+
     private readonly LaunchConfiguration m_launchConfiguration;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -70,7 +72,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       string archGdbToolPrefix = string.Empty;
 
-      switch (debugProgram.DebugProcess.NativeProcess.HostDevice.GetProperty ("ro.product.cpu.abi"))
+      string primaryDeviceAbi = debugProgram.DebugProcess.NativeProcess.HostDevice.GetProperty ("ro.product.cpu.abi");
+
+      switch (primaryDeviceAbi)
       {
         case "armeabi":
         case "armeabi-v7a":
@@ -128,6 +132,8 @@ namespace AndroidPlusPlus.VsDebugEngine
         }
       }
 
+      Engine.Broadcast (new DebugEngineEvent.UiDebugLaunchServiceEvent (DebugEngineEvent.UiDebugLaunchServiceEvent.EventType.LogStatus, string.Format ("Configuring GDB for '{0}' target...", primaryDeviceAbi)), null, null);
+
       // 
       // Android++ bundles its own copies of GDB to get round various NDK issues. Search for these.
       // 
@@ -140,15 +146,21 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       string contribGdbCommandFilePattern = string.Format ("{0}-gdb.cmd", archGdbToolPrefix);
 
-      if (archIs64Bit && Environment.Is64BitOperatingSystem)
+      bool forceNdkR9dClient = (debugProgram.DebugProcess.NativeProcess.HostDevice.SdkVersion <= AndroidSettings.VersionCode.JELLY_BEAN);
+
+      if (/*archIs64Bit && */Environment.Is64BitOperatingSystem)
       {
-        contribGdbCommandPath = Path.Combine (androidPlusPlusRoot, "contrib", "gdb-7.6.0-ndk64-r10");
+        string clientIdentifier = (forceNdkR9dClient) ? "7.3.1-x86_64-ndk_r9d" : "7.6.0-x86_64-ndk_r10_patched";
+
+        contribGdbCommandPath = Path.Combine (androidPlusPlusRoot, "contrib", "redist-gdb-python-x86_64", clientIdentifier);
 
         contribGdbMatches = Directory.GetFiles (contribGdbCommandPath, contribGdbCommandFilePattern, SearchOption.TopDirectoryOnly);
       }
       else
       {
-        contribGdbCommandPath = Path.Combine (androidPlusPlusRoot, "contrib", "gdb-7.6.0-ndk32-r10");
+        string clientIdentifier = (forceNdkR9dClient) ? "7.3.1-x86-ndk_r9d" : "7.6.0-x86-ndk_r10";
+
+        contribGdbCommandPath = Path.Combine (androidPlusPlusRoot, "contrib", "redist-gdb-python-x86", clientIdentifier);
 
         contribGdbMatches = Directory.GetFiles (contribGdbCommandPath, contribGdbCommandFilePattern, SearchOption.TopDirectoryOnly);
       }
@@ -210,7 +222,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (m_gdbSetup == null)
       {
-        throw new InvalidOperationException ("Could not evaluate GDB setup instance.");
+        throw new InvalidOperationException ("Could not evaluate a suitable GDB instance. Ensure you have the correct NDK delpoyment for your system's architecture.");
       }
 
       if (m_launchConfiguration != null)
@@ -614,6 +626,10 @@ namespace AndroidPlusPlus.VsDebugEngine
               // Process any pending requests to refresh registered breakpoints.
               // 
 
+#if false
+              RefreshSharedLibraries ();
+#endif
+
               Engine.BreakpointManager.RefreshBreakpoints ();
 
               if (true)
@@ -953,6 +969,62 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    public void RefreshSharedLibraries ()
+    {
+      // 
+      // Retrieve a list of actively mapped shared libraries.
+      // - This also triggers GDB to tell us about libraries which it may have missed.
+      // 
+
+      try
+      {
+        string command = string.Format ("-interpreter-exec console \"info sharedlibrary\"");
+
+        MiResultRecord resultRecord = GdbClient.SendCommand (command);
+
+        MiResultRecord.RequireOk (resultRecord, command);
+
+        string pattern = "(?<from>0x[0-9a-fA-F]+)[ ]+(?<to>0x[0-9a-fA-F]+)[ ]+(?<syms>Yes|No)[ ]+(?<lib>[^ $]+)";
+
+        Regex regExMatcher = new Regex (pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+        for (int i = 0; i < resultRecord.Records.Count; ++i)
+        {
+          MiStreamRecord record = resultRecord.Records [i];
+
+          if (!record.Stream.StartsWith ("0x"))
+          {
+            continue; // early rejection.
+          }
+
+          string unescapedStream = Regex.Unescape (record.Stream);
+
+          Match regExLineMatch = regExMatcher.Match (unescapedStream);
+
+          if (regExLineMatch.Success)
+          {
+            ulong from = ulong.Parse (regExLineMatch.Result ("${from}").Substring (2), NumberStyles.HexNumber);
+
+            ulong to = ulong.Parse (regExLineMatch.Result ("${to}").Substring (2), NumberStyles.HexNumber);
+
+            bool syms = regExLineMatch.Result ("${syms}") == "Yes";
+
+            string lib = regExLineMatch.Result ("${lib}").Replace ("\r", "").Replace ("\n", "");
+
+            m_mappedSharedLibraries [lib] = new Tuple<ulong, ulong, bool> (from, to, syms);
+          }
+        }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public DebuggeeCodeContext GetCodeContextForLocation (string location)
     {
       try
@@ -979,52 +1051,50 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         MiResultRecord.RequireOk (resultRecord, command);
 
-        string [] infoPatterns = new string []
-        {
-          "Line (?<line>[0-9]+) of \"(?<file>[^\\\"]+?)\" starts at address (?<start>[^ ]+) [<]?(?<startsym>[^>]+)[>]? and ends at (?<end>[^ ]+) [<]?(?<endsym>[^>.]+)[>]?",
-          "Line (?<line>[0-9]+) of \"(?<file>[^\\\"]+?)\" is at address (?<start>[^ ]+) [<]?(?<startsym>[^>]+)[>]? but contains no code"
-        };
+        string pattern = "Line (?<line>[0-9]+) of \"(?<file>[^\\\"]+?)\" starts at address (?<start>[^ ]+) [<]?(?<startsym>[^>]+)[>]? (but contains no code|and ends at (?<end>[^ ]+) [<]?(?<endsym>[^>.]+)[>]?)";
 
-        foreach (string pattern in infoPatterns)
-        {
-          Regex regExMatcher = new Regex (pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        Regex regExMatcher = new Regex (pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-          foreach (MiStreamRecord record in resultRecord.Records)
+        foreach (MiStreamRecord record in resultRecord.Records)
+        {
+          if (!record.Stream.StartsWith ("Line"))
           {
-            string unescapedStream = Regex.Unescape (record.Stream);
+            continue; // early rejection.
+          }
 
-            Match regExLineMatch = regExMatcher.Match (unescapedStream);
+          string unescapedStream = Regex.Unescape (record.Stream);
 
-            if (regExLineMatch.Success)
-            {
-              string line = regExLineMatch.Result ("${line}");
+          Match regExLineMatch = regExMatcher.Match (unescapedStream);
 
-              string file = regExLineMatch.Result ("${file}");
+          if (regExLineMatch.Success)
+          {
+            string line = regExLineMatch.Result ("${line}");
 
-              string start = regExLineMatch.Result ("${start}");
+            string file = regExLineMatch.Result ("${file}");
 
-              string startsym = regExLineMatch.Result ("${startsym}");
+            string start = regExLineMatch.Result ("${start}");
 
-              string end = regExLineMatch.Result ("${end}");
+            string startsym = regExLineMatch.Result ("${startsym}");
 
-              string endsym = regExLineMatch.Result ("${endsym}");
+            string end = regExLineMatch.Result ("${end}");
 
-              TEXT_POSITION [] documentPositions = new TEXT_POSITION [2];
+            string endsym = regExLineMatch.Result ("${endsym}");
 
-              documentPositions [0].dwLine = uint.Parse (line) - 1;
+            TEXT_POSITION [] documentPositions = new TEXT_POSITION [2];
 
-              documentPositions [0].dwColumn = 0;
+            documentPositions [0].dwLine = uint.Parse (line) - 1;
 
-              documentPositions [1].dwLine = documentPositions [0].dwLine;
+            documentPositions [0].dwColumn = 0;
 
-              documentPositions [1].dwColumn = uint.MaxValue;
+            documentPositions [1].dwLine = documentPositions [0].dwLine;
 
-              DebuggeeAddress startAddress = new DebuggeeAddress (start);
+            documentPositions [1].dwColumn = uint.MaxValue;
 
-              DebuggeeDocumentContext documentContext = new DebuggeeDocumentContext (Engine, file, documentPositions [0], documentPositions [1], DebugEngineGuids.guidLanguageCpp, startAddress);
+            DebuggeeAddress startAddress = new DebuggeeAddress (start);
 
-              return new DebuggeeCodeContext (Engine, documentContext, startAddress);
-            }
+            DebuggeeDocumentContext documentContext = new DebuggeeDocumentContext (Engine, file, documentPositions [0], documentPositions [1], DebugEngineGuids.guidLanguageCpp, startAddress);
+
+            return new DebuggeeCodeContext (Engine, documentContext, startAddress);
           }
         }
       }

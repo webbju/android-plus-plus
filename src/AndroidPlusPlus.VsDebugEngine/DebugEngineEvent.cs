@@ -847,7 +847,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         m_errorIsCritical = critical;
       }
 
-      int IDebugErrorEvent2.GetErrorMessage (enum_MESSAGETYPE [] pMessageType, out string pbstrErrorFormat, out int phrErrorReason, out uint pdwType, out string pbstrHelpFileName, out uint pdwHelpId)
+      public int GetErrorMessage (enum_MESSAGETYPE [] pMessageType, out string pbstrErrorFormat, out int phrErrorReason, out uint pdwType, out string pbstrHelpFileName, out uint pdwHelpId)
       {
         pMessageType [0] = ((m_errorIsCritical) ? enum_MESSAGETYPE.MT_MESSAGEBOX : enum_MESSAGETYPE.MT_OUTPUTSTRING) & enum_MESSAGETYPE.MT_TYPE_MASK;
 
@@ -981,6 +981,33 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
 
     }*/
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    [Guid ("DA9A360F-0380-41EB-8BC8-70996E9072BE")]
+    public sealed class UiDebugLaunchServiceEvent : AsynchronousDebugEvent
+    {
+      public enum EventType
+      {
+        ShowDialog,
+        CloseDialog,
+        LogStatus,
+        LogError,
+      };
+
+      public UiDebugLaunchServiceEvent (EventType type, string message)
+      {
+        Type = type;
+
+        Message = message;
+      }
+
+      public EventType Type { get; private set; }
+
+      public string Message { get; private set; }
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

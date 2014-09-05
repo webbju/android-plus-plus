@@ -29,7 +29,7 @@ namespace AndroidPlusPlus.Common
 
     public enum VersionCode
     {
-      BASE,
+      BASE = 1,
       BASE_1_1,
       CUPCAKE,
       DONUT,
@@ -47,7 +47,9 @@ namespace AndroidPlusPlus.Common
       JELLY_BEAN,
       JELLY_BEAN_MR1,
       JELLY_BEAN_MR2,
-      KITKAT
+      KITKAT,
+      KITKAT_WATCH,
+      L_PREVIEW = KITKAT_WATCH,
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

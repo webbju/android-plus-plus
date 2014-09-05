@@ -29,7 +29,7 @@ namespace AndroidPlusPlus.VsDebugEngine
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class DebuggeeProcess : IDebugProcess3, IDebugProcessSecurity2
+  public class DebuggeeProcess : IDebugProcess2, IDebugProcess3, IDebugProcessSecurity2
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -39,6 +39,11 @@ namespace AndroidPlusPlus.VsDebugEngine
     public class Enumerator : DebugEnumerator<IDebugProcess2, IEnumDebugProcesses2>, IEnumDebugProcesses2
     {
       public Enumerator (List<IDebugProcess2> processes)
+        : base (processes)
+      {
+      }
+
+      public Enumerator (IDebugProcess2 [] processes)
         : base (processes)
       {
       }

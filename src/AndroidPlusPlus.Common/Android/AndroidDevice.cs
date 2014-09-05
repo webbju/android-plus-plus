@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Text;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -28,7 +29,9 @@ namespace AndroidPlusPlus.Common
 
     private Hashtable m_deviceProperties = new Hashtable ();
 
-    private List<AndroidProcess> m_deviceProcesses = new List<AndroidProcess> ();
+    private Dictionary<string, List<uint>> m_deviceProcessesPidsByName = new Dictionary<string, List<uint>> ();
+
+    private Dictionary<uint, AndroidProcess> m_deviceProcessesByPid = new Dictionary<uint, AndroidProcess> ();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -77,9 +80,50 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public AndroidProcess [] GetProcesses ()
+    public AndroidProcess GetProcessFromPid (uint processId)
     {
-      return m_deviceProcesses.ToArray ();
+      AndroidProcess process;
+
+      if (m_deviceProcessesByPid.TryGetValue (processId, out process))
+      {
+        return process;
+      }
+
+      return null;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public AndroidProcess [] GetProcessesFromName (string processName)
+    {
+      List <uint> processPidList;
+
+      List<AndroidProcess> processList = new List<AndroidProcess> ();
+
+      if (m_deviceProcessesPidsByName.TryGetValue (processName, out processPidList))
+      {
+        foreach (uint pid in processPidList)
+        {
+          processList.Add (GetProcessFromPid (pid));
+        }
+      }
+
+      return processList.ToArray ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public AndroidProcess [] GetAllProcesses ()
+    {
+      AndroidProcess [] processes = new AndroidProcess [m_deviceProcessesByPid.Count];
+
+      m_deviceProcessesByPid.Values.CopyTo (processes, 0);
+
+      return processes;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -150,7 +194,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void Install (string filename, bool reinstall)
+    public void Install (string filename, bool reinstall, string installer)
     {
       // 
       // Install applications to internal storage (-l). Apps in /mnt/asec/ and other locations cause 'run-as' to fail regarding permissions.
@@ -158,14 +202,14 @@ namespace AndroidPlusPlus.Common
 
       LoggingUtils.PrintFunction ();
 
+      int exitCode = -1;
+
+      string temporaryStorage = "/data/local/tmp";
+
+      string temporaryStoredFile = temporaryStorage + "/" + Path.GetFileName (filename);
+
       try
       {
-        int exitCode = -1;
-
-        string temporaryStorage = "/data/local/tmp";
-
-        string temporaryStoredFile = temporaryStorage + "/" + Path.GetFileName (filename);
-
         // 
         // Push APK to temporary device/emulator storage.
         // 
@@ -191,7 +235,23 @@ namespace AndroidPlusPlus.Common
         // Run a custom (package managed based) install request, bypassing /mnt/app-asec/ install locations.
         // 
 
-        using (SyncRedirectProcess adbInstallCommand = AndroidAdb.AdbCommand (this, "shell", string.Format ("pm install -f {0} {1}", ((reinstall) ? "-r " : ""), temporaryStoredFile)))
+        StringBuilder installArgumentsBuilder = new StringBuilder ("pm install ");
+
+        installArgumentsBuilder.Append ("-f "); // install package on internal flash. (required for debugging)
+
+        if (reinstall)
+        {
+          installArgumentsBuilder.Append ("-r "); // reinstall an existing app, keeping its data.
+        }
+
+        if (!string.IsNullOrWhiteSpace (installer))
+        {
+          installArgumentsBuilder.Append (string.Format ("-i {0} ", installer));
+        }
+
+        installArgumentsBuilder.Append (temporaryStoredFile);
+
+        using (SyncRedirectProcess adbInstallCommand = AndroidAdb.AdbCommand (this, "shell", installArgumentsBuilder.ToString ()))
         {
           try
           {
@@ -207,6 +267,21 @@ namespace AndroidPlusPlus.Common
             throw new InvalidOperationException ("Installation failed: " + adbInstallCommand.StandardOutput);
           }
         }
+
+        LoggingUtils.Print ("[AndroidDevice] " + filename + " installed successfully.");
+
+        return;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.Print ("[AndroidDevice] " + filename + " installation failed.");
+
+        LoggingUtils.HandleException (e);
+
+        throw;
+      }
+      finally
+      {
 
         // 
         // Clear uploaded APK from temporary storage.
@@ -229,17 +304,7 @@ namespace AndroidPlusPlus.Common
           }
         }
 
-        LoggingUtils.Print ("[AndroidDevice] " + filename + " installed successfully.");
-
-        return;
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.Print ("[AndroidDevice] " + filename + " installation failed.");
-
-        LoggingUtils.HandleException (e);
-
-        throw;
+        LoggingUtils.Print ("[AndroidDevice] Removed temporary file: " + temporaryStoredFile);
       }
     }
 
@@ -331,27 +396,36 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      string deviceGetProperties = Shell ("getprop", "");
+      string getPropOutput = Shell ("getprop", "");
 
-      if (!String.IsNullOrEmpty (deviceGetProperties))
+      if (!String.IsNullOrEmpty (getPropOutput))
       {
-        string [] getPropOutputLines = deviceGetProperties.Replace ("\r", "").Split (new char [] { '\n' });
+        string pattern = @"^\[(?<key>[^\]:]+)\]:[ ]+\[(?<value>[^\]$]+)";
 
-        m_deviceProperties.Clear ();
+        Regex regExMatcher = new Regex (pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        foreach (string line in getPropOutputLines)
+        string [] properties = getPropOutput.Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+        for (int i = 0; i < properties.Length; ++i)
         {
-          if (!String.IsNullOrEmpty (line))
+          if (!properties [i].StartsWith ("["))
           {
-            string [] segments = line.Split (new char [] { ' ' });
+            continue; // early rejection.
+          }
 
-            string propName = segments [0].Trim (new char [] { '[', ']', ':' });
+          string unescapedStream = Regex.Unescape (properties [i]);
 
-            string propValue = segments [1].Trim (new char [] { '[', ']', ':' });
+          Match regExLineMatch = regExMatcher.Match (unescapedStream);
 
-            if ((!String.IsNullOrEmpty (propName)) && (!String.IsNullOrEmpty (propValue)))
+          if (regExLineMatch.Success)
+          {
+            string key = regExLineMatch.Result ("${key}");
+
+            string value = regExLineMatch.Result ("${value}");
+
+            if (!string.IsNullOrWhiteSpace (key))
             {
-              m_deviceProperties.Add (propName, propValue);
+              m_deviceProperties [key] = value;
             }
           }
         }
@@ -380,7 +454,9 @@ namespace AndroidPlusPlus.Common
 
         Regex regExMatcher = new Regex (processesRegExPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        m_deviceProcesses.Clear ();
+        m_deviceProcessesByPid.Clear ();
+
+        m_deviceProcessesPidsByName.Clear ();
 
         for (uint i = 1; i < processesOutputLines.Length; ++i)
         {
@@ -390,9 +466,9 @@ namespace AndroidPlusPlus.Common
 
             string processUser = regExLineMatches.Result ("${user}");
 
-            uint processId = uint.Parse (regExLineMatches.Result ("${pid}"));
+            uint processPid = uint.Parse (regExLineMatches.Result ("${pid}"));
 
-            uint processPid = uint.Parse (regExLineMatches.Result ("${ppid}"));
+            uint processPpid = uint.Parse (regExLineMatches.Result ("${ppid}"));
 
             uint processVsize = uint.Parse (regExLineMatches.Result ("${vsize}"));
 
@@ -406,12 +482,18 @@ namespace AndroidPlusPlus.Common
 
             string processName = regExLineMatches.Result ("${name}");
 
-            if ((!String.IsNullOrEmpty (processName)) && (!String.IsNullOrEmpty (processUser)))
-            {
-              AndroidProcess process = new AndroidProcess (this, processName, processId, processUser);
+            m_deviceProcessesByPid [processPid] = new AndroidProcess (this, processName, processPid, processPpid, processUser);
 
-              m_deviceProcesses.Add (process);
+            List<uint> processPidsList;
+
+            if (!m_deviceProcessesPidsByName.TryGetValue (processName, out processPidsList))
+            {
+              processPidsList = new List<uint> ();
             }
+
+            processPidsList.Add (processPid);
+
+            m_deviceProcessesPidsByName [processName] = processPidsList;
           }
         }
       }
@@ -427,7 +509,28 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public AndroidSettings.VersionCode SdkVersion { get; protected set; }
+    public AndroidSettings.VersionCode SdkVersion 
+    {
+      get
+      {
+        // 
+        // Query device's current SDK level. If it's not an integer (like some custom ROMs) fall-back to ICS.
+        // 
+
+        try
+        {
+          int sdkLevel = int.Parse (GetProperty ("ro.build.version.sdk"));
+
+          return (AndroidSettings.VersionCode) sdkLevel;
+        }
+        catch (Exception e)
+        {
+          LoggingUtils.HandleException (e);
+
+          return AndroidSettings.VersionCode.GINGERBREAD;
+        }
+      }
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

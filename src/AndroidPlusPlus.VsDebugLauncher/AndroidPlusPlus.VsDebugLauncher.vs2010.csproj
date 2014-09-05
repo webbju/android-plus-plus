@@ -81,6 +81,7 @@
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.XML" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
@@ -90,20 +91,21 @@
     </Compile>
     <Compile Include="DebugLauncher.cs" />
     <Compile Include="DebugLauncherX.cs" />
+    <Compile Include="IDebugLauncher.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AndroidPlusPlus.Common\AndroidPlusPlus.Common.vs2010.csproj">
-      <Project>{6D575221-37D1-4C3D-82A5-5FEB632069AA}</Project>
-      <Name>AndroidMT.Common</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="..\Key.snk">
       <Link>Key.snk</Link>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AndroidPlusPlus.Common\AndroidPlusPlus.Common.vs2010.csproj">
+      <Project>{6D575221-37D1-4C3D-82A5-5FEB632069AA}</Project>
+      <Name>AndroidPlusPlus.Common.vs2010</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.Targets" />
   <PropertyGroup>

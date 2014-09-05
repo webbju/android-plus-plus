@@ -47,7 +47,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private readonly Guid m_portGuid;
 
-    private List<DebuggeeProcess> m_debugProcesses;
+    private Dictionary<string, List<uint>> m_deviceProcessesPidsByName;
+
+    private Dictionary<uint, DebuggeeProcess> m_deviceProcessesByPid;
 
     private Dictionary<int, IDebugPortEvents2> m_eventConnectionPoints;
 
@@ -65,7 +67,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       m_portGuid = Guid.NewGuid ();
 
-      m_debugProcesses = new List<DebuggeeProcess> ();
+      m_deviceProcessesPidsByName = new Dictionary<string, List<uint>> ();
+
+      m_deviceProcessesByPid = new Dictionary<uint, DebuggeeProcess> ();
 
       m_eventConnectionPoints = new Dictionary<int, IDebugPortEvents2> ();
     }
@@ -86,7 +90,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private int RefreshProcesses ()
+    public int RefreshProcesses ()
     {
       // 
       // Check which processes are currently running on the target device (port).
@@ -98,13 +102,26 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         m_portDevice.Refresh ();
 
-        AndroidProcess [] activeDeviceProcesses = m_portDevice.GetProcesses ();
+        m_deviceProcessesByPid.Clear ();
 
-        m_debugProcesses.Clear ();
+        m_deviceProcessesPidsByName.Clear ();
 
-        foreach (AndroidProcess process in activeDeviceProcesses)
+        AndroidProcess [] deviceProcesses = m_portDevice.GetAllProcesses ();
+
+        foreach (AndroidProcess process in deviceProcesses)
         {
-          m_debugProcesses.Add (new DebuggeeProcess (this, process));
+          m_deviceProcessesByPid [process.Pid] = new DebuggeeProcess (this, process);
+
+          List<uint> processPids;
+
+          if (!m_deviceProcessesPidsByName.TryGetValue (process.Name, out processPids))
+          {
+            processPids = new List<uint> ();
+          }
+
+          processPids.Add (process.Pid);
+
+          m_deviceProcessesPidsByName [process.Name] = processPids;
         }
 
         return DebugEngineConstants.S_OK;
@@ -115,6 +132,43 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         return DebugEngineConstants.E_FAIL;
       }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public DebuggeeProcess GetProcessFromPid (uint processId)
+    {
+      DebuggeeProcess process;
+
+      if (m_deviceProcessesByPid.TryGetValue (processId, out process))
+      {
+        return process;
+      }
+
+      return null;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public DebuggeeProcess [] GetProcessesFromName (string processName)
+    {
+      List<uint> processPidList;
+
+      List<DebuggeeProcess> processList = new List<DebuggeeProcess> ();
+
+      if (m_deviceProcessesPidsByName.TryGetValue (processName, out processPidList))
+      {
+        foreach (uint pid in processPidList)
+        {
+          processList.Add (GetProcessFromPid (pid));
+        }
+      }
+
+      return processList.ToArray ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -139,12 +193,9 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.RequireOk (RefreshProcesses ());
 
-        List<IDebugProcess2> processes = new List<IDebugProcess2> ();
+        DebuggeeProcess [] processes = new DebuggeeProcess [m_deviceProcessesByPid.Values.Count];
 
-        foreach (DebuggeeProcess process in m_debugProcesses)
-        {
-          processes.Add (process);
-        }
+        m_deviceProcessesByPid.Values.CopyTo (processes, 0);
 
         ppEnum = new DebuggeeProcess.Enumerator (processes);
 
@@ -248,23 +299,28 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           LoggingUtils.RequireOk (RefreshProcesses ());
 
-          foreach (DebuggeeProcess process in m_debugProcesses)
-          {
-            if (process.NativeProcess.Pid == ProcessId.dwProcessId)
-            {
-              ppProcess = process;
+          DebuggeeProcess process = null;
 
-              return DebugEngineConstants.S_OK;
-            }
+          if (!m_deviceProcessesByPid.TryGetValue (ProcessId.dwProcessId, out process))
+          {
+            throw new InvalidOperationException (string.Format ("Could not locate requested process. Pid: {0}", ProcessId.dwProcessId));
           }
+
+          ppProcess = process as IDebugProcess2;
         }
+        else /*if (ProcessId.ProcessIdType == (uint) enum_AD_PROCESS_ID.AD_PROCESS_ID_GUID)*/
+        {
+          throw new NotImplementedException ();
+        }
+
+        return DebugEngineConstants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
-      }
 
-      return DebugEngineConstants.E_FAIL;
+        return DebugEngineConstants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

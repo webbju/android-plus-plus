@@ -73,11 +73,44 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    private static IDebugLauncher s_debugLauncher;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public static IDebugLauncher GetDebugLauncher (IServiceProvider serviceProvider)
+    {
+      if (s_debugLauncher == null)
+      {
+        s_debugLauncher = new DebugLauncher (serviceProvider);
+      }
+
+      return s_debugLauncher;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public bool CanLaunch (DebugLaunchOptions launchOptions, IDictionary <string, string> projectProperties)
     {
       LoggingUtils.PrintFunction ();
 
-      return DebugLauncher.CanLaunch ((int) launchOptions);
+      try
+      {
+        IDebugLauncher debugLauncher = GetDebugLauncher (ServiceProvider);
+
+        return debugLauncher.CanLaunch ((int) launchOptions);
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        VsShellUtilities.ShowMessageBox (ServiceProvider, string.Format ("Failed to launch. Reason:\n\n[Exception] {0}\n", e.Message, e.StackTrace), "Android++ Debugger", OLEMSGICON.OLEMSGICON_CRITICAL, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+      }
+
+      return false;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -88,22 +121,15 @@ namespace AndroidPlusPlus.VsDebugLauncher
     {
       LoggingUtils.PrintFunction ();
 
-#if false
-      // 
-      // Print verbose details of the project being launched.
-      // 
-
-      foreach (KeyValuePair <string, string> projectPropsPair in projectProperties)
-      {
-        LoggingUtils.Print ("[DebugLauncher] Project property: '" + projectPropsPair.Key + "': '" + projectPropsPair.Value + "'");
-      }
-#endif
-
       try
       {
+        IDebugLauncher debugLauncher = GetDebugLauncher (ServiceProvider);
+
+        debugLauncher.PrepareLaunch ();
+
         DebugLaunchSettings debugLaunchSettings = new DebugLaunchSettings (launchOptions);
 
-        Project startupProject = DebugLauncher.GetStartupSolutionProject (ServiceProvider, (Dictionary <string, string>) projectProperties);
+        Project startupProject = GetStartupSolutionProject (ServiceProvider, (Dictionary <string, string>) projectProperties);
 
         if (startupProject == null)
         {
@@ -112,16 +138,16 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
         LoggingUtils.Print ("Launcher startup project: " + startupProject.Name + " (" + startupProject.FullName + ")");
 
+        LaunchConfiguration launchConfig = debugLauncher.GetLaunchConfigurationFromProjectProperties (projectProperties, startupProject);
+
         if (launchOptions.HasFlag (DebugLaunchOptions.NoDebug))
         {
-          debugLaunchSettings = (DebugLaunchSettings) DebugLauncher.StartWithoutDebugging ((int)launchOptions, (Dictionary<string, string>) projectProperties, startupProject);
+          debugLaunchSettings = (DebugLaunchSettings) debugLauncher.StartWithoutDebugging ((int) launchOptions, launchConfig, projectProperties);
         }
         else
         {
-          debugLaunchSettings = (DebugLaunchSettings) DebugLauncher.StartWithDebugging ((int)launchOptions, (Dictionary<string, string>) projectProperties, startupProject);
+          debugLaunchSettings = (DebugLaunchSettings) debugLauncher.StartWithDebugging ((int) launchOptions, launchConfig, projectProperties);
         }
-
-        DebugLauncher.DeployExecutable (debugLaunchSettings, ServiceProvider);
 
         return new IDebugLaunchSettings [] { debugLaunchSettings };
       }
@@ -129,10 +155,82 @@ namespace AndroidPlusPlus.VsDebugLauncher
       {
         LoggingUtils.HandleException (e);
 
-        DebugLauncher.ShowMessageDialog (ServiceProvider, string.Format ("Failed to launch. Reason:\n\n[Exception] {0}\n", e.Message, e.StackTrace));
+        VsShellUtilities.ShowMessageBox (ServiceProvider, string.Format ("Failed to launch. Reason:\n\n[Exception] {0}\n", e.Message, e.StackTrace), "Android++ Debugger", OLEMSGICON.OLEMSGICON_CRITICAL, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
       }
 
       return null;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private static Project GetStartupSolutionProject (IServiceProvider serviceProvider, IDictionary<string, string> projectProperties)
+    {
+      LoggingUtils.PrintFunction ();
+
+      DTE dteService = serviceProvider.GetService (typeof (SDTE)) as DTE;
+
+      Solution solution = dteService.Solution;
+
+      SolutionBuild solutionBuild = solution.SolutionBuild;
+
+      object [] startupProjects = (object []) solutionBuild.StartupProjects;
+
+      Project startupProject = null;
+
+      string startupProjectName = string.Empty;
+
+      if (projectProperties.TryGetValue ("ProjectName", out startupProjectName))
+      {
+        // 
+        // Construct a listing of all the sub-projects in this solution.
+        // 
+
+        List<Project> solutionProjects = new List<Project> ();
+
+        foreach (Project project in solution.Projects)
+        {
+          solutionProjects.Add (project);
+
+          GetProjectSubprojects (project, ref solutionProjects);
+        }
+
+        foreach (Project project in solutionProjects)
+        {
+          if (project.Name.Equals (startupProjectName))
+          {
+            startupProject = project;
+
+            break;
+          }
+        }
+      }
+      else if (startupProjects.Length > 0)
+      {
+        startupProject = startupProjects [0] as Project;
+
+        startupProjectName = startupProject.Name;
+      }
+
+      return startupProject;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private static void GetProjectSubprojects (Project project, ref List<Project> projectListing)
+    {
+      foreach (ProjectItem item in project.ProjectItems)
+      {
+        if (item.SubProject != null)
+        {
+          projectListing.Add (item.SubProject);
+
+          GetProjectSubprojects (item.SubProject, ref projectListing);
+        }
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
