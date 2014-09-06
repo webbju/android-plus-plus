@@ -1,0 +1,28 @@
+
+Version 0.3.x
+
+New functionality:
+
+ - Added a 'changes.txt'.
+ - (Debugger) Added redistributions of GDB 7.3.1 and 7.6 (32 and 64bit).
+ - (Debugger) Added redistributions of Python 2.7.5 (to support a requirement from GDB).
+ - (Debugger) Added some magic GDB version workarounds to allow symbol retrieval on old (pre 4.2) and newer hardware.
+ - (Debugger) Added a new connection pending UI dialog, and fixed majority of launch/connection stalls within Visual Studio.
+
+Fixes/Improvements:
+
+ - (Debugger) Corrected problems when attempting to pull application libraries off a device, especially after Jelly Bean 4.2.
+ - (Debugger) Major reworking of DebugLauncher components to support connection UI and asynchronous installations to device.
+ - (Debugger) Ensured that the user is informed about devices that are affected by the run-as permissions bug.
+ - (Debugger) Refactored retrieval of stack traces to prevent large stalls when switching threads.
+ - (Debugger) Defaulted installer package to Google Play Marketplace (com.android.vending).
+ - (Debugger) Fixed a device's SdkVersion property not being set correctly.
+ - (Debugger) Fixed AndroidSetting.VersionCode using the wrong offset (should start from one, not zero).
+ - (Debugger) Refactored handling and retrieval of device processes based on PID and Name.
+ - (Debugger) Ensured failed installation attempts always delete the copied temporary file.
+ - (Debugger) Added '/system/lib/libbinder.so' and '/system/lib/libutils.so' to default libraries pulled from device.
+ - (Debugger) Added some early-rejection tests prior to most instances of regex testing.
+
+Warnings:
+
+--------------------------------------------------------------------------------------------------------------------------------

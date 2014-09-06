@@ -90,7 +90,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public override List<DebuggeeStackFrame> StackTrace ()
+    public override List<DebuggeeStackFrame> StackTrace (uint depth)
     {
       // 
       // Each thread maintains an internal cache of the last reported stack-trace. This is only cleared when threads are resumed via 'SetRunning(true)'.
@@ -100,7 +100,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        if (m_threadStackFrames.Count == 0)
+        if (m_threadStackFrames.Count < depth)
         {
           uint threadId;
 
@@ -108,27 +108,55 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           m_debugProgram.AttachedEngine.NativeDebugger.RunInterruptOperation (delegate ()
           {
-            string command = string.Format ("-stack-list-frames --thread {0}", threadId);
+            // 
+            // Determine the maximum available stack depth.
+            // 
 
-            MiResultRecord resultRecord = m_debugProgram.AttachedEngine.NativeDebugger.GdbClient.SendCommand (command);
+            string command;
 
-            MiResultRecord.RequireOk (resultRecord, command);
+            MiResultRecord resultRecord;
 
-            if (resultRecord.HasField ("stack"))
+            if (depth == uint.MaxValue)
             {
-              MiResultValueList stackRecord = resultRecord ["stack"] [0] as MiResultValueList;
+              command = string.Format ("-stack-info-depth --thread {0}", threadId);
 
-              for (int i = 0; i < stackRecord.Values.Count; ++i)
+              resultRecord = m_debugProgram.AttachedEngine.NativeDebugger.GdbClient.SendCommand (command);
+
+              MiResultRecord.RequireOk (resultRecord, command);
+
+              depth = resultRecord ["depth"] [0].GetUnsignedInt ();
+            }
+
+            // 
+            // Acquire stack frame information for any levels which we're missing.
+            // 
+
+            if (m_threadStackFrames.Count < depth)
+            {
+              command = string.Format ("-stack-list-frames --thread {0} {1} {2}", threadId, m_threadStackFrames.Count, depth - 1);
+
+              resultRecord = m_debugProgram.AttachedEngine.NativeDebugger.GdbClient.SendCommand (command);
+
+              MiResultRecord.RequireOk (resultRecord, command);
+
+              if (resultRecord.HasField ("stack"))
               {
-                string stackFrameId = m_threadName + "#" + i;
+                MiResultValueList stackRecord = resultRecord ["stack"] [0] as MiResultValueList;
 
-                MiResultValueTuple frameTuple = stackRecord [i] as MiResultValueTuple;
-
-                CLangDebuggeeStackFrame stackFrame = new CLangDebuggeeStackFrame (m_debugProgram.AttachedEngine.NativeDebugger, this, frameTuple, stackFrameId);
-
-                lock (m_threadStackFrames)
+                for (int i = 0; i < stackRecord.Values.Count; ++i)
                 {
-                  m_threadStackFrames.Add (stackFrame);
+                  MiResultValueTuple frameTuple = stackRecord [i] as MiResultValueTuple;
+
+                  uint stackLevel = frameTuple ["level"] [0].GetUnsignedInt ();
+
+                  string stackFrameId = m_threadName + "#" + stackLevel;
+
+                  CLangDebuggeeStackFrame stackFrame = new CLangDebuggeeStackFrame (m_debugProgram.AttachedEngine.NativeDebugger, this, frameTuple, stackFrameId);
+
+                  lock (m_threadStackFrames)
+                  {
+                    m_threadStackFrames.Add (stackFrame);
+                  }
                 }
               }
             }

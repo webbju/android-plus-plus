@@ -492,7 +492,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         CLangDebuggeeThread stackFrameThread = thread as CLangDebuggeeThread;
 
-        List<DebuggeeStackFrame> threadCallStack = stackFrameThread.StackTrace ();
+        List<DebuggeeStackFrame> threadCallStack = stackFrameThread.StackTrace (uint.MaxValue);
 
         List <CODE_PATH> threadCodePaths = new List <CODE_PATH> ();
 

@@ -140,7 +140,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public virtual List<DebuggeeStackFrame> StackTrace ()
+    public virtual List<DebuggeeStackFrame> StackTrace (uint depth)
     {
       throw new NotImplementedException ();
     }
@@ -184,7 +184,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        StackTrace ();
+        StackTrace (uint.MaxValue);
 
         DebuggeeStackFrame [] stackFrames = m_threadStackFrames.ToArray ();
 
@@ -316,12 +316,12 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           propertiesArray [0].bstrLocation = "[External Code]";
 
-          StackTrace ();
+          StackTrace (1); // single level depth
 
-          DebuggeeStackFrame [] stackFrames = m_threadStackFrames.ToArray ();
-
-          foreach (DebuggeeStackFrame stackFrame in stackFrames)
+          if (m_threadStackFrames.Count > 0)
           {
+            DebuggeeStackFrame stackFrame = m_threadStackFrames [0];
+
             FRAMEINFO frameInfo = new FRAMEINFO ();
 
             LoggingUtils.RequireOk (stackFrame.SetFrameInfo (enum_FRAMEINFO_FLAGS.FIF_FUNCNAME, 0, ref frameInfo));
@@ -329,8 +329,6 @@ namespace AndroidPlusPlus.VsDebugEngine
             if (!string.IsNullOrEmpty (frameInfo.m_bstrFuncName))
             {
               propertiesArray [0].bstrLocation = frameInfo.m_bstrFuncName;
-
-              break;
             }
           }
 
