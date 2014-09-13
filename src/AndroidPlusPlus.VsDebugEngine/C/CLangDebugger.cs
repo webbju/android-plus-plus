@@ -211,11 +211,13 @@ namespace AndroidPlusPlus.VsDebugEngine
           m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, gdbMatches [i]);
         }
 
+#if false
         string toolchainSysRoot = Path.GetFullPath (Path.Combine (Path.GetDirectoryName (gdbMatches [i]), ".."));
 
         string pythonGdbScriptsPath = Path.Combine (toolchainSysRoot, "share", "gdb");
 
         m_gdbSetup.GdbToolArguments += " --data-directory " + PathUtils.SantiseWindowsPath (pythonGdbScriptsPath);
+#endif
 
         break;
       }
@@ -805,17 +807,24 @@ namespace AndroidPlusPlus.VsDebugEngine
           {
             case "thread-group-added":
             case "thread-group-started":
-              {
-                // 
-                // A thread group became associated with a running program, either because the program was just started or the thread group was attached to a program.
-                // 
+            {
+              // 
+              // A thread group became associated with a running program, either because the program was just started or the thread group was attached to a program.
+              // 
 
+              try
+              {
                 string threadGroupId = asyncRecord ["id"] [0].GetString ();
 
                 m_threadGroupStatus [threadGroupId] = 0;
-
-                break;
               }
+              catch (Exception e)
+              {
+                LoggingUtils.HandleException (e);
+              }
+
+              break;
+            }
 
             case "thread-group-removed":
             case "thread-group-exited":
@@ -824,11 +833,18 @@ namespace AndroidPlusPlus.VsDebugEngine
               // A thread group is no longer associated with a running program, either because the program has exited, or because it was detached from.
               // 
 
-              string threadGroupId = asyncRecord ["id"] [0].GetString ();
-
-              if (asyncRecord.HasField ("exit-code"))
+              try
               {
-                m_threadGroupStatus [threadGroupId] = asyncRecord ["exit-code"] [0].GetUnsignedInt ();
+                string threadGroupId = asyncRecord ["id"] [0].GetString ();
+
+                if (asyncRecord.HasField ("exit-code"))
+                {
+                  m_threadGroupStatus [threadGroupId] = asyncRecord ["exit-code"] [0].GetUnsignedInt ();
+                }
+              }
+              catch (Exception e)
+              {
+                LoggingUtils.HandleException (e);
               }
 
               break;
@@ -886,9 +902,16 @@ namespace AndroidPlusPlus.VsDebugEngine
               // Informs that the selected thread was changed as result of the last command.
               // 
 
-              uint threadId = asyncRecord ["id"] [0].GetUnsignedInt ();
+              try
+              {
+                uint threadId = asyncRecord ["id"] [0].GetUnsignedInt ();
 
-              NativeProgram.CurrentThreadId = threadId;
+                NativeProgram.CurrentThreadId = threadId;
+              }
+              catch (Exception e)
+              {
+                LoggingUtils.HandleException (e);
+              }
 
               break;
             }
@@ -956,7 +979,16 @@ namespace AndroidPlusPlus.VsDebugEngine
             case "breakpoint-modified":
             case "breakpoint-deleted":
             {
-              throw new NotImplementedException ();
+              try
+              {
+                Engine.BreakpointManager.SetDirty ();
+              }
+              catch (Exception e)
+              {
+                LoggingUtils.HandleException (e);
+              }
+
+              break;
             }
           }
 

@@ -44,7 +44,7 @@ namespace AndroidPlusPlus.Common
 
       string deviceDir = Process.HostDevice.ID.Replace (':', '-');
 
-      CacheDirectory = string.Format (@"{0}\Android++\Cache\{1}\{2}", Environment.GetFolderPath (Environment.SpecialFolder.ApplicationData), deviceDir, Process.Name);
+      CacheDirectory = string.Format (@"{0}\Android++\Cache\{1}\{2}", Environment.GetFolderPath (Environment.SpecialFolder.LocalApplicationData), deviceDir, Process.Name);
 
       Directory.CreateDirectory (CacheDirectory);
 

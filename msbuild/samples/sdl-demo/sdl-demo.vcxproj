@@ -11,16 +11,22 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
+    <ProjectName>sdl-demo</ProjectName>
     <ProjectGuid>{10672DF8-45F5-48DE-B903-5B8DDFCCFE16}</ProjectGuid>
     <RootNamespace>sdldemo</RootNamespace>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++'" Label="Configuration">
+    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\</IntDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\debug\</OutDir>
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++'" Label="Configuration">
+    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\</IntDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\release\</OutDir>
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -53,13 +59,10 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SystemLibraryDependencies>dl;GLESv1_CM;GLESv2;%(SystemLibraryDependencies)</SystemLibraryDependencies>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>
-      </AdditionalDependencies>
+      <AdditionalDependencies></AdditionalDependencies>
       <AdditionalLibraries>SDL2</AdditionalLibraries>
     </Link>
     <AndroidManifest>
-      <IncludeJarOrZip>
-      </IncludeJarOrZip>
       <IncludeRawAssetsDirectory>$(ProjectDir)assets</IncludeRawAssetsDirectory>
     </AndroidManifest>
     <AndroidJava />
@@ -70,6 +73,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>contrib\sdl\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -77,13 +81,10 @@
       <OptimizeReferences>true</OptimizeReferences>
       <SystemLibraryDependencies>dl;GLESv1_CM;GLESv2;%(SystemLibraryDependencies)</SystemLibraryDependencies>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>
-      </AdditionalDependencies>
+      <AdditionalDependencies></AdditionalDependencies>
       <AdditionalLibraries>SDL2</AdditionalLibraries>
     </Link>
     <AndroidManifest>
-      <IncludeJarOrZip>
-      </IncludeJarOrZip>
       <IncludeRawAssetsDirectory>$(ProjectDir)assets</IncludeRawAssetsDirectory>
     </AndroidManifest>
     <AndroidJava />
@@ -103,9 +104,7 @@
   </ItemGroup>
   <ItemGroup>
     <AndroidJava Include="contrib\sdl\src\main\android\SDLActivity.java" />
-    <AndroidJava Include="src\DemoActivity.java">
-      <OutputCommandLine Condition="'$(Configuration)|$(Platform)'=='Debug|Android++'">true</OutputCommandLine>
-    </AndroidJava>
+    <AndroidJava Include="src\DemoActivity.java" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

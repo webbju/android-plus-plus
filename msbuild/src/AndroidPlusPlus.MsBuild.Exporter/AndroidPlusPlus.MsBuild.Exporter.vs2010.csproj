@@ -34,8 +34,8 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\build\vs2010\bin\$(Configuration)</OutputPath>
-    <BaseIntermediateOutputPath>..\..\build\vs2010\obj\$(Configuration)</BaseIntermediateOutputPath>
+    <OutputPath>..\..\build\bin\win32\vs10.0\debug</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\obj\win32\vs10.0\debug\$(AssemblyName)</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -45,8 +45,8 @@
     <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\build\vs2010\bin\$(Configuration)</OutputPath>
-    <BaseIntermediateOutputPath>..\..\build\vs2010\obj\$(Configuration)</BaseIntermediateOutputPath>
+    <OutputPath>..\..\build\bin\win32\vs10.0\release</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\obj\win32\vs10.0\release\$(AssemblyName)</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>

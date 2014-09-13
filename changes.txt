@@ -1,9 +1,19 @@
 
-Version 0.3.x
+Version 0.3.1
+
+Fixes/Improvements:
+
+ - (Debugger) Switched to caching sysroot files and logging to the user's 'local' (rather than 'roaming') application data directory.
+ - (Debugger) Fixed an issue exclusive to VS2013 where the 'ProjectDir' property wasn't available.
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+Version 0.3.0
 
 New functionality:
 
  - Added a 'changes.txt'.
+ - Added support for JDK 1.7 (tested with 1.7.0_67)
  - (Debugger) Added redistributions of GDB 7.3.1 and 7.6 (32 and 64bit).
  - (Debugger) Added redistributions of Python 2.7.5 (to support a requirement from GDB).
  - (Debugger) Added some magic GDB version workarounds to allow symbol retrieval on old (pre 4.2) and newer hardware.
@@ -24,5 +34,7 @@ Fixes/Improvements:
  - (Debugger) Added some early-rejection tests prior to most instances of regex testing.
 
 Warnings:
+
+ - Earlier (pre-1.7.0_67) versions of JDK 1.7 may experience problems connecting and debugging targets. Use JDK 1.6 or upgrade to resolve.
 
 --------------------------------------------------------------------------------------------------------------------------------

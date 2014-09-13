@@ -56,11 +56,44 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    private static IDebugLauncher s_debugLauncher;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public static IDebugLauncher GetDebugLauncher (IServiceProvider serviceProvider)
+    {
+      if (s_debugLauncher == null)
+      {
+        s_debugLauncher = new DebugLauncher (serviceProvider);
+      }
+
+      return s_debugLauncher;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public override bool CanLaunch (DebugLaunchOptions launchOptions)
     {
       LoggingUtils.PrintFunction ();
 
-      return DebugLauncher.CanLaunch ((int) launchOptions);
+      try
+      {
+        IDebugLauncher debugLauncher = GetDebugLauncher (ServiceProvider);
+
+        return debugLauncher.CanLaunch ((int) launchOptions);
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        VsShellUtilities.ShowMessageBox (ServiceProvider, string.Format ("Failed to launch. Reason:\n\n[Exception] {0}\n", e.Message, e.StackTrace), "Android++ Debugger", OLEMSGICON.OLEMSGICON_CRITICAL, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+      }
+
+      return false;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -71,29 +104,37 @@ namespace AndroidPlusPlus.VsDebugLauncher
     {
       LoggingUtils.PrintFunction ();
 
-      DebugLaunchSettings debugLaunchSettings = null;
-
       try
       {
+        IDebugLauncher debugLauncher = GetDebugLauncher (ServiceProvider);
+
+        debugLauncher.PrepareLaunch ();
+
+        DebugLaunchSettings debugLaunchSettings;
+
         Dictionary<string, string> projectProperties = DebuggerProperties.ProjectPropertiesToDictionary ();
+
+        LaunchConfiguration launchConfig = debugLauncher.GetLaunchConfigurationFromProjectProperties (projectProperties);
 
         if (launchOptions.HasFlag (DebugLaunchOptions.NoDebug))
         {
-          debugLaunchSettings = (DebugLaunchSettings) DebugLauncher.StartWithoutDebugging ((int) launchOptions, projectProperties);
+          debugLaunchSettings = (DebugLaunchSettings) debugLauncher.StartWithoutDebugging ((int) launchOptions, launchConfig, projectProperties);
         }
         else
         {
-          debugLaunchSettings = (DebugLaunchSettings) DebugLauncher.StartWithDebugging ((int) launchOptions, projectProperties);
+          debugLaunchSettings = (DebugLaunchSettings) debugLauncher.StartWithDebugging ((int) launchOptions, launchConfig, projectProperties);
         }
+
+        return new IDebugLaunchSettings [] { debugLaunchSettings };
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        DebugLauncher.ShowErrorDialog ((IServiceProvider) ServiceProvider, string.Format ("Debugging failed to launch, encountered exception: {0}", e.Message));
+        VsShellUtilities.ShowMessageBox (ServiceProvider, string.Format ("Failed to launch. Reason:\n\n[Exception] {0}\n", e.Message, e.StackTrace), "Android++ Debugger", OLEMSGICON.OLEMSGICON_CRITICAL, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
       }
 
-      return new IDebugLaunchSettings [] { debugLaunchSettings };
+      return null;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

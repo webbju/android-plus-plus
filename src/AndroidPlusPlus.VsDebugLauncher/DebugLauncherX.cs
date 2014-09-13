@@ -127,7 +127,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
         debugLauncher.PrepareLaunch ();
 
-        DebugLaunchSettings debugLaunchSettings = new DebugLaunchSettings (launchOptions);
+        DebugLaunchSettings debugLaunchSettings;
 
         Project startupProject = GetStartupSolutionProject (ServiceProvider, (Dictionary <string, string>) projectProperties);
 

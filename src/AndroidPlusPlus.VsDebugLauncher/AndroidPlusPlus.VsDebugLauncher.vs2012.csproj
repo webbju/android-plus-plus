@@ -76,6 +76,7 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xaml" />
     <Reference Include="WindowsBase" />
@@ -86,6 +87,7 @@
     </Compile>
     <Compile Include="DebugLauncher.cs" />
     <Compile Include="DebugLauncherXI.cs" />
+    <Compile Include="IDebugLauncher.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>

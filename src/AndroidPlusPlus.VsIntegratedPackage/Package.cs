@@ -299,7 +299,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
       DateTime logTime = DateTime.Now;
 
-      string traceLog = string.Format (@"{0}\Android++\{1:D4}-{2:D2}-{3:D2}.log", Environment.GetFolderPath (Environment.SpecialFolder.ApplicationData), logTime.Year, logTime.Month, logTime.Day);
+      string traceLog = string.Format (@"{0}\Android++\{1:D4}-{2:D2}-{3:D2}.log", Environment.GetFolderPath (Environment.SpecialFolder.LocalApplicationData), logTime.Year, logTime.Month, logTime.Day);
 
       Trace.WriteLine ("[Package] Trace Log: " + traceLog);
 

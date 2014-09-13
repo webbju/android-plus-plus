@@ -42,12 +42,14 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\AndroidPlusPlus.Common\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="C\CLangDebuggeeBreakpointBound.cs" />
+    <Compile Include="C\CLangDebuggeeBreakpointError.cs" />
     <Compile Include="C\CLangDebuggeeBreakpointPending.cs" />
     <Compile Include="C\CLangDebuggeeDisassemblyStream.cs" />
     <Compile Include="C\CLangDebuggeeMemoryBytes.cs" />
