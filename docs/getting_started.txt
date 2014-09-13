@@ -1,0 +1,54 @@
+
+Prerequisites:
+
+ - Android SDK (http://developer.android.com/sdk/)
+
+ - Android NDK (https://developer.android.com/tools/sdk/ndk/)
+   * Compatibility tested with NDK r9d and r10.
+
+ - Java Development Kit (JDK) 1.6 or 1.7
+   * JDK 1.8 is untested and should be avoided.
+   * If using JDK 1.7, please ensure you are using a revision of at least 67. 
+   * Early revisions of JDK 1.7 tend to cause devices to hang when debugging.
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+Installation:
+
+  1) Create a new pair of environment variables to reference installations of the SDK and NDK.
+      a) Open your computer's 'Control Panel'.
+      b) If viewing items by category, follow 'System and Security' -> 'System'.
+         If viewing items by icon, just click 'System'.
+      c) Click 'Advanced System Settings' (left panel). This should open a 'System Properties' dialog.
+      d) Select the 'Advanced' tab, and click 'Environment Variables'
+      e) Add the following new user or system variables:
+          ANDROID_SDK  <path_to_sdk_root>
+          ANDROID_NDK  <path_to_ndk_root>
+          JAVA_HOME    <path_to_java_jdk_root>
+
+  2) Close all instances of Visual Studio and any Command Prompt windows.
+
+  3) Bootstrap for one (or more) instances of Visual Studio using the 'bootstrap_vs*.cmd' scripts in Android++'s root.
+      - Scripts are separated by version to allow for improved customisation/testing.
+      - More advanced scripts can be found in the '.\bootstrap\' directory. These allow more fine grain control.
+      - Installation of Visual Studio extensions in is a little unpredictable, be sure to uninstall any existing
+        registered extensions before upgrading. Look in '.\bootstrap\' for these scripts.
+      - Improved automation of the upgrade process will follow in later releases.
+
+  4) Build a sample.
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+Building a Sample
+
+  1) Find bundled projects located under '.\msbuild\samples' from the root of your Android++ installation.
+
+  2) For ease, you can use the 'Samples_vs*.cmd' batch files to load the solution in your chosen VS version.
+  
+  3) Build and run the 'hello-gdbserver' project.
+       - 'hello-gdbserver' is a tiny application to force a segmentation fault. This should be picked up by the debugger.
+
+  4) Ensure 'hello-gdbserver' is set as the launch project. This is indicated by the project name being represented in bold.
+       - If it's not bold, right-click the project in the 'Solution Explorer' pane and select 'Set as StartUp Project'.
+
+  5) Run the project. Press F5 or select 'Debug -> Start Debugging'.
