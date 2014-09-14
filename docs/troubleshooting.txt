@@ -4,42 +4,43 @@ Troubleshooting:
   1) The project built successfully, but nothing happens when I try running it.
 
     This issue is likely due to only one part of Android++ being installed correctly.
-    To validate this open Visual Studio and navigate to 'Tools -> Extension Manager'.
-    When installed correctly, there will be a Android++ listing here - if this is missing
-    you should attempt to reinstall the extension by bootstrapping again. For more info,
-    see the Installation section of 'docs/getting_started.txt'.
+    To validate this open Visual Studio and navigate to 'Tools -> Extension Manager'. When installed correctly, there will 
+    be a Android++ listing here - if this is missing you should attempt to reinstall the extension by bootstrapping again. 
 
+    For more info, see the Installation section of './docs/getting_started.txt'.
+
+--------------------------------------------------------------------------------------------------------------------------------
 
   2) "No device/emulator found or connected. Check status via 'adb devices'".
   
-    This error is produced when ADB (Android Debug Bridge) can not locate any attached 
-    devices or emulators. For USB debugging to work it must be enabled under the device's 
-    'Developer options' page located under 'Settings' - if this is missing see (2a).
+    This error is produced when ADB (Android Debug Bridge) can not locate any attached devices or emulators. 
 
-    Ensure that the 'USB debugging' option is ticked under this page. On recent devices, 
-    when this is ticked and a cable connected - you will be prompted to confirm that the 
-    device should be allowed to whitelist the pairing. USB debugging is often complicated 
-    on Android by the requirement for your desktop to have the appropriate USB drivers 
+    For USB debugging to work it must be enabled under the device's 'Developer options' page located 
+    under 'Settings' - if this is missing see (2a).
+
+    Ensure that the 'USB debugging' option is ticked under this page. On recent devices, when this is ticked and a 
+    cable connected - you will be prompted to confirm that the device should be allowed to white-list the pairing. 
+    USB debugging is often complicated on Android by the requirement for your desktop to have the appropriate USB drivers 
     installed. This can be troublesome. 
 
     For more information on using your device for development:
       http://developer.android.com/tools/device.html
-    
-    a) You can enable 'Developer options' by pressing 7 times on the 'Build number' text 
-       displayed at the bottom of the device's 'Settings -> About Phone' page.
 
+    a) You can enable 'Developer options' by pressing 7 times on the 'Build number' text displayed at the bottom 
+    of the device's 'Settings -> About Phone' page.
+
+--------------------------------------------------------------------------------------------------------------------------------
 
   3) "Can not debug native code on this device/emulator."
 
     With the release of Android 4.3, an oversight lead to the inability to debug native code.
-    When configuring a target for debugging, the 'run-as' tool is used in order to spawn the 
-    GDBserver for a particular application. This tool takes a package address as input, in 
-    order for a particular command to be run under correct application permissions. A number 
-    of changes to this tool (and the file-system) have lead to errors whereby package addresses 
-    will not be recognised. This means we can't achieve native debugging.
 
-    Although this issue is patched in 4.4, a number of custom distributions still suffer from 
-    the issue. As of Sept 2014, Samsung appear to not have updated/corrected this issue on a 
-    number of their phones & distributions.
+    When configuring a target for debugging, the 'run-as' tool is used in order to spawn the GDBserver for a particular 
+    application. This tool takes a package address as input, in order for a particular command to be run under correct 
+    application permissions. A number of changes to this tool (and the file-system) have lead to errors whereby package 
+    addresses will not be recognised. This means we can't achieve native debugging.
+
+    Although this issue is patched in 4.4, a number of custom distributions still suffer from the issue. As of Sept 2014, 
+    Samsung appear to not have updated/corrected this issue on a number of their phones & distributions.
 
     More info: https://code.google.com/p/android/issues/detail?id=58373
