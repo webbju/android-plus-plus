@@ -15,3 +15,5 @@ call .\bootstrap\msbuild_install_vs2010.cmd
 call .\bootstrap\extension_install_vs2010.cmd
 
 endlocal
+
+pause
