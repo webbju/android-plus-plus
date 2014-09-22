@@ -1,8 +1,0 @@
-*.sln	text	eol=crlf
-*.suo	eol=crlf
-*.vcproj	text	eol=crlf
-*.vcproj.filters	text	eol=crlf
-*.vcxproj	text	eol=crlf
-*.vcxproj.filters	text	eol=crlf
-*.csproj	text	eol=crlf
-*.csproj.user	text	eol=crlf
