@@ -210,23 +210,18 @@ namespace AndroidPlusPlus.Common
     {
       try
       {
+        LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessStdout: {0}", args.Data));
+
         m_lastOutputTimestamp = Environment.TickCount;
 
-        /*if (!string.IsNullOrWhiteSpace (args.Data))
-        {
-          LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessStdout: {0}", args.Data));
-        }*/
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-      }
-      finally
-      {
         if (m_listener != null)
         {
           m_listener.ProcessStdout (sendingProcess, args);
         }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
       }
     }
 
@@ -238,23 +233,18 @@ namespace AndroidPlusPlus.Common
     {
       try
       {
+        LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessStderr: {0}", args.Data));
+
         m_lastOutputTimestamp = Environment.TickCount;
 
-        /*if (!string.IsNullOrWhiteSpace (args.Data))
-        {
-          LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessStdout: {0}", args.Data));
-        }*/
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-      }
-      finally
-      {
         if (m_listener != null)
         {
           m_listener.ProcessStderr (sendingProcess, args);
         }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
       }
     }
 
@@ -272,18 +262,16 @@ namespace AndroidPlusPlus.Common
 
         m_exitMutex.Set ();
 
+        if (m_listener != null)
+        {
+          m_listener.ProcessExited (sendingProcess, args);
+        }
+
         LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] {0} exited ({1}) in {2} ms", StartInfo.FileName, m_exitCode, Environment.TickCount - m_startTicks));
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
-      }
-      finally
-      {
-        if (m_listener != null)
-        {
-          m_listener.ProcessExited (sendingProcess, args);
-        }
       }
     }
 

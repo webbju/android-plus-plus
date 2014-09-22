@@ -1,4 +1,4 @@
-Copyright (C) 2014 NaturalMotion Limited. Used under licence. 
+Copyright (C) 2013 NaturalMotion Limited. Used under licence. 
 
 Code written by Justin Webb. 
 

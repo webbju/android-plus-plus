@@ -73,7 +73,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         LoggingUtils.RequireOk (stackThread.GetThreadId (out stackThreadId));
 
-        string command = string.Format ("-var-create --thread {0} --frame {1} - * {2} ", stackThreadId, stackFrame.StackLevel, PathUtils.EscapePath (expression));
+        expression = expression.Replace (@"\", @"\\");
+
+        expression = expression.Replace ("->", ".");
+
+        string command = string.Format ("-var-create --thread {0} --frame {1} - * \"{2}\"", stackThreadId, stackFrame.StackLevel, expression);
 
         MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
 
@@ -97,7 +101,30 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      if (depth > 0)
+      if ((depth > 0) && (parentVariable.HasChildren))
+      {
+        MiVariable [] evaluatedChildren = GetChildVariables (parentVariable, depth);
+
+        foreach (MiVariable child in evaluatedChildren)
+        {
+          CreateChildVariables (child, depth - 1);
+
+          parentVariable.AddChild (child);
+        }
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private MiVariable [] GetChildVariables (MiVariable parentVariable, int depth)
+    {
+      LoggingUtils.PrintFunction ();
+
+      List<MiVariable> childVariables = new List<MiVariable> ();
+
+      if ((depth > 0) && (parentVariable.HasChildren))
       {
         string command = string.Format ("-var-list-children --all-values {0}", parentVariable.Name);
 
@@ -117,9 +144,23 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             string variableName = childTuple ["name"] [0].GetString ();
 
+            bool isPseudoChild = false;
+
             if (childTuple.HasField ("exp"))
             {
               string variableExpression = childTuple ["exp"] [0].GetString ();
+
+              switch (variableExpression)
+              {
+                case "public":
+                case "protected":
+                case "private":
+                {
+                  //isPseudoChild = true;
+
+                  break;
+                }
+              }
 
               if (!string.IsNullOrEmpty (variableExpression))
               {
@@ -134,15 +175,23 @@ namespace AndroidPlusPlus.VsDebugEngine
               childVariable = new MiVariable (variableName, childTuple.Values);
             }
 
-            if (childVariable.HasChildren)
+            if (isPseudoChild)
             {
-              CreateChildVariables (childVariable, depth - 1);
-            }
+              depth += 1; // need an additional level of children.
 
-            parentVariable.AddChild (childVariable);
+              MiVariable [] evaluatedChildren = GetChildVariables (childVariable, depth - 1);
+
+              childVariables.AddRange (evaluatedChildren);
+            }
+            else
+            {
+              childVariables.Add (childVariable);
+            }
           }
         }
       }
+
+      return childVariables.ToArray ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -103,6 +104,14 @@ namespace AndroidPlusPlus.Common
 
     private Dictionary<uint, string> m_registerIdMapping = new Dictionary<uint, string> ();
 
+    private ConcurrentQueue<ProcessGdbMiAsyncInputParamType> m_asyncInputJobQueue = new ConcurrentQueue<ProcessGdbMiAsyncInputParamType> ();
+
+    private ConcurrentQueue<string> m_asyncOutputJobQueue = new ConcurrentQueue<string> ();
+
+    private Thread m_asyncInputProcessThread = null;
+
+    private Thread m_asyncOutputProcessThread = null;
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -178,6 +187,18 @@ namespace AndroidPlusPlus.Common
       m_gdbClientInstance = new AsyncRedirectProcess (m_gdbSetup.GdbToolPath, clientArguments);
 
       m_gdbClientInstance.Start (this);
+
+      // 
+      // Create asynchronous input and output job queue threads.
+      // 
+
+      //m_asyncInputProcessThread = new Thread (AsyncInputWorkerThreadBody);
+
+      //m_asyncInputProcessThread.Start ();
+
+      m_asyncOutputProcessThread = new Thread (AsyncOutputWorkerThreadBody);
+
+      m_asyncOutputProcessThread.Start ();
 
       // 
       // Evaluate this client's GDB/MI support and capabilities. 
@@ -726,7 +747,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public MiResultRecord SendCommand (string command, int timeout = 60000)
+    public MiResultRecord SendCommand (string command, int timeout = 30000)
     {
       // 
       // Perform a synchronous command request; issue a standard async command and keep alive whilst still receiving output.
@@ -763,7 +784,7 @@ namespace AndroidPlusPlus.Common
 
       bool responseSignaled = false;
 
-      while ((!responseSignaled) && (m_timeSinceLastOperation.ElapsedTicks < timeout))
+      while ((!responseSignaled) && (m_timeSinceLastOperation.ElapsedMilliseconds < timeout))
       {
         responseSignaled = syncCommandLock.WaitOne (0);
 
@@ -793,7 +814,7 @@ namespace AndroidPlusPlus.Common
       // Keep track of this command, and associated token-id, so results can be tracked asynchronously.
       // 
 
-      LoggingUtils.PrintFunction ();
+      LoggingUtils.Print (string.Format ("[GdbClient] SendAsyncCommand: {0}", command));
 
       if (string.IsNullOrWhiteSpace (command))
       {
@@ -805,13 +826,34 @@ namespace AndroidPlusPlus.Common
         return;
       }
 
-      m_timeSinceLastOperation.Reset ();
+      m_timeSinceLastOperation.Restart ();
 
-      Thread asyncCommandThread = new Thread (ProcessGdbMiAsyncInput);
+      AsyncCommandData commandData = new AsyncCommandData ();
 
-      asyncCommandThread.Start (new ProcessGdbMiAsyncInputParamType (command, asyncDelegate));
+      commandData.Command = command;
 
-      LoggingUtils.Print (string.Format ("[GdbClient] SendAsyncCommand: {0}", command));
+      commandData.ResultDelegate = asyncDelegate;
+
+      lock (m_asyncCommandData)
+      {
+        m_asyncCommandData.Add (m_sessionCommandToken, commandData);
+      }
+
+      // 
+      // Prepend (and increment) GDB/MI token.
+      // 
+
+      command = m_sessionCommandToken + command;
+
+      ++m_sessionCommandToken;
+
+      m_gdbClientInstance.SendCommand (command);
+
+      m_timeSinceLastOperation.Restart ();
+
+      //m_asyncInputJobQueue.Enqueue (new ProcessGdbMiAsyncInputParamType (command, asyncDelegate));
+
+      //Thread.Yield ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -820,7 +862,7 @@ namespace AndroidPlusPlus.Common
 
     public void ProcessStdout (object sendingProcess, DataReceivedEventArgs args)
     {
-      m_timeSinceLastOperation.Reset ();
+      m_timeSinceLastOperation.Restart ();
 
       if (!string.IsNullOrEmpty (args.Data))
       {
@@ -830,10 +872,11 @@ namespace AndroidPlusPlus.Common
         {
           // 
           // Distribute result records to registered delegate callbacks.
-          // TODO: These operations need to be queued sequentially!
           // 
 
-          ThreadPool.QueueUserWorkItem (ProcessGdbMiOutput, args.Data);
+          m_asyncOutputJobQueue.Enqueue (args.Data);
+
+          Thread.Yield ();
         }
         catch (Exception e)
         {
@@ -850,7 +893,7 @@ namespace AndroidPlusPlus.Common
     {
       try
       {
-        m_timeSinceLastOperation.Reset ();
+        m_timeSinceLastOperation.Restart ();
 
         if (!string.IsNullOrWhiteSpace (args.Data))
         {
@@ -871,7 +914,7 @@ namespace AndroidPlusPlus.Common
     {
       try
       {
-        m_timeSinceLastOperation.Reset ();
+        m_timeSinceLastOperation.Restart ();
 
         LoggingUtils.Print (string.Format ("[GdbClient] ProcessExited: {0}", args));
 
@@ -896,63 +939,66 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private void ProcessGdbMiAsyncInput (object threadStartParameter)
+    /*private void AsyncInputWorkerThreadBody ()
     {
       // 
-      // Thread body - takes a command and associated delegate, feeds command to pipe and registers delegate to trigger when GDB responds.
+      // Thread body - 
       // 
 
       try
       {
-        if (threadStartParameter == null)
+        ProcessGdbMiAsyncInputParamType asyncInput = null;
+
+        while (true)
         {
-          throw new ArgumentNullException ("threadStartParameter");
+          if (m_asyncInputJobQueue.TryDequeue (out asyncInput) && (asyncInput != null))
+          {
+            LoggingUtils.Print (string.Format ("[GdbClient] AsyncInputWorkerThreadBody: {0}", asyncInput));
+
+            string command = (string) asyncInput.Item1;
+
+            GdbClient.OnResultRecordDelegate resultDelegate = (GdbClient.OnResultRecordDelegate) asyncInput.Item2;
+
+            AsyncCommandData commandData = new AsyncCommandData ();
+
+            commandData.Command = command;
+
+            commandData.ResultDelegate = resultDelegate;
+
+            lock (m_asyncCommandData)
+            {
+              m_asyncCommandData.Add (m_sessionCommandToken, commandData);
+            }
+
+            // 
+            // Prepend (and increment) GDB/MI token.
+            // 
+
+            command = m_sessionCommandToken + command;
+
+            ++m_sessionCommandToken;
+
+            m_gdbClientInstance.SendCommand (command);
+
+            m_timeSinceLastOperation.Restart ();
+          }
+
+          Thread.Yield ();
+
+          asyncInput = null;
         }
-        else if (!(threadStartParameter is ProcessGdbMiAsyncInputParamType))
-        {
-          throw new ArgumentException ("threadStartParameter expected ProcessGdbMiAsyncInputParamType type");
-        }
-
-        ProcessGdbMiAsyncInputParamType parameter = (ProcessGdbMiAsyncInputParamType) threadStartParameter;
-
-        string command = (string) parameter.Item1;
-
-        GdbClient.OnResultRecordDelegate resultDelegate = (GdbClient.OnResultRecordDelegate) parameter.Item2;
-
-        AsyncCommandData commandData = new AsyncCommandData ();
-
-        commandData.Command = command;
-
-        commandData.ResultDelegate = resultDelegate;
-
-        lock (m_asyncCommandData)
-        {
-          m_asyncCommandData.Add (m_sessionCommandToken, commandData);
-        }
-
-        // 
-        // Prepend (and increment) GDB/MI token.
-        // 
-
-        command = m_sessionCommandToken + command;
-
-        ++m_sessionCommandToken;
-
-        m_gdbClientInstance.SendCommand (command);
-
-        m_timeSinceLastOperation.Reset ();
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
       }
-    }
+    }*/
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private void ProcessGdbMiOutput (object threadStartParameter)
+    private void AsyncOutputWorkerThreadBody ()
     {
       // 
       // Thread body - parses GDB/MI output. If a command has be completely processed, call its associated registered delegate.
@@ -960,90 +1006,110 @@ namespace AndroidPlusPlus.Common
 
       try
       {
-        if (threadStartParameter == null)
+        string asyncOutput = null;
+
+        while (true)
         {
-          throw new ArgumentNullException ("threadStartParameter");
-        }
-        else if (!(threadStartParameter is string))
-        {
-          throw new ArgumentException ("threadStartParameter expected string type");
-        }
-
-        string gdbOutput = (string) threadStartParameter;
-
-        MiRecord record = MiInterpreter.ParseGdbOutputRecord (gdbOutput);
-
-        if (record is MiPromptRecord)
-        {
-          //m_asyncCommandLock.Set ();
-        }
-        else if ((record is MiAsyncRecord) && (OnAsyncRecord != null))
-        {
-          MiAsyncRecord asyncRecord = record as MiAsyncRecord;
-
-          OnAsyncRecord (asyncRecord);
-        }
-        else if ((record is MiResultRecord) && (OnResultRecord != null))
-        {
-          MiResultRecord resultRecord = record as MiResultRecord;
-
-          OnResultRecord (resultRecord);
-        }
-        else if ((record is MiStreamRecord) && (OnStreamRecord != null))
-        {
-          MiStreamRecord streamRecord = record as MiStreamRecord;
-
-          OnStreamRecord (streamRecord);
-
-          // 
-          // Non-GDB/MI commands (standard client interface commands) report their output using standard stream records.
-          // We cache these outputs for any active CLI commands, identifiable as the commands don't start with '-'.
-          // 
-
-          lock (m_asyncCommandData)
+          if (m_asyncOutputJobQueue.TryDequeue (out asyncOutput) && !(string.IsNullOrWhiteSpace (asyncOutput)))
           {
-            foreach (KeyValuePair<uint, AsyncCommandData> asyncCommand in m_asyncCommandData)
+            try
             {
-              if (!asyncCommand.Value.Command.StartsWith ("-"))
+              LoggingUtils.Print (string.Format ("[GdbClient] AsyncOutputWorkerThreadBody: {0}", asyncOutput));
+
+              MiRecord record = MiInterpreter.ParseGdbOutputRecord (asyncOutput);
+
+              if (record is MiPromptRecord)
               {
-                asyncCommand.Value.StreamRecords.Add (streamRecord);
+                //m_asyncCommandLock.Set ();
               }
-              else if (asyncCommand.Value.Command.StartsWith ("-interpreter-exec console"))
+              else if ((record is MiAsyncRecord) && (OnAsyncRecord != null))
               {
-                asyncCommand.Value.StreamRecords.Add (streamRecord);
+                MiAsyncRecord asyncRecord = record as MiAsyncRecord;
+
+                OnAsyncRecord (asyncRecord);
+              }
+              else if ((record is MiResultRecord) && (OnResultRecord != null))
+              {
+                MiResultRecord resultRecord = record as MiResultRecord;
+
+                OnResultRecord (resultRecord);
+              }
+              else if ((record is MiStreamRecord) && (OnStreamRecord != null))
+              {
+                MiStreamRecord streamRecord = record as MiStreamRecord;
+
+                OnStreamRecord (streamRecord);
+
+                // 
+                // Non-GDB/MI commands (standard client interface commands) report their output using standard stream records.
+                // We cache these outputs for any active CLI commands, identifiable as the commands don't start with '-'.
+                // 
+
+                lock (m_asyncCommandData)
+                {
+                  foreach (KeyValuePair<uint, AsyncCommandData> asyncCommand in m_asyncCommandData)
+                  {
+                    if (!asyncCommand.Value.Command.StartsWith ("-"))
+                    {
+                      asyncCommand.Value.StreamRecords.Add (streamRecord);
+                    }
+                    else if (asyncCommand.Value.Command.StartsWith ("-interpreter-exec console"))
+                    {
+                      asyncCommand.Value.StreamRecords.Add (streamRecord);
+                    }
+                  }
+                }
+              }
+
+              // 
+              // Call the corresponding registered delegate for the token response.
+              // 
+
+              MiResultRecord callbackRecord = record as MiResultRecord;
+
+              if ((callbackRecord != null) && (callbackRecord.Token != 0))
+              {
+                AsyncCommandData callbackCommandData = null;
+
+                lock (m_asyncCommandData)
+                {
+                  if (m_asyncCommandData.TryGetValue (callbackRecord.Token, out callbackCommandData))
+                  {
+                    callbackRecord.Records.AddRange (callbackCommandData.StreamRecords);
+
+                    m_asyncCommandData.Remove (callbackRecord.Token);
+                  }
+                }
+
+                // 
+                // Spawn any registered callback handlers on a dedicated thread, as not to block GDB output.
+                // 
+
+                if ((callbackCommandData != null) && (callbackCommandData.ResultDelegate != null))
+                {
+                  ThreadPool.QueueUserWorkItem (delegate (object state)
+                  {
+                    try
+                    {
+                      callbackCommandData.ResultDelegate (callbackRecord);
+                    }
+                    catch (Exception e)
+                    {
+                      LoggingUtils.HandleException (e);
+                    }
+                  });
+                }
               }
             }
-          }
-        }
-
-        // 
-        // Call the corresponding registered delegate for the token response.
-        // 
-
-        MiResultRecord callbackRecord = record as MiResultRecord;
-
-        if ((callbackRecord != null) && (callbackRecord.Token != 0))
-        {
-          AsyncCommandData callbackCommandData = null;
-
-          lock (m_asyncCommandData)
-          {
-            if (m_asyncCommandData.TryGetValue (callbackRecord.Token, out callbackCommandData))
+            catch (Exception e)
             {
-              callbackRecord.Records.AddRange (callbackCommandData.StreamRecords);
-
-              m_asyncCommandData.Remove (callbackRecord.Token);
+              LoggingUtils.HandleException (e);
             }
           }
 
-          // 
-          // Spawn any registered callback handlers on a dedicated thread, as not to block GDB output.
-          // 
+          Thread.Yield ();
 
-          if ((callbackCommandData != null) && (callbackCommandData.ResultDelegate != null))
-          {
-            callbackCommandData.ResultDelegate (callbackRecord);
-          }
+          asyncOutput = null;
         }
       }
       catch (Exception e)

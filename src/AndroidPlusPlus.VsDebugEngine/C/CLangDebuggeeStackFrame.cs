@@ -355,7 +355,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public DebuggeeProperty EvaluateCustomExpression (string expression, uint radix)
+    public DebuggeeProperty EvaluateCustomExpression (enum_EVALFLAGS evaluateFlags, string expression, uint radix)
     {
       // 
       // Evaluates a custom property lookup, and registers a new entry for this expression if one can't be found.

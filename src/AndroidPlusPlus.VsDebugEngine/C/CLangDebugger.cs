@@ -150,7 +150,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (/*archIs64Bit && */Environment.Is64BitOperatingSystem)
       {
-        string clientIdentifier = (forceNdkR9dClient) ? "7.3.1-x86_64-ndk_r9d" : "7.6.0-x86_64-ndk_r10_patched";
+        string clientIdentifier = (forceNdkR9dClient) ? "7.3.1-x86_64-ndk_r9d" : "7.6.0-x86_64-ndk_r10b";
 
         contribGdbCommandPath = Path.Combine (androidPlusPlusRoot, "contrib", "redist-gdb-python-x86_64", clientIdentifier);
 
@@ -158,7 +158,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       }
       else
       {
-        string clientIdentifier = (forceNdkR9dClient) ? "7.3.1-x86-ndk_r9d" : "7.6.0-x86-ndk_r10";
+        string clientIdentifier = (forceNdkR9dClient) ? "7.3.1-x86-ndk_r9d" : "7.6.0-x86-ndk_r10b";
 
         contribGdbCommandPath = Path.Combine (androidPlusPlusRoot, "contrib", "redist-gdb-python-x86", clientIdentifier);
 
@@ -630,9 +630,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
 #if false
               RefreshSharedLibraries ();
-#endif
 
               Engine.BreakpointManager.RefreshBreakpoints ();
+#endif
 
               if (true)
               {
@@ -665,13 +665,15 @@ namespace AndroidPlusPlus.VsDebugEngine
                       }
                       else
                       {
-                        DebuggeeBreakpointBound boundBreakpoint = Engine.BreakpointManager.GetBoundBreakpoint (breakpointId);
+                        DebuggeeBreakpointBound boundBreakpoint = Engine.BreakpointManager.FindBoundBreakpoint (breakpointId);
 
                         if (boundBreakpoint == null)
                         {
                           // 
                           // Could not locate a registered breakpoint with matching id.
                           // 
+
+                          Engine.BreakpointManager.SetDirty ();
 
                           DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, "Breakpoint #" + breakpointId, asyncRecord ["reason"] [0].GetString (), 0x00000000, canContinue);
 

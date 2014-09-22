@@ -59,6 +59,18 @@ namespace AndroidPlusPlus.Common
 
       Expression = expression;
 
+      Name = string.Empty;
+
+      Type = string.Empty;
+
+      ThreadId = 0;
+
+      Dynamic = false;
+
+      HasChildren = false;
+
+      Value = string.Empty;
+
       Populate (variableValues);
 
       if (string.IsNullOrEmpty (Name))

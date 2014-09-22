@@ -132,7 +132,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         CLangDebuggeeStackFrame stackFrame = m_stackFrame as CLangDebuggeeStackFrame;
 
-        result = stackFrame.EvaluateCustomExpression (m_expression, m_radix);
+        result = stackFrame.EvaluateCustomExpression (evaluateFlags, m_expression, m_radix);
 
         if (result == null)
         {

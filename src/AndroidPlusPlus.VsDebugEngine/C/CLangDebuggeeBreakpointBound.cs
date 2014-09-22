@@ -176,14 +176,17 @@ namespace AndroidPlusPlus.VsDebugEngine
           }
         }
 
-        m_debugger.RunInterruptOperation (delegate ()
+        if (!string.IsNullOrEmpty (condition))
         {
-          string command = string.Format ("-break-condition {0} {1}", GdbBreakpoint.ID, condition);
+          m_debugger.RunInterruptOperation (delegate ()
+          {
+            string command = string.Format ("-break-condition {0} \"{1}\"", GdbBreakpoint.ID, condition);
 
-          MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+            MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
 
-          MiResultRecord.RequireOk (resultRecord, command);
-        });
+            MiResultRecord.RequireOk (resultRecord, command);
+          });
+        }
 
         return DebugEngineConstants.S_OK;
       }

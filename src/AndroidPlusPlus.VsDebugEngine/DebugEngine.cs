@@ -850,9 +850,13 @@ namespace AndroidPlusPlus.VsDebugEngine
             // Query whether the target application is already running. (Double-check)
             // 
 
+            int launchAttempt = 1;
+
+            int maxLaunchAttempts = 20;
+
             while (!appIsRunning)
             {
-              Broadcast (new DebugEngineEvent.UiDebugLaunchServiceEvent (DebugEngineEvent.UiDebugLaunchServiceEvent.EventType.LogStatus, string.Format ("Waiting for '{0}' to launch...", packageName)), null, null);
+              Broadcast(new DebugEngineEvent.UiDebugLaunchServiceEvent(DebugEngineEvent.UiDebugLaunchServiceEvent.EventType.LogStatus, string.Format("Waiting for '{0}' to launch (Attempt {1} of {2})...", packageName, launchAttempt, maxLaunchAttempts)), null, null);
 
               LoggingUtils.RequireOk (debuggeePort.RefreshProcesses ());
 
@@ -878,6 +882,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
               if (!appIsRunning)
               {
+                if (++launchAttempt > maxLaunchAttempts)
+                {
+                  throw new TimeoutException (string.Format ("'{0}' failed to launch . Please ensure device is unlocked.", packageName));
+                }
+
                 Application.DoEvents ();
 
                 Thread.Sleep (100);

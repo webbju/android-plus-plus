@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using System.Runtime.InteropServices;
 
 using Microsoft.VisualStudio.Debugger.Interop;
@@ -221,7 +222,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public DebuggeeBreakpointBound GetBoundBreakpoint (uint id)
+    public DebuggeeBreakpointBound FindBoundBreakpoint (uint id)
     {
       // 
       // Search all registered pending breakpoints objects for a bound breakpoint matching the requested id.
@@ -233,19 +234,23 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         foreach (DebuggeeBreakpointPending pending in m_pendingBreakpoints)
         {
+          // 
+          // Check for matching 'bound' breakpoints.
+          // 
+
           uint numBoundBreakpoints;
 
-          IEnumDebugBoundBreakpoints2 enumeratedBreakpoints;
+          IEnumDebugBoundBreakpoints2 enumeratedBoundBreakpoints;
 
-          LoggingUtils.RequireOk (pending.EnumBoundBreakpoints (out enumeratedBreakpoints));
+          LoggingUtils.RequireOk (pending.EnumBoundBreakpoints (out enumeratedBoundBreakpoints));
 
-          LoggingUtils.RequireOk (enumeratedBreakpoints.GetCount (out numBoundBreakpoints));
+          LoggingUtils.RequireOk (enumeratedBoundBreakpoints.GetCount (out numBoundBreakpoints));
 
           if (numBoundBreakpoints > 0)
           {
             DebuggeeBreakpointBound [] boundBreakpoints = new DebuggeeBreakpointBound [numBoundBreakpoints];
 
-            LoggingUtils.RequireOk (enumeratedBreakpoints.Next (numBoundBreakpoints, boundBreakpoints, numBoundBreakpoints));
+            LoggingUtils.RequireOk (enumeratedBoundBreakpoints.Next (numBoundBreakpoints, boundBreakpoints, numBoundBreakpoints));
 
             for (uint i = 0; i < numBoundBreakpoints; ++i)
             {
@@ -260,7 +265,7 @@ namespace AndroidPlusPlus.VsDebugEngine
               }
               else
               {
-                throw new NotImplementedException ("Unrecognised breakpoint type");
+                throw new NotImplementedException ("Unrecognised bound breakpoint type");
               }
             }
           }
@@ -270,6 +275,63 @@ namespace AndroidPlusPlus.VsDebugEngine
       return null;
     }
 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   
+    public DebuggeeBreakpointError FindErrorBreakpoint (uint id)
+    {
+      // 
+      // Search all registered pending breakpoints objects for a bound breakpoint matching the requested id.
+      // 
+
+      LoggingUtils.PrintFunction ();
+
+      lock (m_pendingBreakpoints)
+      {
+        foreach (DebuggeeBreakpointPending pending in m_pendingBreakpoints)
+        {
+          // 
+          // Check for matching 'error' breakpoints.
+          // 
+
+          uint numErrorBreakpoints;
+
+          IEnumDebugErrorBreakpoints2 enumeratedErrorBreakpoints;
+
+          LoggingUtils.RequireOk (pending.EnumErrorBreakpoints (enum_BP_ERROR_TYPE.BPET_ALL, out enumeratedErrorBreakpoints));
+
+          LoggingUtils.RequireOk (enumeratedErrorBreakpoints.GetCount (out numErrorBreakpoints));
+
+          if (numErrorBreakpoints > 0)
+          {
+            DebuggeeBreakpointError [] errorBreakpoints = new DebuggeeBreakpointError [numErrorBreakpoints];
+
+            LoggingUtils.RequireOk (enumeratedErrorBreakpoints.Next (numErrorBreakpoints, errorBreakpoints, numErrorBreakpoints));
+
+            for (uint i = 0; i < numErrorBreakpoints; ++i)
+            {
+              if (errorBreakpoints [i] is CLangDebuggeeBreakpointError)
+              {
+                CLangDebuggeeBreakpointError error = errorBreakpoints [i] as CLangDebuggeeBreakpointError;
+
+                if (error.GdbBreakpoint.ID == id)
+                {
+                  return error;
+                }
+              }
+              else
+              {
+                throw new NotImplementedException ("Unrecognised error breakpoint type");
+              }
+            }
+          }
+        }
+      }
+
+      return null;
+    }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

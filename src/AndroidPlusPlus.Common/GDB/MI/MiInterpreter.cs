@@ -122,14 +122,23 @@ namespace AndroidPlusPlus.Common
 
             List<MiResultValue> values = new List<MiResultValue> ();
 
-            ParseAllResults (data, ref values);
-
-            switch (type)
+            try
             {
-              case '^': resultRecord = new MiResultRecord (token, clazz, values); break;
-              case '*': resultRecord = new MiAsyncRecord (MiAsyncRecord.AsyncType.Exec, token, clazz, values); break;
-              case '+': resultRecord = new MiAsyncRecord (MiAsyncRecord.AsyncType.Status, token, clazz, values); break;
-              case '=': resultRecord = new MiAsyncRecord (MiAsyncRecord.AsyncType.Notify, token, clazz, values); break;
+              ParseAllResults (data, ref values);
+            }
+            catch (Exception e)
+            {
+              LoggingUtils.HandleException (e);
+            }
+            finally
+            {
+              switch (type)
+              {
+                case '^': resultRecord = new MiResultRecord (token, clazz, values); break;
+                case '*': resultRecord = new MiAsyncRecord (MiAsyncRecord.AsyncType.Exec, token, clazz, values); break;
+                case '+': resultRecord = new MiAsyncRecord (MiAsyncRecord.AsyncType.Status, token, clazz, values); break;
+                case '=': resultRecord = new MiAsyncRecord (MiAsyncRecord.AsyncType.Notify, token, clazz, values); break;
+              }
             }
 
             return resultRecord;
@@ -190,7 +199,7 @@ namespace AndroidPlusPlus.Common
         {
           --enclosureCount;
         }
-        else if (streamOutput [bufferCurrentPos] == '\"')
+        else if ((streamOutput [bufferCurrentPos] == '\"') && (streamOutput [Math.Max (0, bufferCurrentPos - 1)] != '\\')) // non-escaped quotation
         {
           if (insideQuotationEnclosure)
           {
@@ -221,7 +230,7 @@ namespace AndroidPlusPlus.Common
 
           if (enclosedSegment.StartsWith ("["))
           {
-            string listValue = enclosedSegment.Substring (1, enclosedSegment.Length - 2); // remove [] conatiner
+            string listValue = enclosedSegment.Trim (new char [] { '[', ']' }); // remove [] container
 
             ParseAllResults (listValue, ref nestedResultValues);
 
@@ -229,7 +238,7 @@ namespace AndroidPlusPlus.Common
           }
           else if (enclosedSegment.StartsWith ("{"))
           {
-            string tupleValue = enclosedSegment.Substring (1, enclosedSegment.Length - 2); // remove {} conatiner
+            string tupleValue = enclosedSegment.Trim (new char [] { '{', '}' }); // remove {} container
 
             ParseAllResults (tupleValue, ref nestedResultValues);
 
@@ -237,7 +246,7 @@ namespace AndroidPlusPlus.Common
           }
           else
           {
-            string constValue = enclosedSegment.Substring (1, enclosedSegment.Length - 2); // remove quotation-marks
+            string constValue = enclosedSegment.Trim (new char [] { '"' }); // remove quotation-marks container
 
             results.Add (new MiResultValueConst (enclosureVariable, constValue));
           }
