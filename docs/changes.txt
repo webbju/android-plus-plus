@@ -9,7 +9,7 @@ Fixes/Improvements:
 
  - Fixed an issue with bootstrapping where 'setx' environment variable registration is only accessible on new command prompts.
  - (Debugger) Bumped attach time-out to 60 seconds to support older, slower devices.
- - (Debugger) Added initial support for GDB 7.6 'breakpoint-notifications'.
+ - (Debugger) Added initial support for GDB 7.6 asynchronous 'breakpoint-notifications'.
 
 --------------------------------------------------------------------------------------------------------------------------------
 
