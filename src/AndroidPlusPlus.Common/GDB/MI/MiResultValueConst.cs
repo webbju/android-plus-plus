@@ -65,7 +65,14 @@ namespace AndroidPlusPlus.Common
       // Strip quotation marks on const value parameters.
       // 
 
-      return m_rawConstValue.Trim (new char [] { '"' });
+      if ((m_rawConstValue.Length > 0) 
+        && (m_rawConstValue [0] == '"') 
+        && (m_rawConstValue [m_rawConstValue.Length - 1] == '"'))
+      {
+        return m_rawConstValue.Substring (1, m_rawConstValue.Length - 2);
+      }
+
+      return m_rawConstValue;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

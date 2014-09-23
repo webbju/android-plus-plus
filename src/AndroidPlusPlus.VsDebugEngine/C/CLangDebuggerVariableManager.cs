@@ -73,9 +73,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         LoggingUtils.RequireOk (stackThread.GetThreadId (out stackThreadId));
 
-        expression = expression.Replace (@"\", @"\\");
+        //expression = expression.Replace (@"\", @"\\");
 
-        expression = expression.Replace ("->", ".");
+        //expression = expression.Replace ("->", ".");
 
         string command = string.Format ("-var-create --thread {0} --frame {1} - * \"{2}\"", stackThreadId, stackFrame.StackLevel, expression);
 
@@ -156,7 +156,7 @@ namespace AndroidPlusPlus.VsDebugEngine
                 case "protected":
                 case "private":
                 {
-                  //isPseudoChild = true;
+                  isPseudoChild = true;
 
                   break;
                 }

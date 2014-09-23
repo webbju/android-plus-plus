@@ -415,6 +415,24 @@ namespace AndroidPlusPlus.VsDebugEngine
           // ^connected: GDB has connected to a remote target.
           // 
 
+          try
+          {
+            // 
+            // If notifications are unsupported, we should assume that we need to refresh breakpoints when connected.
+            //
+
+            if (!GdbClient.GetClientFeatureSupported ("breakpoint-notifications"))
+            {
+              Engine.BreakpointManager.SetDirty ();
+            }
+
+            Engine.BreakpointManager.RefreshBreakpoints ();
+          }
+          catch (Exception e)
+          {
+            LoggingUtils.HandleException (e);
+          }
+
           break;
         }
         

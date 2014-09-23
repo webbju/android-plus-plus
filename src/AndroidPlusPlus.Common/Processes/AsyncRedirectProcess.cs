@@ -210,7 +210,7 @@ namespace AndroidPlusPlus.Common
     {
       try
       {
-        LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessStdout: {0}", args.Data));
+        //LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessStdout: {0}", args.Data));
 
         m_lastOutputTimestamp = Environment.TickCount;
 

@@ -120,6 +120,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         pendingBreakpoint = (IDebugPendingBreakpoint2)breakpoint;
 
+        SetDirty ();
+
         return DebugEngineConstants.S_OK;
       }
       catch (NotImplementedException e)

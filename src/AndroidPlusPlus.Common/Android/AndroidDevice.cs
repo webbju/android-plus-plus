@@ -145,7 +145,7 @@ namespace AndroidPlusPlus.Common
             throw new InvalidOperationException ("Shell request failed: " + adbShellCommand.StandardError);
           }
 
-          LoggingUtils.Print ("[AndroidDevice] Shell: " + command + " (" + arguments + "): " + adbShellCommand.StandardOutput);
+          LoggingUtils.Print ("[AndroidDevice] Shell: " + command + " (" + arguments + "):\n" + adbShellCommand.StandardOutput);
         }
         catch (TimeoutException e)
         {

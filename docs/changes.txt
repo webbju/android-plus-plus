@@ -1,4 +1,18 @@
 
+Version 0.3.2
+
+New functionality:
+
+ - (Debugger) Added redistributions of GDB 7.6 (32 and 64bit) from NDK r10b. Removed patched and original variants from r10.
+
+Fixes/Improvements:
+
+ - Fixed an issue with bootstrapping where 'setx' environment variable registration is only accessible on new command prompts.
+ - (Debugger) Bumped attach time-out to 60 seconds to support older, slower devices.
+ - (Debugger) Added initial support for GDB 7.6 'breakpoint-notifications'.
+
+--------------------------------------------------------------------------------------------------------------------------------
+
 Version 0.3.1
 
 Fixes/Improvements:
