@@ -183,6 +183,15 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         List<DEBUG_PROPERTY_INFO> filteredProperties = new List<DEBUG_PROPERTY_INFO> ();
 
+        if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs))
+        {
+          DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
+
+          LoggingUtils.RequireOk (m_property.GetPropertyInfo (requestedFields, radix, timeout, null, 0, infoArray));
+
+          filteredProperties.Add (infoArray [0]);
+        }
+
         if ((guidFilter == DebuggeeProperty.Filters.guidFilterArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
         {
           foreach (KeyValuePair<string, DebuggeeProperty> argument in m_stackArguments)

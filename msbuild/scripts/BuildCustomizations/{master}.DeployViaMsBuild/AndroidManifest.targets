@@ -240,7 +240,7 @@
       Projects="@(ProjectReference)"
       Targets="GetProjectAndroidManifests"
       BuildInParallel="$(BuildInParallel)"
-      Properties="Configuration=$(Configuration)"
+      Properties="Platform=$(Platform);Configuration=$(Configuration)"
       RebaseOutputs="true"
       UseResultsCache="false">
       <Output TaskParameter="TargetOutputs" ItemName="_DependencyAndroidManifestsB"/>

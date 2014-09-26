@@ -33,8 +33,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private uint m_stackLevel;
 
-    private string m_locationId;
-
     private DebuggeeAddress m_locationAddress;
 
     private string m_locationFunction;
@@ -155,23 +153,6 @@ namespace AndroidPlusPlus.VsDebugEngine
         }
 
         // 
-        // Construct a descriptive location identifier.
-        // 
-
-        StringBuilder locationBuilder = new StringBuilder ();
-
-        locationBuilder.Append ("[" + m_locationAddress.ToString () + "] ");
-
-        if (!string.IsNullOrEmpty (m_locationModule))
-        {
-          locationBuilder.Append (m_locationModule + "!");
-        }
-
-        locationBuilder.Append (m_locationFunction);
-
-        m_locationId = locationBuilder.ToString ();
-
-        // 
         // Generate code and document contexts for this frame location.
         // 
 
@@ -251,11 +232,11 @@ namespace AndroidPlusPlus.VsDebugEngine
                 continue;
               }
 
-              DebuggeeProperty property = m_debugger.VariableManager.CreatePropertyFromVariable (this, variable);
+              CLangDebuggeeProperty property = m_debugger.VariableManager.CreatePropertyFromVariable (this, variable);
 
               if (property == null)
               {
-                continue;
+                throw new InvalidOperationException ();
               }
 
               if (localVariables [i].HasField ("arg"))
@@ -267,7 +248,7 @@ namespace AndroidPlusPlus.VsDebugEngine
                 m_stackLocals.TryAdd (variableName, property);
               }
 
-              m_property.AddChildren (new DebuggeeProperty [] { property });
+              LoggingUtils.RequireOk (m_property.AddChildren (new DebuggeeProperty [] { property }));
             }
           }
 
@@ -317,9 +298,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           MiResultValue registerValues = resultRecord ["register-values"] [0];
 
+          int registerValuesCount = registerValues.Values.Count;
+
           Dictionary<uint, string> registerIdMapping = m_debugger.GdbClient.GetRegisterIdMapping ();
 
-          for (int i = 0; i < registerValues.Values.Count; ++i)
+          for (int i = 0; i < registerValuesCount; ++i)
           {
             uint registerId = registerValues [i] ["number"] [0].GetUnsignedInt ();
 
@@ -335,7 +318,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             m_stackRegisters.TryAdd (registerNamePrettified, property);
 
-            m_property.AddChildren (new DebuggeeProperty [] { property });
+            LoggingUtils.RequireOk (m_property.AddChildren (new DebuggeeProperty [] { property }));
           }
 
           m_queriedRegisters = true;
@@ -388,6 +371,12 @@ namespace AndroidPlusPlus.VsDebugEngine
         }
 
         // 
+        // Check if this expression has already been queried via a child property.
+        // 
+
+        // TODO.
+
+        // 
         // Couldn't find a pre-registered matching property for this expression, creating a new custom one.
         // 
 
@@ -401,7 +390,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           {
             m_customExpressions.TryAdd (expression, property);
 
-            m_property.AddChildren (new DebuggeeProperty [] { property });
+            LoggingUtils.RequireOk (m_property.AddChildren (new DebuggeeProperty [] { property }));
           }
         }
       }
@@ -427,7 +416,28 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFlags & enum_FRAMEINFO_FLAGS.FIF_FUNCNAME) != 0)
         {
-          frameInfo.m_bstrFuncName = m_locationId;
+          StringBuilder functionName = new StringBuilder ();
+
+          functionName.Append ("[" + m_locationAddress.ToString () + "] ");
+
+          if (((requestedFlags & enum_FRAMEINFO_FLAGS.FIF_FUNCNAME_MODULE) != 0) && (!string.IsNullOrEmpty (m_locationModule)))
+          {
+            functionName.Append (m_locationModule + "!");
+          }
+
+          functionName.Append (m_locationFunction);
+
+          /*if ((requestedFlags & enum_FRAMEINFO_FLAGS.FIF_FUNCNAME_ARGS) != 0)
+          {
+            functionName.Append ("(...)");
+          }
+
+          if ((requestedFlags & enum_FRAMEINFO_FLAGS.FIF_FUNCNAME_LINES) != 0)
+          {
+            functionName.AppendFormat (" Line {0}", "?");
+          }*/
+
+          frameInfo.m_bstrFuncName = functionName.ToString ();
 
           frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_FUNCNAME;
         }
@@ -548,7 +558,6 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       try
       {
-
         if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals) ||
             (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) ||
             (guidFilter == DebuggeeProperty.Filters.guidFilterArgs) ||

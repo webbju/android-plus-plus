@@ -63,37 +63,6 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
       {
         retCode = base.TrackedExecuteTool (pathToTool, responseFileCommands, commandLineCommands);
 
-        if (retCode == 0)
-        {
-          // 
-          // Create a dependency file containing references to each .jar and .class used during execution.
-          // 
-
-          using (StreamWriter writer = new StreamWriter (OutputFile.GetMetadata ("FullPath") + ".d", false, Encoding.Unicode))
-          {
-            writer.WriteLine (string.Format ("{0}: \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (OutputFile.GetMetadata ("FullPath"))));
-
-            foreach (ITaskItem source in Sources)
-            {
-              string sourceFullPath = source.GetMetadata ("FullPath");
-
-              if (Directory.Exists (sourceFullPath))
-              {
-                string [] classPathFiles = Directory.GetFiles (sourceFullPath, "*.class", SearchOption.AllDirectories);
-
-                foreach (string classpath in classPathFiles)
-                {
-                  writer.WriteLine (string.Format ("  {0} \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (classpath)));
-                }
-              }
-              else
-              {
-                writer.WriteLine (string.Format ("  {0} \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (sourceFullPath)));
-              }
-            }
-          }
-        }
-
         OutputFiles = new ITaskItem [] { OutputFile };
       }
       catch (Exception e)
@@ -129,6 +98,36 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
       catch (Exception e)
       {
         Log.LogErrorFromException (e, true);
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override void AddTaskSpecificDependencies (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
+    {
+      // 
+      // Mark additional dependencies for .class files contained within specified class paths.
+      // 
+
+      foreach (ITaskItem source in Sources)
+      {
+        string sourceFullPath = source.GetMetadata ("FullPath");
+
+        if (Directory.Exists (sourceFullPath))
+        {
+          string [] classPathFiles = Directory.GetFiles (sourceFullPath, "*.class", SearchOption.AllDirectories);
+
+          List<ITaskItem> classPathFileItems = new List<ITaskItem> (classPathFiles.Length);
+
+          foreach (string classpath in classPathFiles)
+          {
+            classPathFileItems.Add (new TaskItem (classpath));
+          }
+
+          trackedFileManager.AddDependencyForSources (classPathFileItems.ToArray (), new ITaskItem [] { source });
+        }
       }
     }
 

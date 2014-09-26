@@ -52,7 +52,62 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      return new CLangDebuggeeProperty (m_debugger, stackFrame, variable);
+      try
+      {
+        if (stackFrame == null)
+        {
+          throw new ArgumentNullException ("stackFrame");
+        }
+
+        if (variable == null)
+        {
+          throw new ArgumentNullException ("variable");
+        }
+
+        /*CLangDebuggeeProperty [] childProperties = GetChildProperties (stackFrame, parentProperty);
+
+        parentProperty.AddChildren (childProperties);*/
+
+        return new CLangDebuggeeProperty (m_debugger, stackFrame, variable);;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return null;
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public CLangDebuggeeProperty [] GetChildProperties (CLangDebuggeeStackFrame stackFrame, CLangDebuggeeProperty parentProperty)
+    {
+      MiVariable parentVariable = parentProperty.GdbVariable;
+
+      List<CLangDebuggeeProperty> childProperties = new List<CLangDebuggeeProperty> ();
+
+      if (parentVariable.HasChildren && (parentVariable.Children.Count > 0))
+      {
+        foreach (MiVariable childVariable in parentVariable.Children.Values)
+        {
+          CLangDebuggeeProperty childProperty = new CLangDebuggeeProperty (m_debugger, stackFrame, childVariable);
+
+          if (childVariable.IsPseudoChild)
+          {
+            CLangDebuggeeProperty [] childSubProperties = GetChildProperties (stackFrame, childProperty);
+
+            childProperties.AddRange (childSubProperties);
+          }
+          else
+          {
+            childProperties.Add (childProperty);
+          }
+        }
+      }
+
+      return childProperties.ToArray ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -72,10 +127,6 @@ namespace AndroidPlusPlus.VsDebugEngine
         LoggingUtils.RequireOk (stackFrame.GetThread (out stackThread));
 
         LoggingUtils.RequireOk (stackThread.GetThreadId (out stackThreadId));
-
-        //expression = expression.Replace (@"\", @"\\");
-
-        //expression = expression.Replace ("->", ".");
 
         string command = string.Format ("-var-create --thread {0} --frame {1} - * \"{2}\"", stackThreadId, stackFrame.StackLevel, expression);
 
@@ -126,7 +177,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if ((depth > 0) && (parentVariable.HasChildren))
       {
-        string command = string.Format ("-var-list-children --all-values {0}", parentVariable.Name);
+        string command = string.Format ("-var-list-children --all-values \"{0}\"", parentVariable.Name);
 
         MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
 
@@ -138,11 +189,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           for (int i = 0; i < childrenList.Count; ++i)
           {
-            MiVariable childVariable = null;
-
             MiResultValueTuple childTuple = childrenList [i] as MiResultValueTuple;
 
             string variableName = childTuple ["name"] [0].GetString ();
+
+            MiVariable childVariable = null;
 
             bool isPseudoChild = false;
 
@@ -150,23 +201,13 @@ namespace AndroidPlusPlus.VsDebugEngine
             {
               string variableExpression = childTuple ["exp"] [0].GetString ();
 
-              switch (variableExpression)
-              {
-                case "public":
-                case "protected":
-                case "private":
-                {
-                  isPseudoChild = true;
-
-                  break;
-                }
-              }
-
               if (!string.IsNullOrEmpty (variableExpression))
               {
                 childVariable = new MiVariable (variableName, variableExpression);
 
                 childVariable.Populate (childTuple.Values);
+
+                isPseudoChild = childVariable.IsPseudoChild;
               }
             }
 
@@ -181,12 +222,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
               MiVariable [] evaluatedChildren = GetChildVariables (childVariable, depth - 1);
 
-              childVariables.AddRange (evaluatedChildren);
+              foreach (MiVariable child in evaluatedChildren)
+              {
+                childVariable.AddChild (child);
+              }
             }
-            else
-            {
-              childVariables.Add (childVariable);
-            }
+
+            childVariables.Add (childVariable);
           }
         }
       }
@@ -202,7 +244,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      string command = string.Format ("-var-update --all-values {0}", variable.Name);
+      string command = string.Format ("-var-update --all-values \"{0}\"", variable.Name);
 
       MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
 
@@ -222,7 +264,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      string command = string.Format ("-var-delete {0}", gdbVariable.Name);
+      string command = string.Format ("-var-delete \"{0}\"", gdbVariable.Name);
 
       MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
 

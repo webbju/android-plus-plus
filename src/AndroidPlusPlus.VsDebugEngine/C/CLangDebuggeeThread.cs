@@ -199,7 +199,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           // Create a temporary breakpoint to stop -exec-jump continuing when we'd rather it didn't.
           // 
 
-          string command = string.Format ("-break-insert -t {0}", location);
+          string command = string.Format ("-break-insert -t \"{0}\"", location);
 
           MiResultRecord resultRecord = m_debugProgram.AttachedEngine.NativeDebugger.GdbClient.SendCommand (command);
 
@@ -209,7 +209,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           // Jump to the specified address location.
           // 
 
-          command = string.Format ("-exec-jump --thread {0} {1}", m_threadId, location);
+          command = string.Format ("-exec-jump --thread {0} \"{1}\"", m_threadId, location);
 
           resultRecord = m_debugProgram.AttachedEngine.NativeDebugger.GdbClient.SendCommand (command);
 

@@ -68,6 +68,18 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    public MiVariable GdbVariable
+    {
+      get
+      {
+        return m_gdbVariable;
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     #region IDebugProperty2 Members
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -97,12 +109,25 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             m_children.Clear ();
 
-            foreach (MiVariable child in m_gdbVariable.Children.Values)
+            foreach (MiVariable childVariable in m_gdbVariable.Children.Values)
             {
-              CLangDebuggeeProperty childProperty = m_debugger.VariableManager.CreatePropertyFromVariable (m_stackFrame as CLangDebuggeeStackFrame, child);
-
-              if (childProperty != null)
+              if (childVariable.IsPseudoChild)
               {
+                CLangDebuggeeProperty pseudoChildProperty = m_debugger.VariableManager.CreatePropertyFromVariable (m_stackFrame as CLangDebuggeeStackFrame, childVariable);
+
+                CLangDebuggeeProperty [] childSubProperties = m_debugger.VariableManager.GetChildProperties (m_stackFrame as CLangDebuggeeStackFrame, pseudoChildProperty);
+
+                m_children.AddRange (childSubProperties);
+              }
+              else
+              {
+                CLangDebuggeeProperty childProperty = m_debugger.VariableManager.CreatePropertyFromVariable (m_stackFrame as CLangDebuggeeStackFrame, childVariable);
+
+                if (childProperty == null)
+                {
+                  throw new InvalidOperationException ();
+                }
+
                 m_children.Add (childProperty);
               }
             }
@@ -368,7 +393,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        string command = string.Format ("-var-assign {0} \"{1}\"", m_gdbVariable.Name, value);
+        string command = string.Format ("-var-assign \"{0}\" \"{1}\"", m_gdbVariable.Name, value);
 
         MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
 
