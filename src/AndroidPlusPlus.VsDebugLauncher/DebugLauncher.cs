@@ -236,7 +236,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
           bool keepData = launchConfig ["KeepAppData"].Equals ("true");
 
-          debuggingDevice.Install (targetApk, keepData, "com.android.vending"); // TODO: Installer needs to be customisable
+          debuggingDevice.Install (targetApk, keepData, ""/*"com.android.vending"*/); // TODO: Installer needs to be customisable
         }
         catch (Exception e)
         {
