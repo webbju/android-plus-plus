@@ -312,9 +312,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             string registerNamePrettified = "$" + registerName;
 
-            CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, registerNamePrettified);
-
-            property.Value = registerValue;
+            CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, registerNamePrettified, registerValue);
 
             m_stackRegisters.TryAdd (registerNamePrettified, property);
 

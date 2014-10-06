@@ -82,6 +82,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     protected readonly string m_fullExpression;
 
+    protected readonly string m_value;
+
     protected DebuggeeProperty m_parent;
 
     protected readonly List <DebuggeeProperty> m_children;
@@ -90,7 +92,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public DebuggeeProperty (DebugEngine engine, DebuggeeStackFrame stackFrame, string expression)
+    public DebuggeeProperty (DebugEngine engine, DebuggeeStackFrame stackFrame, string expression, string value)
     {
       m_debugEngine = engine;
 
@@ -101,9 +103,9 @@ namespace AndroidPlusPlus.VsDebugEngine
         throw new ArgumentNullException ("expression");
       }
 
-      Value = string.Empty;
-
       m_expression = expression;
+
+      m_value = value;
 
       m_parent = null;
 
@@ -134,7 +136,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public DebuggeeProperty (DebuggeeProperty parent, string expression)
-      : this (parent.m_debugEngine, parent.m_stackFrame, expression)
+      : this (parent.m_debugEngine, parent.m_stackFrame, expression, string.Empty)
     {
       m_parent = parent;
     }
@@ -163,12 +165,6 @@ namespace AndroidPlusPlus.VsDebugEngine
         return DebugEngineConstants.E_FAIL;
       }
     }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public string Value { get; set; }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -369,7 +365,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           }
 #endif
 
-          propertyInfoArray [0].bstrValue = Value;
+          propertyInfoArray [0].bstrValue = m_value;
 
           propertyInfoArray [0].dwFields |= enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE;
         }

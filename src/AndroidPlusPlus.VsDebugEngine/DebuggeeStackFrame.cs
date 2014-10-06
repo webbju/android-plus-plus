@@ -79,7 +79,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       m_documentContext = null;
 
-      m_property = new DebuggeeProperty (engine, this, frameName);
+      m_property = new DebuggeeProperty (engine, this, frameName, string.Empty);
 
       m_stackArguments = new ConcurrentDictionary<string, DebuggeeProperty> ();
 
@@ -183,16 +183,56 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         List<DEBUG_PROPERTY_INFO> filteredProperties = new List<DEBUG_PROPERTY_INFO> ();
 
-        if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs))
+        /*if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs))
         {
           DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
 
           LoggingUtils.RequireOk (m_property.GetPropertyInfo (requestedFields, radix, timeout, null, 0, infoArray));
 
           filteredProperties.Add (infoArray [0]);
+        }*/
+
+        uint numProperties;
+
+        IEnumDebugPropertyInfo2 enumeratedProperties;
+
+        LoggingUtils.RequireOk (m_property.EnumChildren (requestedFields, radix, ref guidFilter, enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_ALL, string.Empty, timeout, out enumeratedProperties));
+
+        LoggingUtils.RequireOk (enumeratedProperties.GetCount (out numProperties));
+
+        if (numProperties > 0)
+        {
+          DEBUG_PROPERTY_INFO [] debugProperties = new DEBUG_PROPERTY_INFO [numProperties];
+
+          LoggingUtils.RequireOk (enumeratedProperties.Next (numProperties, debugProperties, out numProperties));
+
+          for (uint i = 0; i < numProperties; ++i)
+          {
+            // 
+            // Determine whether this property should be filtered in/out.
+            // 
+
+            bool displayProperty = false;
+
+            if ((guidFilter == DebuggeeProperty.Filters.guidFilterArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
+            {
+              displayProperty |= m_stackArguments.ContainsKey (debugProperties [i].bstrName);
+            }
+
+            if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocals) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
+            {
+              displayProperty |= m_stackLocals.ContainsKey (debugProperties [i].bstrName);
+            }
+
+            if (displayProperty)
+            {
+              filteredProperties.Add (debugProperties [i]);
+            }
+          }
         }
 
-        if ((guidFilter == DebuggeeProperty.Filters.guidFilterArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
+
+        /*if ((guidFilter == DebuggeeProperty.Filters.guidFilterArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
         {
           foreach (KeyValuePair<string, DebuggeeProperty> argument in m_stackArguments)
           {
@@ -214,7 +254,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             filteredProperties.Add (infoArray [0]);
           }
-        }
+        }*/
 
         if ((guidFilter == DebuggeeProperty.Filters.guidFilterRegisters) || (guidFilter == DebuggeeProperty.Filters.guidFilterAutoRegisters))
         {
@@ -222,7 +262,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           // Registers must be specified in a collection/list as children of a 'CPU' property.
           // 
 
-          DebuggeeProperty registersPropertyList = new DebuggeeProperty (m_debugEngine, this, "CPU");
+          DebuggeeProperty registersPropertyList = new DebuggeeProperty (m_debugEngine, this, "CPU", string.Empty);
 
           foreach (KeyValuePair<string, DebuggeeProperty> register in m_stackRegisters)
           {

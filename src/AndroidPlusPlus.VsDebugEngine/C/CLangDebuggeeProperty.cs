@@ -34,8 +34,8 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public CLangDebuggeeProperty (CLangDebugger debugger, CLangDebuggeeStackFrame stackFrame, string expression)
-      : base (debugger.Engine, stackFrame, expression)
+    public CLangDebuggeeProperty (CLangDebugger debugger, CLangDebuggeeStackFrame stackFrame, string expression, string value)
+      : base (debugger.Engine, stackFrame, expression, value)
     {
       m_debugger = debugger;
 
@@ -47,7 +47,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public CLangDebuggeeProperty (CLangDebugger debugger, CLangDebuggeeStackFrame stackFrame, MiVariable gdbVariable)
-      : base (debugger.Engine, stackFrame, gdbVariable.Expression)
+      : base (debugger.Engine, stackFrame, gdbVariable.Expression, string.Empty)
     {
       m_debugger = debugger;
 
@@ -134,7 +134,32 @@ namespace AndroidPlusPlus.VsDebugEngine
           }
         }
 
-        LoggingUtils.RequireOk (base.EnumChildren (dwFields, dwRadix, ref guidFilter, dwAttribFilter, pszNameFilter, dwTimeout, out ppEnum));
+        List<DEBUG_PROPERTY_INFO> debugPropertyInfoList = new List<DEBUG_PROPERTY_INFO> ();
+
+        foreach (DebuggeeProperty child in m_children)
+        {
+
+
+          DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
+
+          LoggingUtils.RequireOk (child.GetPropertyInfo (dwFields, dwRadix, dwTimeout, null, 0, infoArray));
+
+          debugPropertyInfoList.Add (infoArray [0]);
+        }
+
+        if ((guidFilter == DebuggeeProperty.Filters.guidFilterArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
+        {
+        }
+
+        if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocals) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
+        {
+        }
+
+        if ((guidFilter == DebuggeeProperty.Filters.guidFilterRegisters) || (guidFilter == DebuggeeProperty.Filters.guidFilterAutoRegisters))
+        {
+        }
+
+        ppEnum = new DebuggeeProperty.Enumerator (debugPropertyInfoList);
 
         return DebugEngineConstants.S_OK;
       }
