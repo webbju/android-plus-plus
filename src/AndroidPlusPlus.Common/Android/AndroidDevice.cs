@@ -282,7 +282,6 @@ namespace AndroidPlusPlus.Common
       }
       finally
       {
-
         // 
         // Clear uploaded APK from temporary storage.
         // 

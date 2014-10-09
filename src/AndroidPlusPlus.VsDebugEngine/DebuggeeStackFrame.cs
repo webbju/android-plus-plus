@@ -214,6 +214,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             bool displayProperty = false;
 
+            if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs))
+            {
+              displayProperty |= true;
+            }
+
             if ((guidFilter == DebuggeeProperty.Filters.guidFilterArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
             {
               displayProperty |= m_stackArguments.ContainsKey (debugProperties [i].bstrName);
@@ -230,31 +235,6 @@ namespace AndroidPlusPlus.VsDebugEngine
             }
           }
         }
-
-
-        /*if ((guidFilter == DebuggeeProperty.Filters.guidFilterArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
-        {
-          foreach (KeyValuePair<string, DebuggeeProperty> argument in m_stackArguments)
-          {
-            DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
-
-            LoggingUtils.RequireOk (argument.Value.GetPropertyInfo (requestedFields, radix, timeout, null, 0, infoArray));
-
-            filteredProperties.Add (infoArray [0]);
-          }
-        }
-
-        if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocals) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
-        {
-          foreach (KeyValuePair<string, DebuggeeProperty> local in m_stackLocals)
-          {
-            DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
-
-            LoggingUtils.RequireOk (local.Value.GetPropertyInfo (requestedFields, radix, timeout, null, 0, infoArray));
-
-            filteredProperties.Add (infoArray [0]);
-          }
-        }*/
 
         if ((guidFilter == DebuggeeProperty.Filters.guidFilterRegisters) || (guidFilter == DebuggeeProperty.Filters.guidFilterAutoRegisters))
         {

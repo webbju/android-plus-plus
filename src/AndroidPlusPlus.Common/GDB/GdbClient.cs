@@ -108,8 +108,6 @@ namespace AndroidPlusPlus.Common
 
     private ConcurrentQueue<string> m_asyncOutputJobQueue = new ConcurrentQueue<string> ();
 
-    private Thread m_asyncInputProcessThread = null;
-
     private Thread m_asyncOutputProcessThread = null;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -191,10 +189,6 @@ namespace AndroidPlusPlus.Common
       // 
       // Create asynchronous input and output job queue threads.
       // 
-
-      //m_asyncInputProcessThread = new Thread (AsyncInputWorkerThreadBody);
-
-      //m_asyncInputProcessThread.Start ();
 
       m_asyncOutputProcessThread = new Thread (AsyncOutputWorkerThreadBody);
 
@@ -938,6 +932,8 @@ namespace AndroidPlusPlus.Common
 
         m_gdbClientInstance = null;
 
+        m_asyncOutputProcessThread = null;
+
         // 
         // If we're waiting on a synchronous command, signal a finish to process termination.
         // 
@@ -1028,6 +1024,11 @@ namespace AndroidPlusPlus.Common
 
         while (true)
         {
+          if (m_gdbClientInstance == null)
+          {
+            break;
+          }
+
           if (m_asyncOutputJobQueue.TryDequeue (out asyncOutput) && !(string.IsNullOrWhiteSpace (asyncOutput)))
           {
             try

@@ -12,7 +12,9 @@ Fixes/Improvements:
  - (Debugger) Added initial support for GDB 7.6 asynchronous 'breakpoint-notifications'.
  - (Debugger) Added support for skipping of GDB/MI variable 'pseudo' children.
  - (Debugger) Improved protection against spaces in file-names in several additional places.
- - Silenced the FC command which gave confusing stderr output when files weren't present.
+ - (Debugger) Improved performance and consistency of contiguous GDB/MI output, ensuring responses are handed in-order.
+ - (MSBuild) Silenced the FC command which gave confusing stderr output when files weren't present.
+ - (MSBuild) Modified 'AdditionalDependencies' to make its behaviour more consistent with Win32. Removed 'AdditionalLibraries' as a result.
 
 --------------------------------------------------------------------------------------------------------------------------------
 

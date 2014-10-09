@@ -242,13 +242,17 @@ namespace AndroidPlusPlus.VsDebugEngine
               if (localVariables [i].HasField ("arg"))
               {
                 m_stackArguments.TryAdd (variableName, property);
+
+                LoggingUtils.RequireOk (m_property.AddChildren (new DebuggeeProperty [] { property }));
               }
               else
               {
                 m_stackLocals.TryAdd (variableName, property);
+
+                LoggingUtils.RequireOk (m_property.AddChildren (new DebuggeeProperty [] { property }));
               }
 
-              LoggingUtils.RequireOk (m_property.AddChildren (new DebuggeeProperty [] { property }));
+              //LoggingUtils.RequireOk (m_property.AddChildren (new DebuggeeProperty [] { property }));
             }
           }
 

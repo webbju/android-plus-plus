@@ -134,32 +134,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           }
         }
 
-        List<DEBUG_PROPERTY_INFO> debugPropertyInfoList = new List<DEBUG_PROPERTY_INFO> ();
-
-        foreach (DebuggeeProperty child in m_children)
-        {
-
-
-          DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
-
-          LoggingUtils.RequireOk (child.GetPropertyInfo (dwFields, dwRadix, dwTimeout, null, 0, infoArray));
-
-          debugPropertyInfoList.Add (infoArray [0]);
-        }
-
-        if ((guidFilter == DebuggeeProperty.Filters.guidFilterArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
-        {
-        }
-
-        if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocals) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
-        {
-        }
-
-        if ((guidFilter == DebuggeeProperty.Filters.guidFilterRegisters) || (guidFilter == DebuggeeProperty.Filters.guidFilterAutoRegisters))
-        {
-        }
-
-        ppEnum = new DebuggeeProperty.Enumerator (debugPropertyInfoList);
+        LoggingUtils.RequireOk (base.EnumChildren (dwFields, dwRadix, ref guidFilter, dwAttribFilter, pszNameFilter, dwTimeout, out ppEnum));
 
         return DebugEngineConstants.S_OK;
       }

@@ -59,8 +59,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SystemLibraryDependencies>dl;GLESv1_CM;GLESv2;%(SystemLibraryDependencies)</SystemLibraryDependencies>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies></AdditionalDependencies>
-      <AdditionalLibraries>SDL2</AdditionalLibraries>
+      <AdditionalDependencies>SDL2;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputCommandLine>true</OutputCommandLine>
     </Link>
     <AndroidManifest>
       <IncludeRawAssetsDirectory>$(ProjectDir)assets</IncludeRawAssetsDirectory>
@@ -81,8 +81,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <SystemLibraryDependencies>dl;GLESv1_CM;GLESv2;%(SystemLibraryDependencies)</SystemLibraryDependencies>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies></AdditionalDependencies>
-      <AdditionalLibraries>SDL2</AdditionalLibraries>
+      <AdditionalDependencies>SDL2;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <AndroidManifest>
       <IncludeRawAssetsDirectory>$(ProjectDir)assets</IncludeRawAssetsDirectory>

@@ -142,18 +142,6 @@
   />
 
   <!--
-    AdditionalLibraries
-  -->
-
-  <StringListProperty 
-    Subtype="file" 
-    Name="AdditionalLibraries" 
-    DisplayName="Additional Libraries" 
-    Category="Input"
-    Switch="-l"
-  />
-
-  <!--
     AdditionalDependencies
   -->
 

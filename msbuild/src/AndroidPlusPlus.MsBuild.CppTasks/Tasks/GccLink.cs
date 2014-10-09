@@ -135,7 +135,7 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
           {
             sourceLibraryDependencies.Append (arg + " ");
           }
-          else if (arg.Contains ("lib") && arg.Contains (".a"))
+          else if (arg.EndsWith (".a"))
           {
             sourceLibraryDependencies.Append (arg + " ");
           }
@@ -147,21 +147,25 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
           {
             // Skip these duplicate group being/end markers. We're grouping everything anyway.
           }
+          else if (!arg.StartsWith ("-"))
+          {
+            if (Path.GetExtension (arg) == String.Empty)
+            {
+              // Support for libraries specified without -l (Win32 style); i.e. "SDL" -> "libSDL.a"
+
+              sourceLibraryDependencies.Append ("-l" + arg + " ");
+            }
+            else
+            {
+              responseFileCommands.Append (arg + " ");
+            }
+          }
           else
           {
             responseFileCommands.Append (arg + " ");
           }
         }
-#else
-        List<ITaskItem> resolvedLibraryItems = new List<ITaskItem> ();
 
-        List<ITaskItem> resolvedWholeLibraryItems = new List<ITaskItem> ();
-
-        if (!GetSourceResolvedLibraryDependencies (Sources [0], ref resolvedLibraryItems, ref resolvedWholeLibraryItems))
-        {
-          throw new InvalidOperationException ("Failed evaluating static library dependencies.");
-        }
-#endif
         responseFileCommands.Append (" -Wl,--start-group ");
 
         foreach (ITaskItem source in Sources)
@@ -172,7 +176,39 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
         responseFileCommands.Append (sourceLibraryDependencies.ToString ());
 
         responseFileCommands.Append (" -Wl,--end-group ");
+#else
+        List<ITaskItem> resolvedLibraryItems = new List<ITaskItem> ();
 
+        List<ITaskItem> resolvedWholeLibraryItems = new List<ITaskItem> ();
+
+        if (!GetSourceResolvedLibraryDependencies (Sources [0], ref resolvedLibraryItems, ref resolvedWholeLibraryItems))
+        {
+          throw new InvalidOperationException ("Failed evaluating static library dependencies.");
+        }
+
+        responseFileCommands.Append (" -Wl,--start-group ");
+
+        foreach (ITaskItem libraryItem in resolvedLibraryItems)
+        {
+          responseFileCommands.Append (PathUtils.SantiseWindowsPath (libraryItem.GetMetadata ("FullPath")) + " ");
+        }
+
+        responseFileCommands.Append (" -Wl,--whole-archive ");
+
+        foreach (ITaskItem libraryItem in resolvedWholeLibraryItems)
+        {
+          responseFileCommands.Append (PathUtils.SantiseWindowsPath (libraryItem.GetMetadata ("FullPath")) + " ");
+        }
+
+        responseFileCommands.Append (" -Wl,--no-whole-archive ");
+
+        foreach (ITaskItem source in Sources)
+        {
+          responseFileCommands.Append (PathUtils.SantiseWindowsPath (source.GetMetadata ("FullPath")) + " ");
+        }
+
+        responseFileCommands.Append (" -Wl,--end-group ");
+#endif
       }
       catch (Exception e)
       {
@@ -239,15 +275,15 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
         {
           string arg = responseFileArguments [i];
 
-          if (arg .StartsWith ("-L"))
+          if (arg.StartsWith ("-L"))
           {
             libraryDirectories.Add (arg.Substring (2));
           }
           else if (arg.StartsWith ("-l"))
           {
+            // GCC also accepts definitions with whitespace; "-l <lib>"
             if (arg.Length == 2)
             {
-              // GCC also accepts definitions with whitespace; "-l <lib>"
               arg = responseFileArguments [++i];
             }
 
@@ -258,8 +294,10 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
 
             libraryFiles.Add ("lib" + arg.Substring (2));
           }
-          else if (arg.Contains ("lib") && arg.Contains (".a"))
+          else if (arg.EndsWith (".a"))
           {
+            // Support for libraries specified by filename (without path).
+
             if (wholeLibraryGroup)
             {
               libraryWholeFiles.Add (arg);
@@ -274,6 +312,20 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
           else if (arg.Equals ("-Wl,--no-whole-archive"))
           {
             wholeLibraryGroup = false;
+          }
+          else if (!arg.StartsWith ("-"))
+          {
+            // Support for libraries specified without -l (Win32 style); i.e. "SDL" -> "libSDL.a"
+
+            if (Path.GetExtension (arg) == String.Empty)
+            {
+              if (wholeLibraryGroup)
+              {
+                libraryWholeFiles.Add ("lib" + arg);
+              }
+
+              libraryFiles.Add ("lib" + arg);
+            }
           }
         }
 
