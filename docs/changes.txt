@@ -4,13 +4,13 @@ Version 0.3.2
 New functionality:
 
  - (Debugger) Added redistributions of GDB 7.6 (32 and 64bit) from NDK r10b. Removed patched and original variants from r10.
+ - (Debugger) Added initial support for GDB 7.6 asynchronous 'breakpoint-notifications'.
+ - (Debugger) Added support for skipping of GDB/MI variable 'pseudo' children.
 
 Fixes/Improvements:
 
  - Fixed an issue with bootstrapping where 'setx' environment variable registration is only accessible on new command prompts.
  - (Debugger) Bumped attach time-out to 60 seconds to support older, slower devices.
- - (Debugger) Added initial support for GDB 7.6 asynchronous 'breakpoint-notifications'.
- - (Debugger) Added support for skipping of GDB/MI variable 'pseudo' children.
  - (Debugger) Improved protection against spaces in file-names in several additional places.
  - (Debugger) Improved performance and consistency of contiguous GDB/MI output, ensuring responses are handed in-order.
  - (Debugger) Fixed behaviour when GDB connections are lost or dropped. This should also include pulling the USB cable.
