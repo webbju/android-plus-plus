@@ -462,6 +462,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private void OnClientStreamRecord (MiStreamRecord streamRecord)
     {
+      LoggingUtils.PrintFunction ();
+
       switch (streamRecord.Type)
       {
         case MiStreamRecord.StreamType.Console:
@@ -487,6 +489,21 @@ namespace AndroidPlusPlus.VsDebugEngine
           // The log stream contains debugging messages being produced by gdb's internals.
 
           LoggingUtils.Print (string.Format ("[CLangDebugger] Log: {0}", streamRecord.Stream));
+
+          if (streamRecord.Stream.Contains ("Remote communication error"))
+          {
+            ThreadPool.QueueUserWorkItem (delegate (object state)
+            {
+              try
+              {
+                LoggingUtils.RequireOk (Engine.TerminateProcess (NativeProgram.DebugProgram.DebugProcess));
+              }
+              catch (Exception e)
+              {
+                LoggingUtils.HandleException (e);
+              }
+            });
+          }
 
           break;
         }
@@ -792,7 +809,21 @@ namespace AndroidPlusPlus.VsDebugEngine
                     case "exited-normally":
                     case "exited-signalled":
                     {
-                      LoggingUtils.RequireOk (Engine.TerminateProcess (NativeProgram.DebugProgram.DebugProcess));
+                      // 
+                      // React to program termination, but defer this so it doesn't consume the async output thread.
+                      // 
+
+                      ThreadPool.QueueUserWorkItem (delegate (object state)
+                      {
+                        try
+                        {
+                          LoggingUtils.RequireOk (Engine.TerminateProcess (NativeProgram.DebugProgram.DebugProcess));
+                        }
+                        catch (Exception e)
+                        {
+                          LoggingUtils.HandleException (e);
+                        }
+                      });
 
                       break;
                     }

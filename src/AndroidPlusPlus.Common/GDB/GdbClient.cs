@@ -110,6 +110,8 @@ namespace AndroidPlusPlus.Common
 
     private Thread m_asyncOutputProcessThread = null;
 
+    private ManualResetEvent m_asyncOutputProcessThreadExitSignal = new ManualResetEvent (false);
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -146,6 +148,13 @@ namespace AndroidPlusPlus.Common
           m_gdbClientInstance.Dispose ();
 
           m_gdbClientInstance = null;
+        }
+
+        if (m_asyncOutputProcessThread != null)
+        {
+          m_asyncOutputProcessThreadExitSignal.Set ();
+
+          m_asyncOutputProcessThread = null;
         }
       }
     }
@@ -874,8 +883,6 @@ namespace AndroidPlusPlus.Common
 
     public void ProcessStdout (object sendingProcess, DataReceivedEventArgs args)
     {
-      m_timeSinceLastOperation.Restart ();
-
       if (!string.IsNullOrEmpty (args.Data))
       {
         LoggingUtils.Print (string.Format ("[GdbClient] ProcessStdout: {0}", args.Data));
@@ -886,9 +893,9 @@ namespace AndroidPlusPlus.Common
           // Distribute result records to registered delegate callbacks.
           // 
 
-          m_asyncOutputJobQueue.Enqueue (args.Data);
+          m_timeSinceLastOperation.Restart ();
 
-          Thread.Yield ();
+          m_asyncOutputJobQueue.Enqueue (args.Data);
         }
         catch (Exception e)
         {
@@ -930,9 +937,9 @@ namespace AndroidPlusPlus.Common
 
         LoggingUtils.Print (string.Format ("[GdbClient] ProcessExited: {0}", args));
 
-        m_gdbClientInstance = null;
+        m_asyncOutputProcessThreadExitSignal.Set ();
 
-        m_asyncOutputProcessThread = null;
+        m_gdbClientInstance = null;
 
         // 
         // If we're waiting on a synchronous command, signal a finish to process termination.
@@ -1022,7 +1029,9 @@ namespace AndroidPlusPlus.Common
       {
         string asyncOutput = null;
 
-        while (true)
+        LoggingUtils.Print (string.Format ("[GdbClient] AsyncOutputWorkerThreadBody: Entered"));
+
+        while (!m_asyncOutputProcessThreadExitSignal.WaitOne (0))
         {
           if (m_gdbClientInstance == null)
           {
@@ -1126,10 +1135,12 @@ namespace AndroidPlusPlus.Common
             }
           }
 
-          Thread.Yield ();
+          //Thread.Yield ();
 
           asyncOutput = null;
         }
+
+        LoggingUtils.Print (string.Format ("[GdbClient] AsyncOutputWorkerThreadBody: Exited"));
       }
       catch (Exception e)
       {
