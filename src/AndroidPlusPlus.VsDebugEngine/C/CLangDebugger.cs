@@ -665,9 +665,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
 #if false
               RefreshSharedLibraries ();
+#endif
 
               Engine.BreakpointManager.RefreshBreakpoints ();
-#endif
 
               if (true)
               {
@@ -705,10 +705,21 @@ namespace AndroidPlusPlus.VsDebugEngine
                         if (boundBreakpoint == null)
                         {
                           // 
-                          // Could not locate a registered breakpoint with matching id.
+                          // Could not find the breakpoint we're looking for. Refresh everything and try again.
                           // 
 
                           Engine.BreakpointManager.SetDirty ();
+
+                          Engine.BreakpointManager.RefreshBreakpoints ();
+
+                          boundBreakpoint = Engine.BreakpointManager.FindBoundBreakpoint (breakpointId);
+                        }
+
+                        if (boundBreakpoint == null)
+                        {
+                          // 
+                          // Could not locate a registered breakpoint with matching id.
+                          // 
 
                           DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, "Breakpoint #" + breakpointId, asyncRecord ["reason"] [0].GetString (), 0x00000000, canContinue);
 
@@ -726,7 +737,7 @@ namespace AndroidPlusPlus.VsDebugEngine
                             // Hit a breakpoint which internally is flagged as deleted. Oh noes!
                             // 
 
-                            DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, "Breakpoint #" + breakpointId, asyncRecord ["reason"] [0].GetString (), 0x00000000, canContinue);
+                            DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, "Breakpoint #" + breakpointId + " [deleted]", asyncRecord ["reason"] [0].GetString (), 0x00000000, canContinue);
 
                             Engine.Broadcast (exception, NativeProgram.DebugProgram, stoppedThread);
                           }
@@ -990,7 +1001,10 @@ namespace AndroidPlusPlus.VsDebugEngine
                   Engine.Broadcast (new DebugEngineEvent.SymbolSearch (module as IDebugModule3, module.Name), NativeProgram.DebugProgram, null);
                 }
 
-                Engine.BreakpointManager.SetDirty ();
+                if (!GdbClient.GetClientFeatureSupported ("breakpoint-notifications"))
+                {
+                  Engine.BreakpointManager.SetDirty ();
+                }
               }
               catch (Exception e)
               {
@@ -1016,7 +1030,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                 Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, false), NativeProgram.DebugProgram, null);
 
-                Engine.BreakpointManager.SetDirty ();
+                if (!GdbClient.GetClientFeatureSupported ("breakpoint-notifications"))
+                {
+                  Engine.BreakpointManager.SetDirty ();
+                }
               }
               catch (Exception e)
               {
@@ -1027,12 +1044,29 @@ namespace AndroidPlusPlus.VsDebugEngine
             }
 
             case "breakpoint-created":
-            case "breakpoint-modified":
             case "breakpoint-deleted":
+            {
+              break;
+            }
+
+            case "breakpoint-modified":
             {
               try
               {
-                Engine.BreakpointManager.SetDirty ();
+                uint number = asyncRecord ["bkpt"] [0] ["number"] [0].GetUnsignedInt ();
+
+                DebuggeeBreakpointPending pendingBreakpoint = Engine.BreakpointManager.FindPendingBreakpoint (number);
+
+                if (pendingBreakpoint != null)
+                {
+                  pendingBreakpoint.RefreshBoundBreakpoints ();
+
+                  pendingBreakpoint.RefreshErrorBreakpoints ();
+                }
+                else
+                {
+                  Engine.BreakpointManager.SetDirty ();
+                }
               }
               catch (Exception e)
               {

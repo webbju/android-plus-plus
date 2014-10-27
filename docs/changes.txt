@@ -14,8 +14,11 @@ Fixes/Improvements:
  - (Debugger) Improved protection against spaces in file-names in several additional places.
  - (Debugger) Improved performance and consistency of contiguous GDB/MI output, ensuring responses are handed in-order.
  - (Debugger) Fixed behaviour when GDB connections are lost or dropped. This should also include pulling the USB cable.
+ - (Debugger) Added ability to process concurrent GDB/MI stream output whilst handling an 'async' event.
  - (MSBuild) Silenced the FC command which gave confusing stderr output when files weren't present.
  - (MSBuild) Modified 'AdditionalDependencies' to make its behaviour more consistent with Win32. Removed 'AdditionalLibraries' as a result.
+ - (MSBuild) Added utilisation of response (argument) files for 'JavaCompile'-based compilation.
+ 
 
 --------------------------------------------------------------------------------------------------------------------------------
 

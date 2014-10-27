@@ -197,33 +197,55 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected override string GenerateCommandLineFromProps (ITaskItem source)
+    protected override string GenerateCommandLineCommands ()
     {
       // 
       // Build a command-line based on parsing switches from the registered property sheet, and any additional flags.
       // 
 
-      StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
-
       try
       {
-        if (source == null)
-        {
-          throw new ArgumentNullException ();
-        }
+        StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
 
         builder.Append ("--jdk-home " + PathUtils.QuoteIfNeeded (JavaHomeDir) + " ");
 
-        builder.Append ("-verbose" + " ");
-
-        builder.Append (m_parsedProperties.Parse (source));
+        return builder.ToString ();
       }
       catch (Exception e)
       {
         Log.LogErrorFromException (e, true);
       }
 
-      return builder.ToString ();
+      return string.Empty;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override string GenerateResponseFileCommands ()
+    {
+      try
+      {
+        StringBuilder builder = new StringBuilder ();
+
+        builder.Append ("-verbose" + " ");
+
+        builder.Append (m_parsedProperties.Parse (Sources [0]) + " ");
+
+        foreach (ITaskItem source in Sources)
+        {
+          builder.Append (PathUtils.QuoteIfNeeded (source.GetMetadata ("Identity")) + " ");
+        }
+
+        return builder.ToString ();
+      }
+      catch (Exception e)
+      {
+        Log.LogErrorFromException (e, true);
+      }
+
+      return string.Empty;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -255,6 +277,18 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     protected override void AddTaskSpecificOutputFiles (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
     {
       trackedFileManager.AddDependencyForSources (m_outputClassSourceFiles.ToArray (), sources);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override bool AppendSourcesToCommandLine
+    {
+      get
+      {
+        return false;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -88,18 +88,27 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
     protected override string GenerateCommandLineCommands ()
     {
-      StringBuilder commandLineBuilder = new StringBuilder ();
-
-      commandLineBuilder.Append (string.Format ("--jdk-home {0} ", PathUtils.QuoteIfNeeded (JavaHomeDir)));
-
-      commandLineBuilder.Append (string.Format ("--jar-output {0} ", PathUtils.QuoteIfNeeded (OutputFile.GetMetadata ("FullPath"))));
-
-      if (ManifestFile != null)
+      try
       {
-        commandLineBuilder.Append (string.Format ("--jar-manifest {0} ", PathUtils.QuoteIfNeeded (ManifestFile.GetMetadata ("FullPath"))));
+        StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
+
+        builder.Append (string.Format ("--jdk-home {0} ", PathUtils.QuoteIfNeeded (JavaHomeDir)));
+
+        builder.Append (string.Format ("--jar-output {0} ", PathUtils.QuoteIfNeeded (OutputFile.GetMetadata ("FullPath"))));
+
+        if (ManifestFile != null)
+        {
+          builder.Append (string.Format ("--jar-manifest {0} ", PathUtils.QuoteIfNeeded (ManifestFile.GetMetadata ("FullPath"))));
+        }
+
+        return builder.ToString ();
+      }
+      catch (Exception e)
+      {
+        Log.LogErrorFromException (e);
       }
 
-      return commandLineBuilder.ToString ();
+      return string.Empty;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -108,14 +117,23 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
     protected override string GenerateResponseFileCommands ()
     {
-      StringBuilder responseFileBuilder = new StringBuilder ();
-
-      foreach (ITaskItem source in Sources)
+      try
       {
-        responseFileBuilder.Append (PathUtils.QuoteIfNeeded (source.GetMetadata ("FullPath")) + " ");
+        StringBuilder builder = new StringBuilder ();
+
+        foreach (ITaskItem source in Sources)
+        {
+          builder.Append (PathUtils.QuoteIfNeeded (source.GetMetadata ("Identity")) + " ");
+        }
+
+        return builder.ToString ();
+      }
+      catch (Exception e)
+      {
+        Log.LogErrorFromException (e);
       }
 
-      return responseFileBuilder.ToString ();
+      return string.Empty;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

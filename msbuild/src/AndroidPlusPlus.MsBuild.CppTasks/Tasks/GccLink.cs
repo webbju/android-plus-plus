@@ -170,7 +170,7 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
 
         foreach (ITaskItem source in Sources)
         {
-          responseFileCommands.Append (PathUtils.SantiseWindowsPath (source.GetMetadata ("FullPath")) + " ");
+          responseFileCommands.Append (PathUtils.SantiseWindowsPath (source.GetMetadata ("Identity")) + " ");
         }
 
         responseFileCommands.Append (sourceLibraryDependencies.ToString ());

@@ -100,17 +100,17 @@ namespace AndroidPlusPlus.Common
 
     private Stopwatch m_timeSinceLastOperation = new Stopwatch ();
 
+    private ManualResetEvent m_sessionStarted = new ManualResetEvent (false);
+
     private uint m_sessionCommandToken = 1; // Start at 1 so 0 can represent an invalid token.
 
     private Dictionary<uint, string> m_registerIdMapping = new Dictionary<uint, string> ();
 
-    private ConcurrentQueue<ProcessGdbMiAsyncInputParamType> m_asyncInputJobQueue = new ConcurrentQueue<ProcessGdbMiAsyncInputParamType> ();
+    private ConcurrentQueue<MiAsyncRecord> m_asyncRecordWorkerQueue = new ConcurrentQueue<MiAsyncRecord> ();
 
-    private ConcurrentQueue<string> m_asyncOutputJobQueue = new ConcurrentQueue<string> ();
+    private Thread m_asyncRecordWorkerThread = null;
 
-    private Thread m_asyncOutputProcessThread = null;
-
-    private ManualResetEvent m_asyncOutputProcessThreadExitSignal = new ManualResetEvent (false);
+    private ManualResetEvent m_asyncRecordWorkerThreadSignal = new ManualResetEvent (false);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -150,11 +150,11 @@ namespace AndroidPlusPlus.Common
           m_gdbClientInstance = null;
         }
 
-        if (m_asyncOutputProcessThread != null)
+        if (m_asyncRecordWorkerThread != null)
         {
-          m_asyncOutputProcessThreadExitSignal.Set ();
+          m_asyncRecordWorkerThreadSignal.Set ();
 
-          m_asyncOutputProcessThread = null;
+          m_asyncRecordWorkerThread = null;
         }
       }
     }
@@ -195,13 +195,32 @@ namespace AndroidPlusPlus.Common
 
       m_gdbClientInstance.Start (this);
 
+      uint timeout = 5000;
+
+      bool responseSignaled = false;
+
+      while ((!responseSignaled) && (m_timeSinceLastOperation.ElapsedMilliseconds < timeout))
+      {
+        responseSignaled = m_sessionStarted.WaitOne (0);
+
+        if (!responseSignaled)
+        {
+          Thread.Yield ();
+        }
+      }
+
+      if (!responseSignaled)
+      {
+        throw new TimeoutException ("Timed out waiting for GDB client to execute");
+      }
+
       // 
       // Create asynchronous input and output job queue threads.
       // 
 
-      m_asyncOutputProcessThread = new Thread (AsyncOutputWorkerThreadBody);
+      m_asyncRecordWorkerThread = new Thread (AsyncOutputWorkerThreadBody);
 
-      m_asyncOutputProcessThread.Start ();
+      m_asyncRecordWorkerThread.Start ();
 
       // 
       // Evaluate this client's GDB/MI support and capabilities. 
@@ -895,7 +914,90 @@ namespace AndroidPlusPlus.Common
 
           m_timeSinceLastOperation.Restart ();
 
-          m_asyncOutputJobQueue.Enqueue (args.Data);
+          MiRecord record = MiInterpreter.ParseGdbOutputRecord (args.Data);
+
+          if ((record is MiPromptRecord))
+          {
+            m_sessionStarted.Set ();
+          }
+          else if ((record is MiAsyncRecord) && (OnAsyncRecord != null))
+          {
+            MiAsyncRecord asyncRecord = record as MiAsyncRecord;
+
+            m_asyncRecordWorkerQueue.Enqueue (asyncRecord); // Offload async processing.
+          }
+          else if ((record is MiResultRecord) && (OnResultRecord != null))
+          {
+            MiResultRecord resultRecord = record as MiResultRecord;
+
+            OnResultRecord (resultRecord);
+          }
+          else if ((record is MiStreamRecord) && (OnStreamRecord != null))
+          {
+            MiStreamRecord streamRecord = record as MiStreamRecord;
+
+            OnStreamRecord (streamRecord);
+
+            // 
+            // Non-GDB/MI commands (standard client interface commands) report their output using standard stream records.
+            // We cache these outputs for any active CLI commands, identifiable as the commands don't start with '-'.
+            // 
+
+            lock (m_asyncCommandData)
+            {
+              foreach (KeyValuePair<uint, AsyncCommandData> asyncCommand in m_asyncCommandData)
+              {
+                if (!asyncCommand.Value.Command.StartsWith ("-"))
+                {
+                  asyncCommand.Value.StreamRecords.Add (streamRecord);
+                }
+                else if (asyncCommand.Value.Command.StartsWith ("-interpreter-exec console"))
+                {
+                  asyncCommand.Value.StreamRecords.Add (streamRecord);
+                }
+              }
+            }
+          }
+
+          // 
+          // Call the corresponding registered delegate for the token response.
+          // 
+
+          MiResultRecord callbackRecord = record as MiResultRecord;
+
+          if ((callbackRecord != null) && (callbackRecord.Token != 0))
+          {
+            AsyncCommandData callbackCommandData = null;
+
+            lock (m_asyncCommandData)
+            {
+              if (m_asyncCommandData.TryGetValue (callbackRecord.Token, out callbackCommandData))
+              {
+                callbackRecord.Records.AddRange (callbackCommandData.StreamRecords);
+
+                m_asyncCommandData.Remove (callbackRecord.Token);
+              }
+            }
+
+            // 
+            // Spawn any registered callback handlers on a dedicated thread, as not to block GDB output.
+            // 
+
+            if ((callbackCommandData != null) && (callbackCommandData.ResultDelegate != null))
+            {
+              ThreadPool.QueueUserWorkItem (delegate (object state)
+              {
+                try
+                {
+                  callbackCommandData.ResultDelegate (callbackRecord);
+                }
+                catch (Exception e)
+                {
+                  LoggingUtils.HandleException (e);
+                }
+              });
+            }
+          }
         }
         catch (Exception e)
         {
@@ -937,7 +1039,7 @@ namespace AndroidPlusPlus.Common
 
         LoggingUtils.Print (string.Format ("[GdbClient] ProcessExited: {0}", args));
 
-        m_asyncOutputProcessThreadExitSignal.Set ();
+        m_asyncRecordWorkerThreadSignal.Set ();
 
         m_gdbClientInstance = null;
 
@@ -1027,107 +1129,22 @@ namespace AndroidPlusPlus.Common
 
       try
       {
-        string asyncOutput = null;
+        MiAsyncRecord asyncRecord = null;
 
         LoggingUtils.Print (string.Format ("[GdbClient] AsyncOutputWorkerThreadBody: Entered"));
 
-        while (!m_asyncOutputProcessThreadExitSignal.WaitOne (0))
+        while (!m_asyncRecordWorkerThreadSignal.WaitOne (0))
         {
           if (m_gdbClientInstance == null)
           {
             break;
           }
 
-          if (m_asyncOutputJobQueue.TryDequeue (out asyncOutput) && !(string.IsNullOrWhiteSpace (asyncOutput)))
+          if (m_asyncRecordWorkerQueue.TryDequeue (out asyncRecord))
           {
             try
             {
-              LoggingUtils.Print (string.Format ("[GdbClient] AsyncOutputWorkerThreadBody: {0}", asyncOutput));
-
-              MiRecord record = MiInterpreter.ParseGdbOutputRecord (asyncOutput);
-
-              if (record is MiPromptRecord)
-              {
-                //m_asyncCommandLock.Set ();
-              }
-              else if ((record is MiAsyncRecord) && (OnAsyncRecord != null))
-              {
-                MiAsyncRecord asyncRecord = record as MiAsyncRecord;
-
-                OnAsyncRecord (asyncRecord);
-              }
-              else if ((record is MiResultRecord) && (OnResultRecord != null))
-              {
-                MiResultRecord resultRecord = record as MiResultRecord;
-
-                OnResultRecord (resultRecord);
-              }
-              else if ((record is MiStreamRecord) && (OnStreamRecord != null))
-              {
-                MiStreamRecord streamRecord = record as MiStreamRecord;
-
-                OnStreamRecord (streamRecord);
-
-                // 
-                // Non-GDB/MI commands (standard client interface commands) report their output using standard stream records.
-                // We cache these outputs for any active CLI commands, identifiable as the commands don't start with '-'.
-                // 
-
-                lock (m_asyncCommandData)
-                {
-                  foreach (KeyValuePair<uint, AsyncCommandData> asyncCommand in m_asyncCommandData)
-                  {
-                    if (!asyncCommand.Value.Command.StartsWith ("-"))
-                    {
-                      asyncCommand.Value.StreamRecords.Add (streamRecord);
-                    }
-                    else if (asyncCommand.Value.Command.StartsWith ("-interpreter-exec console"))
-                    {
-                      asyncCommand.Value.StreamRecords.Add (streamRecord);
-                    }
-                  }
-                }
-              }
-
-              // 
-              // Call the corresponding registered delegate for the token response.
-              // 
-
-              MiResultRecord callbackRecord = record as MiResultRecord;
-
-              if ((callbackRecord != null) && (callbackRecord.Token != 0))
-              {
-                AsyncCommandData callbackCommandData = null;
-
-                lock (m_asyncCommandData)
-                {
-                  if (m_asyncCommandData.TryGetValue (callbackRecord.Token, out callbackCommandData))
-                  {
-                    callbackRecord.Records.AddRange (callbackCommandData.StreamRecords);
-
-                    m_asyncCommandData.Remove (callbackRecord.Token);
-                  }
-                }
-
-                // 
-                // Spawn any registered callback handlers on a dedicated thread, as not to block GDB output.
-                // 
-
-                if ((callbackCommandData != null) && (callbackCommandData.ResultDelegate != null))
-                {
-                  ThreadPool.QueueUserWorkItem (delegate (object state)
-                  {
-                    try
-                    {
-                      callbackCommandData.ResultDelegate (callbackRecord);
-                    }
-                    catch (Exception e)
-                    {
-                      LoggingUtils.HandleException (e);
-                    }
-                  });
-                }
-              }
+              OnAsyncRecord (asyncRecord);
             }
             catch (Exception e)
             {
@@ -1135,9 +1152,7 @@ namespace AndroidPlusPlus.Common
             }
           }
 
-          //Thread.Yield ();
-
-          asyncOutput = null;
+          asyncRecord = null;
         }
 
         LoggingUtils.Print (string.Format ("[GdbClient] AsyncOutputWorkerThreadBody: Exited"));

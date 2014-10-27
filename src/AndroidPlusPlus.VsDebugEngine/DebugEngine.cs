@@ -245,7 +245,7 @@ namespace AndroidPlusPlus.VsDebugEngine
               if (currentThread == null)
               {
                 // Lack of current thread is usually a good indication that connection/attaching failed.
-                throw new InvalidOperationException ("Failed to retrieve program's current thread.");
+                throw new InvalidOperationException (string.Format ("Failed to retrieve program's current thread ({0}).", NativeDebugger.NativeProgram.CurrentThreadId));
               }
 
               Broadcast (new DebugEngineEvent.UiDebugLaunchServiceEvent (DebugEngineEvent.UiDebugLaunchServiceEvent.EventType.LogStatus, string.Format ("Starting JDB client...")), null, null);

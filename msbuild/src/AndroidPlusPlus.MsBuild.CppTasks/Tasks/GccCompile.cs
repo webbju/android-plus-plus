@@ -72,8 +72,6 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
       // Build a command-line based on parsing switches from the registered property sheet, and any additional flags.
       // 
 
-      StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
-
       try
       {
         if (source == null)
@@ -81,16 +79,20 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
           throw new ArgumentNullException ();
         }
 
+        StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
+
         builder.Append (m_parsedProperties.Parse (source));
 
         builder.Append (" -c "); // compile the C/C++ file
+
+        return builder.ToString ();
       }
       catch (Exception e)
       {
         Log.LogErrorFromException (e, true);
       }
 
-      return builder.ToString ();
+      return string.Empty;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -298,6 +298,49 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    public virtual int CreateErrorBreakpoint (string errorReason, DebuggeeDocumentContext documentContext, DebuggeeCodeContext codeContext)
+    {
+      // 
+      // Create and broadcast a generic (non language-specific) errored breakpoint.
+      // 
+
+      LoggingUtils.PrintFunction ();
+
+      try
+      {
+        DebuggeeBreakpointError errorBreakpoint = new DebuggeeBreakpointError (m_breakpointManager, this, documentContext.GetCodeContext (), errorReason);
+
+        lock (m_errorBreakpoints)
+        {
+          m_errorBreakpoints.Add (errorBreakpoint);
+        }
+
+        uint numDebugPrograms = 1;
+
+        IEnumDebugPrograms2 debugPrograms;
+
+        IDebugProgram2 [] debugProgramsArray = new IDebugProgram2 [numDebugPrograms];
+
+        LoggingUtils.RequireOk (m_breakpointManager.Engine.EnumPrograms (out debugPrograms));
+
+        LoggingUtils.RequireOk (debugPrograms.Next (numDebugPrograms, debugProgramsArray, ref numDebugPrograms));
+
+        m_breakpointManager.Engine.Broadcast (new DebugEngineEvent.BreakpointError (errorBreakpoint), debugProgramsArray [0], null);
+
+        return DebugEngineConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return DebugEngineConstants.E_FAIL;
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public virtual void RefreshBoundBreakpoints ()
     {
       throw new NotImplementedException ();
@@ -338,10 +381,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        lock (m_errorBreakpoints)
-        {
-          m_errorBreakpoints.Clear ();
-        }
+        ClearErrorBreakpoints ();
 
         if (m_breakpointDeleted)
         {

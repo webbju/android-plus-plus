@@ -114,9 +114,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           }
         }
 
-        if (resultRecord.HasField ("current-thread"))
+        if (resultRecord.HasField ("current-thread-id"))
         {
-          CurrentThreadId = resultRecord ["current-thread"] [0].GetUnsignedInt ();
+          CurrentThreadId = resultRecord ["current-thread-id"] [0].GetUnsignedInt ();
         }
       }
       catch (Exception e)
