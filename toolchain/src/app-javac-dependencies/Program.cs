@@ -33,8 +33,6 @@ namespace app_javac_dependencies
 
     private static HashSet<string> s_sourcePathList = new HashSet<string> ();
 
-    private static HashSet<string> s_sourceFileList = new HashSet<string> ();
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -55,16 +53,9 @@ namespace app_javac_dependencies
 
         using (Process trackedProcess = new Process ())
         {
-          StringBuilder argumentsBuilder = new StringBuilder ();
+          StringBuilder argumentsBuilder = new StringBuilder (32767);
 
           argumentsBuilder.Append (string.Join (" ", s_javacToolArguments));
-
-          argumentsBuilder.Append (" ");
-
-          foreach (string sourceFile in s_sourceFileList)
-          {
-            argumentsBuilder.Append (QuotePathIfNeeded (sourceFile) + " ");
-          }
 
           trackedProcess.StartInfo = new ProcessStartInfo (Path.Combine (s_jdkHomePath, "bin", "javac.exe"), argumentsBuilder.ToString ());
 
@@ -127,9 +118,7 @@ namespace app_javac_dependencies
       }
       catch (Exception e)
       {
-        Debug.WriteLine ("[app-javac-depedencies] Encountered exception: " + e.Message + "\nStack trace: " + e.StackTrace);
-
-        Console.WriteLine ("[app-javac-depedencies] Encountered exception: " + e.Message + "\nStack trace: " + e.StackTrace);
+        LogException (e);
 
         returnCode = -1;
       }
@@ -197,14 +186,7 @@ namespace app_javac_dependencies
 
           default:
           {
-            if (args [i].EndsWith (".java"))
-            {
-              s_sourceFileList.Add (args [i]);
-            }
-            else
-            {
-              s_javacToolArguments.Add (args [i]);
-            }
+            s_javacToolArguments.Add (args [i]);
 
             break;
           }
@@ -231,11 +213,6 @@ namespace app_javac_dependencies
       if (!File.Exists (Path.Combine (s_jdkHomePath, "bin", "javac.exe")))
       {
         throw new ArgumentException ("--jdk-home references an invalid JDK installation. Can not find required 'bin\\javac.exe' tool.");
-      }
-
-      if (s_sourceFileList.Count == 0)
-      {
-        throw new ArgumentException ("No .java source files provided.");
       }
 
       if (s_sourcePathList.Count > 0)
@@ -403,6 +380,51 @@ namespace app_javac_dependencies
       }
 
       return "\"" + arg + "\"";
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private static int FindEndOfFilename (string line)
+    {
+      // 
+      // Search line for an unescaped space character (which represents the end of file), or EOF.
+      // 
+
+      int i;
+
+      bool escapedSequence = false;
+
+      for (i = 0; i < line.Length; ++i)
+      {
+        if (line [i] == '\\')
+        {
+          escapedSequence = true;
+        }
+        else if ((line [i] == ' ') && !escapedSequence)
+        {
+          break;
+        }
+        else if (escapedSequence)
+        {
+          escapedSequence = false;
+        }
+      }
+
+      return i;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private static void LogException (Exception e)
+    {
+      Debug.WriteLine ("[app-javac-depedencies] Encountered exception: " + e.Message + "\nStack trace: " + e.StackTrace);
+
+      Console.WriteLine ("[app-javac-depedencies] Encountered exception: " + e.Message + "\nStack trace: " + e.StackTrace);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

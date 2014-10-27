@@ -85,10 +85,6 @@ namespace app_jar_dependencies
 
             Directory.CreateDirectory (packageNameAsDir);
 
-            //Debug.WriteLine ("packageNameAsDir: " + packageNameAsDir);
-
-            //Debug.WriteLine ("className: " + className);
-
             File.Copy (classFile, string.Format ("{0}/{1}.class", packageNameAsDir, className));
           }
           catch (Exception e)
