@@ -88,27 +88,18 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
     protected override string GenerateCommandLineCommands ()
     {
-      try
+      StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
+
+      builder.Append (string.Format ("--jdk-home {0} ", PathUtils.QuoteIfNeeded (JavaHomeDir)));
+
+      builder.Append (string.Format ("--jar-output {0} ", PathUtils.QuoteIfNeeded (OutputFile.GetMetadata ("FullPath"))));
+
+      if (ManifestFile != null)
       {
-        StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
-
-        builder.Append (string.Format ("--jdk-home {0} ", PathUtils.QuoteIfNeeded (JavaHomeDir)));
-
-        builder.Append (string.Format ("--jar-output {0} ", PathUtils.QuoteIfNeeded (OutputFile.GetMetadata ("FullPath"))));
-
-        if (ManifestFile != null)
-        {
-          builder.Append (string.Format ("--jar-manifest {0} ", PathUtils.QuoteIfNeeded (ManifestFile.GetMetadata ("FullPath"))));
-        }
-
-        return builder.ToString ();
-      }
-      catch (Exception e)
-      {
-        Log.LogErrorFromException (e);
+        builder.Append (string.Format ("--jar-manifest {0} ", PathUtils.QuoteIfNeeded (ManifestFile.GetMetadata ("FullPath"))));
       }
 
-      return string.Empty;
+      return builder.ToString ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

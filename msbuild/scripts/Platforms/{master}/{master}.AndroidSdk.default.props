@@ -4,12 +4,22 @@
 
     <__AndroidSdkPropsImported>true</__AndroidSdkPropsImported>
 
+    <!--
+      Evaluate default Android SDK root directory.
+    -->
+
     <AndroidSdkRoot Condition="'$(AndroidSdkRoot)' == ''">$(ANDROID_SDK)</AndroidSdkRoot>
     <AndroidSdkRoot Condition="'$(AndroidSdkRoot)' == ''">$(ANDROID_SDK_ROOT)</AndroidSdkRoot>
     <AndroidSdkRoot Condition="'$(AndroidSdkRoot)' == ''">$(ANDROID_HOME)</AndroidSdkRoot>
     <AndroidSdkRoot Condition="'$(AndroidSdkRoot)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Android SDK Tools@Path)</AndroidSdkRoot>
     <AndroidSdkRoot Condition="'$(AndroidSdkRoot)' == ''">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Android SDK Tools@Path)</AndroidSdkRoot>
 
+    <!--
+      Determine most up-to-date installed platform.
+    -->
+
+    <AndroidSdkLevel Condition="'$(AndroidSdkLevel)' == '' AND Exists('$(AndroidSdkRoot)\platforms\android-21')">21</AndroidSdkLevel>
+    <AndroidSdkLevel Condition="'$(AndroidSdkLevel)' == '' AND Exists('$(AndroidSdkRoot)\platforms\android-20')">20</AndroidSdkLevel>
     <AndroidSdkLevel Condition="'$(AndroidSdkLevel)' == '' AND Exists('$(AndroidSdkRoot)\platforms\android-19')">19</AndroidSdkLevel>
     <AndroidSdkLevel Condition="'$(AndroidSdkLevel)' == '' AND Exists('$(AndroidSdkRoot)\platforms\android-18')">18</AndroidSdkLevel>
     <AndroidSdkLevel Condition="'$(AndroidSdkLevel)' == '' AND Exists('$(AndroidSdkRoot)\platforms\android-17')">17</AndroidSdkLevel>
@@ -26,6 +36,13 @@
     <AndroidSdkLevel Condition="'$(AndroidSdkLevel)' == '' AND Exists('$(AndroidSdkRoot)\platforms\android-4')">4</AndroidSdkLevel>
     <AndroidSdkLevel Condition="'$(AndroidSdkLevel)' == '' AND Exists('$(AndroidSdkRoot)\platforms\android-3')">3</AndroidSdkLevel>
 
+    <!--
+      The many, many editions of SDK build-tools.
+    -->
+
+    <AndroidSdkBuildToolsVersion Condition="'$(AndroidSdkBuildToolsVersion)' == '' AND Exists('$(AndroidSdkRoot)\build-tools\21.1.0')">21.1.0</AndroidSdkBuildToolsVersion>
+    <AndroidSdkBuildToolsVersion Condition="'$(AndroidSdkBuildToolsVersion)' == '' AND Exists('$(AndroidSdkRoot)\build-tools\21.0.2')">21.0.2</AndroidSdkBuildToolsVersion>
+    <AndroidSdkBuildToolsVersion Condition="'$(AndroidSdkBuildToolsVersion)' == '' AND Exists('$(AndroidSdkRoot)\build-tools\21.0.1')">21.0.1</AndroidSdkBuildToolsVersion>
     <AndroidSdkBuildToolsVersion Condition="'$(AndroidSdkBuildToolsVersion)' == '' AND Exists('$(AndroidSdkRoot)\build-tools\20.0.0')">20.0.0</AndroidSdkBuildToolsVersion>
     <AndroidSdkBuildToolsVersion Condition="'$(AndroidSdkBuildToolsVersion)' == '' AND Exists('$(AndroidSdkRoot)\build-tools\19.1.0')">19.1.0</AndroidSdkBuildToolsVersion>
     <AndroidSdkBuildToolsVersion Condition="'$(AndroidSdkBuildToolsVersion)' == '' AND Exists('$(AndroidSdkRoot)\build-tools\19.0.3')">19.0.3</AndroidSdkBuildToolsVersion>

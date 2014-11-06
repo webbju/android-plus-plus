@@ -92,29 +92,6 @@
     />
 
     <!--
-      NumberOfThreads
-    -->
-
-    <IntProperty 
-      Name="NumberOfThreads" 
-      DisplayName="Number Of Threads" 
-      Category="General" 
-      Switch="--num-threads" 
-      Separator="="
-    />
-
-    <!--
-      Optimize
-    -->
-
-    <BoolProperty 
-      Name="Optimize" 
-      DisplayName="Optimize" 
-      Category="General" 
-      ReverseSwitch="--no-optimize"
-    />
-
-    <!--
       Debug
     -->
 
@@ -123,28 +100,6 @@
       DisplayName="Debug"
       Category="General"
       Switch="--debug"
-    />
-
-    <!--
-      Statistics
-    -->
-
-    <BoolProperty 
-      Name="Statistics" 
-      DisplayName="Statistics" 
-      Category="Advanced" 
-      Switch="--statistics"
-    />
-
-    <!--
-      Incremental
-    -->
-
-    <BoolProperty
-      Name="Incremental"
-      DisplayName="Incremental"
-      Category="Advanced"
-      Switch="--incremental"
     />
 
     <!--
@@ -159,16 +114,100 @@
     />
 
     <!--
-      OutputFile
+      Optimize
+    -->
+
+    <BoolProperty 
+      Name="Optimize" 
+      DisplayName="Optimize" 
+      Category="General" 
+      ReverseSwitch="--no-optimize"
+    />
+
+    <!--
+      Statistics
+    -->
+
+    <BoolProperty 
+      Name="Statistics" 
+      DisplayName="Statistics" 
+      Category="Advanced" 
+      Switch="--statistics"
+    />
+
+    <!--
+      OutputPath
     -->
 
     <StringProperty 
       Subtype="file" 
-      Name="OutputFile" 
-      DisplayName="Output File" 
+      Name="OutputPath" 
+      DisplayName="Output Path" 
+      Description="Output name must end with one of: .dex .jar .zip .apk or be a directory."
       Category="General" 
       Switch="--output=" 
       Separator=""
+    />
+
+    <!--
+      NumberOfThreads
+    -->
+
+    <IntProperty 
+      Name="NumberOfThreads" 
+      DisplayName="Number Of Threads" 
+      Category="General" 
+      Switch="--num-threads" 
+      Separator="="
+    />
+
+    <!--
+      Incremental
+    -->
+
+    <BoolProperty
+      Name="Incremental"
+      DisplayName="Incremental"
+      Category="Advanced"
+      Switch="--incremental"
+    />
+
+    <!--
+      MultiDex
+    -->
+
+    <BoolProperty
+      Name="MultiDex"
+      DisplayName="MultiDex"
+      Description="Allows to generate several dex files if needed. Only supports folder or archive output."
+      Category="Advanced"
+      Switch="--multi-dex"
+    />
+
+    <!--
+      MultiDexMainList
+    -->
+
+    <StringProperty 
+      Subtype="file" 
+      Name="MultiDexMainList" 
+      DisplayName="MultiDex - Main List File" 
+      Description="File is a list of class file names, classes defined by those class files are put in classes.dex."
+      Category="Advanced" 
+      Switch="--main-dex-list" 
+      Separator="="
+    />
+
+    <!--
+      MultiDexMinimalMainDex
+    -->
+
+    <BoolProperty
+      Name="MultiDexMinimalMainDex"
+      DisplayName="MultiDex - Minimal Main Dex"
+      Description="Only classes selected by --main-dex-list are to be put in the main dex."
+      Category="Advanced"
+      Switch="--minimal-main-dex"
     />
 
     <!--

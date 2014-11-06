@@ -97,20 +97,11 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
       // Build a command-line based on parsing switches from the registered property sheet, and any additional flags.
       // 
 
-      try
-      {
-        StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
+      StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
 
-        builder.Append (m_parsedProperties.Parse (Sources [0]));
+      builder.Append (m_parsedProperties.Parse (Sources [0]));
 
-        return builder.ToString ();
-      }
-      catch (Exception e)
-      {
-        Log.LogErrorFromException (e, true);
-      }
-
-      return string.Empty;
+      return builder.ToString ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

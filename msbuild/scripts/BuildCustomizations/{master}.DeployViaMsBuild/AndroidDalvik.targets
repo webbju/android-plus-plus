@@ -17,7 +17,7 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <UsingTask TaskName="AndroidDex" AssemblyFile="$(ANDROID_PLUS_PLUS)\msbuild\bin\{master-verbose}.MsBuild.DeployTasks.dll" />
+  <UsingTask TaskName="AndroidDex" AssemblyFile="$(ANDROID_PLUS_PLUS)\msbuild\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
 
   <UsingTask TaskName="VCMessage" AssemblyName="Microsoft.Build.CppTasks.Common, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
 
@@ -60,7 +60,7 @@
     DependsOnTargets="_AndroidDalvik">
 
     <!-- 
-      Flag sources for incremental build 
+      Flag sources for incremental build.
     -->
 
     <ItemGroup>
@@ -69,21 +69,142 @@
       </AndroidDalvik>
     </ItemGroup>
 
+    <PropertyGroup>
+      <_DexOutputPath>$(ProjectDir)$(IntDir)bin\dex\</_DexOutputPath>
+      <!-- MultiDex script configuration -->
+      <_MainDexScriptOutputJar>$(ProjectDir)$(IntDir)bin\mainDexClasses.tmp.jar</_MainDexScriptOutputJar>
+      <_MainDexScriptOutputMainList>$(ProjectDir)$(IntDir)bin\mainDexClasses.keep</_MainDexScriptOutputMainList>
+      <_MainDexScriptIncludeFile>$(ProjectDir)$(IntDir)bin\mainDexClasses.inc</_MainDexScriptIncludeFile>
+      <_MainDexScriptBaseRules>$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\multidex\mainDexClasses.rules</_MainDexScriptBaseRules>
+      <_MainDexShrunkAndroidJar>$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\multidex\shrinkedAndroid.jar</_MainDexShrunkAndroidJar>
+      <!-- MultiDex flattened arguments -->
+      <_MainDexInjarsArgument>@(AndroidDalvik->'-injars &quot;%(FullPath)&quot;')</_MainDexInjarsArgument>
+      <_MainDexClassPathsArgument>@(AndroidDalvik->'%(FullPath)', ';')</_MainDexClassPathsArgument>
+    </PropertyGroup>
+
+    <!-- 
+      Run the entire application's code-base through ProGuard. 
+      - Optimising at this late stage is slightly more simplistic than doing it on a per-library basis.
+      - For ease of native development, obfuscation has been disabled.
+    -->
+
+    <PropertyGroup>
+      <_ProGuardRoot>$(AndroidSdkRoot)\tools\proguard</_ProGuardRoot>
+      <_ProGuardPlatformConfigurationScript Condition="'%(AndroidDalvik.Optimize)' != 'true'">$(_ProGuardRoot)\proguard-android.txt</_ProGuardPlatformConfigurationScript>
+      <_ProGuardPlatformConfigurationScript Condition="'%(AndroidDalvik.Optimize)' == 'true'">$(_ProGuardRoot)\proguard-android-optimize.txt</_ProGuardPlatformConfigurationScript>
+      <_ProGuardApplicationConfigurationScript>$(ProjectDir)$(IntDir)bin\proguard.txt</_ProGuardApplicationConfigurationScript>
+      <_ProGuardOutputLog>$(ProjectDir)$(IntDir)bin\proguard-output.txt</_ProGuardOutputLog>
+      <_ProGuardOutputJar>$(ProjectDir)$(IntDir)bin\proguard-optimised.jar</_ProGuardOutputJar>
+      <_ProGuardOutputSeeds>$(ProjectDir)$(IntDir)bin\proguard-seeds.txt</_ProGuardOutputSeeds>
+      <_ProGuardOutputUsage>$(ProjectDir)$(IntDir)bin\proguard-usage.txt</_ProGuardOutputUsage>
+      <_ProGuardOutputMapping>$(ProjectDir)$(IntDir)bin\proguard-mapping.txt</_ProGuardOutputMapping>
+      <!-- Custom command file options and flattened arguments -->
+      <_ProGuardCommandFile>$(ProjectDir)$(IntDir)bin\proguard-commands.txt</_ProGuardCommandFile>
+      <_ProGuardInJarsArgument>@(AndroidDalvik->Distinct()->'-injars &quot;%(FullPath)&quot;')</_ProGuardInJarsArgument>
+      <_ProGuardOutJarsArgument>-outjars &quot;$(_ProGuardOutputJar)&quot;</_ProGuardOutJarsArgument>
+      <_ProGuardLibraryJarsArgument>-libraryjars &quot;$(AndroidSdkRoot)\platforms\android-$(AndroidSdkLevel)\android.jar&quot;</_ProGuardLibraryJarsArgument>
+      <!-- Annotation support -->
+      <_ProGuardAnnotationsConfigurationScript>$(_ProGuardRoot)\examples\annotations\lib\annotations.pro</_ProGuardAnnotationsConfigurationScript>
+      <_ProGuardAnnotationsJar>$(_ProGuardRoot)\examples\annotations\lib\annotations.jar</_ProGuardAnnotationsJar>
+      <!-- Characters required to construct command file -->
+      <Semicolon>%3B</Semicolon>
+    </PropertyGroup>
+
+    <!-- Create an empty output jar. -->
+    <WriteLinesToFile
+      Condition="'@(AndroidDalvik)' != ''"
+      File="$(_ProGuardOutputJar)"
+      Lines=""
+      Overwrite="true"
+    />
+
+    <!-- Construct an arguments file to -include when invoking ProGuard. -->
+    <WriteLinesToFile
+      Condition="'@(AndroidDalvik)' != ''"
+      File="$(_ProGuardCommandFile)"
+      Lines="
+        -include &quot;$(_ProGuardPlatformConfigurationScript)&quot;;
+        -include &quot;$(_ProGuardApplicationConfigurationScript)&quot;;
+        -include &quot;$(_ProGuardAnnotationsConfigurationScript)&quot;;
+        # 
+        # 
+        $(_ProGuardInJarsArgument) 
+        $(_ProGuardOutJarsArgument) 
+        $(_ProGuardLibraryJarsArgument) 
+        -libraryjars &quot;$(_ProGuardAnnotationsJar)&quot; 
+        # 
+        # Output a collection of reports to help debugging.
+        -printseeds &quot;$(_ProGuardOutputSeeds)&quot; 
+        -printusage &quot;$(_ProGuardOutputUsage)&quot; 
+        -printmapping &quot;$(_ProGuardOutputMapping)&quot; 
+        # 
+        # Explicitly don't obfuscate classes and methods.
+        # Doing so means that probing for class members\fields will fail on the native side.
+        -dontobfuscate 
+        # 
+        # Skip all warnings, as we've already compiled all the sources via AndroidJava anyway.
+        # Most of the warnings produced refer to unknown classes, which are present on device but not in libraries.
+        -ignorewarnings 
+        # 
+        # Retain all classes with native members (http://proguard.sourceforge.net/manual/examples.html#native)
+        # This should have 'includedescriptorclasses', but this isn't supported in ProGuard 4.7.
+        -keepclasseswithmembers class * {
+    public private protected static native &lt;methods&gt;$(Semicolon)
+} "
+      Overwrite="true"
+    />
+
+    <!-- Run ProGuard. -->
+    <Exec
+      Condition="'@(AndroidDalvik)' != ''"
+      Command="&quot;$(JavaHomeDir)\bin\java.exe&quot; -jar &quot;$(AndroidSdkRoot)\tools\proguard\lib\proguard.jar&quot; -include &quot;$(_ProGuardCommandFile)&quot; &gt;$(_ProGuardOutputLog) 2&gt;&amp;1"
+    />
+
+    <!-- Trim the contents of the optimised jar. We only want '.class' files retained here. -->
+    <!--
+    <Exec 
+      Condition="'@(AndroidDalvik)' != ''"
+      Command="7za.exe d -r &quot;$(_ProGuardOutputJar)&quot; *.java *.d &gt;NUL" 
+      WorkingDirectory="$(IntDir)raw"
+    />
+    -->
+
+    <!--
+      Generate a multi-dex manifest file; detailing which classes should be prioritised into the main classes.dex file.
+    -->
+
+    <PropertyGroup>
+      <_MultiDexOutputPath>$(ProjectDir)$(IntDir)bin\dex\</_MultiDexOutputPath>
+      <_MultiDexMainClassesListFile>$(ProjectDir)$(IntDir)bin\mainDexClasses.keep</_MultiDexMainClassesListFile>
+      <_MultiDexClassPathArgument>@(AndroidDalvik->'%(FullPath)', ';')</_MultiDexClassPathArgument>
+    </PropertyGroup>
+    
+    <Exec 
+      Condition="'@(AndroidDalvik)' != ''"
+      Command="&quot;$(JavaHomeDir)\bin\java.exe&quot; -Djava.ext.dirs=&quot;$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\lib&quot; com.android.multidex.ClassReferenceListBuilder &quot;$(_ProGuardOutputJar)&quot; &quot;$(_MultiDexClassPathArgument)&quot; 1&gt;&quot;$(_MultiDexMainClassesListFile)&quot;" 
+    />
+
     <!-- 
       Configure output path, and ensure requested output directories exist.
     -->
 
-    <PropertyGroup>
-      <_DexOutputFile>$(ProjectDir)$(IntDir)bin\classes.dex</_DexOutputFile>
-    </PropertyGroup>
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(_MultiDexOutputPath)))" />
 
     <ItemGroup>
-      <AndroidDalvik>
-        <OutputFile>$(_DexOutputFile)</OutputFile>
+      <_ProjectDalvikInput Include="@(AndroidDalvik)" />
+      <AndroidDalvik Include="$(_ProGuardOutputJar)">
+        <OutputPath>$(_MultiDexOutputPath)</OutputPath>
+        <MultiDexMainList>$(_MultiDexMainClassesListFile)</MultiDexMainList>
+        <!-- 'incremental' is not supported with 'multi-dex' (suppress error)-->
+        <Incremental Condition="'%(MultiDex)' == 'true'">false</Incremental>
+        <!-- 'num-threads' is ignored when used with 'multi-dex' (suppress warning) -->
+        <NumberOfThreads Condition="'%(MultiDex)' == 'true'"></NumberOfThreads>
+        <!-- Nuke any additional parameters if 'multi-dex' isn't activated. -->
+        <MultiDexMainList Condition="'%(MultiDex)' != 'true'"></MultiDexMainList>
+        <MultiDexMinimalMainDex Condition="'%(MultiDex)' != 'true'"></MultiDexMinimalMainDex>
       </AndroidDalvik>
+      <AndroidDalvik Remove="@(_ProjectDalvikInput)" />
     </ItemGroup>
-
-    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(_DexOutputFile)))" />
 
     <!-- 
       Process input class-paths and generate a Dalvik executable (i.e. classes.dex) 
@@ -92,8 +213,8 @@
     <AndroidDex
       BuildingInIDE="$(BuildingInsideVisualStudio)"
       Condition="'@(AndroidDalvik)' != ''"
-      Sources="@(AndroidDalvik->Metadata('FullPath')->Distinct())"
-      OutputFile="%(AndroidDalvik.OutputFile)"
+      Sources="@(AndroidDalvik)"
+      OutputPath="%(AndroidDalvik.OutputPath)"
       TrackerLogDirectory ="%(AndroidDalvik.TrackerLogDirectory)"
       TrackFileAccess="$(TrackFileAccess)"
       MinimalRebuildFromTracking="%(AndroidDalvik.MinimalRebuildFromTracking)"

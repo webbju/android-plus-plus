@@ -44,7 +44,7 @@
     <AndroidDalvik>
 
       <!--
-        JavaVM configuration.
+        JavaVM options.
       -->
 
       <JvmInitialHeapSize Condition="'%(AndroidDalvik.JvmInitialHeapSize)' == ''">32m</JvmInitialHeapSize>
@@ -54,24 +54,30 @@
       <JvmThreadStackSize Condition="'%(AndroidDalvik.JvmThreadStackSize)' == ''">1m</JvmThreadStackSize>
 
       <!--
-        Dex configuration.
+        dx (DEX) tool configuration.
       -->
 
       <CreateDex Condition="'%(AndroidDalvik.CreateDex)' == ''">true</CreateDex>
 
       <Debug Condition="'%(AndroidDalvik.Debug)' == ''">false</Debug>
 
-      <Optimize Condition="'%(AndroidDalvik.Optimize)' == ''">true</Optimize>
+      <Verbose Condition="'%(AndroidDalvik.Verbose)' == ''">false</Verbose>
 
-      <NumberOfThreads Condition="'%(AndroidDalvik.NumberOfThreads)' == ''">4</NumberOfThreads>
+      <Optimize Condition="'%(AndroidDalvik.Optimize)' == ''">true</Optimize>
 
       <Statistics Condition="'%(AndroidDalvik.Statistics)' == ''">false</Statistics>
 
+      <OutputPath Condition="'%(AndroidDalvik.OutputPath)' == ''"></OutputPath>
+
+      <NumberOfThreads Condition="'%(AndroidDalvik.NumberOfThreads)' == ''">4</NumberOfThreads>
+
       <Incremental Condition="'%(AndroidDalvik.Incremental)' == ''">true</Incremental>
 
-      <Verbose Condition="'%(AndroidDalvik.Verbose)' == ''">false</Verbose>
+      <MultiDex Condition="'%(AndroidDalvik.MultiDex)' == ''">true</MultiDex>
 
-      <OutputFile Condition="'%(AndroidDalvik.OutputFile)' == ''"></OutputFile>
+      <MultiDexMainList Condition="'%(AndroidDalvik.MultiDexMainList)' == ''"></MultiDexMainList>
+
+      <MultiDexMinimalMainDex Condition="'%(AndroidDalvik.MultiDexMinimalMainDex)' == ''">false</MultiDexMinimalMainDex>
 
       <!--
         Default TrackedToolTask properties.

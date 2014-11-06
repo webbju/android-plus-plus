@@ -55,6 +55,8 @@
     Description="Specifies the target API level for SDK dependencies."
     Category="PlatformDefaults">
 
+    <EnumValue Name="21" DisplayName="Android 5.0 (android-21)" />
+    <EnumValue Name="20" DisplayName="Android 4.4W (android-20)" />
     <EnumValue Name="19" DisplayName="Android 4.4 (android-19)" />
     <EnumValue Name="18" DisplayName="Android 4.3 (android-18)" />
     <EnumValue Name="17" DisplayName="Android 4.2.x (android-17)" />
@@ -83,13 +85,19 @@
     Description="Specifies which version of 'build-tools' should be used."
     Category="PlatformDefaults">
 
+    <EnumValue Name="21.1.0" DisplayName="21.1" />
+    <EnumValue Name="21.0.2" DisplayName="21.0.2" />
+    <EnumValue Name="21.0.1" DisplayName="21.0.1" />
+    <EnumValue Name="20.0.0" DisplayName="20.0.0" />
+    <EnumValue Name="19.1.0" DisplayName="19.1" />
+    <EnumValue Name="19.0.3" DisplayName="19.0.3" />
+    <EnumValue Name="19.0.2" DisplayName="19.0.2" />
     <EnumValue Name="19.0.1" DisplayName="19.0.1" />
-    <EnumValue Name="19" DisplayName="19" />
+    <EnumValue Name="19.0.0" DisplayName="19" />
     <EnumValue Name="18.1.1" DisplayName="18.1.1" />
-    <EnumValue Name="18.1" DisplayName="18.1" />
+    <EnumValue Name="18.1.0" DisplayName="18.1.0" />
     <EnumValue Name="18.0.1" DisplayName="18.0.1" />
-    <EnumValue Name="18" DisplayName="18" />
-    <EnumValue Name="17" DisplayName="17" />
+    <EnumValue Name="17.0.0" DisplayName="17" />
 
   </EnumProperty>
 

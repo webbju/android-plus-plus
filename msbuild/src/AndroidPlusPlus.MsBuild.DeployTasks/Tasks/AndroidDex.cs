@@ -45,7 +45,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     [Required]
-    public ITaskItem OutputFile { get; set; }
+    public ITaskItem OutputPath { get; set; }
 
     [Required]
     public string DexJar { get; set; }
@@ -56,14 +56,15 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
     protected override int TrackedExecuteTool (string pathToTool, string responseFileCommands, string commandLineCommands)
     {
-
       int retCode = -1;
 
       try
       {
         retCode = base.TrackedExecuteTool (pathToTool, responseFileCommands, commandLineCommands);
 
-        OutputFiles = new ITaskItem [] { OutputFile };
+        string fullOutputPath = OutputPath.GetMetadata ("FullPath");
+
+        OutputFiles = GetOutputFilesFromPath (fullOutputPath);
       }
       catch (Exception e)
       {
@@ -135,60 +136,80 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    protected override void AddTaskSpecificOutputFiles (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
+    {
+      // 
+      // Collate the output files using 'GetOutputFilesFromPath' helper. This handles singular and directory output(s).
+      // 
+
+      string fullOutputPath = OutputPath.GetMetadata ("FullPath");
+
+      ITaskItem [] outputFiles = GetOutputFilesFromPath (fullOutputPath);
+
+      if (outputFiles != null)
+      {
+        trackedFileManager.AddDependencyForSources (outputFiles, sources);
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     protected override string GenerateCommandLineCommands ()
     {
       // 
       // Build a command-line based on parsing switches from the registered property sheet, and any additional flags.
       // 
 
-      try
+      StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
+
+      // 
+      // JavaVM options need to go at the start of the command line.
+      // 
+
+      string jvmInitialHeapSize = m_parsedProperties.ParseProperty (Sources [0], "JvmInitialHeapSize");
+
+      string jvmMaximumHeapSize = m_parsedProperties.ParseProperty (Sources [0], "JvmMaximumHeapSize");
+
+      string jvmThreadStackSize = m_parsedProperties.ParseProperty (Sources [0], "JvmThreadStackSize");
+
+      builder.Append (jvmInitialHeapSize + " ");
+
+      builder.Append (jvmMaximumHeapSize + " ");
+
+      builder.Append (jvmThreadStackSize + " ");
+
+      string frameworkDir = Path.GetDirectoryName (DexJar);
+
+      builder.Append ("-Djava.ext.dirs=\"" + frameworkDir + "\" ");
+
+      builder.Append ("-jar \"" + DexJar + "\" ");
+
+      // 
+      // Ensure the JVM options aren't duplicated.
+      // 
+
+      StringBuilder parsedProperties = new StringBuilder (m_parsedProperties.Parse (Sources [0]));
+
+      if (!string.IsNullOrEmpty (jvmInitialHeapSize))
       {
-        StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
-
-        // 
-        // JavaVM options need to go at the start of the command line.
-        // 
-
-        string jvmInitialHeapSize = m_parsedProperties.ParseProperty (Sources [0], "JvmInitialHeapSize");
-
-        string jvmMaximumHeapSize = m_parsedProperties.ParseProperty (Sources [0], "JvmMaximumHeapSize");
-
-        string jvmThreadStackSize = m_parsedProperties.ParseProperty (Sources [0], "JvmThreadStackSize");
-
-        builder.Append (jvmInitialHeapSize + " ");
-
-        builder.Append (jvmMaximumHeapSize + " ");
-
-        builder.Append (jvmThreadStackSize + " ");
-
-        string frameworkDir = Path.GetDirectoryName (DexJar);
-
-        builder.Append ("-Djava.ext.dirs=\"" + frameworkDir + "\" ");
-
-        builder.Append ("-jar \"" + DexJar + "\" ");
-
-        // 
-        // Ensure the JVM options aren't duplicated.
-        // 
-
-        StringBuilder parsedProperties = new StringBuilder (m_parsedProperties.Parse (Sources [0]));
-
         parsedProperties.Replace (jvmInitialHeapSize, "");
-
-        parsedProperties.Replace (jvmMaximumHeapSize, "");
-
-        parsedProperties.Replace (jvmThreadStackSize, "");
-
-        builder.Append (parsedProperties.ToString ());
-
-        return builder.ToString ();
       }
-      catch (Exception e)
+
+      if (!string.IsNullOrEmpty (jvmMaximumHeapSize))
       {
-        Log.LogErrorFromException (e, true);
+        parsedProperties.Replace (jvmMaximumHeapSize, "");
       }
 
-      return string.Empty;
+      if (!string.IsNullOrEmpty (jvmThreadStackSize))
+      {
+        parsedProperties.Replace (jvmThreadStackSize, "");
+      }
+
+      builder.Append (parsedProperties.ToString ());
+
+      return builder.ToString ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -200,6 +221,35 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
       get
       {
         return "AndroidDex";
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private ITaskItem [] GetOutputFilesFromPath (string fullOutputPath)
+    {
+      if (Directory.Exists (fullOutputPath))
+      {
+        // 
+        // When exporting to a directory, ensure the contents of such directory are listed as its output.
+        // 
+
+        string [] dexOutputFiles = Directory.GetFiles (fullOutputPath, "*.*", SearchOption.AllDirectories);
+
+        List<ITaskItem> dexFileItems = new List<ITaskItem> (dexOutputFiles.Length);
+
+        foreach (string dexFile in dexOutputFiles)
+        {
+          dexFileItems.Add (new TaskItem (dexFile));
+        }
+
+        return dexFileItems.ToArray ();
+      }
+      else
+      {
+        return new ITaskItem [] { OutputPath };
       }
     }
 
