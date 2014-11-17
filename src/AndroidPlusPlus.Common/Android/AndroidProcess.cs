@@ -22,7 +22,9 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private string m_remoteApplicationPath;
+    private string m_remoteApkPath;
+
+    private string m_remoteNativeLibrariesPath;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -58,17 +60,91 @@ namespace AndroidPlusPlus.Common
       //   i.e: /data/app/com.example.hellogdbserver-2.apk
       // 
 
-      if (m_remoteApplicationPath == null)
+      if (m_remoteApkPath == null)
       {
         string applicationPath = HostDevice.Shell ("pm", string.Format ("path {0}", Name)).Replace ("\r", "").Replace ("\n", "");
 
         if (applicationPath.StartsWith ("package:"))
         {
-          m_remoteApplicationPath = applicationPath.Substring ("package:".Length);
+          m_remoteApkPath = applicationPath.Substring ("package:".Length);
         }
         else
         {
           throw new InvalidOperationException ("Failed to retrieve remote application path");
+        }
+      }
+
+      // 
+      // Since Jelly Bean 4.2?, Android has a /data/app-lib/[bundle] directory where it extracts application binaries.
+      // - They were moved from /data/data/[package]/lib, which no references /app-lib via symlink.
+      // - Note that 'app-lib' uses the bundle id (com.example.hellogdbserver-2) rather than package address.
+      // 
+
+      if (m_remoteNativeLibrariesPath == null)
+      {
+        AndroidSettings.VersionCode sdkVesionCode = HostDevice.SdkVersion;
+
+        if (sdkVesionCode >= AndroidSettings.VersionCode.LOLLIPOP)
+        {
+          // 
+          // On Lollipop, native libraries are placed in a per-architecture folder alongside the base APK.
+          // 
+
+          string baseApkDirectory = Path.GetDirectoryName (m_remoteApkPath);
+
+          baseApkDirectory = baseApkDirectory.Substring ("/data/app/".Length); // trim leading path
+
+          string [] supportedCpuAbis = HostDevice.SupportedCpuAbis;
+
+          string cpuAbiSubdirectory = string.Empty;
+
+          foreach (string abi in supportedCpuAbis)
+          {
+            switch (abi)
+            {
+              case "armeabi":
+              case "armeabi-v7a":
+              {
+                cpuAbiSubdirectory = "arm";
+
+                break;
+              }
+
+              case "arm64-v8a":
+              {
+                cpuAbiSubdirectory = "arm64";
+
+                break;
+              }
+
+              case "x86":
+              case "x86_64":
+              case "mips":
+              case "mips64":
+              {
+                cpuAbiSubdirectory = abi;
+
+                break;
+              }
+            }
+
+            if (!string.IsNullOrEmpty (cpuAbiSubdirectory))
+            {
+              break;
+            }
+          }
+
+          m_remoteNativeLibrariesPath = string.Format ("/data/app/{0}/lib/{1}", baseApkDirectory, cpuAbiSubdirectory);
+        }
+        else if (sdkVesionCode >= AndroidSettings.VersionCode.JELLY_BEAN_MR1)
+        {
+          string bundleId = Path.GetFileNameWithoutExtension (m_remoteApkPath);
+
+          m_remoteNativeLibrariesPath = string.Format ("/data/app-lib/{0}", bundleId);
+        }
+        else
+        {
+          m_remoteNativeLibrariesPath = string.Format ("/data/data/{0}/lib", Name);
         }
       }
     }
@@ -83,7 +159,7 @@ namespace AndroidPlusPlus.Common
       {
         Refresh ();
 
-        return m_remoteApplicationPath;
+        return m_remoteApkPath;
       }
     }
 
@@ -107,22 +183,9 @@ namespace AndroidPlusPlus.Common
     {
       get
       {
-        // 
-        // Since Jelly Bean 4.2?, Android has a /data/app-lib/[bundle] directory where it extracts application binaries.
-        // - They were moved from /data/data/[package]/lib, which no references /app-lib via symlink.
-        // - Note that 'app-lib' uses the bundle id (com.example.hellogdbserver-2) rather than package address.
-        // 
-
         Refresh ();
 
-        string bundleId = Path.GetFileNameWithoutExtension (m_remoteApplicationPath);
-
-        if (HostDevice.SdkVersion >= AndroidSettings.VersionCode.JELLY_BEAN_MR1)
-        {
-          return string.Format ("/data/app-lib/{0}", bundleId);
-        }
-
-        return string.Format ("/data/data/{0}/lib", Name);
+        return m_remoteNativeLibrariesPath;
       }
     }
 

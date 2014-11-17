@@ -68,71 +68,83 @@ namespace AndroidPlusPlus.VsDebugEngine
       // Evaluate target device's architecture triple.
       // 
 
-      bool archIs64Bit = false;
+      string [] supportedDeviceAbis = debugProgram.DebugProcess.NativeProcess.HostDevice.SupportedCpuAbis;
 
-      string archGdbToolPrefix = string.Empty;
+      string preferedDeviceAbi = string.Empty;
 
-      string primaryDeviceAbi = debugProgram.DebugProcess.NativeProcess.HostDevice.GetProperty ("ro.product.cpu.abi");
+      bool preferedDeviceAbiIs64Bit = false;
 
-      switch (primaryDeviceAbi)
+      string preferedDeviceAbiGdbToolPrefix = string.Empty;
+
+      foreach (string deviceAbi in supportedDeviceAbis)
       {
-        case "armeabi":
-        case "armeabi-v7a":
+        preferedDeviceAbi = deviceAbi;
+
+        switch (deviceAbi)
         {
-          archGdbToolPrefix = "arm-linux-androideabi";
+          case "armeabi":
+          case "armeabi-v7a":
+          {
+            preferedDeviceAbiGdbToolPrefix = "arm-linux-androideabi";
 
-          archIs64Bit = false;
+            preferedDeviceAbiIs64Bit = false;
 
-          break;
+            break;
+          }
+
+          case "arm64-v8a":
+          {
+            preferedDeviceAbiGdbToolPrefix = "aarch64-linux-android";
+
+            preferedDeviceAbiIs64Bit = true;
+
+            break;
+          }
+
+          case "x86":
+          {
+            preferedDeviceAbiGdbToolPrefix = "i686-linux-android";
+
+            preferedDeviceAbiIs64Bit = false;
+
+            break;
+          }
+
+          case "x86_64":
+          {
+            preferedDeviceAbiGdbToolPrefix = "x86_64-linux-android";
+
+            preferedDeviceAbiIs64Bit = true;
+
+            break;
+          }
+
+          case "mips":
+          {
+            preferedDeviceAbiGdbToolPrefix = "mipsel-linux-android";
+
+            preferedDeviceAbiIs64Bit = false;
+
+            break;
+          }
+
+          case "mips64":
+          {
+            preferedDeviceAbiGdbToolPrefix = "mips64el-linux-android";
+
+            preferedDeviceAbiIs64Bit = true;
+
+            break;
+          }
         }
 
-        case "arm64-v8a":
+        if (!string.IsNullOrEmpty (preferedDeviceAbiGdbToolPrefix))
         {
-          archGdbToolPrefix = "aarch64-linux-android";
-
-          archIs64Bit = true;
-
-          break;
-        }
-
-        case "x86":
-        {
-          archGdbToolPrefix = "i686-linux-android";
-
-          archIs64Bit = false;
-
-          break;
-        }
-
-        case "x86_64":
-        {
-          archGdbToolPrefix = "x86_64-linux-android";
-
-          archIs64Bit = true;
-
-          break;
-        }
-
-        case "mips":
-        {
-          archGdbToolPrefix = "mipsel-linux-android";
-
-          archIs64Bit = false;
-
-          break;
-        }
-
-        case "mips64":
-        {
-          archGdbToolPrefix = "mips64el-linux-android";
-
-          archIs64Bit = true;
-
           break;
         }
       }
 
-      Engine.Broadcast (new DebugEngineEvent.UiDebugLaunchServiceEvent (DebugEngineEvent.UiDebugLaunchServiceEvent.EventType.LogStatus, string.Format ("Configuring GDB for '{0}' target...", primaryDeviceAbi)), null, null);
+      Engine.Broadcast (new DebugEngineEvent.UiDebugLaunchServiceEvent (DebugEngineEvent.UiDebugLaunchServiceEvent.EventType.LogStatus, string.Format ("Configuring GDB for '{0}' target...", preferedDeviceAbi)), null, null);
 
       // 
       // Android++ bundles its own copies of GDB to get round various NDK issues. Search for these.
@@ -144,7 +156,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       string contribGdbCommandPath;
 
-      string contribGdbCommandFilePattern = string.Format ("{0}-gdb.cmd", archGdbToolPrefix);
+      string contribGdbCommandFilePattern = string.Format ("{0}-gdb.cmd", preferedDeviceAbiGdbToolPrefix);
 
       bool forceNdkR9dClient = (debugProgram.DebugProcess.NativeProcess.HostDevice.SdkVersion <= AndroidSettings.VersionCode.JELLY_BEAN);
 
@@ -186,7 +198,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       string androidNdkToolchains = Path.Combine (androidNdkRoot, "toolchains");
 
-      string gdbExecutablePattern = string.Format ("{0}-gdb.exe", archGdbToolPrefix);
+      string gdbExecutablePattern = string.Format ("{0}-gdb.exe", preferedDeviceAbiGdbToolPrefix);
 
       string [] gdbMatches = Directory.GetFiles (androidNdkToolchains, gdbExecutablePattern, SearchOption.AllDirectories);
 

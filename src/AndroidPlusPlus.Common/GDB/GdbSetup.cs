@@ -230,10 +230,11 @@ namespace AndroidPlusPlus.Common
 
         Directory.CreateDirectory (libraryCachePath);
 
-        if (Process.HostDevice.SdkVersion == AndroidSettings.VersionCode.L_PREVIEW)
+#if true
+        if (Process.HostDevice.SdkVersion >= AndroidSettings.VersionCode.LOLLIPOP)
         {
           // 
-          // On Android L, Google have broken pull permissions to 'app-lib' content so we use cat to avoid this.
+          // On Android L (preview), Google have broken pull permissions to 'app-lib' content so we use cat to avoid this.
           // 
 
           string [] libraries = Process.HostDevice.Shell ("ls", Process.InternalNativeLibrariesDirectory).Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
@@ -244,7 +245,7 @@ namespace AndroidPlusPlus.Common
 
             string temporaryStorage = "/data/local/tmp/" + lib;
 
-            Process.HostDevice.Shell ("cat", string.Format ("{0} > {1}", remoteLib, temporaryStorage));
+            Process.HostDevice.Shell ("cp", string.Format ("{0} {1}", remoteLib, temporaryStorage));
 
             Process.HostDevice.Pull (temporaryStorage, libraryCachePath);
 
@@ -252,6 +253,7 @@ namespace AndroidPlusPlus.Common
           }
         }
         else
+#endif
         {
           Process.HostDevice.Pull (Process.InternalNativeLibrariesDirectory, libraryCachePath);
         }
