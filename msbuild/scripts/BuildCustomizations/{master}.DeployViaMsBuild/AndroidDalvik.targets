@@ -69,19 +69,9 @@
       </AndroidDalvik>
     </ItemGroup>
 
-    <PropertyGroup>
-      <_DexOutputPath>$(ProjectDir)$(IntDir)bin\dex\</_DexOutputPath>
-      <!-- MultiDex script configuration -->
-      <_MainDexScriptOutputJar>$(ProjectDir)$(IntDir)bin\mainDexClasses.tmp.jar</_MainDexScriptOutputJar>
-      <_MainDexScriptOutputMainList>$(ProjectDir)$(IntDir)bin\mainDexClasses.keep</_MainDexScriptOutputMainList>
-      <_MainDexScriptIncludeFile>$(ProjectDir)$(IntDir)bin\mainDexClasses.inc</_MainDexScriptIncludeFile>
-      <_MainDexScriptBaseRules>$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\multidex\mainDexClasses.rules</_MainDexScriptBaseRules>
-      <_MainDexShrunkAndroidJar>$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\multidex\shrinkedAndroid.jar</_MainDexShrunkAndroidJar>
-    </PropertyGroup>
-
     <!-- 
       Run the entire application's code-base through ProGuard. 
-      - Optimising at this late stage is slightly more simplistic than doing it on a per-library basis.
+      - Optimising at this late stage (whole program optimisation) is slightly more simplistic than doing it on a per-library basis.
       - For ease of native development, obfuscation has been disabled.
     -->
 
@@ -148,15 +138,13 @@
       <Semicolon>%3B</Semicolon>
     </PropertyGroup>
 
-    <!-- Create an empty output jar. -->
     <WriteLinesToFile
-      Condition="'@(AndroidDalvik)' != ''"
+      Condition="!Exists('$(_ProGuardOutputJar)')"
       File="$(_ProGuardOutputJar)"
       Lines=""
       Overwrite="true"
     />
 
-    <!-- Construct an arguments file to -include when invoking ProGuard. -->
     <WriteLinesToFile
       Condition="'@(AndroidDalvik)' != ''"
       File="$(_ProGuardCommandFile)"
@@ -169,20 +157,31 @@ $(_ProGuardOutJarsArgument)
 -libraryjars &quot;$(AndroidSdkRoot)\platforms\android-$(AndroidSdkLevel)\android.jar&quot;
 # 
 # Output a collection of reports to help debugging.
+# 
 -printseeds &quot;$(_ProGuardOutputSeeds)&quot; 
 -printusage &quot;$(_ProGuardOutputUsage)&quot; 
 -printmapping &quot;$(_ProGuardOutputMapping)&quot; 
 # 
 # Explicitly don't obfuscate classes and methods.
 # Doing so means that probing for class members\fields will fail on the native side.
+# 
 -dontobfuscate 
+# 
+# Specifies not to preverify the processed class files. 
+# - See: http://proguard.sourceforge.net/manual/usage.html
+# - &quot;Only when eventually targeting Android, it is not necessary, so you can then switch it off to reduce the processing time a bit.&quot;
+# 
+-dontpreverify
 # 
 # Skip all warnings, as we've already compiled all the sources via AndroidJava anyway.
 # Most of the warnings produced refer to unknown classes, which are present on device but not in libraries.
+# TODO: It might be wise to have this toggled. Especially considering this script now supports importing external proguard configs.
+# 
 -ignorewarnings 
 # 
 # Retain all classes with native members (http://proguard.sourceforge.net/manual/examples.html#native)
 # TODO: This should have 'includedescriptorclasses', but this isn't supported in ProGuard 4.7.
+# 
 -keepclasseswithmembers class * {
   native &lt;methods&gt;$(Semicolon)
 }
@@ -208,31 +207,85 @@ $(_ProGuardOutJarsArgument)
     -->
 
     <!--
-      Generate a multi-dex manifest file; detailing which classes should be prioritised into the main classes.dex file.
+      The following is a work-around for a hard-limit of Java methods in the Dalvik Executable (DEX) format.
+      - Take the whole program optimised output and process this for a list of activities and native classes.
+      - Each of the flagged classes will need be prioritised into the first (primary) 'classes.dex' file.
+      - Other classes will either be packed into 'classes.dex', or overflow into 'classes#.dex' alternatives.
+      - There is a set of support library functionality to help with loading these files at runtime (Android L supports multi-dex natively).
+      
+      More information: https://developer.android.com/tools/building/multidex.html
     -->
 
     <PropertyGroup>
-      <_MultiDexOutputPath>$(ProjectDir)$(IntDir)bin\dex\</_MultiDexOutputPath>
-      <_MultiDexMainClassesListFile>$(ProjectDir)$(IntDir)bin\mainDexClasses.keep</_MultiDexMainClassesListFile>
-      <_MultiDexClassPathArgument>@(AndroidDalvik->'%(FullPath)', ';')</_MultiDexClassPathArgument>
+      <_DexOutputPath>$(ProjectDir)$(IntDir)bin\dex\</_DexOutputPath>
+      <!-- MultiDex script configuration -->
+      <_MainDexScriptOutputJar>$(ProjectDir)$(IntDir)bin\mainDexClasses.tmp.jar</_MainDexScriptOutputJar>
+      <_MainDexScriptOutputMainList>$(ProjectDir)$(IntDir)bin\mainDexClasses.keep</_MainDexScriptOutputMainList>
+      <_MainDexShrunkAndroidJar>$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\multidex\shrinkedAndroid.jar</_MainDexShrunkAndroidJar>
+      <_MainDexClassPathArgument>$(_ProGuardOutputJar)</_MainDexClassPathArgument>
+      <_MainDexScriptCommandFile>$(ProjectDir)$(IntDir)bin\mainDex-commands.txt</_MainDexScriptCommandFile>
+      <_MainDexOutputLog>$(ProjectDir)$(IntDir)bin\mainDex-output.txt</_MainDexOutputLog>
     </PropertyGroup>
-    
+
+    <WriteLinesToFile
+      Condition="!Exists('$(_MainDexScriptOutputJar)')"
+      File="$(_MainDexScriptOutputJar)"
+      Lines=""
+      Overwrite="true"
+    />
+
+    <WriteLinesToFile
+      Condition="'@(AndroidDalvik)' != ''"
+      File="$(_MainDexScriptCommandFile)"
+      Lines=";
+# 
+# Configuration options copied from $(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\multidex\mainDexClasses.bat
+# 
+-injars $(_ProGuardOutputJar);
+-dontwarn
+-forceprocessing
+-outjars $(_MainDexScriptOutputJar);
+-libraryjars $(_MainDexShrunkAndroidJar);
+-dontoptimize
+-dontobfuscate
+-dontpreverify
+-include $(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\multidex\mainDexClasses.rules;
+# 
+# Retain all classes with native members (http://proguard.sourceforge.net/manual/examples.html#native)
+# TODO: This should have 'includedescriptorclasses', but this isn't supported in ProGuard 4.7.
+# 
+-keepclasseswithmembers class * {
+  native &lt;methods&gt;$(Semicolon)
+}
+-keepclasseswithmembernames class * {
+  native &lt;methods&gt;$(Semicolon)
+}"
+      Overwrite="true"
+    />
+
+    <!-- Run ProGuard. -->
+    <Exec
+      Condition="'@(AndroidDalvik)' != ''"
+      Command="&quot;$(JavaHomeDir)\bin\java.exe&quot; -jar &quot;$(AndroidSdkRoot)\tools\proguard\lib\proguard.jar&quot; -include &quot;$(_MainDexScriptCommandFile)&quot; &gt;$(_MainDexOutputLog) 2&gt;&amp;1"
+    />
+
+    <!-- Run Multi-dex processing. -->
     <Exec 
       Condition="'@(AndroidDalvik)' != ''"
-      Command="&quot;$(JavaHomeDir)\bin\java.exe&quot; -Djava.ext.dirs=&quot;$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\lib&quot; com.android.multidex.ClassReferenceListBuilder &quot;$(_ProGuardOutputJar)&quot; &quot;$(_MultiDexClassPathArgument)&quot; 1&gt;&quot;$(_MultiDexMainClassesListFile)&quot;" 
+      Command="&quot;$(JavaHomeDir)\bin\java.exe&quot; -Djava.ext.dirs=&quot;$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\lib&quot; com.android.multidex.ClassReferenceListBuilder &quot;$(_MainDexScriptOutputJar)&quot; &quot;$(_MainDexClassPathArgument)&quot; 1&gt;&quot;$(_MainDexScriptOutputMainList)&quot;" 
     />
 
     <!-- 
       Configure output path, and ensure requested output directories exist.
     -->
 
-    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(_MultiDexOutputPath)))" />
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(_DexOutputPath)))" />
 
     <ItemGroup>
       <_ProjectDalvikInput Include="@(AndroidDalvik)" />
       <AndroidDalvik Include="$(_ProGuardOutputJar)">
-        <OutputPath>$(_MultiDexOutputPath)</OutputPath>
-        <MultiDexMainList>$(_MultiDexMainClassesListFile)</MultiDexMainList>
+        <OutputPath>$(_DexOutputPath)</OutputPath>
+        <MultiDexMainList>$(_MainDexScriptOutputMainList)</MultiDexMainList>
         <!-- 'incremental' is not supported with 'multi-dex' (suppress error)-->
         <Incremental Condition="'%(MultiDex)' == 'true'">false</Incremental>
         <!-- 'num-threads' is ignored when used with 'multi-dex' (suppress warning) -->
