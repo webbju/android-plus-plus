@@ -234,7 +234,7 @@ namespace AndroidPlusPlus.Common
         if (Process.HostDevice.SdkVersion >= AndroidSettings.VersionCode.LOLLIPOP)
         {
           // 
-          // On Android L (preview), Google have broken pull permissions to 'app-lib' content so we use cat to avoid this.
+          // On Android L, Google have broken pull permissions to 'app-lib' (and '/data/app/XXX/lib/') content so we use cp to avoid this.
           // 
 
           string [] libraries = Process.HostDevice.Shell ("ls", Process.InternalNativeLibrariesDirectory).Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);

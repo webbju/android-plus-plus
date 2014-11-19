@@ -29,7 +29,7 @@
 
   <PropertyGroup>
 
-    <ComputeAndroidDalvikInputsTargets>$(ComputeAndroidDalvikInputsTargets);ComputeAndroidJavaOutput;</ComputeAndroidDalvikInputsTargets>
+    <ComputeAndroidDalvikInputsTargets>$(ComputeAndroidDalvikInputsTargets);ComputeAndroidProguardOutput;</ComputeAndroidDalvikInputsTargets>
 
     <CleanDependsOn>$(CleanDependsOn);CleanAndroidDalvik;</CleanDependsOn>
 
@@ -69,143 +69,6 @@
       </AndroidDalvik>
     </ItemGroup>
 
-    <!-- 
-      Run the entire application's code-base through ProGuard. 
-      - Optimising at this late stage (whole program optimisation) is slightly more simplistic than doing it on a per-library basis.
-      - For ease of native development, obfuscation has been disabled.
-    -->
-
-    <PropertyGroup>
-      <_ProGuardRoot>$(AndroidSdkRoot)\tools\proguard</_ProGuardRoot>
-      <_ProGuardOutputLog>$(ProjectDir)$(IntDir)bin\proguard-output.txt</_ProGuardOutputLog>
-      <_ProGuardOutputJar>$(ProjectDir)$(IntDir)bin\proguard-optimised.jar</_ProGuardOutputJar>
-      <_ProGuardOutputSeeds>$(ProjectDir)$(IntDir)bin\proguard-seeds.txt</_ProGuardOutputSeeds>
-      <_ProGuardOutputUsage>$(ProjectDir)$(IntDir)bin\proguard-usage.txt</_ProGuardOutputUsage>
-      <_ProGuardOutputMapping>$(ProjectDir)$(IntDir)bin\proguard-mapping.txt</_ProGuardOutputMapping>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <!-- Default configuration script(s). -->
-      <_CollatedProGuardProjectScripts
-        Include="$(_ProGuardRoot)\proguard-android.txt"
-        Condition="'%(AndroidDalvik.Optimize)' != 'true'"
-      />
-      <_CollatedProGuardProjectScripts
-        Include="$(_ProGuardRoot)\proguard-android-optimize.txt"
-        Condition="'%(AndroidDalvik.Optimize)' == 'true'"
-      />
-      <_CollatedProGuardProjectScripts
-        Include="$(_ProGuardRoot)\proguard-android-project.txt"
-        Condition="Exists('$(_ProGuardRoot)\proguard-android-project.txt')"
-      />
-      <!-- ProGuard configuration exported from processing the 'merged' AndroidManifest.xml -->
-      <_CollatedProGuardProjectScripts 
-        Include="%(AndroidManifestMergedManifest.ProguardOptionsOutputFile)" 
-        Condition="Exists('%(AndroidManifestMergedManifest.ProguardOptionsOutputFile)')"
-      />
-      <!-- Look alongside *this* project's AndroidManfiest.xml files for ProGuard scripts. -->
-      <_CollatedProGuardProjectScripts 
-        Include="@(_ProjectAndroidManifests->'%(RootDir)%(Directory)proguard.txt')"
-        Condition="Exists('%(RootDir)%(Directory)proguard.txt')"
-      />
-      <_CollatedProGuardProjectScripts 
-        Include="@(_ProjectAndroidManifests->'%(RootDir)%(Directory)proguard-project.txt')"
-        Condition="Exists('%(RootDir)%(Directory)proguard-project.txt')"
-      />
-      <!-- Look alongside *included* (third-party) projects' AndroidManifest.xml files for ProGuard scripts. -->
-      <_CollatedProGuardProjectScripts 
-        Include="@(_DependencyAndroidManifests->'%(RootDir)%(Directory)proguard.txt')"
-        Condition="Exists('%(RootDir)%(Directory)proguard.txt')"
-      />
-      <_CollatedProGuardProjectScripts 
-        Include="@(_DependencyAndroidManifests->'%(RootDir)%(Directory)proguard-project.txt')"
-        Condition="Exists('%(RootDir)%(Directory)proguard-project.txt')"
-      />
-      <!-- Always include support for ProGuard-specific annotations. -->
-      <_CollatedProGuardProjectScripts 
-        Include="$(_ProGuardRoot)\examples\annotations\lib\annotations.pro"
-        Condition="Exists('$(_ProGuardRoot)\examples\annotations\lib\annotations.pro')"
-      />
-    </ItemGroup>
-    
-    <PropertyGroup>
-      <!-- Custom command file options and flattened arguments -->
-      <_ProGuardCommandFile>$(ProjectDir)$(IntDir)bin\proguard-commands.txt</_ProGuardCommandFile>
-      <_ProGuardIncludesArgument>@(_CollatedProGuardProjectScripts->Distinct()->'-include &quot;%(FullPath)&quot;')</_ProGuardIncludesArgument>
-      <_ProGuardInJarsArgument>@(AndroidDalvik->Distinct()->'-injars &quot;%(FullPath)&quot;')</_ProGuardInJarsArgument>
-      <_ProGuardOutJarsArgument>-outjars &quot;$(_ProGuardOutputJar)&quot;</_ProGuardOutJarsArgument>
-      <!-- Characters required to construct command file -->
-      <Semicolon>%3B</Semicolon>
-    </PropertyGroup>
-
-    <WriteLinesToFile
-      Condition="!Exists('$(_ProGuardOutputJar)')"
-      File="$(_ProGuardOutputJar)"
-      Lines=""
-      Overwrite="true"
-    />
-
-    <WriteLinesToFile
-      Condition="'@(AndroidDalvik)' != ''"
-      File="$(_ProGuardCommandFile)"
-      Lines=";
-# 
-# 
-$(_ProGuardIncludesArgument) 
-$(_ProGuardInJarsArgument) 
-$(_ProGuardOutJarsArgument) 
--libraryjars &quot;$(AndroidSdkRoot)\platforms\android-$(AndroidSdkLevel)\android.jar&quot;
-# 
-# Output a collection of reports to help debugging.
-# 
--printseeds &quot;$(_ProGuardOutputSeeds)&quot; 
--printusage &quot;$(_ProGuardOutputUsage)&quot; 
--printmapping &quot;$(_ProGuardOutputMapping)&quot; 
-# 
-# Explicitly don't obfuscate classes and methods.
-# Doing so means that probing for class members\fields will fail on the native side.
-# 
--dontobfuscate 
-# 
-# Specifies not to preverify the processed class files. 
-# - See: http://proguard.sourceforge.net/manual/usage.html
-# - &quot;Only when eventually targeting Android, it is not necessary, so you can then switch it off to reduce the processing time a bit.&quot;
-# 
--dontpreverify
-# 
-# Skip all warnings, as we've already compiled all the sources via AndroidJava anyway.
-# Most of the warnings produced refer to unknown classes, which are present on device but not in libraries.
-# TODO: It might be wise to have this toggled. Especially considering this script now supports importing external proguard configs.
-# 
--ignorewarnings 
-# 
-# Retain all classes with native members (http://proguard.sourceforge.net/manual/examples.html#native)
-# TODO: This should have 'includedescriptorclasses', but this isn't supported in ProGuard 4.7.
-# 
--keepclasseswithmembers class * {
-  native &lt;methods&gt;$(Semicolon)
-}
--keepclasseswithmembernames class * {
-  native &lt;methods&gt;$(Semicolon)
-}"
-      Overwrite="true"
-    />
-
-    <!-- Run ProGuard. -->
-    <Exec
-      Condition="'@(AndroidDalvik)' != ''"
-      Command="&quot;$(JavaHomeDir)\bin\java.exe&quot; -jar &quot;$(AndroidSdkRoot)\tools\proguard\lib\proguard.jar&quot; -include &quot;$(_ProGuardCommandFile)&quot; &gt;$(_ProGuardOutputLog) 2&gt;&amp;1"
-    />
-
-    <!-- Trim the contents of the optimised jar. We only want '.class' files retained here. -->
-    <!--
-    <Exec 
-      Condition="'@(AndroidDalvik)' != ''"
-      Command="7za.exe d -r &quot;$(_ProGuardOutputJar)&quot; *.java *.d &gt;NUL" 
-      WorkingDirectory="$(IntDir)raw"
-    />
-    -->
-
     <!--
       The following is a work-around for a hard-limit of Java methods in the Dalvik Executable (DEX) format.
       - Take the whole program optimised output and process this for a list of activities and native classes.
@@ -219,10 +82,11 @@ $(_ProGuardOutJarsArgument)
     <PropertyGroup>
       <_DexOutputPath>$(ProjectDir)$(IntDir)bin\dex\</_DexOutputPath>
       <!-- MultiDex script configuration -->
+      <_MainDexInputJars>@(AndroidDalvik->Distinct()->'-injars &quot;%(FullPath)&quot;')</_MainDexInputJars>
       <_MainDexScriptOutputJar>$(ProjectDir)$(IntDir)bin\mainDexClasses.tmp.jar</_MainDexScriptOutputJar>
       <_MainDexScriptOutputMainList>$(ProjectDir)$(IntDir)bin\mainDexClasses.keep</_MainDexScriptOutputMainList>
       <_MainDexShrunkAndroidJar>$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\multidex\shrinkedAndroid.jar</_MainDexShrunkAndroidJar>
-      <_MainDexClassPathArgument>$(_ProGuardOutputJar)</_MainDexClassPathArgument>
+      <_MainDexClassPathArgument>@(AndroidDalvik->Distinct())</_MainDexClassPathArgument>
       <_MainDexScriptCommandFile>$(ProjectDir)$(IntDir)bin\mainDex-commands.txt</_MainDexScriptCommandFile>
       <_MainDexOutputLog>$(ProjectDir)$(IntDir)bin\mainDex-output.txt</_MainDexOutputLog>
     </PropertyGroup>
@@ -241,15 +105,15 @@ $(_ProGuardOutJarsArgument)
 # 
 # Configuration options copied from $(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\multidex\mainDexClasses.bat
 # 
--injars $(_ProGuardOutputJar);
+$(_MainDexInputJars)
 -dontwarn
 -forceprocessing
--outjars $(_MainDexScriptOutputJar);
--libraryjars $(_MainDexShrunkAndroidJar);
+-outjars &quot;$(_MainDexScriptOutputJar)&quot;
+-libraryjars &quot;$(_MainDexShrunkAndroidJar)&quot;
 -dontoptimize
 -dontobfuscate
 -dontpreverify
--include $(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\multidex\mainDexClasses.rules;
+-include &quot;$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\multidex\mainDexClasses.rules&quot;;
 # 
 # Retain all classes with native members (http://proguard.sourceforge.net/manual/examples.html#native)
 # TODO: This should have 'includedescriptorclasses', but this isn't supported in ProGuard 4.7.
@@ -282,8 +146,7 @@ $(_ProGuardOutJarsArgument)
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(_DexOutputPath)))" />
 
     <ItemGroup>
-      <_ProjectDalvikInput Include="@(AndroidDalvik)" />
-      <AndroidDalvik Include="$(_ProGuardOutputJar)">
+      <AndroidDalvik>
         <OutputPath>$(_DexOutputPath)</OutputPath>
         <MultiDexMainList>$(_MainDexScriptOutputMainList)</MultiDexMainList>
         <!-- 'incremental' is not supported with 'multi-dex' (suppress error)-->
@@ -294,7 +157,6 @@ $(_ProGuardOutJarsArgument)
         <MultiDexMainList Condition="'%(MultiDex)' != 'true'"></MultiDexMainList>
         <MultiDexMinimalMainDex Condition="'%(MultiDex)' != 'true'"></MultiDexMinimalMainDex>
       </AndroidDalvik>
-      <AndroidDalvik Remove="@(_ProjectDalvikInput)" />
     </ItemGroup>
 
     <!-- 

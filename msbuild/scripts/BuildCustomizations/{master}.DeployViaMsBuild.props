@@ -53,6 +53,8 @@
 
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidJava.props" />
 
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidProguard.props" />
+
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidDalvik.props" />
 
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidApk.props" />

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+  
+  <PropertyGroup Condition="'$(AndroidDalvikBeforeTargets)' == '' and '$(AndroidDalvikAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
+  
+    <AndroidDalvikBeforeTargets></AndroidDalvikBeforeTargets>
+    
+    <AndroidDalvikAfterTargets>AndroidJava</AndroidDalvikAfterTargets>
+    
+  </PropertyGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <ItemDefinitionGroup>
+
+    <AndroidProguard>
+
+      <!--
+        JavaVM options.
+      -->
+
+      <JvmInitialHeapSize Condition="'%(AndroidDalvik.JvmInitialHeapSize)' == ''">32m</JvmInitialHeapSize>
+
+      <JvmMaximumHeapSize Condition="'%(AndroidDalvik.JvmMaximumHeapSize)' == ''">1024m</JvmMaximumHeapSize>
+
+      <JvmThreadStackSize Condition="'%(AndroidDalvik.JvmThreadStackSize)' == ''">1m</JvmThreadStackSize>
+
+      <!--
+        Proguard configuration.
+      -->
+
+      <InJars Condition="'%(AndroidDalvik.InJars)' == ''"></InJars>
+
+      <OutJars Condition="'%(AndroidDalvik.OutJars)' == ''"></OutJars>
+
+      <LibraryJars Condition="'%(AndroidDalvik.LibraryJars)' == ''"></LibraryJars>
+
+      <IncludeScripts Condition="'%(AndroidDalvik.IncludeScripts)' == ''"></IncludeScripts>
+
+      <!--
+        Default TrackedToolTask properties.
+      -->
+
+      <TrackerLogDirectory Condition="'%(AndroidDalvik.TrackerLogDirectory)' == ''">$(IntDir)</TrackerLogDirectory>
+
+      <OutputCommandLine Condition="'%(AndroidDalvik.OutputCommandLine)' == ''">false</OutputCommandLine>
+
+    </AndroidProguard>
+
+  </ItemDefinitionGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+</Project>

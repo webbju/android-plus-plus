@@ -11,6 +11,8 @@
 
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidJava.targets" />
 
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidProguard.targets" />
+
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidDalvik.targets" />
 
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidApk.targets" />

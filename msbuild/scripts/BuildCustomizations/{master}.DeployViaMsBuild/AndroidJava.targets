@@ -175,7 +175,7 @@
     -->
 
     <ItemGroup>
-      <AndroidDalvik Include="%(AndroidJava.DexClassPaths)" />
+      <AndroidProguard Include="%(AndroidJava.DexClassPaths)" />
     </ItemGroup>
 
   </Target>

@@ -11,7 +11,7 @@
   
     <AndroidDalvikBeforeTargets></AndroidDalvikBeforeTargets>
     
-    <AndroidDalvikAfterTargets>AndroidJava</AndroidDalvikAfterTargets>
+    <AndroidDalvikAfterTargets>AndroidProguard</AndroidDalvikAfterTargets>
     
   </PropertyGroup>
 

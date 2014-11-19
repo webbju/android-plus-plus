@@ -112,7 +112,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
       // Mark additional dependencies for .class files contained within specified class paths.
       // 
 
-      foreach (ITaskItem source in Sources)
+      foreach (ITaskItem source in sources)
       {
         string sourceFullPath = source.GetMetadata ("FullPath");
 
