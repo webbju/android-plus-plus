@@ -34,6 +34,8 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
     private static HashSet<string> s_templateDirs = new HashSet<string> ();
 
+    private static string s_versionDescriptorFile = string.Empty;
+
     private static HashSet<string> s_vsVersions = new HashSet<string> ();
 
     private static HashSet<string> s_exportDirectories = new HashSet<string> ();
@@ -261,6 +263,20 @@ namespace AndroidPlusPlus.MsBuild.Exporter
             break;
           }
 
+          case "--version-file":
+          {
+            string descriptorFile = args [++i];
+
+            if (!File.Exists (descriptorFile))
+            {
+              throw new DirectoryNotFoundException ("--version-file references non-existent file. Tried: " + descriptorFile);
+            }
+
+            s_versionDescriptorFile = descriptorFile;
+
+            break;
+          }
+
           case "--vs-version":
           {
             string [] versions = args [++i].Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
@@ -453,6 +469,17 @@ namespace AndroidPlusPlus.MsBuild.Exporter
           Console.WriteLine (string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Copying {0} to {1}", templateDir, exportDir));
 
           CopyFoldersAndFiles (templateDir, exportDir, true, ref textSubstitution);
+        }
+
+        // 
+        // Copy specified version descriptor file to the root of 'Platforms'. Useful for tracking install versions.
+        // 
+
+        if (!string.IsNullOrEmpty (s_versionDescriptorFile))
+        {
+          string destinationVersionFile = Path.Combine (exportDir, "Platforms", textSubstitution ["{master}"], Path.GetFileName (s_versionDescriptorFile));
+
+          File.Copy (s_versionDescriptorFile, destinationVersionFile, true);
         }
       }
     }

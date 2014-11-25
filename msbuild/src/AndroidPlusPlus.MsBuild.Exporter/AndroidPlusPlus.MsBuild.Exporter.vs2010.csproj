@@ -110,8 +110,7 @@ xcopy /f /y "$(TargetDir)$(TargetName).pdb" "$(ProjectDir)..\..\bin\*"
 
 rmdir "$(ProjectDir)$(OutDir)..\..\scripts\" /s /q
 
-
-"$(TargetPath)" --template-dir "$(ProjectDir)..\..\scripts" --export-dir "$(ProjectDir)$(OutDir)..\..\scripts" --kill-msbuild --vs-version all</PostBuildEvent>
+"$(TargetPath)" --template-dir "$(ProjectDir)..\..\scripts" --export-dir "$(ProjectDir)$(OutDir)..\..\scripts" --version-file "$(ProjectDir)..\..\..\version.txt" --kill-msbuild --vs-version all</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
