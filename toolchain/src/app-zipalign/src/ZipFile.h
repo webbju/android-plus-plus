@@ -23,6 +23,7 @@
 
 #include <utils/Vector.h>
 #include <utils/Errors.h>
+#include <utils/Compat.h>
 #include <stdio.h>
 
 #include "ZipEntry.h"
@@ -240,10 +241,10 @@ private:
     status_t copyDataToFp(FILE* dstFp,
         const void* data, size_t size, unsigned long* pCRC32);
     /* copy some of "srcFp" into "dstFp" */
-    status_t copyPartialFpToFp(FILE* dstFp, FILE* srcFp, long length,
+    status_t copyPartialFpToFp(FILE* dstFp, FILE* srcFp, size_t length,
         unsigned long* pCRC32);
     /* like memmove(), but on parts of a single file */
-    status_t filemove(FILE* fp, off_t dest, off_t src, size_t n);
+    status_t filemove(FILE* fp, off64_t dest, off64_t src, size_t n);
     /* compress all of "srcFp" into "dstFp", using Deflate */
     status_t compressFpToFp(FILE* dstFp, FILE* srcFp,
         const void* data, size_t size, unsigned long* pCRC32);

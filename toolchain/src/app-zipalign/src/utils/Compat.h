@@ -19,6 +19,7 @@
 
 #include <sys/types.h>
 #include <unistd.h>
+#include <stdio.h>
 
 /* Compatibility definitions for non-Linux (i.e., BSD-based) hosts. */
 #ifndef HAVE_OFF64_T
@@ -26,9 +27,18 @@
 #error "_FILE_OFFSET_BITS < 64; large files are not supported on this platform"
 #endif /* _FILE_OFFSET_BITS < 64 */
 
-typedef off_t off64_t;
+typedef __int64 off64_t;
+#define _OFF_T_DEFINED
 
-static inline off64_t lseek64(int fd, off64_t offset, int whence) {
+static inline off64_t fseek64(FILE* stream, off64_t offset, int whence) {
+  return _fseeki64 (stream, offset, whence);
+}
+
+static inline off64_t ftell64(FILE* stream) {
+  return _ftelli64 (stream);
+}
+
+static inline off64_t lseek64(int fd, off_t offset, int whence) {
     return lseek(fd, offset, whence);
 }
 

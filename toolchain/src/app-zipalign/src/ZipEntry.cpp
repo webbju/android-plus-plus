@@ -22,6 +22,7 @@
 
 #include "ZipEntry.h"
 #include <utils/Log.h>
+#include <utils/Compat.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -39,7 +40,7 @@ using namespace android;
 status_t ZipEntry::initFromCDE(FILE* fp)
 {
     status_t result;
-    long posn;
+    off64_t posn;
     bool hasDD;
 
     //ALOGV("initFromCDE ---\n");
@@ -54,8 +55,8 @@ status_t ZipEntry::initFromCDE(FILE* fp)
     //mCDE.dump();
 
     /* using the info in the CDE, go load up the LFH */
-    posn = ftell(fp);
-    if (fseek(fp, mCDE.mLocalHeaderRelOffset, SEEK_SET) != 0) {
+    posn = ftell64(fp);
+    if (fseek64(fp, mCDE.mLocalHeaderRelOffset, SEEK_SET) != 0) {
         ALOGD("local header seek failed (%ld)\n",
             mCDE.mLocalHeaderRelOffset);
         return UNKNOWN_ERROR;
@@ -67,7 +68,7 @@ status_t ZipEntry::initFromCDE(FILE* fp)
         return result;
     }
 
-    if (fseek(fp, posn, SEEK_SET) != 0)
+    if (fseek64(fp, posn, SEEK_SET) != 0)
         return UNKNOWN_ERROR;
 
     //mLFH.dump();

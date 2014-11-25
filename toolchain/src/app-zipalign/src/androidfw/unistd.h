@@ -25,7 +25,7 @@
 #define access _access
 #define dup2 _dup2
 #define execve _execve
-#define ftruncate _chsize
+#define ftruncate _chsize_s
 #define unlink _unlink
 #define fileno _fileno
 #define getcwd _getcwd

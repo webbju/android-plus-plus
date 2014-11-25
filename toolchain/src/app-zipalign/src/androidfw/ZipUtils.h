@@ -33,10 +33,10 @@ public:
      * General utility function for uncompressing "deflate" data from a file
      * to a buffer.
      */
-    static bool inflateToBuffer(int fd, void* buf, long uncompressedLen,
-        long compressedLen);
-    static bool inflateToBuffer(FILE* fp, void* buf, long uncompressedLen,
-        long compressedLen);
+    static bool inflateToBuffer(int fd, void* buf, long long uncompressedLen,
+        long long compressedLen);
+    static bool inflateToBuffer(FILE* fp, void* buf, long long uncompressedLen,
+        long long compressedLen);
 
     /*
      * Someday we might want to make this generic and handle bzip2 ".bz2"
@@ -55,7 +55,7 @@ public:
      * the file seeked to the start of the compressed data.
      */
     static bool examineGzip(FILE* fp, int* pCompressionMethod,
-        long* pUncompressedLen, long* pCompressedLen, unsigned long* pCRC32);
+        long long* pUncompressedLen, long long* pCompressedLen, unsigned long* pCRC32);
 
 private:
     ZipUtils() {}

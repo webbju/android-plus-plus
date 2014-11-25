@@ -49,10 +49,10 @@ static int copyAndAlign(ZipFile* pZin, ZipFile* pZout, int alignment, bool zopfl
 {
     size_t numEntries = pZin->getNumEntries();
     ZipEntry* pEntry;
-    int bias = 0;
+    off_t bias = 0;
     status_t status;
 
-    for (int i = 0; i < numEntries; i++) {
+    for (size_t i = 0; i < numEntries; i++) {
         ZipEntry* pNewEntry;
         int padding = 0;
 
@@ -80,7 +80,7 @@ static int copyAndAlign(ZipFile* pZin, ZipFile* pZout, int alignment, bool zopfl
              * file position in the new file will be equal to the file
              * position in the original.
              */
-            long newOffset = pEntry->getFileOffset() + bias;
+            off64_t newOffset = pEntry->getFileOffset() + bias;
             padding = (alignment - (newOffset % alignment)) % alignment;
 
             //printf("--- %s: orig at %ld(+%d) len=%ld, adding pad=%d\n",
@@ -163,7 +163,7 @@ static int verify(const char* fileName, int alignment, bool verbose)
     size_t numEntries = zipFile.getNumEntries();
     ZipEntry* pEntry;
 
-    for (int i = 0; i < numEntries; i++) {
+    for (size_t i = 0; i < numEntries; i++) {
         pEntry = zipFile.getEntryByIndex(i);
         if (pEntry->isCompressed()) {
             if (verbose) {
@@ -171,7 +171,7 @@ static int verify(const char* fileName, int alignment, bool verbose)
                     (long) pEntry->getFileOffset(), pEntry->getFileName());
             }
         } else {
-            long offset = pEntry->getFileOffset();
+            off64_t offset = pEntry->getFileOffset();
             if ((offset % alignment) != 0) {
                 if (verbose) {
                     printf("%8ld %s (BAD - %ld)\n",

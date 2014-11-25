@@ -40,7 +40,7 @@ using namespace android;
  * "buf" must hold at least "uncompressedLen" bytes.
  */
 /*static*/ bool ZipUtils::inflateToBuffer(int fd, void* buf,
-    long uncompressedLen, long compressedLen)
+    long long uncompressedLen, long long compressedLen)
 {
     bool result = false;
 	const unsigned long kReadBufSize = 32768;
@@ -152,14 +152,14 @@ bail:
  * "buf" must hold at least "uncompressedLen" bytes.
  */
 /*static*/ bool ZipUtils::inflateToBuffer(FILE* fp, void* buf,
-    long uncompressedLen, long compressedLen)
+    long long uncompressedLen, long long compressedLen)
 {
     bool result = false;
 	const unsigned long kReadBufSize = 32768;
 	unsigned char* readBuf = NULL;
     z_stream zstream;
     int zerr;
-    unsigned long compRemaining;
+    unsigned long long compRemaining;
 
     assert(uncompressedLen >= 0);
     assert(compressedLen >= 0);
@@ -266,7 +266,7 @@ bail:
  * On exit, "fp" is pointing at the start of the compressed data.
  */
 /*static*/ bool ZipUtils::examineGzip(FILE* fp, int* pCompressionMethod,
-    long* pUncompressedLen, long* pCompressedLen, unsigned long* pCRC32)
+    long long* pUncompressedLen, long long* pCompressedLen, unsigned long* pCRC32)
 {
     enum {  // flags
         FTEXT       = 0x01,
@@ -325,15 +325,15 @@ bail:
         return false;
 
     /* seek to the end; CRC and length are in the last 8 bytes */
-    long curPosn = ftell(fp);
+    off64_t curPosn = ftell64(fp);
     unsigned char buf[8];
-    fseek(fp, -8, SEEK_END);
-    *pCompressedLen = ftell(fp) - curPosn;
+    fseek64(fp, -8, SEEK_END);
+    *pCompressedLen = ftell64(fp) - curPosn;
 
     if (fread(buf, 1, 8, fp) != 8)
         return false;
     /* seek back to start of compressed data */
-    fseek(fp, curPosn, SEEK_SET);
+    fseek64(fp, curPosn, SEEK_SET);
 
     *pCompressionMethod = method;
     *pCRC32 = ZipFileRO::get4LE(&buf[0]);

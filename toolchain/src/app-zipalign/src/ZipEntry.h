@@ -23,6 +23,7 @@
 #define __LIBS_ZIPENTRY_H
 
 #include <utils/Errors.h>
+#include <utils/Compat.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -63,19 +64,19 @@ public:
     /*
      * Return the uncompressed length.
      */
-    off_t getUncompressedLen(void) const { return mCDE.mUncompressedSize; }
+    off64_t getUncompressedLen(void) const { return mCDE.mUncompressedSize; }
 
     /*
      * Return the compressed length.  For uncompressed data, this returns
      * the same thing as getUncompresesdLen().
      */
-    off_t getCompressedLen(void) const { return mCDE.mCompressedSize; }
+    off64_t getCompressedLen(void) const { return mCDE.mCompressedSize; }
 
     /*
      * Return the absolute file offset of the start of the compressed or
      * uncompressed data.
      */
-    off_t getFileOffset(void) const {
+    off64_t getFileOffset(void) const {
         return mCDE.mLocalHeaderRelOffset +
                 LocalFileHeader::kLFHLen +
                 mLFH.mFileNameLength +
@@ -188,14 +189,14 @@ protected:
     /*
      * Return the offset of the local file header.
      */
-    off_t getLFHOffset(void) const { return mCDE.mLocalHeaderRelOffset; }
+    off64_t getLFHOffset(void) const { return mCDE.mLocalHeaderRelOffset; }
 
     /*
      * Set the offset of the local file header, relative to the start of
      * the current file.
      */
-    void setLFHOffset(off_t offset) {
-        mCDE.mLocalHeaderRelOffset = (long) offset;
+    void setLFHOffset(off64_t offset) {
+        mCDE.mLocalHeaderRelOffset = offset;
     }
 
     /* mark for deletion; used by ZipFile::remove() */
@@ -314,7 +315,7 @@ private:
         unsigned short  mDiskNumberStart;
         unsigned short  mInternalAttrs;
         unsigned long   mExternalAttrs;
-        unsigned long   mLocalHeaderRelOffset;
+        unsigned long long   mLocalHeaderRelOffset;
         unsigned char*  mFileName;
         unsigned char*  mExtraField;
         unsigned char*  mFileComment;
