@@ -94,6 +94,7 @@
 
     <!--
       Align the signed APK. (Must be post-signing)
+      - Using a custom deployment of zipalign to support files of sizes &gt; 2GB
     -->
 
     <ItemGroup>
@@ -101,20 +102,14 @@
       <AndroidApkSign Include="@(AndroidApkSignSignedOutputFile)"  />
     </ItemGroup>
 
-    <PropertyGroup>
-      <!-- Evaluate tool path because Google keep tinkering. -->
-      <_ZipAlignToolRoot>$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)</_ZipAlignToolRoot>
-      <_ZipAlignToolRoot Condition="!Exists('$(_ZipAlignToolRoot)\zipalign.exe')">$(AndroidSdkRoot)\tools</_ZipAlignToolRoot>
-    </PropertyGroup>
-    
     <AndroidZipAlign
       BuildingInIDE="$(BuildingInsideVisualStudio)"
       Condition="'@(AndroidApkSign)' != ''"
       Sources="@(AndroidApkSign)"
       TrackerLogDirectory="%(AndroidApkSign.TrackerLogDirectory)"
       TrackFileAccess="$(TrackFileAccess)"
-      ToolPath="$(_ZipAlignToolRoot)"
-      ToolExe="zipalign.exe"
+      ToolPath="$(ANDROID_PLUS_PLUS)\toolchain\bin"
+      ToolExe="app-zipalign.exe"
       OutputCommandLine="%(AndroidApkSign.OutputCommandLine)"
       AlignedZip="%(AndroidApkSign.SignedAlignedOutputFile)"
       PropertiesFile="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml">

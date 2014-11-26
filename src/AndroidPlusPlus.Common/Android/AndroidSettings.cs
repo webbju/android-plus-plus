@@ -101,15 +101,24 @@ namespace AndroidPlusPlus.Common
         // Probe for possible Android SDK installation directories.
         // 
 
-        List <string> androidSdkPossibleLocations = new List <string> (4); 
+        HashSet<string> androidSdkPossibleLocations = new HashSet<string> (); 
 
         try
         {
-          androidSdkPossibleLocations.Add (Environment.GetEnvironmentVariable ("ANDROID_SDK"));
+          string [] environmentPaths = new string [] 
+          {
+            Environment.GetEnvironmentVariable ("ANDROID_SDK"),
+            Environment.GetEnvironmentVariable ("ANDROID_SDK_ROOT"),
+            Environment.GetEnvironmentVariable ("ANDROID_HOME")
+          };
 
-          androidSdkPossibleLocations.Add (Environment.GetEnvironmentVariable ("ANDROID_SDK_ROOT"));
-
-          androidSdkPossibleLocations.Add (Environment.GetEnvironmentVariable ("ANDROID_HOME"));
+          foreach (string possiblePath in environmentPaths)
+          {
+            if ((!string.IsNullOrEmpty (possiblePath)) && (!androidSdkPossibleLocations.Contains (possiblePath)))
+            {
+              androidSdkPossibleLocations.Add (possiblePath);
+            }
+          }
         }
         catch (SecurityException e)
         {

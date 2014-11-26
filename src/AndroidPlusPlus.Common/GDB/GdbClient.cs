@@ -326,9 +326,9 @@ namespace AndroidPlusPlus.Common
       // TODO: Use 'ndk-depends' to figure out which system shared libraries are used and pull these.
       // 
 
-      List<string> sharedLibrarySearchPaths = new List<string> ();
+      HashSet<string> sharedLibrarySearchPaths = new HashSet<string> ();
 
-      List<string> debugFileDirectoryPaths = new List<string> ();
+      HashSet<string> debugFileDirectoryPaths = new HashSet<string> ();
 
       sharedLibrarySearchPaths.Add (PathUtils.SantiseWindowsPath (m_gdbSetup.CacheSysRoot));
 
@@ -366,9 +366,21 @@ namespace AndroidPlusPlus.Common
 
       SetSetting ("sysroot", PathUtils.SantiseWindowsPath (m_gdbSetup.CacheSysRoot), false);
 
-      SetSetting ("solib-search-path", string.Join (";", sharedLibrarySearchPaths.ToArray ()), true);
+      {
+        string [] sharedLibraryPathsArray = new string [sharedLibrarySearchPaths.Count];
 
-      SetSetting ("debug-file-directory", string.Join (";", debugFileDirectoryPaths.ToArray ()), true);
+        sharedLibraryPathsArray.CopyTo (sharedLibraryPathsArray, 0);
+
+        SetSetting ("solib-search-path", string.Join (";", sharedLibraryPathsArray), true);
+      }
+
+      {
+        string [] debugFileDirectoryPathsArray = new string [debugFileDirectoryPaths.Count];
+
+        debugFileDirectoryPaths.CopyTo (debugFileDirectoryPathsArray, 0);
+
+        SetSetting ("debug-file-directory", string.Join (";", debugFileDirectoryPathsArray), true);
+      }
 
       // 
       // Specify the executable file to be debugged. 'ndk-gdb' uses app_process for this, so we will too.
