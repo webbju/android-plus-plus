@@ -13,7 +13,7 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <!-- 
-    Compiler, Librarian and Linker tool paths 
+    Define toolchain identifier and attributes.
   -->
 
   <PropertyGroup>
@@ -24,17 +24,25 @@
 
     <LlvmVersion>3.3</LlvmVersion>
 
+  </PropertyGroup>
+
+  <!-- 
+    Compiler, Librarian and Linker tool paths 
+  -->
+
+  <PropertyGroup>
+
     <PlatformToolsetToolchainFolder>$(AndroidNdkRoot)\toolchains\$(TargetPlatformArchitectureToolchainPrefix)-$(GccToolchainVersion)</PlatformToolsetToolchainFolder>
+
+    <PlatformToolsetPrebuilt>$(PlatformToolsetToolchainFolder)\prebuilt\windows</PlatformToolsetPrebuilt>
 
     <PlatformToolsetPrebuilt Condition="'$(SixtyFourBit)' == 'true' AND Exists('$(PlatformToolsetToolchainFolder)\prebuilt\windows-x86_64')">$(PlatformToolsetToolchainFolder)\prebuilt\windows-x86_64</PlatformToolsetPrebuilt>
 
-    <PlatformToolsetPrebuilt Condition="'$(PlatformToolsetPrebuilt)' == ''">$(PlatformToolsetToolchainFolder)\prebuilt\windows</PlatformToolsetPrebuilt>
-
     <LlvmToolsetToolchainFolder>$(AndroidNdkRoot)\toolchains\llvm-$(LlvmVersion)</LlvmToolsetToolchainFolder>
 
-    <LlvmToolsetPrebuilt Condition="'$(SixtyFourBit)' == 'true' AND Exists('$(LlvmToolsetToolchainFolder)\prebuilt\windows-x86_64')">$(LlvmToolsetToolchainFolder)\prebuilt\windows-x86_64</LlvmToolsetPrebuilt>
+    <LlvmToolsetPrebuilt>$(LlvmToolsetToolchainFolder)\prebuilt\windows</LlvmToolsetPrebuilt>
 
-    <LlvmToolsetPrebuilt Condition="'$(LlvmToolsetPrebuilt)' == ''">$(LlvmToolsetToolchainFolder)\prebuilt\windows</LlvmToolsetPrebuilt>
+    <LlvmToolsetPrebuilt Condition="'$(SixtyFourBit)' == 'true' AND Exists('$(LlvmToolsetToolchainFolder)\prebuilt\windows-x86_64')">$(LlvmToolsetToolchainFolder)\prebuilt\windows-x86_64</LlvmToolsetPrebuilt>
 
     <PlatformToolsetCompileTool>clang++.exe</PlatformToolsetCompileTool>
 
@@ -62,7 +70,7 @@
 
     <PlatformToolsetSysRoot>$(AndroidNdkRoot)\platforms\android-$(AndroidNdkLevel)\arch-$(TargetPlatformArchitecture)</PlatformToolsetSysRoot>
 
-    <PlatformToolsetGdbServer>$(PlatformToolsetToolchainFolder)\prebuilt\android-$(TargetPlatformArchitecture)\gdbserver\gdbserver</PlatformToolsetGdbServer>
+    <PlatformToolsetGdbServer>$(AndroidNdkRoot)\prebuilt\android-$(TargetPlatformArchitecture)\gdbserver\gdbserver</PlatformToolsetGdbServer>
 
   </PropertyGroup>
 

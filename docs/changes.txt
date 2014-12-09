@@ -1,4 +1,28 @@
 
+Version 0.4.0
+
+New functionality:
+
+ - Added support for Android L Preview and Android Lollipop.
+ - Added a custom-built version of 'zipalign' to support APK archives above 2GB.
+ - Added a custom-build version of 'ndk-depends' to manually supply up-to-date listings of internal device libraries.
+ - (MSBuild) Added support for NDK r10c and 64-bit targets. Currently only 'arm64-v8a' supported.
+ - (MSBuild) Added support for armeabi-v7a-hard (hard-float).
+ - (MSBuild) Added support for whole program optimisations via ProGuard integration.
+ - (MSBuild) Added support for automated exporting of multi-dex compatible Dalvik executables. (https://developer.android.com/tools/building/multidex.html)
+ - (MSBuild) Added toolchain configurations for GCC 4.9, Clang 3.4, and Clang 3.5.
+
+Fixes/Improvements:
+
+ - (MSBuild) Improved identification of exported scripts; version descriptors are now copied alongside each platform.
+ - (MSBuild) Fixed an issue causing Java compilation to occur only on BuildConfig.java and R.java files, despite lack of project .java sources.
+
+Upgrade notes:
+
+ - (MSBuild) ProGuard configuration scripts (named 'proguard.txt' or 'proguard-project.txt') can now be placed alongside a AndroidManifest.xml
+
+--------------------------------------------------------------------------------------------------------------------------------
+
 Version 0.3.2
 
 New functionality:
@@ -18,7 +42,6 @@ Fixes/Improvements:
  - (MSBuild) Silenced the FC command which gave confusing stderr output when files weren't present.
  - (MSBuild) Modified 'AdditionalDependencies' to make its behaviour more consistent with Win32. Removed 'AdditionalLibraries' as a result.
  - (MSBuild) Added utilisation of response (argument) files for 'JavaCompile'-based compilation.
- 
 
 --------------------------------------------------------------------------------------------------------------------------------
 

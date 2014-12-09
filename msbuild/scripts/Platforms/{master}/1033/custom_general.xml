@@ -125,6 +125,7 @@
     Description="Specifies the target API level for NDK dependencies."
     Category="PlatformDefaults">
 
+    <EnumValue Name="21" DisplayName="Android 5.0 (android-21)" />
     <EnumValue Name="19" DisplayName="Android 4.4 (android-19)" />
     <EnumValue Name="18" DisplayName="Android 4.3 (android-18)" />
     <EnumValue Name="17" DisplayName="Android 4.2.x (android-17)" />
@@ -152,8 +153,12 @@
 
     <EnumValue Name="armv5te" DisplayName="ARM Architecture v5te (armv5te)" />
     <EnumValue Name="armv7-a" DisplayName="ARM Architecture v7-a (armv7-a)" />
+    <EnumValue Name="armv7-a-hard" DisplayName="ARM Architecture v7-a Hard FP (armv7-a-hard)" />
+    <EnumValue Name="arm64-v8a" DisplayName="ARM 64-bit Architecture v8a (arm64-v8a)" />
     <EnumValue Name="mips" DisplayName="MIPS Architecture (mips)" />
+    <EnumValue Name="mips64" DisplayName="MIPS 64-bit Architecture (mips64)" />
     <EnumValue Name="x86" DisplayName="x86 Architecture (x86)" />
+    <EnumValue Name="x86-64" DisplayName="x86 64-bit Architecture (x86-64)" />
 
   </EnumProperty>
 

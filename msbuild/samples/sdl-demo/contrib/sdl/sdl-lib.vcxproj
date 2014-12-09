@@ -23,6 +23,7 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
+    <TargetArchitecture>armv7-a-hard</TargetArchitecture>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++'" Label="Configuration">
     <IntDir>..\..\..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\</IntDir>

@@ -7,10 +7,10 @@
 
 typedef int status_t;
 
-#define NO_ERROR 0
-#define UNKNOWN_ERROR 1
-#define NO_MEMORY 2
-#define INVALID_OPERATION 3
-#define NAME_NOT_FOUND 4
-#define PERMISSION_DENIED 5
-#define ALREADY_EXISTS 6
+#define NO_ERROR 0L
+#define UNKNOWN_ERROR 1L
+#define NO_MEMORY 2L
+#define INVALID_OPERATION 3L
+#define NAME_NOT_FOUND 4L
+#define PERMISSION_DENIED 5L
+#define ALREADY_EXISTS 6L

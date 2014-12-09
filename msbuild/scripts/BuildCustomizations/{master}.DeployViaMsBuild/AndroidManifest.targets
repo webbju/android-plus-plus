@@ -271,19 +271,27 @@
       <AndroidJava Remove="@(AndroidJava)" />
 
       <AndroidJava 
+        Condition="'@(AndroidManifestOutputResourceConstantSourceFiles)' != ''"
         Include="@(AndroidManifestOutputResourceConstantSourceFiles->ClearMetadata()->Distinct())">
         <DisableJarExport>true</DisableJarExport>
       </AndroidJava>
 
       <AndroidJava
-        Include="
-          @(AndroidManifestOutputFiles->ClearMetadata()->Distinct());
-          $(BuildConfigOutputFile);
-          @(AndroidJavaReorderCache->ClearMetadata()->Distinct())"
-        Exclude="
-          @(AndroidManifestOutputResourceConstantSourceFiles);
-          @(AndroidManifestOutputApk)">
-      </AndroidJava>
+        Condition="'@(AndroidManifestOutputFiles)' != ''"
+        Include="@(AndroidManifestOutputFiles->ClearMetadata()->Distinct())"
+        Exclude="@(AndroidManifestOutputResourceConstantSourceFiles);@(AndroidManifestOutputApk)"
+      />
+
+      <!-- Only include the BuildConfig.java if there are sources registered for this (individual) project. -->
+      <AndroidJava
+        Condition="'@(AndroidJavaReorderCache)' != '' and Exists('$(BuildConfigOutputFile)')"
+        Include="$(BuildConfigOutputFile)"
+      />
+
+      <AndroidJava
+        Condition="'@(AndroidJavaReorderCache)' != ''"
+        Include="@(AndroidJavaReorderCache->ClearMetadata()->Distinct())"
+      />
 
     </ItemGroup>
 

@@ -135,11 +135,10 @@
       <Semicolon>%3B</Semicolon>
     </PropertyGroup>
 
-    <WriteLinesToFile
+    <!-- Create an empty output jar. -->
+    <Exec 
       Condition="!Exists('$(_ProGuardOutputJar)')"
-      File="$(_ProGuardOutputJar)"
-      Lines=""
-      Overwrite="true"
+      Command="REM.&gt;&quot;$(_ProGuardOutputJar)&quot;"
     />
 
     <WriteLinesToFile

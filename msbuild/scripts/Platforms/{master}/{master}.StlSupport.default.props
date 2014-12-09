@@ -12,6 +12,18 @@
 
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
+  <!--
+    Workaround the definition of ARMv7a-hard using the same EABI identifier as ARMv7a.
+  -->
+
+  <PropertyGroup>
+
+    <StlSupportTargetEabi>$(TargetPlatformArchitectureEabi)</StlSupportTargetEabi>
+
+    <StlSupportTargetEabi Condition="'$(StlSupportTargetEabi)' == 'armeabi-v7a' and '$(ArmFloatingPointAbi)' == 'Hard'">armeabi-v7a-hard</StlSupportTargetEabi>
+
+  </PropertyGroup>
+
   <!-- 
     Configure required include and library paths for each C++/STL port.
   -->
@@ -30,9 +42,9 @@
 
     <StlSupportIncludePath Condition="'$(STLSupport)' == 'stlport_shared'">$(AndroidNdkRoot)\sources\cxx-stl\stlport\stlport</StlSupportIncludePath>
 
-    <StlSupportIncludePath Condition="'$(STLSupport)' == 'gnustl_static'">$(AndroidNdkRoot)\sources\cxx-stl\gnu-libstdc++\$(GccToolchainVersion)\include;$(AndroidNdkRoot)\sources\cxx-stl\gnu-libstdc++\$(GccToolchainVersion)\libs\$(TargetPlatformArchitectureEabi)\include;$(AndroidNdkRoot)\sources\cxx-stl\gnu-libstdc++\$(GccToolchainVersion)\include\backward</StlSupportIncludePath>
+    <StlSupportIncludePath Condition="'$(STLSupport)' == 'gnustl_static'">$(AndroidNdkRoot)\sources\cxx-stl\gnu-libstdc++\$(GccToolchainVersion)\include;$(AndroidNdkRoot)\sources\cxx-stl\gnu-libstdc++\$(GccToolchainVersion)\libs\$(StlSupportTargetEabi)\include;$(AndroidNdkRoot)\sources\cxx-stl\gnu-libstdc++\$(GccToolchainVersion)\include\backward</StlSupportIncludePath>
 
-    <StlSupportIncludePath Condition="'$(STLSupport)' == 'gnustl_shared'">$(AndroidNdkRoot)\sources\cxx-stl\gnu-libstdc++\$(GccToolchainVersion)\include;$(AndroidNdkRoot)\sources\cxx-stl\gnu-libstdc++\$(GccToolchainVersion)\libs\$(TargetPlatformArchitectureEabi)\include;$(AndroidNdkRoot)\sources\cxx-stl\gnu-libstdc++\$(GccToolchainVersion)\include\backward</StlSupportIncludePath>
+    <StlSupportIncludePath Condition="'$(STLSupport)' == 'gnustl_shared'">$(AndroidNdkRoot)\sources\cxx-stl\gnu-libstdc++\$(GccToolchainVersion)\include;$(AndroidNdkRoot)\sources\cxx-stl\gnu-libstdc++\$(GccToolchainVersion)\libs\$(StlSupportTargetEabi)\include;$(AndroidNdkRoot)\sources\cxx-stl\gnu-libstdc++\$(GccToolchainVersion)\include\backward</StlSupportIncludePath>
 
     <StlSupportIncludePath Condition="'$(STLSupport)' == 'c++_static'">$(AndroidNdkRoot)\sources\cxx-stl\llvm-libc++\libcxx\include;$(AndroidNdkRoot)\sources\android\support\include</StlSupportIncludePath>
 
@@ -48,21 +60,21 @@
 
     <StlSupportLibsPath Condition="'$(STLSupport)' == 'system'"></StlSupportLibsPath>
 
-    <StlSupportLibsPath Condition="'$(STLSupport)' == 'gabi++_static'">$(AndroidNdkRoot)\sources\cxx-stl\gabi++\libs\$(TargetPlatformArchitectureEabi)</StlSupportLibsPath>
+    <StlSupportLibsPath Condition="'$(STLSupport)' == 'gabi++_static'">$(AndroidNdkRoot)\sources\cxx-stl\gabi++\libs\$(StlSupportTargetEabi)</StlSupportLibsPath>
 
-    <StlSupportLibsPath Condition="'$(STLSupport)' == 'gabi++_shared'">$(AndroidNdkRoot)\sources\cxx-stl\gabi++\libs\$(TargetPlatformArchitectureEabi)</StlSupportLibsPath>
+    <StlSupportLibsPath Condition="'$(STLSupport)' == 'gabi++_shared'">$(AndroidNdkRoot)\sources\cxx-stl\gabi++\libs\$(StlSupportTargetEabi)</StlSupportLibsPath>
 
-    <StlSupportLibsPath Condition="'$(STLSupport)' == 'stlport_static'">$(AndroidNdkRoot)\sources\cxx-stl\stlport\libs\$(TargetPlatformArchitectureEabi)</StlSupportLibsPath>
+    <StlSupportLibsPath Condition="'$(STLSupport)' == 'stlport_static'">$(AndroidNdkRoot)\sources\cxx-stl\stlport\libs\$(StlSupportTargetEabi)</StlSupportLibsPath>
 
-    <StlSupportLibsPath Condition="'$(STLSupport)' == 'stlport_shared'">$(AndroidNdkRoot)\sources\cxx-stl\stlport\libs\$(TargetPlatformArchitectureEabi)</StlSupportLibsPath>
+    <StlSupportLibsPath Condition="'$(STLSupport)' == 'stlport_shared'">$(AndroidNdkRoot)\sources\cxx-stl\stlport\libs\$(StlSupportTargetEabi)</StlSupportLibsPath>
 
-    <StlSupportLibsPath Condition="'$(STLSupport)' == 'gnustl_static'">$(AndroidNdkRoot)\sources\cxx-stl\gnu-libstdc++\$(GccToolchainVersion)\libs\$(TargetPlatformArchitectureEabi)</StlSupportLibsPath>
+    <StlSupportLibsPath Condition="'$(STLSupport)' == 'gnustl_static'">$(AndroidNdkRoot)\sources\cxx-stl\gnu-libstdc++\$(GccToolchainVersion)\libs\$(StlSupportTargetEabi)</StlSupportLibsPath>
 
-    <StlSupportLibsPath Condition="'$(STLSupport)' == 'gnustl_shared'">$(AndroidNdkRoot)\sources\cxx-stl\gnu-libstdc++\$(GccToolchainVersion)\libs\$(TargetPlatformArchitectureEabi)</StlSupportLibsPath>
+    <StlSupportLibsPath Condition="'$(STLSupport)' == 'gnustl_shared'">$(AndroidNdkRoot)\sources\cxx-stl\gnu-libstdc++\$(GccToolchainVersion)\libs\$(StlSupportTargetEabi)</StlSupportLibsPath>
 
-    <StlSupportLibsPath Condition="'$(STLSupport)' == 'c++_static'">$(AndroidNdkRoot)\sources\cxx-stl\llvm-libc++\libs\$(TargetPlatformArchitectureEabi)</StlSupportLibsPath>
+    <StlSupportLibsPath Condition="'$(STLSupport)' == 'c++_static'">$(AndroidNdkRoot)\sources\cxx-stl\llvm-libc++\libs\$(StlSupportTargetEabi)</StlSupportLibsPath>
 
-    <StlSupportLibsPath Condition="'$(STLSupport)' == 'c++_shared'">$(AndroidNdkRoot)\sources\cxx-stl\llvm-libc++\libs\$(TargetPlatformArchitectureEabi)</StlSupportLibsPath>
+    <StlSupportLibsPath Condition="'$(STLSupport)' == 'c++_shared'">$(AndroidNdkRoot)\sources\cxx-stl\llvm-libc++\libs\$(StlSupportTargetEabi)</StlSupportLibsPath>
 
   </PropertyGroup>
   

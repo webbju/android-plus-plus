@@ -7,6 +7,7 @@
     <AndroidNdkRoot Condition="'$(AndroidNdkRoot)' == ''">$(ANDROID_NDK)</AndroidNdkRoot>
     <AndroidNdkRoot Condition="'$(AndroidNdkRoot)' == ''">$(ANDROID_NDK_ROOT)</AndroidNdkRoot>
 
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-21')">21</AndroidNdkLevel>
     <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-19')">19</AndroidNdkLevel>
     <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-18')">18</AndroidNdkLevel>
     <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-17')">17</AndroidNdkLevel>

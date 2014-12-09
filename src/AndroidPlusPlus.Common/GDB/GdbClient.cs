@@ -369,7 +369,7 @@ namespace AndroidPlusPlus.Common
       {
         string [] sharedLibraryPathsArray = new string [sharedLibrarySearchPaths.Count];
 
-        sharedLibraryPathsArray.CopyTo (sharedLibraryPathsArray, 0);
+        sharedLibrarySearchPaths.CopyTo (sharedLibraryPathsArray, 0);
 
         SetSetting ("solib-search-path", string.Join (";", sharedLibraryPathsArray), true);
       }

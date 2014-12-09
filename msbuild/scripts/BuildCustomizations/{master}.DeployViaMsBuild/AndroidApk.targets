@@ -83,7 +83,7 @@
         %(Link.AdditionalLibraryDirectories);
         @(_TargetElfFiles->'%(RootDir)%(Directory)');
         $(IntDir)raw\lib\$(TargetPlatformArchitectureEabi);"
-      NdkDependsTool="$(AndroidNdkRoot)\ndk-depends.exe"
+      NdkDependsTool="$(ANDROID_PLUS_PLUS)\toolchain\bin\app-ndk-depends.exe"
       Verbose="true">
       <Output TaskParameter="DependentLibraries" ItemName="AndroidApkDependentLibraries" />
       <Output TaskParameter="DependentSystemLibraries" ItemName="AndroidApkDependentSystemLibraries" />
@@ -99,7 +99,7 @@
       </_CopyNativeLibrariesAndTools>
       
       <!-- Copy appropriate target architecture 'gdbserver' instance. -->
-      <_CopyNativeLibrariesAndTools Condition="'$(Configuration)' != 'Release'" Include="$(AndroidNdkRoot)\prebuilt\android-$(TargetPlatformArchitecture)\gdbserver\gdbserver;">
+      <_CopyNativeLibrariesAndTools Condition="'$(Configuration)' != 'Release'" Include="$(PlatformToolsetGdbServer)">
         <IntermediateDirectory>$(IntDir)raw</IntermediateDirectory>
       </_CopyNativeLibrariesAndTools>
     </ItemGroup>

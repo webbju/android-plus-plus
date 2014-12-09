@@ -18,7 +18,7 @@
 
     <PlatformArchitecture>32</PlatformArchitecture>
 
-    <PlatformToolset Condition="'$(PlatformToolset)' == ''">clang3.3</PlatformToolset>
+    <PlatformToolset Condition="'$(PlatformToolset)' == ''">clang3.4</PlatformToolset>
 
     <DefaultPlatformToolset Condition="'$(DefaultPlatformToolset)' == ''">$(PlatformToolset)</DefaultPlatformToolset>
 

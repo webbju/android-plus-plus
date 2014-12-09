@@ -117,4 +117,15 @@
     Category="LaunchConfiguration"
   />
 
+  <!--
+    DebuggerInstallerPackageName
+  -->
+
+  <StringProperty
+    Name="DebuggerInstallerPackageName"
+    DisplayName="Installer Package Name"
+    Description="Specifies the package name for an installer, allowing applications to pretend to originate from different marketplaces. e.g. Google Play (com.android.vending)"
+    Category="LaunchConfiguration"
+  />
+
 </Rule>
