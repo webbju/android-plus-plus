@@ -52,7 +52,8 @@
       <SubSystem>Console</SubSystem>
     </Link>
     <PostBuildEvent>
-      <Command>copy /y /b "$(TargetPath)" "$(TargetDir)..\..\..\..\..\bin\$(TargetFileName)"</Command>
+      <Command>copy /y /b "$(TargetPath)" "$(TargetDir)..\..\..\..\..\bin\$(TargetFileName)"
+copy /y /b "$(ProjectDir)$(AssemblyName).libraries.txt" "$(TargetDir)$(AssemblyName).libraries.txt"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -69,6 +70,10 @@
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /y /b "$(TargetPath)" "$(TargetDir)..\..\..\..\..\bin\$(TargetFileName)"
+copy /y /b "$(ProjectDir)$(AssemblyName).libraries.txt" "$(TargetDir)..\..\..\..\..\bin\$(AssemblyName).libraries.txt"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\ndk-depends.cc" />

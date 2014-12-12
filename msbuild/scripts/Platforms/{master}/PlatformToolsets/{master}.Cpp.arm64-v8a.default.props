@@ -64,7 +64,7 @@
 
     <ClCompile>
 
-      <PreprocessorDefinitions>__arm__;__aarch64__;__ARM_ARCH_8__;__ARM_ARCH_8A__;__ARM_EABI__;__LP64__;%(ClCompile.PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__aarch64__;__ARM_ARCH_8__;__ARM_ARCH_8A__;__ARM_EABI__;__LP64__;%(ClCompile.PreprocessorDefinitions)</PreprocessorDefinitions>
 
       <AdditionalOptions>%(ClCompile.AdditionalOptions)</AdditionalOptions>
 

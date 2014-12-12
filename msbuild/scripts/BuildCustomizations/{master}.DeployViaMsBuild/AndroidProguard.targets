@@ -88,12 +88,18 @@
       <!-- Default configuration script(s). -->
       <_CollatedProGuardProjectScripts
         Include="$(_ProGuardRoot)\proguard-android.txt"
+      />
+      <!--
+      TODO: Resolve why using the optimised configuration massively breaks the ability to output to multiDex.
+      <_CollatedProGuardProjectScripts
+        Include="$(_ProGuardRoot)\proguard-android.txt"
         Condition="'$(UseDebugLibraries)' == 'true'"
       />
       <_CollatedProGuardProjectScripts
         Include="$(_ProGuardRoot)\proguard-android-optimize.txt"
         Condition="'$(UseDebugLibraries)' != 'true'"
       />
+      -->
       <_CollatedProGuardProjectScripts
         Include="$(_ProGuardRoot)\proguard-android-project.txt"
         Condition="Exists('$(_ProGuardRoot)\proguard-android-project.txt')"
@@ -129,10 +135,11 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <!-- Custom command file options and flattened arguments -->
-      <_ProGuardCommandFile>$(ProjectDir)$(IntDir)bin\proguard-commands.txt</_ProGuardCommandFile>
       <!-- Characters required to construct command file -->
       <Semicolon>%3B</Semicolon>
+      <!-- Custom command file options and flattened arguments -->
+      <_ProGuardCommandFile>$(ProjectDir)$(IntDir)bin\proguard-commands.txt</_ProGuardCommandFile>
+      <_ProGuardIncludeScripts>@(_CollatedProGuardProjectScripts->Distinct()->'-include &quot;%(FullPath)&quot;')</_ProGuardIncludeScripts>
     </PropertyGroup>
 
     <!-- Create an empty output jar. -->
@@ -145,6 +152,10 @@
       Condition="'@(AndroidProguard)' != ''"
       File="$(_ProGuardCommandFile)"
       Lines=";
+# 
+# 
+# 
+$(_ProGuardIncludeScripts);
 # 
 # Output a collection of reports to help debugging.
 # 
@@ -177,6 +188,13 @@
 }
 -keepclasseswithmembernames class * {
   native &lt;methods&gt;$(Semicolon)
+}
+# 
+# Retain all default android.annotation attributes.
+# This prevents projects failing when all classes have been stripped during the shrink process.
+# 
+-keep public class android.annotation.** {
+    public *$(Semicolon)
 }"
       Overwrite="true"
     />
@@ -186,7 +204,7 @@
         <InJars>@(AndroidProguard->Distinct())</InJars>
         <OutJars>$(_ProGuardOutputJar)</OutJars>
         <LibraryJars>$(AndroidSdkRoot)\platforms\android-$(AndroidSdkLevel)\android.jar</LibraryJars>
-        <IncludeScripts>$(_ProGuardCommandFile);@(_CollatedProGuardProjectScripts->'%(FullPath)')</IncludeScripts>
+        <IncludeScripts>$(_ProGuardCommandFile)</IncludeScripts>
       </AndroidProguard>
     </ItemGroup>
 

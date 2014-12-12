@@ -85,17 +85,20 @@
       <_MainDexInputJars>@(AndroidDalvik->Distinct()->'-injars &quot;%(FullPath)&quot;')</_MainDexInputJars>
       <_MainDexScriptOutputJar>$(ProjectDir)$(IntDir)bin\mainDexClasses.tmp.jar</_MainDexScriptOutputJar>
       <_MainDexScriptOutputMainList>$(ProjectDir)$(IntDir)bin\mainDexClasses.keep</_MainDexScriptOutputMainList>
-      <_MainDexShrunkAndroidJar>$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\multidex\shrinkedAndroid.jar</_MainDexShrunkAndroidJar>
       <_MainDexClassPathArgument>@(AndroidDalvik->Distinct())</_MainDexClassPathArgument>
       <_MainDexScriptCommandFile>$(ProjectDir)$(IntDir)bin\mainDex-commands.txt</_MainDexScriptCommandFile>
       <_MainDexOutputLog>$(ProjectDir)$(IntDir)bin\mainDex-output.txt</_MainDexOutputLog>
+      <!-- and because Google love moving things for no reason -->
+      <_MainDexScriptRules>$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\multidex\mainDexClasses.rules</_MainDexScriptRules>
+      <_MainDexShrunkAndroidJar>$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\multidex\shrinkedAndroid.jar</_MainDexShrunkAndroidJar>
+      <_MainDexScriptRules Condition="!Exists('$(_MainDexScriptRules)')">$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\mainDexClasses.rules</_MainDexScriptRules>
+      <_MainDexShrunkAndroidJar Condition="!Exists('$(_MainDexShrunkAndroidJar)')">$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\lib\shrinkedAndroid.jar</_MainDexShrunkAndroidJar>
     </PropertyGroup>
 
-    <WriteLinesToFile
+    <!-- Create an empty output jar. -->
+    <Exec 
       Condition="!Exists('$(_MainDexScriptOutputJar)')"
-      File="$(_MainDexScriptOutputJar)"
-      Lines=""
-      Overwrite="true"
+      Command="REM.&gt;&quot;$(_MainDexScriptOutputJar)&quot;"
     />
 
     <WriteLinesToFile
@@ -113,7 +116,7 @@ $(_MainDexInputJars)
 -dontoptimize
 -dontobfuscate
 -dontpreverify
--include &quot;$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\multidex\mainDexClasses.rules&quot;;
+-include &quot;$(_MainDexScriptRules)&quot;
 # 
 # Retain all classes with native members (http://proguard.sourceforge.net/manual/examples.html#native)
 # TODO: This should have 'includedescriptorclasses', but this isn't supported in ProGuard 4.7.

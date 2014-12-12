@@ -40,6 +40,8 @@
       The many, many editions of SDK build-tools.
     -->
 
+    <AndroidSdkBuildToolsVersion Condition="'$(AndroidSdkBuildToolsVersion)' == '' AND Exists('$(AndroidSdkRoot)\build-tools\21.1.2')">21.1.2</AndroidSdkBuildToolsVersion>
+    <AndroidSdkBuildToolsVersion Condition="'$(AndroidSdkBuildToolsVersion)' == '' AND Exists('$(AndroidSdkRoot)\build-tools\21.1.1')">21.1.1</AndroidSdkBuildToolsVersion>
     <AndroidSdkBuildToolsVersion Condition="'$(AndroidSdkBuildToolsVersion)' == '' AND Exists('$(AndroidSdkRoot)\build-tools\21.1.0')">21.1.0</AndroidSdkBuildToolsVersion>
     <AndroidSdkBuildToolsVersion Condition="'$(AndroidSdkBuildToolsVersion)' == '' AND Exists('$(AndroidSdkRoot)\build-tools\21.0.2')">21.0.2</AndroidSdkBuildToolsVersion>
     <AndroidSdkBuildToolsVersion Condition="'$(AndroidSdkBuildToolsVersion)' == '' AND Exists('$(AndroidSdkRoot)\build-tools\21.0.1')">21.0.1</AndroidSdkBuildToolsVersion>

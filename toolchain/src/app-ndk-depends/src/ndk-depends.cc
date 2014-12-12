@@ -133,6 +133,7 @@ typedef __int64 off64_t;
 #include <map>
 #include <string>
 #include <vector>
+#include <unordered_set>
 
 namespace {
 
@@ -920,31 +921,6 @@ void AddHostLibraryPaths(std::vector<String>* lib_search_path) {
 #endif
 }
 
-// Returns true if |libname| is the name of an Android system library.
-bool IsAndroidSystemLib(const String& libname) {
-  static const TCHAR* const kAndroidSystemLibs[] = {
-    _T("libc.so"),
-    _T("libdl.so"),
-    _T("liblog.so"),
-    _T("libm.so"),
-    _T("libstdc++.so"),
-    _T("libz.so"),
-    _T("libandroid.so"),
-    _T("libjnigraphics.so"),
-    _T("libEGL.so"),
-    _T("libGLESv1_CM.so"),
-    _T("libGLESv2.so"),
-    _T("libOpenSLES.so"),
-    _T("libOpenMAXAL.so"),
-    NULL
-  };
-  for (size_t n = 0; kAndroidSystemLibs[n] != NULL; ++n) {
-    if (!libname.compare(kAndroidSystemLibs[n]))
-      return true;
-  }
-  return false;
-}
-
 // Returns true if |libname| is the name of an NDK-compatible shared
 // library. This means its must begin with "lib" and end with "so"
 // (without any version numbers).
@@ -954,13 +930,109 @@ bool IsAndroidNdkCompatibleLib(const String& libname) {
          !libname.compare(libname.size() - 3, 3, _T(".so"));
 }
 
-// Try to find a library named |libname| in |search_paths|
-// Returns true on success, and sets |result| to the full library path,
-// false otherwise.
 #if !defined(S_ISREG) && defined(S_IFMT) && defined(S_IFREG)
 #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
 #endif
 
+TCHAR* GetExecutablePath (TCHAR* dest, size_t dest_size) {
+  GetModuleFileName(NULL, dest, MAX_PATH);
+  return dest;
+}
+
+// Returns true if |libname| is the name of an Android system library.
+bool IsAndroidSystemLib(const String& libname) {
+  static std::unordered_set<String> androidSystemLibs;
+
+  if (androidSystemLibs.size () == 0) {
+    // Default libraries.
+    androidSystemLibs.insert (_T("libc.so"));
+    androidSystemLibs.insert (_T("libdl.so"));
+    androidSystemLibs.insert (_T("liblog.so"));
+    androidSystemLibs.insert (_T("libm.so"));
+    androidSystemLibs.insert (_T("libstdc++.so"));
+    androidSystemLibs.insert (_T("libz.so"));
+    androidSystemLibs.insert (_T("libandroid.so"));
+    androidSystemLibs.insert (_T("libjnigraphics.so"));
+    androidSystemLibs.insert (_T("libEGL.so"));
+    androidSystemLibs.insert (_T("libGLESv1_CM.so"));
+    androidSystemLibs.insert (_T("libGLESv2.so"));
+    androidSystemLibs.insert (_T("libOpenSLES.so"));
+    androidSystemLibs.insert (_T("libOpenMAXAL.so"));
+
+    // Additional libraries specified by file.
+    const TCHAR *filename = _T("app-ndk-depends.libraries.txt");
+    TCHAR buffer [MAX_PATH], additionalFilePath [MAX_PATH];
+    TCHAR* executablePath = GetExecutablePath (buffer, MAX_PATH);
+    String executableRootPath = path_dirname (executablePath);
+    swprintf_s (additionalFilePath, MAX_PATH, _T("%s\\%s"), executableRootPath.c_str(), filename);
+
+    bool valid = true;
+    FILE* file = NULL;
+
+    struct _stat st;
+    if (_tstat(additionalFilePath, &st) < 0) {
+      LOG2(_T("%s\n"), TO_CONST_TCHAR(strerror(errno)));
+      valid = false;
+    }
+    if (!S_ISREG(st.st_mode)) {
+      LOG2(_T("Not a regular file!\n"));
+      valid = false;
+    }
+    if (valid) {
+      file =_tfopen(additionalFilePath, _T("r"));
+    }
+    if (file) {
+      TCHAR line[1024];
+      while (_fgetts(line, sizeof(line), file) != NULL) {
+        const TCHAR* begin = line;
+        const TCHAR* end = line + _tcslen(line);
+        while (end > begin && end[-1] == '\n')
+          end--;
+
+        while (begin < end) {
+          // Skip over separators
+          while (begin < end && 
+            (*begin == ' ' || *begin == '\t' || *begin == '\r' || *begin == '\n'))
+            begin++;
+
+          if (begin == end || begin[0] == '#') {
+            // Skip empty lines and comments.
+            break;
+          }
+          // Find end of current item
+          const TCHAR* next_pos = begin;
+          while (next_pos < end &&
+              !((*next_pos == ' ' || *next_pos == '\t' || *next_pos == '\r' || *next_pos == '\n')) &&
+              *next_pos != '#')
+            next_pos++;
+
+          size_t len = static_cast<size_t>(next_pos - begin);
+
+          String pattern(begin, len);
+
+          if (IsAndroidNdkCompatibleLib (pattern)) {
+            androidSystemLibs.insert (pattern);
+          }
+
+          // switch to next item in line.
+          begin = next_pos;
+        }
+      }
+      fclose(file);
+    }
+    else {
+      _ftprintf(stderr,
+                  _T("WARNING: Could not open additional libraries file ('%s')\n"),
+                  additionalFilePath);
+    }
+  }
+
+  return (androidSystemLibs.find (libname) != androidSystemLibs.end ());
+}
+
+// Try to find a library named |libname| in |search_paths|
+// Returns true on success, and sets |result| to the full library path,
+// false otherwise.
 bool FindLibraryPath(const String& libname,
                      const std::vector<String>& search_paths,
                      String* result) {
