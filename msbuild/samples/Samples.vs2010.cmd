@@ -10,6 +10,6 @@ cd %~dp0\..\
 
 call "%VS100COMNTOOLS%vsvars32.bat"
 
-"%DevEnvDir%devenv.exe" .\samples\Samples.sln
+"%DevEnvDir%devenv.exe" .\samples\Samples.vs2010.sln
 
 endlocal
