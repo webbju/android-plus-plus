@@ -47,6 +47,12 @@
   <PropertyGroup>
 
     <!--
+      Define a custom target to evaluate build requirements and additional dependencies.     
+    -->
+
+    <PlatformPrepareForBuildDependsOn>PlatformToolsetPrepareForBuild;$(PlatformPrepareForBuildDependsOn)</PlatformPrepareForBuildDependsOn>
+
+    <!--
       Enable incremental build by enable file tracking in tasks.
     -->
 
@@ -431,6 +437,28 @@
     />
 
   </Target> 
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target Name="PlatformToolsetPrepareForBuild" DependsOnTargets="$(PlatformToolsetPrepareForBuildDependsOn)">
+  
+    <!-- Validate existence of Android++ -->
+    <Error Condition="'$(ANDROID_PLUS_PLUS)' == ''" Text="Could not locate Android++. Please ensure 'ANDROID_PLUS_PLUS' is a registered environment variable." />
+    <Error Condition="!Exists('$(ANDROID_PLUS_PLUS)')" Text="Could not locate Android++. Path does not exist. Expected: $(ANDROID_PLUS_PLUS)." />
+    
+    <!-- Validate existence of Android SDK -->
+    <Error Condition="'$(AndroidSdkRoot)' == ''" Text="Could not locate the Android SDK. Please consult $(ANDROID_PLUS_PLUS)\docs\getting_started.txt" />
+    <Error Condition="!Exists('$(AndroidSdkRoot)')" Text="Could not locate the Android SDK. Path does not exist. Expected: $(AndroidSdkRoot)." />
+
+    <!-- Validate existence of Android NDK -->
+    <Error Condition="'$(AndroidNdkRoot)' == ''" Text="Could not locate the Android NDK. Please consult $(ANDROID_PLUS_PLUS)\docs\getting_started.txt" />
+    <Error Condition="!Exists('$(AndroidNdkRoot)')" Text="Could not locate the Android NDK. Path does not exist. Expected: $(AndroidNdkRoot)." />
+
+  </Target>
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

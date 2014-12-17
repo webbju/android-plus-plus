@@ -39,7 +39,6 @@
     <JavaHomeDir Condition="'$(JavaVersion)' == '1.6' and '$(JavaHomeDir)' == '' and '$(SixtyFourBit)' == 'true'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\JavaSoft\Java Development Kit\1.6@JavaHome)</JavaHomeDir>
     <JavaHomeDir Condition="'$(JavaVersion)' == '1.5' and '$(JavaHomeDir)' == '' and '$(SixtyFourBit)' == 'false'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\JavaSoft\Java Development Kit\1.5@JavaHome)</JavaHomeDir>
     <JavaHomeDir Condition="'$(JavaVersion)' == '1.5' and '$(JavaHomeDir)' == '' and '$(SixtyFourBit)' == 'true'">$(Registry:HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\JavaSoft\Java Development Kit\1.5@JavaHome)</JavaHomeDir>
-    <JavaHomeDir Condition="'$(JavaHomeDir)' == ''">&lt;unset&gt;</JavaHomeDir>
 
   </PropertyGroup>
 
