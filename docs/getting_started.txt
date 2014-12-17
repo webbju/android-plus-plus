@@ -2,9 +2,11 @@
 Prerequisites:
 
  - Android SDK (http://developer.android.com/sdk/)
+   * Please avoid installing to a path which contains spaces.
 
  - Android NDK (https://developer.android.com/tools/sdk/ndk/)
-   * Compatibility tested with NDK r9d and r10.
+   * Please avoid installing to a path which contains spaces.
+   * Compatibility tested with NDK r9d, r10, r10b, r10c and r10d.
 
  - Java Development Kit (JDK) 1.6 or 1.7
    * If using JDK 1.7, please ensure you are using a revision of at least 67. 
