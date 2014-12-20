@@ -8,7 +8,7 @@ setlocal
 
 cd %~dp0\..\
 
-call "%VS110COMNTOOLS%vsvars32.bat"
+call "%VS120COMNTOOLS%vsvars32.bat"
 
 "%DevEnvDir%devenv.exe" .\tests\Tests.sln
 
