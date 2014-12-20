@@ -14,6 +14,8 @@ setlocal
 
 call .\bootstrap\msbuild_install_vs2012.cmd
 
+call .\bootstrap\extension_uninstall_vs2012.cmd
+
 call .\bootstrap\extension_install_vs2012.cmd
 
 endlocal

@@ -6,4 +6,6 @@
 
 "%VS100COMNTOOLS%..\IDE\devenv.exe" ../src/app-javac-dependencies/app-javac-dependencies.sln /build "Release|x86"
 
+"%VS100COMNTOOLS%..\IDE\devenv.exe" ../src/app-ndk-depends/app-ndk-depends.sln /build "Release|Win32"
+
 "%VS100COMNTOOLS%..\IDE\devenv.exe" ../src/app-zipalign/app-zipalign.sln /build "Release|Win32"

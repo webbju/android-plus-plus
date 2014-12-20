@@ -2,6 +2,4 @@
 :: Install the Visual Studio 2013 debugger extension
 :: 
 
-"%VS120COMNTOOLS%..\IDE\VSIXInstaller.exe" /admin "%ANDROID_PLUS_PLUS%\bin\v12.0\AndroidPlusPlus.VsIntegratedPackage.vsix"
-
-"%VS120COMNTOOLS%..\IDE\devenv.exe" /setup /nosetupvstemplates
+%~dp0\utilities\extension_install.cmd 2013 "%ANDROID_PLUS_PLUS%\bin\v12.0\AndroidPlusPlus.VsIntegratedPackage.vsix"
