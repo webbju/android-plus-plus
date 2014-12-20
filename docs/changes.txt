@@ -19,6 +19,7 @@ Fixes/Improvements:
 
 Upgrade notes:
 
+ - An r10 derivative release of the Android NDK is required in order to target 64-bit architectures.
  - (MSBuild) ProGuard configuration scripts (named 'proguard.txt' or 'proguard-project.txt') can now be placed alongside a AndroidManifest.xml
 
 --------------------------------------------------------------------------------------------------------------------------------
