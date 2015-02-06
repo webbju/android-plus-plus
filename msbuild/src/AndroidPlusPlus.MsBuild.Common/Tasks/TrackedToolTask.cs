@@ -850,48 +850,171 @@ namespace AndroidPlusPlus.MsBuild.Common
           // 
           // Create dependency mappings for 'global' task outputs. Assume these relate to all processed sources.
           // 
+          //   Dependency files are exported/collated in various different ways:
+          // 
+          //   - C/C++ uses <filename>.d (alongside .o/.obj output)
+          //   - Java uses: <filename>.java.d
+          //   - Unix uses: <filename>.<ext>.d
+          // 
 
-          Dictionary<string, List<ITaskItem>> cachedOutputDependencies = new Dictionary<string, List<ITaskItem>> ();
+          // 
+          // Check alongside the known output files for a dependency file.
+          // 
 
-          Dictionary<string, string> dependencyFilePermutations = new Dictionary<string, string> ();
+          {
+            Dictionary<string, string> outputDependencyFilePermutations = new Dictionary<string, string> (OutputFiles.Length * 2);
+
+            foreach (ITaskItem outputFile in OutputFiles)
+            {
+              string outputFileFullPath = outputFile.GetMetadata ("FullPath");
+
+              if (!string.IsNullOrWhiteSpace (outputFileFullPath))
+              {
+                outputDependencyFilePermutations.Add (Path.ChangeExtension (outputFileFullPath, ".d"), outputFileFullPath);
+
+                outputDependencyFilePermutations.Add (outputFileFullPath + ".d", outputFileFullPath);
+              }
+            }
+
+            foreach (KeyValuePair<string, string> dependencyKeyPair in outputDependencyFilePermutations)
+            {
+              // 
+              // Validate this permutation is something we'd expect.
+              // 
+
+              string dependencyFile = dependencyKeyPair.Key;
+
+              if (string.IsNullOrWhiteSpace (dependencyFile))
+              {
+                continue;
+              }
+              else if (string.IsNullOrWhiteSpace (Path.GetFileNameWithoutExtension (dependencyFile)))
+              {
+                continue;
+              }
+              else if (!File.Exists (dependencyFile))
+              {
+                continue;
+              }
+
+              // 
+              // Probe the dependency file. Evaluate & find parent source item and add dependencies.
+              // 
+
+              GccUtilities.DependencyParser parser = new GccUtilities.DependencyParser ();
+
+              parser.Parse (dependencyFile);
+
+#if DEBUG
+              Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : {1} (Entries: {2})", ToolName, dependencyFile, parser.Dependencies.Count), MessageImportance.Low);
+
+              Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : [{1}] '{2}'", ToolName, "+", parser.OutputFile.GetMetadata ("FullPath")), MessageImportance.Low);
+
+              int index = 0;
+
+              foreach (var dependency in parser.Dependencies)
+              {
+                Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : [{1}] '{2}'", ToolName, ++index, dependency), MessageImportance.Low);
+              }
+#endif
+
+              if (parser.Dependencies.Count > 0)
+              {
+                Dictionary<string, ITaskItem> collatedFullPathSources = new Dictionary<string, ITaskItem> (sources.Length);
+
+                foreach (ITaskItem source in sources)
+                {
+                  collatedFullPathSources [source.GetMetadata ("FullPath")] = source;
+                }
+
+                ITaskItem parentSourceItem = null;
+
+                if (collatedFullPathSources.TryGetValue (parser.OutputFile.GetMetadata ("FullPath"), out parentSourceItem))
+                {
+                  // 
+                  // We managed to find a parent source file (the master file from which the output was generated),
+                  // just add of the evaluated dependencies as they are all relevant in this case.
+                  // 
+
+                  ITaskItem [] dependenciesItemArray = new ITaskItem [parser.Dependencies.Count];
+
+                  parser.Dependencies.CopyTo (dependenciesItemArray, 0);
+
+                  trackedFileManager.AddDependencyForSources (dependenciesItemArray, new ITaskItem [] { parentSourceItem });
+                }
+                else
+                {
+                  // 
+                  // If we can't determine a parent source file (the master file from which the output was generated),
+                  // we'll want to add entries for all the dependencies which aren't already flagged as sources.
+                  // NOTE: This isn't ideal, but should reduce likelyhood of required dependencies being missed.
+                  // 
+
+                  Dictionary<string, ITaskItem> nonSourceDependencies = new Dictionary<string, ITaskItem> (parser.Dependencies.Count);
+
+                  foreach (ITaskItem dependency in parser.Dependencies)
+                  {
+                    if (collatedFullPathSources.ContainsKey (dependency.GetMetadata ("FullPath")))
+                    {
+                      continue;
+                    }
+
+                    if (nonSourceDependencies.ContainsKey (dependency.GetMetadata ("FullPath")))
+                    {
+                      continue;
+                    }
+
+                    nonSourceDependencies.Add (dependency.GetMetadata ("FullPath"), dependency);
+                  }
+
+                  ITaskItem [] nonSourceDependenciesArray = new ITaskItem [nonSourceDependencies.Count];
+
+                  nonSourceDependencies.Values.CopyTo (nonSourceDependenciesArray, 0);
+
+                  trackedFileManager.AddDependencyForSources (nonSourceDependenciesArray, sources);
+                }
+              }
+            }
+          }
+
+          // 
+          // In some instances, we need to use metadata to search for dependency files in alternative locations.
+          // 
 
           foreach (KeyValuePair<string, List<ITaskItem>> commandKeyPair in commandDictionary)
           {
             foreach (ITaskItem source in commandKeyPair.Value)
             {
-              string dependantOutputFile = source.GetMetadata ("OutputFile");
+              Dictionary<string, string> alternateDependencyFilePermutations = new Dictionary<string, string> (4);
 
-              string dependantObjectFileName = source.GetMetadata ("ObjectFileName");
+              string dependentOutputFile = source.GetMetadata ("OutputFile");
 
-              // 
-              // Evaluate potential exported dependency files (each use slightly different conventions).
-              // 
-              // - C style: 'SRC.d'
-              // - Java (or Unix) style: 'SRC.java.d' 'FILE.EXT.d'
-              // 
+              string dependentObjectFileName = source.GetMetadata ("ObjectFileName");
 
-              dependencyFilePermutations.Clear ();
-
-              if (!string.IsNullOrWhiteSpace (dependantOutputFile))
+              if (!string.IsNullOrWhiteSpace (dependentOutputFile))
               {
-                dependencyFilePermutations.Add (Path.ChangeExtension (dependantOutputFile, ".d"), dependantOutputFile);
+                alternateDependencyFilePermutations.Add (Path.ChangeExtension (dependentOutputFile, ".d"), dependentOutputFile);
 
-                dependencyFilePermutations.Add (dependantOutputFile + ".d", dependantOutputFile);
+                alternateDependencyFilePermutations.Add (dependentOutputFile + ".d", dependentOutputFile);
               }
 
-              if (!string.IsNullOrWhiteSpace (dependantObjectFileName))
+              if (!string.IsNullOrWhiteSpace (dependentObjectFileName))
               {
-                dependencyFilePermutations.Add (Path.ChangeExtension (dependantObjectFileName, ".d"), dependantObjectFileName);
+                alternateDependencyFilePermutations.Add (Path.ChangeExtension (dependentObjectFileName, ".d"), dependentObjectFileName);
 
-                dependencyFilePermutations.Add (dependantObjectFileName + ".d", dependantObjectFileName);
+                alternateDependencyFilePermutations.Add (dependentObjectFileName + ".d", dependentObjectFileName);
               }
 
               // 
               // Iterate through each possible dependency file. Cache listings so that similar outputs aren't re-parsed (i.e. static/shared libraries from object files)
               // 
 
-              foreach (KeyValuePair<string, string> dependencyKeyPair in dependencyFilePermutations)
+              foreach (KeyValuePair<string, string> dependencyKeyPair in alternateDependencyFilePermutations)
               {
+                // 
+                // Validate this permutation is something we'd expect.
+                // 
+
                 string dependencyFile = dependencyKeyPair.Key;
 
                 if (string.IsNullOrWhiteSpace (dependencyFile))
@@ -911,27 +1034,28 @@ namespace AndroidPlusPlus.MsBuild.Common
                 // Probe and cache each dependency file. Saves re-parsing identical file references each time.
                 // 
 
-                List<ITaskItem> dependencies;
+                GccUtilities.DependencyParser parser = new GccUtilities.DependencyParser ();
 
-                if (!cachedOutputDependencies.TryGetValue (dependencyFile, out dependencies))
-                {
-                  GccUtilities.DependencyParser parser = new GccUtilities.DependencyParser (dependencyFile);
+                parser.Parse (dependencyFile);
 
 #if DEBUG
-                  Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : {1} (Entries: {2})", ToolName, dependencyFile, parser.Dependencies.Count), MessageImportance.Low);
+                Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : {1} (Entries: {2})", ToolName, dependencyFile, parser.Dependencies.Count), MessageImportance.Low);
 
-                  for (int i = 0; i < parser.Dependencies.Count; ++i)
-                  {
-                    Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : [{1}] '{2}'", ToolName, i, parser.Dependencies [i]), MessageImportance.Low);
-                  }
+                Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : [{1}] '{2}'", ToolName, "+", parser.OutputFile.GetMetadata ("FullPath")), MessageImportance.Low);
+
+                int index = 0;
+
+                foreach (var dependency in parser.Dependencies)
+                {
+                  Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : [{1}] '{2}'", ToolName, ++index, dependency), MessageImportance.Low);
+                }
 #endif
 
-                  dependencies = parser.Dependencies;
+                ITaskItem [] dependenciesItemArray = new ITaskItem [parser.Dependencies.Count];
 
-                  cachedOutputDependencies.Add (dependencyFile, parser.Dependencies);
-                }
+                parser.Dependencies.CopyTo (dependenciesItemArray, 0);
 
-                trackedFileManager.AddDependencyForSources (dependencies.ToArray (), new ITaskItem [] { source });
+                trackedFileManager.AddDependencyForSources (dependenciesItemArray, new ITaskItem [] { source });
               }
             }
           }

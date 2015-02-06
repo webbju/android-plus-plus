@@ -27,11 +27,13 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private Hashtable m_deviceProperties = new Hashtable ();
+    private Dictionary<string, string> m_deviceProperties = new Dictionary<string, string> ();
 
     private Dictionary<string, List<uint>> m_deviceProcessesPidsByName = new Dictionary<string, List<uint>> ();
 
     private Dictionary<uint, AndroidProcess> m_deviceProcessesByPid = new Dictionary<uint, AndroidProcess> ();
+
+    private Dictionary<uint, List<AndroidProcess>> m_deviceProcessesByPpid = new Dictionary<uint, List<AndroidProcess>> ();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -42,6 +44,18 @@ namespace AndroidPlusPlus.Common
       ID = deviceId;
 
       PopulateProperties ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public bool IsEmulator
+    {
+      get
+      {
+        return ID.StartsWith ("emulator-");
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -73,7 +87,11 @@ namespace AndroidPlusPlus.Common
 
     public string GetProperty (string property)
     {
-      return (string)m_deviceProperties [property];
+      string prop;
+
+      m_deviceProperties.TryGetValue (property, out prop);
+
+      return prop ?? string.Empty;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -117,13 +135,13 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public AndroidProcess [] GetAllProcesses ()
+    public uint [] GetActivePids ()
     {
-      AndroidProcess [] processes = new AndroidProcess [m_deviceProcessesByPid.Count];
+      uint [] activePids = new uint [m_deviceProcessesByPid.Count];
 
-      m_deviceProcessesByPid.Values.CopyTo (processes, 0);
+      m_deviceProcessesByPid.Keys.CopyTo (activePids, 0);
 
-      return processes;
+      return activePids;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -132,29 +150,61 @@ namespace AndroidPlusPlus.Common
 
     public string Shell (string command, string arguments, int timeout = 30000)
     {
-      using (SyncRedirectProcess adbShellCommand = AndroidAdb.AdbCommand (this, "shell", string.Format ("{0} {1}", command, arguments)))
+      LoggingUtils.PrintFunction ();
+
+      try
       {
         int exitCode = -1;
-        
-        try
+
+        using (SyncRedirectProcess process = AndroidAdb.AdbCommand (this, "shell", string.Format ("{0} {1}", command, arguments)))
         {
-          exitCode = adbShellCommand.StartAndWaitForExit (timeout);
+          exitCode = process.StartAndWaitForExit (timeout);
 
           if (exitCode != 0)
           {
-            throw new InvalidOperationException ("Shell request failed: " + adbShellCommand.StandardError);
+            throw new InvalidOperationException (string.Format ("[shell:{0}] returned error code: {1}", command, exitCode));
           }
 
-          LoggingUtils.Print ("[AndroidDevice] Shell: " + command + " (" + arguments + "):\n" + adbShellCommand.StandardOutput);
+          return process.StandardOutput;
         }
-        catch (TimeoutException e)
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        throw new InvalidOperationException ("Failed shell command", e);
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public string Push (string localPath, string remotePath)
+    {
+      LoggingUtils.PrintFunction ();
+
+      try
+      {
+        int exitCode = -1;
+
+        using (SyncRedirectProcess process = AndroidAdb.AdbCommand (this, "push", string.Format ("{0} {1}", PathUtils.SantiseWindowsPath (localPath), remotePath)))
         {
-          LoggingUtils.HandleException (e);
+          exitCode = process.StartAndWaitForExit ();
 
-          throw new InvalidOperationException ("Shell request failed: Timed out.");
+          if (exitCode != 0)
+          {
+            throw new InvalidOperationException (string.Format ("push returned error code: {0}", exitCode));
+          }
+
+          return process.StandardOutput;
         }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
 
-        return adbShellCommand.StandardOutput;
+        throw new InvalidOperationException ("Failed push request", e);
       }
     }
 
@@ -164,227 +214,30 @@ namespace AndroidPlusPlus.Common
 
     public string Pull (string remotePath, string localPath)
     {
-      using (SyncRedirectProcess adbPullCommand = AndroidAdb.AdbCommand (this, "pull", string.Format ("{0} {1}", remotePath, PathUtils.SantiseWindowsPath (localPath))))
+      LoggingUtils.PrintFunction ();
+
+      try
       {
         int exitCode = -1;
 
-        try
+        using (SyncRedirectProcess process = AndroidAdb.AdbCommand (this, "pull", string.Format ("{0} {1}", remotePath, PathUtils.SantiseWindowsPath (localPath))))
         {
-          exitCode = adbPullCommand.StartAndWaitForExit ();
+          exitCode = process.StartAndWaitForExit ();
 
           if (exitCode != 0)
           {
-            throw new InvalidOperationException ("Pull request failed: " + adbPullCommand.StandardError);
+            throw new InvalidOperationException (string.Format ("pull returned error code: {0}", exitCode));
           }
 
-          LoggingUtils.Print (string.Format ("[AndroidDevice] Pull: '{0}' => '{1}' - {2}", remotePath, localPath, adbPullCommand.StandardOutput));
-        }
-        catch (TimeoutException e)
-        {
-          LoggingUtils.HandleException (e);
-
-          throw new InvalidOperationException ("Pull request failed: Timed out.");
-        }
-
-        return adbPullCommand.StandardOutput;
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public void Install (string filename, bool reinstall, string installer)
-    {
-      // 
-      // Install applications to internal storage (-l). Apps in /mnt/asec/ and other locations cause 'run-as' to fail regarding permissions.
-      // 
-
-      LoggingUtils.PrintFunction ();
-
-      int exitCode = -1;
-
-      string temporaryStorage = "/data/local/tmp";
-
-      string temporaryStoredFile = temporaryStorage + "/" + Path.GetFileName (filename);
-
-      try
-      {
-        // 
-        // Push APK to temporary device/emulator storage.
-        // 
-
-        using (SyncRedirectProcess adbPushToTemporaryCommand = AndroidAdb.AdbCommand (this, "push", string.Format ("{0} {1}", PathUtils.SantiseWindowsPath (filename), temporaryStorage)))
-        {
-          try
-          {
-            exitCode = adbPushToTemporaryCommand.StartAndWaitForExit ();
-          }
-          catch (TimeoutException)
-          {
-            throw new InvalidOperationException ("Installation failed: Transfer timed out.");
-          }
-
-          if (exitCode != 0)
-          {
-            throw new InvalidOperationException ("Installation failed: Could not transfer to temporary storage.");
-          }
-        }
-
-        // 
-        // Run a custom (package managed based) install request, bypassing /mnt/app-asec/ install locations.
-        // 
-
-        StringBuilder installArgumentsBuilder = new StringBuilder ("pm install ");
-
-        installArgumentsBuilder.Append ("-f "); // install package on internal flash. (required for debugging)
-
-        if (reinstall)
-        {
-          installArgumentsBuilder.Append ("-r "); // reinstall an existing app, keeping its data.
-        }
-
-        if (!string.IsNullOrWhiteSpace (installer))
-        {
-          installArgumentsBuilder.Append (string.Format ("-i {0} ", installer));
-        }
-
-        installArgumentsBuilder.Append (temporaryStoredFile);
-
-        using (SyncRedirectProcess adbInstallCommand = AndroidAdb.AdbCommand (this, "shell", installArgumentsBuilder.ToString ()))
-        {
-          try
-          {
-            exitCode = adbInstallCommand.StartAndWaitForExit ();
-          }
-          catch (TimeoutException)
-          {
-            throw new InvalidOperationException ("Installation failed: Install timed out.");
-          }
-
-          if ((exitCode != 0) || !adbInstallCommand.StandardOutput.ToLower ().Contains ("success"))
-          {
-            throw new InvalidOperationException ("Installation failed: " + adbInstallCommand.StandardOutput);
-          }
-        }
-
-        LoggingUtils.Print ("[AndroidDevice] " + filename + " installed successfully.");
-
-        return;
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.Print ("[AndroidDevice] " + filename + " installation failed.");
-
-        LoggingUtils.HandleException (e);
-
-        throw;
-      }
-      finally
-      {
-        // 
-        // Clear uploaded APK from temporary storage.
-        // 
-
-        using (SyncRedirectProcess adbClearTemporary = AndroidAdb.AdbCommand (this, "shell", "rm " + temporaryStoredFile))
-        {
-          try
-          {
-            exitCode = adbClearTemporary.StartAndWaitForExit ();
-          }
-          catch (TimeoutException)
-          {
-            throw new InvalidOperationException ("Installation failed: Clearing cache timed out.");
-          }
-
-          if (exitCode != 0)
-          {
-            throw new InvalidOperationException ("Installation failed: Failed clearing cached files.");
-          }
-        }
-
-        LoggingUtils.Print ("[AndroidDevice] Removed temporary file: " + temporaryStoredFile);
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public void Uninstall (string package, bool keepCache)
-    {
-      LoggingUtils.PrintFunction ();
-
-      try
-      {
-        using (SyncRedirectProcess adbUninstallCommand = AndroidAdb.AdbCommand (this, "install", ((keepCache) ? "-k " : "") + package))
-        {
-          int exitCode = -1;
-
-          try
-          {
-            exitCode = adbUninstallCommand.StartAndWaitForExit (30000);
-          }
-          catch (TimeoutException)
-          {
-            throw new InvalidOperationException ("Uninstall failed: Clearing app timed out.");
-          }
-
-          if ((exitCode != 0) || adbUninstallCommand.StandardOutput.ToLower ().Contains ("success"))
-          {
-            throw new InvalidOperationException ("Uninstall failed: " + adbUninstallCommand.StandardOutput);
-          }
-
-          LoggingUtils.Print ("[AndroidDevice] " + package + " uninstalled successfully.");
-
-          return;
+          return process.StandardOutput;
         }
       }
       catch (Exception e)
       {
-        LoggingUtils.Print ("[AndroidDevice] " + package + " uninstall failed.");
-
         LoggingUtils.HandleException (e);
 
-        throw;
+        throw new InvalidOperationException ("Failed pull request", e);
       }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public AsyncRedirectProcess Logcat (AsyncRedirectProcess.EventListener listener, bool clearCache)
-    {
-      LoggingUtils.PrintFunction ();
-
-      try
-      {
-        if (listener == null)
-        {
-          throw new ArgumentNullException ("listener");
-        }
-
-        if (clearCache)
-        {
-          using (SyncRedirectProcess adbLogcatClearCommand = AndroidAdb.AdbCommand ("logcat", "-c"))
-          {
-            adbLogcatClearCommand.StartAndWaitForExit ();
-          }
-        }
-
-        AsyncRedirectProcess adbLogcatCommand = AndroidAdb.AdbCommandAsync (this, "logcat", "");
-
-        adbLogcatCommand.Start (listener);
-
-        return adbLogcatCommand;
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-      }
-
-      return null;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -397,7 +250,7 @@ namespace AndroidPlusPlus.Common
 
       string getPropOutput = Shell ("getprop", "");
 
-      if (!String.IsNullOrEmpty (getPropOutput))
+      if (!string.IsNullOrEmpty (getPropOutput))
       {
         string pattern = @"^\[(?<key>[^\]:]+)\]:[ ]+\[(?<value>[^\]$]+)";
 
@@ -422,7 +275,15 @@ namespace AndroidPlusPlus.Common
 
             string value = regExLineMatch.Result ("${value}");
 
-            if (!string.IsNullOrWhiteSpace (key))
+            if (string.IsNullOrEmpty (key) || key.Equals ("${key}"))
+            {
+              continue;
+            }
+            else if (value.Equals ("${value}"))
+            {
+              continue;
+            }
+            else 
             {
               m_deviceProperties [key] = value;
             }
@@ -443,7 +304,7 @@ namespace AndroidPlusPlus.Common
 
       LoggingUtils.PrintFunction ();
 
-      string deviceProcessList = Shell ("ps", "");
+      string deviceProcessList = Shell ("ps", "-t");
 
       if (!String.IsNullOrEmpty (deviceProcessList))
       {
@@ -481,18 +342,44 @@ namespace AndroidPlusPlus.Common
 
             string processName = regExLineMatches.Result ("${name}");
 
-            m_deviceProcessesByPid [processPid] = new AndroidProcess (this, processName, processPid, processPpid, processUser);
+            AndroidProcess process = new AndroidProcess (this, processName, processPid, processPpid, processUser);
 
-            List<uint> processPidsList;
+            m_deviceProcessesByPid [processPid] = process;
 
-            if (!m_deviceProcessesPidsByName.TryGetValue (processName, out processPidsList))
+            // 
+            // Add new process to a fast-lookup collection organised by process name.
+            // 
+
             {
-              processPidsList = new List<uint> ();
+              List<uint> processPidsList;
+
+              if (!m_deviceProcessesPidsByName.TryGetValue (processName, out processPidsList))
+              {
+                processPidsList = new List<uint> ();
+              }
+
+              processPidsList.Add (processPid);
+
+              m_deviceProcessesPidsByName [processName] = processPidsList;
             }
 
-            processPidsList.Add (processPid);
+            // 
+            // Check whether this process is the child of another; keep it organised if required.
+            // 
 
-            m_deviceProcessesPidsByName [processName] = processPidsList;
+            if (m_deviceProcessesByPid.ContainsKey (processPpid))
+            {
+              List<AndroidProcess> processThreadPidsList;
+
+              if (!m_deviceProcessesByPpid.TryGetValue (processPpid, out processThreadPidsList))
+              {
+                processThreadPidsList = new List<AndroidProcess> ();
+              }
+
+              processThreadPidsList.Add (process);
+
+              m_deviceProcessesByPpid [processPpid] = processThreadPidsList;
+            }
           }
         }
       }

@@ -17,6 +17,7 @@ using System.Security;
 using EnvDTE;
 using Microsoft.Win32;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Debugger.Interop;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.OLE.Interop;
@@ -65,9 +66,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
   [ProvideExternObject(typeof(VsDebugEngine.DebugProgramProvider))]
 
-  [DebugPortSupplierRegistration(VsDebugEngine.DebugEngineGuids.guidDebugPortSupplierStringID, "Android++", typeof(VsDebugEngine.DebugPortSupplier))]
+  [ProvideDebugPortSupplier(VsDebugEngine.DebugEngineGuids.guidDebugPortSupplierStringID, "Android++", typeof(VsDebugEngine.DebugPortSupplier))]
 
-  [DebugEngineRegistration(VsDebugEngine.DebugEngineGuids.guidDebugEngineStringID, "Android++", typeof(VsDebugEngine.DebugEngine),
+  [ProvideDebugEngine(VsDebugEngine.DebugEngineGuids.guidDebugEngineStringID, "Android++", typeof(VsDebugEngine.DebugEngine),
     IncompatibleList = new string [] 
     { 
       VsDebugEngine.DebugEngineGuids.guidIncompatibleDebugEngineSilverlightStringID,
@@ -97,6 +98,113 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     Exceptions = true,
     DataBP = true)]
 
+  [ProvideDebugExtension (VsDebugEngine.DebugEngineGuids.guidDebugEngineStringID, 
+    "Android++",
+    (uint) 0,
+    (uint) (enum_EXCEPTION_STATE.EXCEPTION_STOP_FIRST_CHANCE | enum_EXCEPTION_STATE.EXCEPTION_STOP_SECOND_CHANCE),
+    GroupExtensions = new string []
+    {
+      // 0x4002 (enum_EXCEPTION_STATE.EXCEPTION_STOP_SECOND_CHANCE | enum_EXCEPTION_STATE.EXCEPTION_JUST_MY_CODE_SUPPORTED)
+      // 0x4020 (enum_EXCEPTION_STATE.EXCEPTION_JUST_MY_CODE_SUPPORTED | enum_EXCEPTION_STATE.EXCEPTION_STOP_USER_UNCAUGHT))
+      "SIGHUP (Hangup)|0x0001|0x0001", 
+#if false
+      "SIGINT (Interrupt)|0x0002|0x0001",
+#endif
+      "SIGQUIT (Quit)|0x0003|0x0001",
+      "SIGILL (Illegal instruction)|0x0004|0x0001",
+      "SIGTRAP (Trace/breakpoint trap)|0x0005|0x0001",
+      "SIGABRT (Aborted)|0x0006|0x0001",
+      "SIGEMT (Emulation trap)|0x0007|0x0001",
+      "SIGFPE (Erroneous arithmetic operation)|0x0008|0x0001",
+      "SIGKILL (Killed)|0x0009|0x0001",
+      "SIGBUS (Bus error)|0x000A|0x0001",
+      "SIGSEGV (Segmentation fault)|0x000B|0x0001",
+      "SIGSYS (Bad system call)|0x000C|0x0001",
+      "SIGPIPE (Broken pipe)|0x000D|0x0001",
+      "SIGALRM (Alarm clock)|0x000E|0x0001",
+      "SIGTERM (Terminated)|0x000F|0x0001",
+
+      "SIGUSR1 (User-defined signal 1)|0x0010|0x0001",
+      "SIGUSR2 (User-defined signal 2)|0x0011|0x0001",
+      "SIGCHLD (Child status changed)|0x0012|0x0001",
+      "SIGTSTP (Terminal stop signal|0x0014|0x0001",
+      "SIGURG (Urgent I/O condition)|0x0015|0x0001",
+      "SIGPOLL (Pollable event)|0x0016|0x0001",
+      "SIGSTOP (Stopped (signal))|0x0017|0x0001",
+      "SIGSTP (Stopped (user))|0x0018|0x0001",
+      "SIGCONT (Continued)|0x0019|0x0001",
+      "SIGTTIN (Stopped (tty input))|0x001A|0x0001",
+      "SIGTTOU (Stopped (tty output))|0x001B|0x0001",
+
+      // TODO: These still need codes
+      "SIGIO (I/O possible)|0x0000|0x0001",
+      "SIGXCPU (CPU time limit exceeded)|0x0000|0x0001",
+      "SIGXFSZ (File size limit exceeded)|0x0000|0x0001",
+      "SIGVTALRM (Virtual timer expired)|0x0000|0x0001",
+      "SIGPROF (Profiling timer expired)|0x0000|0x0001",
+      "SIGWINCH (Window size changed)|0x0000|0x0001",
+      "SIGLOST (Resource lost)|0x0000|0x0001",
+      "SIGUSR1 (User defined signal 1)|0x0000|0x0001",
+      "SIGUSR2 (User defined signal 2)|0x0000|0x0001",
+      "SIGPWR (Power fail/restart)|0x0000|0x0001",
+      "SIGPOLL (Pollable event occurred)|0x0000|0x0001",
+      "SIGWIND (SIGWIND)|0x0000|0x0001",
+      "SIGPHONE (SIGPHONE)|0x0000|0x0001",
+      "SIGWAITING (Process's LWPs are blocked)|0x0000|0x0001",
+      "SIGLWP (Signal LWP)|0x0000|0x0001",
+      "SIGDANGER (Swap space dangerously low)|0x0000|0x0001",
+      "SIGGRANT (Monitor mode granted)|0x0000|0x0001",
+      "SIGRETRACT (Need to relinquish monitor mode)|0x0000|0x0001",
+      "SIGMSG (Monitor mode data available)|0x0000|0x0001",
+      "SIGSOUND (Sound completed)|0x0000|0x0001",
+      "SIGSAK (Secure attention)|0x0000|0x0001",
+      "SIGPRIO (SIGPRIO)|0x0000|0x0001",
+      "SIGCANCEL (LWP internal signal)|0x0000|0x0001",
+      "SIGINFO (Information request)|0x0000|0x0001",
+      "EXC_BAD_ACCESS (Could not access memory)|0x0000|0x0001",
+      "EXC_BAD_INSTRUCTION (Illegal instruction/operand)|0x0000|0x0001",
+      "EXC_ARITHMETIC (Arithmetic exception)|0x0000|0x0001",
+      "EXC_EMULATION (Emulation instruction)|0x0000|0x0001",
+      "EXC_SOFTWARE (Software generated exception)|0x0000|0x0001",
+      "EXC_BREAKPOINT (Breakpoint)|0x0000|0x0001",
+#if false
+      "SIG32 (Real-time event 32)|0x0000|0x0001",
+      "SIG33 (Real-time event 33)|0x0000|0x0001",
+      "SIG34 (Real-time event 34)|0x0000|0x0001",
+      "SIG35 (Real-time event 35)|0x0000|0x0001",
+      "SIG36 (Real-time event 36)|0x0000|0x0001",
+      "SIG37 (Real-time event 37)|0x0000|0x0001",
+      "SIG38 (Real-time event 38)|0x0000|0x0001",
+      "SIG39 (Real-time event 39)|0x0000|0x0001",
+      "SIG40 (Real-time event 40)|0x0000|0x0001",
+      "SIG41 (Real-time event 41)|0x0000|0x0001",
+      "SIG42 (Real-time event 42)|0x0000|0x0001",
+      "SIG43 (Real-time event 43)|0x0000|0x0001",
+      "SIG44 (Real-time event 44)|0x0000|0x0001",
+      "SIG45 (Real-time event 45)|0x0000|0x0001",
+      "SIG46 (Real-time event 46)|0x0000|0x0001",
+      "SIG47 (Real-time event 47)|0x0000|0x0001",
+      "SIG48 (Real-time event 48)|0x0000|0x0001",
+      "SIG49 (Real-time event 49)|0x0000|0x0001",
+      "SIG50 (Real-time event 50)|0x0000|0x0001",
+      "SIG51 (Real-time event 51)|0x0000|0x0001",
+      "SIG52 (Real-time event 52)|0x0000|0x0001",
+      "SIG53 (Real-time event 53)|0x0000|0x0001",
+      "SIG54 (Real-time event 54)|0x0000|0x0001",
+      "SIG55 (Real-time event 55)|0x0000|0x0001",
+      "SIG56 (Real-time event 56)|0x0000|0x0001",
+      "SIG57 (Real-time event 57)|0x0000|0x0001",
+      "SIG58 (Real-time event 58)|0x0000|0x0001",
+      "SIG59 (Real-time event 59)|0x0000|0x0001",
+      "SIG60 (Real-time event 60)|0x0000|0x0001",
+      "SIG61 (Real-time event 61)|0x0000|0x0001",
+      "SIG62 (Real-time event 62)|0x0000|0x0001",
+      "SIG63 (Real-time event 63)|0x0000|0x0001",
+      // ... up to SIG127
+#endif
+    }
+  )]
+
   // 
   // This attribute is needed to let the shell know that this package exposes some menus.
   // 
@@ -105,7 +213,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
   [ProvideMenuResource ("Menus.ctmenu", 1)]
 #endif
 
-  [ProvideService(typeof(IUiDebugLaunchService))]
+  [ProvideService(typeof(IDebuggerConnectionService))]
 
 #if false
   [ProvideToolWindow (typeof (GdbConsoleWindow), 
@@ -248,6 +356,12 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     {
       LoggingUtils.PrintFunction ();
 
+      //DiposeEventListeners ();
+
+      //DiposeInterfaceListeners ();
+
+      //DiposePackageServices ();
+
       DisposeTraceListeners ();
     }
 
@@ -265,9 +379,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
       IServiceContainer serviceContainer = this as IServiceContainer;
 
-      UiDebugLaunchService launchService = new UiDebugLaunchService ();
+      DebuggerConnectionService launchService = new DebuggerConnectionService ();
 
-      serviceContainer.AddService (typeof (IUiDebugLaunchService), launchService, true);
+      serviceContainer.AddService (typeof (IDebuggerConnectionService), launchService, true);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -301,7 +415,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
       string traceLog = string.Format (@"{0}\Android++\{1:D4}-{2:D2}-{3:D2}.log", Environment.GetFolderPath (Environment.SpecialFolder.LocalApplicationData), logTime.Year, logTime.Month, logTime.Day);
 
-      Trace.WriteLine ("[Package] Trace Log: " + traceLog);
+      LoggingUtils.Print ("[Package] Trace Log: " + traceLog);
 
       m_traceWriterListener = new TextWriterTraceListener (traceLog);
 
@@ -318,11 +432,14 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
       Trace.Flush ();
 
-      Trace.Listeners.Remove (m_traceWriterListener);
+      if (m_traceWriterListener != null)
+      {
+        Trace.Listeners.Remove (m_traceWriterListener);
 
-      m_traceWriterListener.Close ();
+        m_traceWriterListener.Close ();
 
-      m_traceWriterListener.Dispose ();
+        m_traceWriterListener.Dispose ();
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -347,7 +464,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
       IVsMonitorSelection monitorSelectionService = GetService (typeof (IVsMonitorSelection)) as IVsMonitorSelection;
 
-      IUiDebugLaunchService debugLaunchService = GetService (typeof (IUiDebugLaunchService)) as IUiDebugLaunchService;
+      IDebuggerConnectionService debuggerConnectionService = GetService (typeof (IDebuggerConnectionService)) as IDebuggerConnectionService;
 
       // 
       // Register service listeners.
@@ -380,7 +497,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
       m_propertyEventListener = new PropertyEventListener (shellService);
 
-      m_debuggerEventListener = new DebuggerEventListener (dteService, debuggerService, debugLaunchService);
+      m_debuggerEventListener = new DebuggerEventListener (dteService, debuggerService, debuggerConnectionService);
 
       m_solutionEventListener = new SolutionEventListener (dteService, solutionService);
 

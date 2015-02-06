@@ -10,7 +10,6 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Text.RegularExpressions;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -63,35 +62,67 @@ namespace app_jar_dependencies
           Directory.Delete (workingDirectory, true);
         }
 
-        Parallel.ForEach (s_classFileList, classFile =>
-        //foreach (string classFile in s_classFileList)
+#if true
+        Parallel.ForEach (s_classFileList, classFilePath =>
+#else
+        foreach (string classFilePath in s_classFileList)
+#endif
         {
           try
           {
-            string packageName;
+            Log ("Processing: " + classFilePath);
 
-            string className;
+            string classId = string.Empty;
 
-            Debug.WriteLine ("Processing: " + classFile);
-
-            if (!GetPackageNameFromClassFile (classFile, out packageName, out className))
+            using (Stream stream = File.Open (classFilePath, FileMode.Open))
             {
-              throw new InvalidOperationException ("Could not evaluate package and class names from source class file.");
+              using (BinaryReader reader = new BinaryReader (stream))
+              {
+                JavaClassParser.ClassFile processedClassFile = new JavaClassParser.ClassFile (reader);
+
+                JavaClassParser.ConstantClassInfo thisClassInfo = (JavaClassParser.ConstantClassInfo) processedClassFile.constant_pool [processedClassFile.this_class];
+
+                JavaClassParser.ConstantUtf8Info thisClassId = (JavaClassParser.ConstantUtf8Info) processedClassFile.constant_pool [thisClassInfo.name_index];
+
+                classId = Encoding.UTF8.GetString (thisClassId.bytes);
+
+                reader.Close ();
+              }
+
+              stream.Close ();
             }
 
-            string packageNameAsDir = packageName.Replace (".", "/");
+            if (!string.IsNullOrWhiteSpace (classId))
+            {
+              string classPackage = classId.Substring (0, classId.LastIndexOf ('/'));
 
-            packageNameAsDir = Path.Combine (workingDirectory, packageNameAsDir);
+              string className = classId.Substring (classId.LastIndexOf ('/') + 1);
 
-            Directory.CreateDirectory (packageNameAsDir);
+              string classPackageAsDir = Path.Combine (workingDirectory, classPackage);
 
-            File.Copy (classFile, string.Format ("{0}/{1}.class", packageNameAsDir, className));
+              if (!Directory.Exists (classPackageAsDir))
+              {
+                Directory.CreateDirectory (classPackageAsDir);
+
+                Log (string.Format ("Created: {0}", classPackageAsDir));
+              }
+
+              string targetPath = string.Format ("{0}/{1}.class", classPackageAsDir, className);
+
+              File.Copy (classFilePath, targetPath);
+
+              Log (string.Format ("Copied: '{0}' to '{1}'", classFilePath, targetPath));
+            }
           }
           catch (Exception e)
           {
             LogException (e);
           }
+#if true
         });
+#else
+        }
+#endif
 
         // 
         // c    create new archive
@@ -105,11 +136,13 @@ namespace app_jar_dependencies
 
         StringBuilder argumentsModeBuilder = new StringBuilder ();
 
+#if false
         if (File.Exists (s_jarToolOutputFile))
         {
           argumentsModeBuilder.Append ("u");
         }
         else
+#endif
         {
           argumentsModeBuilder.Append ("c");
         }
@@ -353,100 +386,6 @@ namespace app_jar_dependencies
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private static bool GetPackageNameFromClassFile (string classFilePath, out string packageAddress, out string className)
-    {
-      // 
-      // Using the javap.exe tool; extract the package address of the given class file.
-      // 
-
-      packageAddress = string.Empty;
-
-      className = string.Empty;
-
-      if (!File.Exists (classFilePath))
-      {
-        throw new FileNotFoundException ("Could not locate specified class file: " + classFilePath);
-      }
-
-      using (Process javapProcess = new Process ())
-      {
-        string classFileRootPath = Path.GetDirectoryName (classFilePath);
-
-        string classFileClassName = Path.GetFileNameWithoutExtension (classFilePath);
-
-        string arguments = string.Format ("-package -classpath {0} {1}", classFileRootPath, classFileClassName);
-
-        javapProcess.StartInfo = new ProcessStartInfo (Path.Combine (s_jdkHomePath, "bin", "javap.exe"), arguments);
-
-        javapProcess.StartInfo.UseShellExecute = false;
-
-        javapProcess.StartInfo.RedirectStandardOutput = true;
-
-        javapProcess.StartInfo.RedirectStandardError = true;
-
-        if (javapProcess.Start ())
-        {
-          string output = javapProcess.StandardOutput.ReadToEnd ();
-
-          javapProcess.WaitForExit ();
-
-          if (javapProcess.ExitCode == 0)
-          {
-            // 
-            // Parse javap.exe reported class prototype. From this we can get package address and class name.
-            // 
-            //  public [fina] class package.address.ClassName extends java.lang.Object{
-            //  public interface package.address.ClassName implements package.address.AnInterface{
-            //  abstract class package.address.ClassName<T> implements package.address.AnInterface{
-            // 
-
-            string [] lines = output.Replace ("\r", "").Split ('\n');
-
-            string pattern = @"^(public |private |protected )?(final |abstract )?(class|interface)+ (?<prototype>[^ \{]*)";
-
-            Regex regExMatcher = new Regex (pattern, RegexOptions.Compiled);
-
-            for (int i = 0; i < lines.Length; ++i)
-            {
-              Match regExMatch = regExMatcher.Match (lines [i]);
-
-              if (regExMatch.Success)
-              {
-                string prototype = regExMatch.Result ("${prototype}");
-
-                string [] prototypeComponents = prototype.Split (new string [] { "." }, StringSplitOptions.None);
-
-                string classSignature = prototypeComponents [prototypeComponents.Length - 1];
-
-                packageAddress = string.Join (".", prototypeComponents, 0, prototypeComponents.Length - 1);
-
-                // 
-                // Return santisied class name; removing template/abstract types.
-                // 
-
-                className = classSignature;
-
-                int classSignatureTemplateIndex = classSignature.IndexOf ('<');
-
-                if (classSignatureTemplateIndex != -1)
-                {
-                  className = classSignature.Substring (0, classSignatureTemplateIndex);
-                }
-
-                return true;
-              }
-            }
-          }
-        }
-      }
-
-      return false;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     private static string ConvertPathWindowsToGccDependency (string path)
     {
       string rtn = path.Replace ('\\', '/');
@@ -520,6 +459,15 @@ namespace app_jar_dependencies
       }
 
       return i;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private static void Log (string log)
+    {
+      Debug.WriteLine ("[app-jar-dependencies] " + log);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

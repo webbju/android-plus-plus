@@ -1,0 +1,110 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Android++">
+      <Configuration>Debug</Configuration>
+      <Platform>Android++</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Android++">
+      <Configuration>Release</Configuration>
+      <Platform>Android++</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>sdl2-app</ProjectName>
+    <ProjectGuid>{E7297190-C74C-41BA-8EE7-E8D86D91CE23}</ProjectGuid>
+    <RootNamespace>sdl2app</RootNamespace>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++'" Label="Configuration">
+    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\</IntDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\debug\</OutDir>
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++'" Label="Configuration">
+    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\</IntDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\debug\</OutDir>
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\sdl2-library\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL2;%(AdditionalDependencies)</AdditionalDependencies>
+      <SystemLibraryDependencies>dl;GLESv1_CM;GLESv2;log;android;%(SystemLibraryDependencies)</SystemLibraryDependencies>
+    </Link>
+    <AndroidManifest>
+      <IncludeRawAssetsDirectory>$(ProjectDir)assets</IncludeRawAssetsDirectory>
+    </AndroidManifest>
+    <AndroidJava>
+      <ClassPaths>$(OutDir)libSDL2.jar;%(ClassPaths)</ClassPaths>
+    </AndroidJava>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>..\sdl2-library\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL2;%(AdditionalDependencies)</AdditionalDependencies>
+      <SystemLibraryDependencies>dl;GLESv1_CM;GLESv2;log;android;%(SystemLibraryDependencies)</SystemLibraryDependencies>
+    </Link>
+    <AndroidManifest>
+      <IncludeRawAssetsDirectory>$(ProjectDir)assets</IncludeRawAssetsDirectory>
+    </AndroidManifest>
+    <AndroidJava>
+      <ClassPaths>$(OutDir)libSDL2.jar %(ClassPaths)</ClassPaths>
+    </AndroidJava>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <AndroidManifest Include="AndroidManifest.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidJava Include="src\java\DemoActivity.java" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\common.c" />
+    <ClCompile Include="src\fireworks.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\common.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\sdl2-library\AndroidManifest.xml" />
+    <None Include="proguard-project.txt" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.targets" />
+  </ImportGroup>
+</Project>

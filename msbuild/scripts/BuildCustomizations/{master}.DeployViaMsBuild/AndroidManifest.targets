@@ -282,9 +282,8 @@
         Exclude="@(AndroidManifestOutputResourceConstantSourceFiles);@(AndroidManifestOutputApk)"
       />
 
-      <!-- Only include the BuildConfig.java if there are sources registered for this (individual) project. -->
       <AndroidJava
-        Condition="'@(AndroidJavaReorderCache)' != '' and Exists('$(BuildConfigOutputFile)')"
+        Condition="Exists('$(BuildConfigOutputFile)')"
         Include="$(BuildConfigOutputFile)"
       />
 

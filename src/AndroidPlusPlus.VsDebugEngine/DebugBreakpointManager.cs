@@ -92,10 +92,16 @@ namespace AndroidPlusPlus.VsDebugEngine
             case ".cpp":
             case ".h":
             case ".hpp":
+            case ".asm":
             {
               breakpoint = new CLangDebuggeeBreakpointPending (Engine.NativeDebugger, this, breakpointRequest);
 
               break;
+            }
+
+            case ".java":
+            {
+              throw new NotImplementedException ();
             }
 
             default:

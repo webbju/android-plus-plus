@@ -48,7 +48,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     int OnError (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
 
-    int OnUiDebugLaunchServiceEvent (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+    int OnDebuggerConnectionEvent (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+
+    int OnDebuggerLogcatEvent (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
   }
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -68,25 +70,27 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     private readonly IVsDebugger m_debuggerService;
 
-    private readonly IUiDebugLaunchService m_debugLaunchService;
+    private readonly IDebuggerConnectionService m_debuggerConnectionService;
 
     private uint m_debuggerServiceCookie;
 
     private Dictionary<Guid, DebuggerEventListenerDelegate> m_eventCallbacks;
 
-    private AsyncRedirectProcess m_adbLogcatInstance;
+    private AsyncRedirectProcess m_adbLogcatProcess = null;
+
+    private DeviceLogcatListener m_adbLogcatListener = null;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public DebuggerEventListener (DTE dteService, IVsDebugger debuggerService, IUiDebugLaunchService debugLaunchService)
+    public DebuggerEventListener (DTE dteService, IVsDebugger debuggerService, IDebuggerConnectionService debuggerConnectionService)
     {
       m_dteService = dteService;
 
       m_debuggerService = debuggerService;
 
-      m_debugLaunchService = debugLaunchService;
+      m_debuggerConnectionService = debuggerConnectionService;
 
       LoggingUtils.RequireOk (m_debuggerService.AdviseDebuggerEvents (this, out m_debuggerServiceCookie));
 
@@ -112,7 +116,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
       m_eventCallbacks.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.Error)), OnError);
 
-      m_eventCallbacks.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.UiDebugLaunchServiceEvent)), OnUiDebugLaunchServiceEvent);
+      m_eventCallbacks.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.DebuggerConnectionEvent)), OnDebuggerConnectionEvent);
+
+      m_eventCallbacks.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.DebuggerLogcatEvent)), OnDebuggerLogcatEvent);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -125,7 +131,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       {
         if (!string.IsNullOrWhiteSpace (args.Data))
         {
-          UiOutputWindow.WriteLine (VSConstants.OutputWindowPaneGuid.DebugPane_guid, args.Data);
+          DebuggerOutputWindow.WriteLine (VSConstants.OutputWindowPaneGuid.DebugPane_guid, args.Data);
         }
       }
 
@@ -133,7 +139,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       {
         if (!string.IsNullOrWhiteSpace (args.Data))
         {
-          UiOutputWindow.WriteLine (VSConstants.OutputWindowPaneGuid.DebugPane_guid, args.Data);
+          DebuggerOutputWindow.WriteLine (VSConstants.OutputWindowPaneGuid.DebugPane_guid, args.Data);
         }
       }
 
@@ -292,8 +298,6 @@ namespace AndroidPlusPlus.VsIntegratedPackage
         debuggeeProgram = (DebuggeeProgram) Marshal.CreateWrapperOfType (debuggeeProgramObj, typeof (IDebugProgram2));
         */
 
-        m_adbLogcatInstance = AndroidAdb.GetConnectedDevices () [0].Logcat (new DeviceLogcatListener (), true);
-
         return VSConstants.S_OK;
       }
       catch (Exception e)
@@ -314,13 +318,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
       try
       {
-        if (m_adbLogcatInstance != null)
+        if (m_adbLogcatProcess != null)
         {
-          m_adbLogcatInstance.Kill ();
+          m_adbLogcatProcess.Kill ();
 
-          m_adbLogcatInstance.Dispose ();
+          m_adbLogcatProcess.Dispose ();
 
-          m_adbLogcatInstance = null;
+          m_adbLogcatProcess = null;
         }
 
         return VSConstants.S_OK;
@@ -366,7 +370,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
         LoggingUtils.RequireOk (errorEvent.GetErrorMessage (messageType, out errorFormat, out errorReason, out errorType, out errorHelpFileName, out errorHelpId));
 
-        LoggingUtils.RequireOk (m_debugLaunchService.LaunchDialogUpdate (errorFormat, true));
+        LoggingUtils.RequireOk (m_debuggerConnectionService.LaunchDialogUpdate (errorFormat, true));
 
         return VSConstants.S_OK;
       }
@@ -382,34 +386,79 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int OnUiDebugLaunchServiceEvent (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
+    public int OnDebuggerLogcatEvent (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
       LoggingUtils.PrintFunction ();
 
       try
       {
-        DebugEngineEvent.UiDebugLaunchServiceEvent launchServiceEvent = pEvent as DebugEngineEvent.UiDebugLaunchServiceEvent;
+        DebugEngineEvent.DebuggerLogcatEvent debuggerLogcatEvent = pEvent as DebugEngineEvent.DebuggerLogcatEvent;
 
-        switch (launchServiceEvent.Type)
+        using (SyncRedirectProcess command = AndroidAdb.AdbCommand (debuggerLogcatEvent.HostDevice, "logcat", "-c"))
         {
-          case DebugEngineEvent.UiDebugLaunchServiceEvent.EventType.ShowDialog:
+          command.StartAndWaitForExit ();
+        }
+
+        m_adbLogcatProcess = AndroidAdb.AdbCommandAsync (debuggerLogcatEvent.HostDevice, "logcat", "");
+
+        m_adbLogcatListener = new DeviceLogcatListener ();
+
+        if (m_adbLogcatProcess == null)
+        {
+          throw new InvalidOperationException ("Failed to launch logcat application.");
+        }
+
+        if (m_adbLogcatListener == null)
+        {
+          throw new InvalidOperationException ("Failed to launch logcat listener.");
+        }
+
+        m_adbLogcatProcess.Start (m_adbLogcatListener);
+
+        return VSConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return VSConstants.E_FAIL;
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public int OnDebuggerConnectionEvent (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
+    {
+      LoggingUtils.PrintFunction ();
+
+      try
+      {
+        DebugEngineEvent.DebuggerConnectionEvent debuggerConnectionEvent = pEvent as DebugEngineEvent.DebuggerConnectionEvent;
+
+        switch (debuggerConnectionEvent.Type)
+        {
+          case DebugEngineEvent.DebuggerConnectionEvent.EventType.ShowDialog:
           {
-            LoggingUtils.RequireOk (m_debugLaunchService.LaunchDialogShow ());
+            LoggingUtils.RequireOk (m_debuggerConnectionService.LaunchDialogShow ());
 
             break;
           }
 
-          case DebugEngineEvent.UiDebugLaunchServiceEvent.EventType.CloseDialog:
+          case DebugEngineEvent.DebuggerConnectionEvent.EventType.CloseDialog:
           {
-            LoggingUtils.RequireOk (m_debugLaunchService.LaunchDialogClose ());
+            LoggingUtils.RequireOk (m_debuggerConnectionService.LaunchDialogClose ());
 
             break;
           }
 
-          case DebugEngineEvent.UiDebugLaunchServiceEvent.EventType.LogStatus:
-          case DebugEngineEvent.UiDebugLaunchServiceEvent.EventType.LogError:
+          case DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus:
+          case DebugEngineEvent.DebuggerConnectionEvent.EventType.LogError:
           {
-            LoggingUtils.RequireOk (m_debugLaunchService.LaunchDialogUpdate (launchServiceEvent.Message, (launchServiceEvent.Type == DebugEngineEvent.UiDebugLaunchServiceEvent.EventType.LogError)));
+            bool isError = (debuggerConnectionEvent.Type == DebugEngineEvent.DebuggerConnectionEvent.EventType.LogError);
+
+            LoggingUtils.RequireOk (m_debuggerConnectionService.LaunchDialogUpdate (debuggerConnectionEvent.Message, isError));
 
             break;
           }

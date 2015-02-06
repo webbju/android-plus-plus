@@ -68,115 +68,117 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public bool Start ()
+    public void Start ()
     {
       LoggingUtils.PrintFunction ();
 
-      if (CheckGdbServerTarget ())
+      CheckGdbServerTarget ();
+
+      KillActiveGdbServerSessions ();
+
+      // 
+      // Construct a adaptive command line based on GdbSetup requirements.
+      // 
+
+      StringBuilder commandLineArgumentsBuilder = new StringBuilder ();
+
+      commandLineArgumentsBuilder.AppendFormat ("run-as {0} lib/gdbserver ", m_gdbSetup.Process.Name);
+
+      if (!string.IsNullOrWhiteSpace (m_gdbSetup.Socket))
       {
-        KillActiveGdbServerSessions ();
-
-        // 
-        // Construct a adaptive command line based on GdbSetup requirements.
-        // 
-
-        StringBuilder commandLineArgumentsBuilder = new StringBuilder ();
-
-        commandLineArgumentsBuilder.AppendFormat ("run-as {0} lib/gdbserver ", m_gdbSetup.Process.Name);
-
-        if (!string.IsNullOrWhiteSpace (m_gdbSetup.Socket))
-        {
-          commandLineArgumentsBuilder.AppendFormat ("+{0} ", m_gdbSetup.Socket);
-        }
-
-        commandLineArgumentsBuilder.Append ("--attach ");
-
-        if (string.IsNullOrWhiteSpace (m_gdbSetup.Socket)) // Don't need a host if we have a bound socket?
-        {
-          commandLineArgumentsBuilder.AppendFormat ("{0}:{1} ", m_gdbSetup.Host, m_gdbSetup.Port);
-        }
-
-        commandLineArgumentsBuilder.Append (m_gdbSetup.Process.Pid);
-
-        // 
-        // Launch 'gdbserver' now, wait for output to determine success.
-        // 
-
-        m_gdbServerAttached = new ManualResetEvent (false);
-
-        m_gdbServerInstance = AndroidAdb.AdbCommandAsync (m_gdbSetup.Process.HostDevice, "shell", commandLineArgumentsBuilder.ToString ());
-
-        m_gdbServerInstance.Start (this);
-
-        LoggingUtils.Print (string.Format ("[GdbServer] Waiting to attach..."));
-
-        bool recievedSignal = m_gdbServerAttached.WaitOne (1000);
-
-        return recievedSignal;
+        commandLineArgumentsBuilder.AppendFormat ("+{0} ", m_gdbSetup.Socket);
       }
 
-      return false;
+      commandLineArgumentsBuilder.Append ("--attach ");
+
+      if (string.IsNullOrWhiteSpace (m_gdbSetup.Socket)) // Don't need a host if we have a bound socket?
+      {
+        commandLineArgumentsBuilder.AppendFormat ("{0}:{1} ", m_gdbSetup.Host, m_gdbSetup.Port);
+      }
+
+      commandLineArgumentsBuilder.Append (m_gdbSetup.Process.Pid);
+
+      // 
+      // Launch 'gdbserver' and wait for output to determine success.
+      // 
+
+      Stopwatch waitForConnectionTimer = new Stopwatch ();
+
+      waitForConnectionTimer.Start ();
+
+      m_gdbServerAttached = new ManualResetEvent (false);
+
+      m_gdbServerInstance = AndroidAdb.AdbCommandAsync (m_gdbSetup.Process.HostDevice, "shell", commandLineArgumentsBuilder.ToString ());
+
+      m_gdbServerInstance.Start (this);
+
+      LoggingUtils.Print (string.Format ("[GdbServer] Waiting to attach..."));
+
+      uint timeout = 5000;
+
+      bool responseSignaled = false;
+
+      while ((!responseSignaled) && (waitForConnectionTimer.ElapsedMilliseconds < timeout))
+      {
+        responseSignaled = m_gdbServerAttached.WaitOne (0);
+
+        if (!responseSignaled)
+        {
+          Thread.Yield ();
+        }
+      }
+
+      if (!responseSignaled)
+      {
+        throw new TimeoutException ("Timed out waiting for GdbServer to execute");
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public bool Stop ()
+    public void Kill ()
     {
       LoggingUtils.PrintFunction ();
 
-      bool stopped = false;
-
-      if (m_gdbServerInstance != null)
+      try
       {
-        m_gdbServerInstance.Kill ();
+        if (m_gdbServerInstance != null)
+        {
+          m_gdbServerInstance.Kill ();
 
-        m_gdbServerInstance = null;
-
-        stopped = true;
+          m_gdbServerInstance = null;
+        }
       }
-
-      return stopped;
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private bool CheckGdbServerTarget ()
+    private void CheckGdbServerTarget ()
     {
+      // 
+      // Check the target 'gdbserver' binary exits on target device/emulator.
+      // 
+
       LoggingUtils.PrintFunction ();
 
-      if (AndroidAdb.IsDeviceConnected (m_gdbSetup.Process.HostDevice))
+      using (SyncRedirectProcess checkGdbServer = AndroidAdb.AdbCommand (m_gdbSetup.Process.HostDevice, "shell", string.Format ("ls {0}/gdbserver", m_gdbSetup.Process.NativeLibraryPath)))
       {
-        // 
-        // Check the target 'gdbserver' exits.
-        // 
+        int exitCode = checkGdbServer.StartAndWaitForExit (1000);
 
-        try
+        if ((exitCode != 0) || checkGdbServer.StandardOutput.ToLower ().Contains ("no such file"))
         {
-          using (SyncRedirectProcess checkGdbServer = AndroidAdb.AdbCommand (m_gdbSetup.Process.HostDevice, "shell", string.Format ("ls {0}/gdbserver", m_gdbSetup.Process.InternalNativeLibrariesDirectory)))
-          {
-            if (checkGdbServer.StartAndWaitForExit (1000) != 0)
-            {
-              // TODO: Push the required gdbserver binary, so we can attach to any app.
-              throw new InvalidOperationException ("Could not locate 'gdbserver' target.");
-            }
-
-            if (!checkGdbServer.StandardOutput.ToLower ().Contains ("no such file"))
-            {
-              return true;
-            }
-          }
-        }
-        catch (Exception e)
-        {
-          LoggingUtils.HandleException (e);
+          // TODO: Push the required gdbserver binary, so we can attach to any app.
+          throw new InvalidOperationException (string.Format ("Could not locate 'gdbserver' binary on device ({0}).", m_gdbSetup.Process.HostDevice.ID));
         }
       }
-
-      return false;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -187,38 +189,39 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      if (AndroidAdb.IsDeviceConnected (m_gdbSetup.Process.HostDevice))
+      // 
+      // Killing GDB server instances requires use of run-as [package-name],
+      // but it's very difficult to get the parent package of lib/gdbserver as the PPID
+      // will always refer to the zygote. This hack uses the sand-boxed 'user' to try all combinations.
+      // 
+
+      m_gdbSetup.Process.HostDevice.Refresh ();
+
+      uint [] activeDevicePids = m_gdbSetup.Process.HostDevice.GetActivePids ();
+
+      List <AndroidProcess> activeGdbProcesses = new List<AndroidProcess> ();
+
+      foreach (uint pid in activeDevicePids)
       {
-        m_gdbSetup.Process.HostDevice.Refresh ();
+        AndroidProcess process = m_gdbSetup.Process.HostDevice.GetProcessFromPid (pid);
 
-        // 
-        // Killing GDB server instances requires use of run-as [package-name],
-        // but it's very difficult to get the parent package of lib/gdbserver as the PPID
-        // will always refer to the zygote. This hack uses the sand-boxed 'user' to try all combinations.
-        // 
-
-        AndroidProcess [] activeDeviceProcesses = m_gdbSetup.Process.HostDevice.GetAllProcesses ();
-
-        List <AndroidProcess> activeGdbProcesses = new List<AndroidProcess> ();
-
-        foreach (AndroidProcess process in activeDeviceProcesses)
+        if (process.Name.Contains ("lib/gdbserver"))
         {
-          if (process.Name.Contains ("lib/gdbserver"))
-          {
-            activeGdbProcesses.Add (process);
-          }
+          activeGdbProcesses.Add (process);
         }
+      }
 
-        foreach (AndroidProcess gdbProcess in activeGdbProcesses)
+      foreach (AndroidProcess gdbProcess in activeGdbProcesses)
+      {
+        foreach (uint pid in activeDevicePids)
         {
-          foreach (AndroidProcess process in activeDeviceProcesses)
-          {
-            if ((gdbProcess != process) && (gdbProcess.User.Equals (process.User)))
-            {
-              LoggingUtils.Print (string.Format ("[GdbServer] Attempting to terminate existing GDB debugging session: {0} ({1}).", gdbProcess.Name, gdbProcess.Pid));
+          AndroidProcess process = m_gdbSetup.Process.HostDevice.GetProcessFromPid (pid);
 
-              m_gdbSetup.Process.HostDevice.Shell ("run-as", string.Format ("{0} kill -9 {1}", process.Name, gdbProcess.Pid));
-            }
+          if ((gdbProcess != process) && (gdbProcess.User.Equals (process.User)))
+          {
+            LoggingUtils.Print (string.Format ("[GdbServer] Attempting to terminate existing GDB debugging session: {0} ({1}).", gdbProcess.Name, gdbProcess.Pid));
+
+            m_gdbSetup.Process.HostDevice.Shell ("run-as", string.Format ("{0} kill -9 {1}", process.Name, gdbProcess.Pid));
           }
         }
       }

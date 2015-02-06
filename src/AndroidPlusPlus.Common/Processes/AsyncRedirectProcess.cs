@@ -38,6 +38,14 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    public class AsyncProcess : Process
+    {
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     protected int m_startTicks = 0;
 
     protected int m_exitCode = 0;
@@ -48,7 +56,7 @@ namespace AndroidPlusPlus.Common
 
     protected TextWriter m_stdInputWriter = null;
 
-    protected Process m_process;
+    protected AsyncProcess m_process;
 
     protected EventListener m_listener = null;
 
@@ -93,7 +101,12 @@ namespace AndroidPlusPlus.Common
 
       try
       {
-        m_process.Dispose ();
+        if (m_process != null)
+        {
+          m_process.Dispose ();
+
+          m_process = null;
+        }
       }
       catch (Exception e)
       {
@@ -142,7 +155,7 @@ namespace AndroidPlusPlus.Common
 
       m_listener = listener;
 
-      m_process = new Process ();
+      m_process = new AsyncProcess ();
 
       m_process.StartInfo = StartInfo;
 
@@ -180,10 +193,7 @@ namespace AndroidPlusPlus.Common
 
       try
       {
-        if (!m_exitMutex.WaitOne (0))
-        {
-          m_process.Kill ();
-        }
+        m_process.Kill ();
       }
       catch (Exception e)
       {
@@ -208,10 +218,12 @@ namespace AndroidPlusPlus.Common
 
     protected void ProcessStdout (object sendingProcess, DataReceivedEventArgs args)
     {
+#if DEBUG && false
+      LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessStdout: {0}", args.Data));
+#endif
+
       try
       {
-        //LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessStdout: {0}", args.Data));
-
         m_lastOutputTimestamp = Environment.TickCount;
 
         if (m_listener != null)
@@ -231,10 +243,10 @@ namespace AndroidPlusPlus.Common
 
     protected void ProcessStderr (object sendingProcess, DataReceivedEventArgs args)
     {
+      LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessStderr: {0}", args.Data));
+
       try
       {
-        LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessStderr: {0}", args.Data));
-
         m_lastOutputTimestamp = Environment.TickCount;
 
         if (m_listener != null)
@@ -254,24 +266,26 @@ namespace AndroidPlusPlus.Common
 
     protected void ProcessExited (object sendingProcess, EventArgs args)
     {
+      LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessExited: {0}", args));
+
       try
       {
-        LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessExited: {0}", args));
+        m_exitMutex.Set ();
 
         m_exitCode = ((Process) sendingProcess).ExitCode;
-
-        m_exitMutex.Set ();
 
         if (m_listener != null)
         {
           m_listener.ProcessExited (sendingProcess, args);
         }
-
-        LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] {0} exited ({1}) in {2} ms", StartInfo.FileName, m_exitCode, Environment.TickCount - m_startTicks));
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
+      }
+      finally
+      {
+        LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] {0} exited ({1}) in {2} ms", StartInfo.FileName, m_exitCode, Environment.TickCount - m_startTicks));
       }
     }
 

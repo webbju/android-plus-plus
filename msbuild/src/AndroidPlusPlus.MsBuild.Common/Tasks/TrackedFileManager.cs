@@ -241,7 +241,7 @@ namespace AndroidPlusPlus.MsBuild.Common
           }
         }
       }
-      catch (Exception e)
+      catch (Exception)
       {
         throw;
       }
@@ -379,7 +379,7 @@ namespace AndroidPlusPlus.MsBuild.Common
         }
 #endif
       }
-      catch (Exception e)
+      catch (Exception)
       {
         throw;
       }

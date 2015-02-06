@@ -124,12 +124,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        if (AttachedEngine.NativeDebugger == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.Attach (pCallback));
+
+        LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.Attach (pCallback));
 
         return DebugEngineConstants.S_OK;
       }
@@ -160,12 +157,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        if (AttachedEngine.NativeDebugger == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.CanDetach ());
+
+        LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.CanDetach ());
 
         return DebugEngineConstants.S_OK;
       }
@@ -196,12 +190,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        if (AttachedEngine.NativeDebugger == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.CauseBreak ());
+
+        LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.CauseBreak ());
 
         return DebugEngineConstants.S_OK;
       }
@@ -232,12 +223,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        if (AttachedEngine.NativeDebugger == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.Continue (pThread));
+
+        LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.Continue (pThread));
 
         return DebugEngineConstants.S_OK;
       }
@@ -268,10 +256,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        if (AttachedEngine.NativeDebugger != null)
-        {
-          LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.Detach ());
-        }
+        LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.Detach ());
+
+        LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.Detach ());
 
         return DebugEngineConstants.S_OK;
       }
@@ -308,12 +295,40 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        if (AttachedEngine.NativeDebugger == null)
+        List<IDebugCodeContext2> codeContexts = new List<IDebugCodeContext2> ();
+
+        uint count;
+
+        {
+          LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.EnumCodeContexts (pDocPos, out ppEnum));
+
+          LoggingUtils.RequireOk (ppEnum.GetCount (out count));
+
+          IDebugCodeContext2 [] codeContextArray = new IDebugCodeContext2 [count];
+
+          LoggingUtils.RequireOk (ppEnum.Next (count, codeContextArray, ref count));
+
+          codeContexts.AddRange (codeContextArray);
+        }
+
+        {
+          LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.EnumCodeContexts (pDocPos, out ppEnum));
+
+          LoggingUtils.RequireOk (ppEnum.GetCount (out count));
+
+          IDebugCodeContext2 [] codeContextArray = new IDebugCodeContext2 [count];
+
+          LoggingUtils.RequireOk (ppEnum.Next (count, codeContextArray, ref count));
+
+          codeContexts.AddRange (codeContextArray);
+        }
+
+        ppEnum = new DebuggeeCodeContext.Enumerator (codeContexts);
+
+        if (ppEnum == null)
         {
           throw new InvalidOperationException ();
         }
-
-        LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.EnumCodeContexts (pDocPos, out ppEnum));
 
         return DebugEngineConstants.S_OK;
       }
@@ -348,12 +363,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        if (AttachedEngine.NativeDebugger == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.EnumCodePaths (pszHint, pStart, pFrame, fSource, out ppEnum, out ppSafety));
+
+        LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.EnumCodePaths (pszHint, pStart, pFrame, fSource, out ppEnum, out ppSafety));
 
         return DebugEngineConstants.S_OK;
       }
@@ -386,12 +398,40 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        if (AttachedEngine.NativeDebugger == null)
+        List<IDebugModule2> modules = new List<IDebugModule2> ();
+
+        uint count;
+
+        {
+          LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.EnumModules (out ppEnum));
+
+          LoggingUtils.RequireOk (ppEnum.GetCount (out count));
+
+          IDebugModule2 [] moduleArray = new IDebugModule2 [count];
+
+          LoggingUtils.RequireOk (ppEnum.Next (count, moduleArray, ref count));
+
+          modules.AddRange (moduleArray);
+        }
+
+        {
+          LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.EnumModules (out ppEnum));
+
+          LoggingUtils.RequireOk (ppEnum.GetCount (out count));
+
+          IDebugModule2 [] moduleArray = new IDebugModule2 [count];
+
+          LoggingUtils.RequireOk (ppEnum.Next (count, moduleArray, ref count));
+
+          modules.AddRange (moduleArray);
+        }
+
+        ppEnum = new DebuggeeModule.Enumerator (modules);
+
+        if (ppEnum == null)
         {
           throw new InvalidOperationException ();
         }
-
-        LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.EnumModules (out ppEnum));
 
         return DebugEngineConstants.S_OK;
       }
@@ -422,12 +462,38 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        if (AttachedEngine.NativeDebugger == null)
+        List<IDebugThread2> threads = new List<IDebugThread2> ();
+
+        uint count;
+
+        {
+          LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.EnumThreads (out ppEnum));
+
+          LoggingUtils.RequireOk (ppEnum.GetCount (out count));
+
+          IDebugThread2 [] threadArray = new IDebugThread2 [count];
+
+          LoggingUtils.RequireOk (ppEnum.Next (count, threadArray, ref count));
+
+          threads.AddRange (threadArray);
+        }
+
+        {
+          LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.EnumThreads (out ppEnum));
+
+          LoggingUtils.RequireOk (ppEnum.GetCount (out count));
+
+          IDebugThread2 [] threadArray = new IDebugThread2 [count];
+
+          LoggingUtils.RequireOk (ppEnum.Next (count, threadArray, ref count));
+        }
+
+        ppEnum = new DebuggeeThread.Enumerator (threads);
+
+        if (ppEnum == null)
         {
           throw new InvalidOperationException ();
         }
-
-        LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.EnumThreads (out ppEnum));
 
         return DebugEngineConstants.S_OK;
       }
@@ -460,12 +526,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        if (AttachedEngine.NativeDebugger == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.Execute ());
+
+        LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.Execute ());
 
         return DebugEngineConstants.S_OK;
       }
@@ -498,12 +561,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        if (AttachedEngine.NativeDebugger == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.GetDebugProperty (out ppProperty));
+
+        //LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.GetDebugProperty (out ppProperty));
 
         return DebugEngineConstants.S_OK;
       }
@@ -536,12 +596,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        if (AttachedEngine.NativeDebugger == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.GetDisassemblyStream (dwScope, pCodeContext, out ppDisassemblyStream));
+
+        //LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.GetDisassemblyStream (dwScope, pCodeContext, out ppDisassemblyStream));
 
         return DebugEngineConstants.S_OK;
       }
@@ -611,11 +668,6 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        if (AttachedEngine.NativeDebugger == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         return AttachedEngine.NativeDebugger.NativeProgram.GetMemoryBytes (out ppMemoryBytes);
       }
       catch (Exception e)
@@ -638,8 +690,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      pbstrName = DebugProcess.NativeProcess.Name;
-
       try
       {
         if (AttachedEngine == null)
@@ -647,12 +697,11 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        if (AttachedEngine.NativeDebugger == null)
-        {
-          throw new InvalidOperationException ();
-        }
+        pbstrName = DebugProcess.NativeProcess.Name;
 
-        LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.GetName (out pbstrName));
+        //LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.GetName (out pbstrName));
+
+        //LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.GetName (out pbstrName));
 
         return DebugEngineConstants.S_OK;
       }
@@ -660,10 +709,10 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        // Use the default process name.
-      }
+        pbstrName = "[unknown program]";
 
-      return DebugEngineConstants.S_OK;
+        return DebugEngineConstants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -719,12 +768,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        if (AttachedEngine.NativeDebugger == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.Step (pThread, sk, Step));
+
+        //LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.Step (pThread, sk, Step));
 
         return DebugEngineConstants.S_OK;
       }
@@ -755,10 +801,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        if (AttachedEngine.NativeDebugger != null)
-        {
-          LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.Terminate ());
-        }
+        LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.Terminate ());
+
+        LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.Terminate ());
 
         return DebugEngineConstants.S_OK;
       }
@@ -789,12 +834,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        if (AttachedEngine.NativeDebugger == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.WriteDump (DUMPTYPE, pszDumpUrl));
+
+        LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.WriteDump (DUMPTYPE, pszDumpUrl));
 
         return DebugEngineConstants.S_OK;
       }
@@ -837,12 +879,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        if (AttachedEngine.NativeDebugger == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.ExecuteOnThread (pThread));
+
+        //LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.ExecuteOnThread (pThread));
 
         return DebugEngineConstants.S_OK;
       }
@@ -921,24 +960,26 @@ namespace AndroidPlusPlus.VsDebugEngine
         if (dwHostNameType == enum_GETHOSTNAME_TYPE.GHN_FRIENDLY_NAME)
         {
           LoggingUtils.RequireOk (DebugProcess.GetName (enum_GETNAME_TYPE.GN_MONIKERNAME, out pbstrHostName));
-
-          return DebugEngineConstants.S_OK;
         }
         else if (dwHostNameType == enum_GETHOSTNAME_TYPE.GHN_FILE_NAME)
         {
           LoggingUtils.RequireOk (DebugProcess.GetName (enum_GETNAME_TYPE.GN_FILENAME, out pbstrHostName));
-
-          return DebugEngineConstants.S_OK;
         }
+        else
+        {
+          throw new NotImplementedException ();
+        }
+
+        return DebugEngineConstants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
+
+        pbstrHostName = string.Empty;
+
+        return DebugEngineConstants.E_FAIL;
       }
-
-      pbstrHostName = string.Empty;
-
-      return DebugEngineConstants.E_FAIL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

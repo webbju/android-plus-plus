@@ -1,4 +1,23 @@
 
+Version 0.4.1
+
+New functionality:
+ - (MSBuild) Added customised class parsing to app-jar-dependencies, to avoid invocation of javap. Circa 30x speed improvement.
+ - (MSBuild) Ensured error and warning output from javac is now displayed properly in the 'Error List' panel.
+ - (Debugger) Changed default debugging device selection to prioritise attached devices before emulators.
+ - (Debugger) Added an up-of-date check to ensure target applications aren't needlessly reinstalled when they haven't been modified.
+ - (Debugger) Added automated control of 'debug.checkjni' and 'debug.egl.callstack' properties (configurable by debugger rules).
+ - (Debugger) Added ability to disable GDB stopping on certain signal types; controllable via Debug -> Exceptions.
+ - (Debugger) Added support for GDB 'common.setup' script for controlling ART debugging in r10c onwards.
+
+Fixes/Improvements:
+
+ - (MSBuild) Fixed a number of issues causing dependencies to not be evaluated properly between library projects and Applications.
+ - (MSBuild) Ensured compression strength when adding resources to unsigned APKs is set to maximum.
+ - (Debugger) Fixed a number of issues causing debugging of 32-bit builds on 64-bit devices to fail.
+
+--------------------------------------------------------------------------------------------------------------------------------
+
 Version 0.4.0
 
 New functionality:

@@ -54,8 +54,13 @@
     <Reference Include="EnvDTE90, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
-    <Reference Include="Microsoft.Build" />
-    <Reference Include="Microsoft.Build.Framework" />
+    <Reference Include="Microsoft.Build">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\MSBuild\12.0\Bin\Microsoft.Build.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Build.Framework, Version=12.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\MSBuild\12.0\Bin\Microsoft.Build.Framework.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.VisualStudio.ProjectSystem.v12Only" />
     <Reference Include="Microsoft.VisualStudio.ProjectSystem.VS.v12Only" />
     <Reference Include="Microsoft.VisualStudio.ProjectSystem.Utilities.v12.0" />
@@ -110,7 +115,9 @@
       <Link>Key.snk</Link>
     </None>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Content Include="Microsoft.Build.Framework.dll" />
+  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.Targets" />
   <PropertyGroup>
     <PostBuildEvent>copy /y /b "$(TargetDir)$(TargetName).dll" "$(ProjectDir)..\..\bin\v12.0\$(TargetName).dll"

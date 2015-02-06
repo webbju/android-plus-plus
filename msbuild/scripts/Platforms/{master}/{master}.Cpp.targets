@@ -303,10 +303,23 @@
       <_DebugLinkBuildIdFilename>$(_DebugLinkSharedLibaryBuildId.Substring(2)).debug</_DebugLinkBuildIdFilename>
     </PropertyGroup>
 
-    <Copy 
+    <MakeDir
       Condition="('@(LinkOutputFiles)' != '' and '$(_LinkStripSymbolsRequired)' == 'true')"
-      SourceFiles="$(_DebugLinkSymbolsFile)" 
-      DestinationFiles="$(_DebugLinkBuildIdPath)\$(_DebugLinkBuildIdFilename)" 
+      Directories="$(_DebugLinkBuildIdPath)"
+    />
+
+    <Delete
+      Condition="('@(LinkOutputFiles)' != '' and '$(_LinkStripSymbolsRequired)' == 'true')"
+      Files="$(_DebugLinkBuildIdPath)\$(_DebugLinkBuildIdFilename)"
+    />
+
+    <!--
+      Create a symbolic link to the original .debug symbols file. This should hopefully reduce sprawling build sizes.
+    --> 
+
+    <Exec
+      Condition="('@(LinkOutputFiles)' != '' and '$(_LinkStripSymbolsRequired)' == 'true')"
+      Command="mklink &quot;$(_DebugLinkBuildIdPath)\$(_DebugLinkBuildIdFilename)&quot; &quot;$(_DebugLinkSymbolsFile)&quot;"
     />
 
     <WriteLinesToFile

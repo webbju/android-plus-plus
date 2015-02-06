@@ -110,7 +110,11 @@ namespace AndroidPlusPlus.Common
 
     public static void RequireOk (MiResultRecord resultRecord, string command)
     {
-      if (!CheckOk (resultRecord))
+      if (resultRecord == null)
+      {
+        throw new ArgumentNullException ("resultRecord");
+      }
+      else if (!CheckOk (resultRecord))
       {
         if (resultRecord.HasField ("msg"))
         {

@@ -173,17 +173,13 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
               m_outputClassSourceFiles.Add (classFileItem);
             }
           }
-          else if (singleLine.Contains ("errors"))
-          {
-            Log.LogError (singleLine);
-          }
           else
           {
             // 
-            // TODO: Process errors and warnings.
+            // Java output differs from a Visual Studio's "jump to line" format, we transform that output here.
             // 
 
-            LogEventsFromTextOutput (string.Format ("[{0}] {1}", ToolName, singleLine), MessageImportance.High);
+            LogEventsFromTextOutput (JavaUtilities.ConvertJavaOutputToVS (singleLine), MessageImportance.High);
           }
         }
       }

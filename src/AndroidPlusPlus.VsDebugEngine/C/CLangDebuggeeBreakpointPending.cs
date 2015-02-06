@@ -116,11 +116,11 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new NotImplementedException ();
         }
 
-        m_debugger.RunInterruptOperation (delegate ()
+        m_debugger.RunInterruptOperation (delegate (CLangDebugger debugger)
         {
           string command = string.Format ("-break-insert -f {0} {1}", ((m_breakpointEnabled) ? "" : "-d"), PathUtils.SantiseWindowsPath (location));
 
-          MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+          MiResultRecord resultRecord = debugger.GdbClient.SendCommand (command);
 
           if (resultRecord != null)
           {

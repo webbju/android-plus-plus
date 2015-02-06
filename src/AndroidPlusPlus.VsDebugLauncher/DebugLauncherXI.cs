@@ -56,20 +56,20 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private static IDebugLauncher s_debugLauncher;
+    private IDebugLauncher m_debugLauncher;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public static IDebugLauncher GetDebugLauncher (IServiceProvider serviceProvider)
+    public IDebugLauncher GetDebugLauncher (IServiceProvider serviceProvider)
     {
-      if (s_debugLauncher == null)
+      if (m_debugLauncher == null)
       {
-        s_debugLauncher = new DebugLauncher (serviceProvider);
+        m_debugLauncher = new DebugLauncher (serviceProvider);
       }
 
-      return s_debugLauncher;
+      return m_debugLauncher;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -80,9 +80,11 @@ namespace AndroidPlusPlus.VsDebugLauncher
     {
       LoggingUtils.PrintFunction ();
 
+      IDebugLauncher debugLauncher = null;
+
       try
       {
-        IDebugLauncher debugLauncher = GetDebugLauncher (ServiceProvider);
+        debugLauncher = GetDebugLauncher (ServiceProvider);
 
         return debugLauncher.CanLaunch ((int) launchOptions);
       }
@@ -90,7 +92,18 @@ namespace AndroidPlusPlus.VsDebugLauncher
       {
         LoggingUtils.HandleException (e);
 
-        VsShellUtilities.ShowMessageBox (ServiceProvider, string.Format ("Failed to launch. Reason:\n\n[Exception] {0}\n", e.Message, e.StackTrace), "Android++ Debugger", OLEMSGICON.OLEMSGICON_CRITICAL, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+        string description = string.Format ("'CanLaunch' failed:\n[Exception]{0}", e.Message);
+
+#if DEBUG
+        description += "\n[Exception] Stack trace:\n" + e.StackTrace;
+#endif
+
+        if (debugLauncher != null)
+        {
+          LoggingUtils.RequireOk (debugLauncher.GetConnectionService ().LaunchDialogUpdate (description, true));
+        }
+
+        VsShellUtilities.ShowMessageBox (ServiceProvider, description, "Android++ Debugger", OLEMSGICON.OLEMSGICON_CRITICAL, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
       }
 
       return false;
@@ -104,9 +117,11 @@ namespace AndroidPlusPlus.VsDebugLauncher
     {
       LoggingUtils.PrintFunction ();
 
+      IDebugLauncher debugLauncher = null;
+
       try
       {
-        IDebugLauncher debugLauncher = GetDebugLauncher (ServiceProvider);
+        debugLauncher = GetDebugLauncher (ServiceProvider);
 
         debugLauncher.PrepareLaunch ();
 
@@ -114,15 +129,19 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
         Dictionary<string, string> projectProperties = DebuggerProperties.ProjectPropertiesToDictionary ();
 
+        projectProperties.Add ("ConfigurationGeneral.ProjectDir", Path.GetDirectoryName (DebuggerProperties.GetConfiguredProject ().UnconfiguredProject.FullPath));
+
         LaunchConfiguration launchConfig = debugLauncher.GetLaunchConfigurationFromProjectProperties (projectProperties);
+
+        LaunchProps [] launchProps = debugLauncher.GetLaunchPropsFromProjectProperties (projectProperties);
 
         if (launchOptions.HasFlag (DebugLaunchOptions.NoDebug))
         {
-          debugLaunchSettings = (DebugLaunchSettings) debugLauncher.StartWithoutDebugging ((int) launchOptions, launchConfig, projectProperties);
+          debugLaunchSettings = (DebugLaunchSettings) debugLauncher.StartWithoutDebugging ((int) launchOptions, launchConfig, launchProps, projectProperties);
         }
         else
         {
-          debugLaunchSettings = (DebugLaunchSettings) debugLauncher.StartWithDebugging ((int) launchOptions, launchConfig, projectProperties);
+          debugLaunchSettings = (DebugLaunchSettings) debugLauncher.StartWithDebugging ((int) launchOptions, launchConfig, launchProps, projectProperties);
         }
 
         return new IDebugLaunchSettings [] { debugLaunchSettings };
@@ -131,7 +150,18 @@ namespace AndroidPlusPlus.VsDebugLauncher
       {
         LoggingUtils.HandleException (e);
 
-        VsShellUtilities.ShowMessageBox (ServiceProvider, string.Format ("Failed to launch. Reason:\n\n[Exception] {0}\n", e.Message, e.StackTrace), "Android++ Debugger", OLEMSGICON.OLEMSGICON_CRITICAL, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+        string description = string.Format ("'QueryDebugTargets' failed:\n[Exception]{0}", e.Message);
+
+#if DEBUG
+        description += "\n[Exception] Stack trace:\n" + e.StackTrace;
+#endif
+
+        if (debugLauncher != null)
+        {
+          LoggingUtils.RequireOk (debugLauncher.GetConnectionService ().LaunchDialogUpdate (description, true));
+        }
+
+        VsShellUtilities.ShowMessageBox (ServiceProvider, description, "Android++ Debugger", OLEMSGICON.OLEMSGICON_CRITICAL, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
       }
 
       return null;

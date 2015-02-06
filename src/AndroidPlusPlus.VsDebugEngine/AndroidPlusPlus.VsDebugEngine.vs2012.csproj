@@ -87,6 +87,8 @@
     <Compile Include="DebugPortSupplier.cs" />
     <Compile Include="DebugProgramProvider.cs" />
     <Compile Include="DebugEngineEvent.cs" />
+    <Compile Include="Java\JavaLangDebuggeeProgram.cs" />
+    <Compile Include="Java\JavaLangDebuggeeThread.cs" />
     <Compile Include="Java\JavaLangDebuggerEvent.cs" />
     <Compile Include="Java\JavaLangDebuggerCallback.cs" />
     <Compile Include="Java\JavaLangDebugger.cs" />

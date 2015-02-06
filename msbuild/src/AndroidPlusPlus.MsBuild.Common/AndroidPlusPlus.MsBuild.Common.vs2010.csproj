@@ -59,6 +59,7 @@
     <Compile Include="Misc\AndroidManifestDocument.cs" />
     <Compile Include="Misc\PathUtils.cs" />
     <Compile Include="Tasks\GccUtilities.cs" />
+    <Compile Include="Tasks\JavaUtilities.cs" />
     <Compile Include="Tasks\TrackedOutOfDateToolTask.cs" />
     <Compile Include="Tasks\TrackedFileManager.cs" />
     <Compile Include="Tasks\TrackedToolTask.cs" />

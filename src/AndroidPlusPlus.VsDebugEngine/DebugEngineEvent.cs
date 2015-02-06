@@ -482,9 +482,9 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           MODULE_INFO [] moduleInfo = new MODULE_INFO [1];
 
-          LoggingUtils.RequireOk (module.GetInfo (enum_MODULE_INFO_FIELDS.MIF_DEBUGMESSAGE, moduleInfo));
+          LoggingUtils.RequireOk (module.GetInfo (enum_MODULE_INFO_FIELDS.MIF_NAME | enum_MODULE_INFO_FIELDS.MIF_LOADADDRESS, moduleInfo));
 
-          debugMessage = string.Format ("{0}: {1}", ((m_loadModule) ? "Loaded" : "Unloaded"), moduleInfo [0].m_bstrDebugMessage);
+          debugMessage = string.Format ("{0}: {1}", ((m_loadModule) ? "Loaded" : "Unloaded"), moduleInfo [0].m_bstrName);
 
           fIsLoad = (m_loadModule) ? 1 : 0;
 
@@ -517,8 +517,6 @@ namespace AndroidPlusPlus.VsDebugEngine
         m_debugModule = debugModule;
 
         m_searchInfo = searchInfo;
-
-        m_symbolFlags = enum_MODULE_INFO_FLAGS.MIF_SYMBOLS_LOADED;
       }
 
       int IDebugSymbolSearchEvent2.GetSymbolSearchInfo (out IDebugModule3 pModule, ref string pbstrDebugMessage, enum_MODULE_INFO_FLAGS [] pdwModuleInfoFlags)
@@ -527,7 +525,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         pbstrDebugMessage = m_searchInfo;
 
-        pdwModuleInfoFlags [0] = m_symbolFlags;
+        pdwModuleInfoFlags [0] = enum_MODULE_INFO_FLAGS.MIF_SYMBOLS_LOADED;
 
         return DebugEngineConstants.S_OK;
       }
@@ -986,8 +984,23 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [Guid ("4A6700A3-A51E-43AE-8F35-945170451454")]
+    public sealed class DebuggerLogcatEvent : AsynchronousDebugEvent
+    {
+      public DebuggerLogcatEvent (AndroidDevice device)
+      {
+        HostDevice = device;
+      }
+
+      public AndroidDevice HostDevice { get; private set; }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     [Guid ("DA9A360F-0380-41EB-8BC8-70996E9072BE")]
-    public sealed class UiDebugLaunchServiceEvent : AsynchronousDebugEvent
+    public sealed class DebuggerConnectionEvent : AsynchronousDebugEvent
     {
       public enum EventType
       {
@@ -997,7 +1010,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         LogError,
       };
 
-      public UiDebugLaunchServiceEvent (EventType type, string message)
+      public DebuggerConnectionEvent (EventType type, string message)
       {
         Type = type;
 

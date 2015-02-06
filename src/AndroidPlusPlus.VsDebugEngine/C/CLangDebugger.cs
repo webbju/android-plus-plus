@@ -30,7 +30,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public delegate void InterruptOperation ();
+    public delegate void InterruptOperation (CLangDebugger debugger);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -68,83 +68,62 @@ namespace AndroidPlusPlus.VsDebugEngine
       // Evaluate target device's architecture triple.
       // 
 
-      string [] supportedDeviceAbis = debugProgram.DebugProcess.NativeProcess.HostDevice.SupportedCpuAbis;
+      string preferedGdbAbiToolPrefix = string.Empty;
 
-      string preferedDeviceAbi = string.Empty;
-
-      bool preferedDeviceAbiIs64Bit = false;
-
-      string preferedDeviceAbiGdbToolPrefix = string.Empty;
-
-      foreach (string deviceAbi in supportedDeviceAbis)
+      switch (debugProgram.DebugProcess.NativeProcess.PrimaryCpuAbi)
       {
-        preferedDeviceAbi = deviceAbi;
-
-        switch (deviceAbi)
+        case "armeabi":
+        case "armeabi-v7a":
         {
-          case "armeabi":
-          case "armeabi-v7a":
-          {
-            preferedDeviceAbiGdbToolPrefix = "arm-linux-androideabi";
+          preferedGdbAbiToolPrefix = "arm-linux-androideabi";
 
-            preferedDeviceAbiIs64Bit = false;
-
-            break;
-          }
-
-          case "arm64-v8a":
-          {
-            preferedDeviceAbiGdbToolPrefix = "aarch64-linux-android";
-
-            preferedDeviceAbiIs64Bit = true;
-
-            break;
-          }
-
-          case "x86":
-          {
-            preferedDeviceAbiGdbToolPrefix = "i686-linux-android";
-
-            preferedDeviceAbiIs64Bit = false;
-
-            break;
-          }
-
-          case "x86_64":
-          {
-            preferedDeviceAbiGdbToolPrefix = "x86_64-linux-android";
-
-            preferedDeviceAbiIs64Bit = true;
-
-            break;
-          }
-
-          case "mips":
-          {
-            preferedDeviceAbiGdbToolPrefix = "mipsel-linux-android";
-
-            preferedDeviceAbiIs64Bit = false;
-
-            break;
-          }
-
-          case "mips64":
-          {
-            preferedDeviceAbiGdbToolPrefix = "mips64el-linux-android";
-
-            preferedDeviceAbiIs64Bit = true;
-
-            break;
-          }
+          break;
         }
 
-        if (!string.IsNullOrEmpty (preferedDeviceAbiGdbToolPrefix))
+        case "arm64-v8a":
         {
+          preferedGdbAbiToolPrefix = "aarch64-linux-android";
+
+          break;
+        }
+
+        case "x86":
+        {
+          preferedGdbAbiToolPrefix = "i686-linux-android";
+
+          break;
+        }
+
+        case "x86_64":
+        {
+          preferedGdbAbiToolPrefix = "x86_64-linux-android";
+
+          break;
+        }
+
+        case "mips":
+        {
+          preferedGdbAbiToolPrefix = "mipsel-linux-android";
+
+          break;
+        }
+
+        case "mips64":
+        {
+          preferedGdbAbiToolPrefix = "mips64el-linux-android";
+
           break;
         }
       }
 
-      Engine.Broadcast (new DebugEngineEvent.UiDebugLaunchServiceEvent (DebugEngineEvent.UiDebugLaunchServiceEvent.EventType.LogStatus, string.Format ("Configuring GDB for '{0}' target...", preferedDeviceAbi)), null, null);
+      if (string.IsNullOrEmpty (preferedGdbAbiToolPrefix))
+      {
+        throw new InvalidOperationException (string.Format ("Unrecognised target primary CPU ABI: {0}", debugProgram.DebugProcess.NativeProcess.PrimaryCpuAbi));
+      }
+
+      bool preferedGdbAbiIs64Bit = preferedGdbAbiToolPrefix.Contains ("64");
+
+      Engine.Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus, string.Format ("Configuring GDB for '{0}' target...", preferedGdbAbiToolPrefix)), null, null);
 
       // 
       // Android++ bundles its own copies of GDB to get round various NDK issues. Search for these.
@@ -156,7 +135,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       string contribGdbCommandPath;
 
-      string contribGdbCommandFilePattern = string.Format ("{0}-gdb.cmd", preferedDeviceAbiGdbToolPrefix);
+      string contribGdbCommandFilePattern = string.Format ("{0}-gdb.cmd", preferedGdbAbiToolPrefix);
 
       bool forceNdkR9dClient = (debugProgram.DebugProcess.NativeProcess.HostDevice.SdkVersion <= AndroidSettings.VersionCode.JELLY_BEAN);
 
@@ -198,7 +177,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       string androidNdkToolchains = Path.Combine (androidNdkRoot, "toolchains");
 
-      string gdbExecutablePattern = string.Format ("{0}-gdb.exe", preferedDeviceAbiGdbToolPrefix);
+      string gdbExecutablePattern = string.Format ("{0}-gdb.exe", preferedGdbAbiToolPrefix);
 
       string [] gdbMatches = Directory.GetFiles (androidNdkToolchains, gdbExecutablePattern, SearchOption.AllDirectories);
 
@@ -272,8 +251,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (GdbClient != null)
       {
-        //GdbClient.Stop ();
-
         GdbClient.Dispose ();
 
         GdbClient = null;
@@ -281,8 +258,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (GdbServer != null)
       {
-        //GdbServer.Stop ();
-
         GdbServer.Dispose ();
 
         GdbServer = null;
@@ -374,7 +349,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (operation != null)
         {
-          operation ();
+          operation (this);
         }
       }
       catch (Exception e)
@@ -593,13 +568,6 @@ namespace AndroidPlusPlus.VsDebugEngine
               {
                 uint threadId = asyncRecord ["thread-id"] [0].GetUnsignedInt ();
 
-                stoppedThread = NativeProgram.GetThread (threadId);
-
-                if (stoppedThread != null)
-                {
-                  stoppedThread.SetRunning (false);
-                }
-
                 NativeProgram.CurrentThreadId = threadId;
               }
 
@@ -608,7 +576,11 @@ namespace AndroidPlusPlus.VsDebugEngine
                 stoppedThread = NativeProgram.GetThread (NativeProgram.CurrentThreadId);
               }
 
-              if (stoppedThread == null)
+              if (stoppedThread != null)
+              {
+                stoppedThread.SetRunning (false);
+              }
+              else
               {
                 throw new InvalidOperationException ("Could not evaluate a thread on which we stopped");
               }
@@ -679,17 +651,40 @@ namespace AndroidPlusPlus.VsDebugEngine
               RefreshSharedLibraries ();
 #endif
 
+#if true
+              NativeProgram.RefreshThread (0);
+#endif
+
               Engine.BreakpointManager.RefreshBreakpoints ();
 
               if (true)
               {
                 // 
-                // The reason field can have one of the following values:
+                // This behaviour seems at odds with the GDB/MI spec, but a *stopped event can contain
+                // multiple 'reason' fields. This seems to occur mainly when signals have been ignored prior 
+                // to a non-ignored triggering, i.e:
+                // 
+                //   Signal        Stop\tPrint\tPass to program\tDescription\n
+                //   SIGSEGV       No\tYes\tYes\t\tSegmentation fault\n
+                // 
+                // *stopped,reason="signal-received",signal-name="SIGSEGV",signal-meaning="Segmentation fault",reason="signal-received",signal-name="SIGSEGV",signal-meaning="Segmentation fault",reason="exited-signalled",signal-name="SIGSEGV",signal-meaning="Segmentation fault"
                 // 
 
                 if (asyncRecord.HasField ("reason"))
                 {
-                  switch (asyncRecord ["reason"] [0].GetString ())
+                  // 
+                  // Here we pick the most recent (unhandled) signal.
+                  // 
+
+                  int stoppedIndex = asyncRecord ["reason"].Count - 1;
+
+                  MiResultValue stoppedReason = asyncRecord ["reason"] [stoppedIndex];
+
+                  // 
+                  // The reason field can have one of the following values:
+                  // 
+
+                  switch (stoppedReason.GetString ())
                   {
                     case "breakpoint-hit":
                     case "watchpoint-trigger":
@@ -733,7 +728,7 @@ namespace AndroidPlusPlus.VsDebugEngine
                           // Could not locate a registered breakpoint with matching id.
                           // 
 
-                          DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, "Breakpoint #" + breakpointId, asyncRecord ["reason"] [0].GetString (), 0x00000000, canContinue);
+                          DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, "Breakpoint #" + breakpointId, stoppedReason.GetString (), 0x00000000, canContinue);
 
                           Engine.Broadcast (exception, NativeProgram.DebugProgram, stoppedThread);
                         }
@@ -749,7 +744,7 @@ namespace AndroidPlusPlus.VsDebugEngine
                             // Hit a breakpoint which internally is flagged as deleted. Oh noes!
                             // 
 
-                            DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, "Breakpoint #" + breakpointId + " [deleted]", asyncRecord ["reason"] [0].GetString (), 0x00000000, canContinue);
+                            DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, "Breakpoint #" + breakpointId + " [deleted]", stoppedReason.GetString (), 0x00000000, canContinue);
 
                             Engine.Broadcast (exception, NativeProgram.DebugProgram, stoppedThread);
                           }
@@ -759,7 +754,9 @@ namespace AndroidPlusPlus.VsDebugEngine
                             // Hit a breakpoint which is known about. Issue break event.
                             // 
 
-                            IEnumDebugBoundBreakpoints2 enumeratedBoundBreakpoint = new DebuggeeBreakpointBound.Enumerator (new List<IDebugBoundBreakpoint2> { boundBreakpoint });
+                            IDebugBoundBreakpoint2 [] boundBreakpoints = new IDebugBoundBreakpoint2 [] { boundBreakpoint };
+
+                            IEnumDebugBoundBreakpoints2 enumeratedBoundBreakpoint = new DebuggeeBreakpointBound.Enumerator (boundBreakpoints);
 
                             Engine.Broadcast (new DebugEngineEvent.BreakpointHit (enumeratedBoundBreakpoint), NativeProgram.DebugProgram, stoppedThread);
                           }
@@ -779,9 +776,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                     case "signal-received":
                     {
-                      string signalName = asyncRecord ["signal-name"] [0].GetString ();
+                      string signalName = asyncRecord ["signal-name"] [stoppedIndex].GetString ();
 
-                      string signalMeaning = asyncRecord ["signal-meaning"] [0].GetString ();
+                      string signalMeaning = asyncRecord ["signal-meaning"] [stoppedIndex].GetString ();
 
                       switch (signalName)
                       {
@@ -934,9 +931,14 @@ namespace AndroidPlusPlus.VsDebugEngine
               {
                 uint threadId = asyncRecord ["id"] [0].GetUnsignedInt ();
 
-                //string threadGroupId = asyncRecord ["group-id"] [0].GetString ();
+                string threadGroupId = asyncRecord ["group-id"] [0].GetString ();
 
-                NativeProgram.AddThread (threadId);
+                CLangDebuggeeThread thread = NativeProgram.GetThread (threadId);
+
+                if (thread == null)
+                {
+                  NativeProgram.AddThread (threadId);
+                }
               }
               catch (Exception e)
               {
@@ -998,19 +1000,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
               try
               {
-                CLangDebuggeeModule module = new CLangDebuggeeModule (Engine, asyncRecord);
-
                 string moduleName = asyncRecord ["id"] [0].GetString ();
 
-                NativeProgram.AddModule (module);
+                CLangDebuggeeModule module = NativeProgram.GetModule (moduleName);
 
-                Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, true), NativeProgram.DebugProgram, null);
-
-                if (module.SymbolsLoaded)
+                if (module == null)
                 {
-                  Engine.Broadcast (new DebugEngineEvent.BeforeSymbolSearch (module as IDebugModule3), NativeProgram.DebugProgram, null);
-
-                  Engine.Broadcast (new DebugEngineEvent.SymbolSearch (module as IDebugModule3, module.Name), NativeProgram.DebugProgram, null);
+                  module = NativeProgram.AddModule (moduleName, asyncRecord);
                 }
 
                 if (!GdbClient.GetClientFeatureSupported ("breakpoint-notifications"))
@@ -1036,11 +1032,7 @@ namespace AndroidPlusPlus.VsDebugEngine
               {
                 string moduleName = asyncRecord ["id"] [0].GetString ();
 
-                CLangDebuggeeModule module = NativeProgram.GetModule (moduleName);
-
-                NativeProgram.RemoveModule (module);
-
-                Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, false), NativeProgram.DebugProgram, null);
+                NativeProgram.RemoveModule (moduleName);
 
                 if (!GdbClient.GetClientFeatureSupported ("breakpoint-notifications"))
                 {
@@ -1105,6 +1097,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       // - This also triggers GDB to tell us about libraries which it may have missed.
       // 
 
+      LoggingUtils.PrintFunction ();
+
       try
       {
         string command = string.Format ("-interpreter-exec console \"info sharedlibrary\"");
@@ -1156,6 +1150,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public DebuggeeCodeContext GetCodeContextForLocation (string location)
     {
+      LoggingUtils.PrintFunction ();
+
       try
       {
         if (string.IsNullOrEmpty (location))

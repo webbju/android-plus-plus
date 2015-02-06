@@ -240,7 +240,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      ppEnum = new DebuggeeProgram.Enumerator (new List<IDebugProgram2> { DebuggeeProgram });
+      IDebugProgram2 [] programs = new IDebugProgram2 [] { DebuggeeProgram };
+
+      ppEnum = new DebuggeeProgram.Enumerator (programs);
 
       return DebugEngineConstants.S_OK;
     }
