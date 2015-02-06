@@ -216,6 +216,11 @@ namespace AndroidPlusPlus.MsBuild.Common
         {
           string dependencyFullPath = dependency.GetMetadata ("FullPath");
 
+          if (Directory.Exists (dependencyFullPath))
+          {
+            continue; // Skip any references to directories.
+          }
+
           if (!File.Exists (dependencyFullPath))
           {
             throw new FileNotFoundException ("Could not find specified dependency: " + dependencyFullPath);

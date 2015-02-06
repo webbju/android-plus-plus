@@ -1,5 +1,5 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
+Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hello-gdbserver", "hello-gdbserver\hello-gdbserver.vcxproj", "{36324E8C-BC78-4B9E-A9E4-C6DC98158C80}"
 EndProject
@@ -9,12 +9,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "native-activity", "native-a
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "native-audio", "native-audio\native-audio.vcxproj", "{BAE12DE8-AF95-4631-AAD3-13596DDA7A71}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sdl-demo", "sdl-demo\sdl-demo.vcxproj", "{10672DF8-45F5-48DE-B903-5B8DDFCCFE16}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sdl2-app", "sdl2-app\sdl2-app.vcxproj", "{E7297190-C74C-41BA-8EE7-E8D86D91CE23}"
 	ProjectSection(ProjectDependencies) = postProject
-		{B6E844B1-0CE1-40C9-97CD-8362F386BDAC} = {B6E844B1-0CE1-40C9-97CD-8362F386BDAC}
+		{1049E8B2-043E-4593-99A7-67FBA6BE5939} = {1049E8B2-043E-4593-99A7-67FBA6BE5939}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sdl-lib", "sdl-demo\contrib\sdl\sdl-lib.vcxproj", "{B6E844B1-0CE1-40C9-97CD-8362F386BDAC}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sdl2-library", "sdl2-library\sdl2-library.vcxproj", "{1049E8B2-043E-4593-99A7-67FBA6BE5939}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -36,14 +36,14 @@ Global
 		{BAE12DE8-AF95-4631-AAD3-13596DDA7A71}.Debug|Android++.ActiveCfg = Debug|Android++
 		{BAE12DE8-AF95-4631-AAD3-13596DDA7A71}.Debug|Android++.Build.0 = Debug|Android++
 		{BAE12DE8-AF95-4631-AAD3-13596DDA7A71}.Release|Android++.ActiveCfg = Release|Android++
-		{10672DF8-45F5-48DE-B903-5B8DDFCCFE16}.Debug|Android++.ActiveCfg = Debug|Android++
-		{10672DF8-45F5-48DE-B903-5B8DDFCCFE16}.Debug|Android++.Build.0 = Debug|Android++
-		{10672DF8-45F5-48DE-B903-5B8DDFCCFE16}.Release|Android++.ActiveCfg = Release|Android++
-		{10672DF8-45F5-48DE-B903-5B8DDFCCFE16}.Release|Android++.Build.0 = Release|Android++
-		{B6E844B1-0CE1-40C9-97CD-8362F386BDAC}.Debug|Android++.ActiveCfg = Debug|Android++
-		{B6E844B1-0CE1-40C9-97CD-8362F386BDAC}.Debug|Android++.Build.0 = Debug|Android++
-		{B6E844B1-0CE1-40C9-97CD-8362F386BDAC}.Release|Android++.ActiveCfg = Release|Android++
-		{B6E844B1-0CE1-40C9-97CD-8362F386BDAC}.Release|Android++.Build.0 = Release|Android++
+		{E7297190-C74C-41BA-8EE7-E8D86D91CE23}.Debug|Android++.ActiveCfg = Debug|Android++
+		{E7297190-C74C-41BA-8EE7-E8D86D91CE23}.Debug|Android++.Build.0 = Debug|Android++
+		{E7297190-C74C-41BA-8EE7-E8D86D91CE23}.Release|Android++.ActiveCfg = Release|Android++
+		{E7297190-C74C-41BA-8EE7-E8D86D91CE23}.Release|Android++.Build.0 = Release|Android++
+		{1049E8B2-043E-4593-99A7-67FBA6BE5939}.Debug|Android++.ActiveCfg = Debug|Android++
+		{1049E8B2-043E-4593-99A7-67FBA6BE5939}.Debug|Android++.Build.0 = Debug|Android++
+		{1049E8B2-043E-4593-99A7-67FBA6BE5939}.Release|Android++.ActiveCfg = Release|Android++
+		{1049E8B2-043E-4593-99A7-67FBA6BE5939}.Release|Android++.Build.0 = Release|Android++
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
