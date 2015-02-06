@@ -7,7 +7,7 @@ it also incorporates customisable deployment, resource management, and integrate
 
 --------------------------------------------------------------------------------------------------------------------------------
 
- - For versioning and change-list info, please refer to 'docs/changes.txt'.
+ - For versioning and change-list info, refer to 'docs/changes.txt'.
 
  - If you're new to Android++, or need help installing, please read 'docs/getting_started.txt'.
 
@@ -15,4 +15,5 @@ it also incorporates customisable deployment, resource management, and integrate
 
 Thank you for your support.
 
--- Justin Webb (webbju@android-plus-plus.com)
+Justin Webb 
+webbju@android-plus-plus.com

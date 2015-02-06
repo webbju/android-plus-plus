@@ -52,7 +52,7 @@ namespace AndroidPlusPlus.Common
 
       Directory.CreateDirectory (CacheSysRoot);
 
-      SymbolDirectories = new List<string> ();
+      SymbolDirectories = new HashSet<string> ();
 
       GdbToolPath = gdbToolPath;
 
@@ -89,7 +89,7 @@ namespace AndroidPlusPlus.Common
 
     public string CacheSysRoot { get; set; }
 
-    public List<string> SymbolDirectories { get; set; }
+    public HashSet<string> SymbolDirectories { get; set; }
 
     public string GdbToolPath { get; set; }
 
@@ -107,20 +107,20 @@ namespace AndroidPlusPlus.Common
 
       LoggingUtils.PrintFunction ();
 
-      StringBuilder commandLineArgumentsBuilder = new StringBuilder ();
+      StringBuilder forwardArgsBuilder = new StringBuilder ();
 
-      commandLineArgumentsBuilder.AppendFormat ("tcp:{0} ", Port);
+      forwardArgsBuilder.AppendFormat ("tcp:{0} ", Port);
 
       if (!string.IsNullOrWhiteSpace (Socket))
       {
-        commandLineArgumentsBuilder.AppendFormat ("localfilesystem:{0}/{1}", Process.InternalCacheDirectory, Socket);
+        forwardArgsBuilder.AppendFormat ("localfilesystem:{0}/{1}", Process.DataDirectory, Socket);
       }
       else
       {
-        commandLineArgumentsBuilder.AppendFormat ("tcp:{0} ", Port);
+        forwardArgsBuilder.AppendFormat ("tcp:{0} ", Port);
       }
 
-      using (SyncRedirectProcess adbPortForward = AndroidAdb.AdbCommand (Process.HostDevice, "forward", commandLineArgumentsBuilder.ToString ()))
+      using (SyncRedirectProcess adbPortForward = AndroidAdb.AdbCommand (Process.HostDevice, "forward", forwardArgsBuilder.ToString ()))
       {
         adbPortForward.StartAndWaitForExit ();
       }
@@ -138,7 +138,11 @@ namespace AndroidPlusPlus.Common
 
       LoggingUtils.PrintFunction ();
 
-      using (SyncRedirectProcess adbPortForward = AndroidAdb.AdbCommand (Process.HostDevice, "forward", "--remove-all"))
+      StringBuilder forwardArgsBuilder = new StringBuilder ();
+
+      forwardArgsBuilder.AppendFormat ("--remove tcp:{0}", Port);
+
+      using (SyncRedirectProcess adbPortForward = AndroidAdb.AdbCommand (Process.HostDevice, "forward", forwardArgsBuilder.ToString ()))
       {
         adbPortForward.StartAndWaitForExit (1000);
       }
@@ -173,7 +177,7 @@ namespace AndroidPlusPlus.Common
         "/system/lib/libEGL.so",
         "/system/lib/libGLESv1_CM.so",
         "/system/lib/libGLESv2.so",
-        //"/system/lib/libGLESv3.so"
+        "/system/lib/libGLESv3.so",
         "/system/lib/libutils.so",
       };
 
@@ -226,7 +230,7 @@ namespace AndroidPlusPlus.Common
 
       try
       {
-        string libraryCachePath = Path.Combine (CacheSysRoot, Process.InternalNativeLibrariesDirectory.Substring (1));
+        string libraryCachePath = Path.Combine (CacheSysRoot, Process.NativeLibraryPath.Substring (1));
 
         Directory.CreateDirectory (libraryCachePath);
 
@@ -237,11 +241,11 @@ namespace AndroidPlusPlus.Common
           // On Android L, Google have broken pull permissions to 'app-lib' (and '/data/app/XXX/lib/') content so we use cp to avoid this.
           // 
 
-          string [] libraries = Process.HostDevice.Shell ("ls", Process.InternalNativeLibrariesDirectory).Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+          string [] libraries = Process.HostDevice.Shell ("ls", Process.NativeLibraryPath).Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
           foreach (string lib in libraries)
           {
-            string remoteLib = Process.InternalNativeLibrariesDirectory + "/" + lib;
+            string remoteLib = Process.NativeLibraryPath + "/" + lib;
 
             string temporaryStorage = "/data/local/tmp/" + lib;
 
@@ -255,7 +259,7 @@ namespace AndroidPlusPlus.Common
         else
 #endif
         {
-          Process.HostDevice.Pull (Process.InternalNativeLibrariesDirectory, libraryCachePath);
+          Process.HostDevice.Pull (Process.NativeLibraryPath, libraryCachePath);
         }
 
         LoggingUtils.Print (string.Format ("[GdbSetup] Pulled application libraries from device/emulator."));
@@ -301,6 +305,24 @@ namespace AndroidPlusPlus.Common
 
       gdbExecutionCommands.Add ("set verbose on");
 #endif
+
+      // 
+      // From NDK r10c there's an additional script for controlling native debugging behaviour on ART.
+      // 
+
+      string commonSetupScript = Path.Combine (AndroidSettings.NdkRoot, "prebuilt", "common", "gdb", "common.setup");
+
+      if (File.Exists (commonSetupScript))
+      {
+        gdbExecutionCommands.Add ("source " + PathUtils.SantiseWindowsPath (commonSetupScript));
+
+        if (Process.HostDevice.SdkVersion >= AndroidSettings.VersionCode.LOLLIPOP)
+        {
+          gdbExecutionCommands.Add ("art-on");
+
+          gdbExecutionCommands.Add ("handle SIGSEGV print stop");
+        }
+      }
 
       return gdbExecutionCommands.ToArray ();
     }

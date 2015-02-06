@@ -127,23 +127,26 @@
     <Compile Include="..\AndroidPlusPlus.Common\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Attributes\ProvideDebugBaseAttribute.cs" />
+    <Compile Include="Attributes\ProvideDebugEngineAttribute.cs" />
+    <Compile Include="Attributes\ProvideDebugExtensionAttribute.cs" />
+    <Compile Include="Attributes\ProvideDebugPortSupplierAttribute.cs" />
     <Compile Include="CommandTable.cs" />
     <Compile Include="Guids.cs" />
     <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="Interface\DebuggerConnectionService.cs" />
+    <Compile Include="Interface\DebuggerConnectionWindow.xaml.cs">
+      <DependentUpon>DebuggerConnectionWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\DebuggerOutputWindow.cs" />
     <Compile Include="Interface\DebugOutputWindow.cs" />
     <Compile Include="Interface\UiCommandEventListener.cs" />
-    <Compile Include="Interface\UiDebugLaunchService.cs" />
-    <Compile Include="Interface\UiDebugLaunchWindow.xaml.cs">
-      <DependentUpon>UiDebugLaunchWindow.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\UiOutputWindow.cs" />
     <Compile Include="Package.cs" />
+    <Compile Include="PackageConstants.cs" />
     <Compile Include="ProjectFactory.cs" />
     <Compile Include="Interface\GdbConsoleWindow.cs" />
     <Compile Include="Interface\InterfaceEventListener.cs" />
     <Compile Include="Listeners\AssemblyResolveListener.cs" />
-    <Compile Include="Attributes\DebugPortSupplierRegistrationAttribute.cs" />
-    <Compile Include="Attributes\DebugEngineRegistrationAttribute.cs" />
     <Compile Include="Attributes\ProvideExternObjectAttribute.cs" />
     <Compile Include="Listeners\DebuggerEventListener.cs" />
     <Compile Include="Listeners\PropertyEventListener.cs" />
@@ -211,13 +214,13 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Page Include="Interface\DebuggerConnectionWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Interface\GdbConsoleControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Interface\UiDebugLaunchWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
     </Page>
   </ItemGroup>
   <PropertyGroup>

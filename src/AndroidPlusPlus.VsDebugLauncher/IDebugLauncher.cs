@@ -24,18 +24,26 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
   public interface IDebugLauncher
   {
+    IDebuggerConnectionService GetConnectionService ();
+
     bool CanLaunch (int launchOptions);
 
     void PrepareLaunch ();
 
-    object StartWithoutDebugging (int launchOptions, LaunchConfiguration launchConfig, IDictionary<string, string> projectProperties);
+    object StartWithoutDebugging (int launchOptions, LaunchConfiguration launchConfig, LaunchProps [] launchProps, IDictionary<string, string> projectProperties);
 
-    object StartWithDebugging (int launchOptions, LaunchConfiguration launchConfig, IDictionary<string, string> projectProperties);
+    object StartWithDebugging (int launchOptions, LaunchConfiguration launchConfig, LaunchProps [] launchProps, IDictionary<string, string> projectProperties);
 
 #if VS2010
     LaunchConfiguration GetLaunchConfigurationFromProjectProperties (IDictionary<string, string> projectProperties, Project startupProject);
 #else
     LaunchConfiguration GetLaunchConfigurationFromProjectProperties (IDictionary<string, string> projectProperties);
+#endif
+
+#if VS2010
+    LaunchProps [] GetLaunchPropsFromProjectProperties (IDictionary<string, string> projectProperties, Project startupProject);
+#else
+    LaunchProps [] GetLaunchPropsFromProjectProperties (IDictionary<string, string> projectProperties);
 #endif
   }
 

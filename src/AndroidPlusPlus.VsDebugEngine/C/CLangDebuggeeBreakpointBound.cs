@@ -75,11 +75,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         LoggingUtils.RequireOk (handle);
 
-        m_debugger.RunInterruptOperation (delegate ()
+        m_debugger.RunInterruptOperation (delegate (CLangDebugger debugger)
         {
           string command = "-break-delete " + GdbBreakpoint.ID;
 
-          MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+          MiResultRecord resultRecord = debugger.GdbClient.SendCommand (command);
 
           MiResultRecord.RequireOk (resultRecord, command);
         });
@@ -117,11 +117,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         LoggingUtils.RequireOk (handle);
 
-        m_debugger.RunInterruptOperation (delegate ()
+        m_debugger.RunInterruptOperation (delegate (CLangDebugger debugger)
         {
           string command = (m_breakpointEnabled ? "-break-enable " : "-break-disable ") + GdbBreakpoint.ID;
 
-          MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+          MiResultRecord resultRecord = debugger.GdbClient.SendCommand (command);
 
           MiResultRecord.RequireOk (resultRecord, command);
         });
@@ -178,11 +178,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (!string.IsNullOrEmpty (condition))
         {
-          m_debugger.RunInterruptOperation (delegate ()
+          m_debugger.RunInterruptOperation (delegate (CLangDebugger debugger)
           {
             string command = string.Format ("-break-condition {0} \"{1}\"", GdbBreakpoint.ID, condition);
 
-            MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+            MiResultRecord resultRecord = debugger.GdbClient.SendCommand (command);
 
             MiResultRecord.RequireOk (resultRecord, command);
           });
@@ -249,11 +249,11 @@ namespace AndroidPlusPlus.VsDebugEngine
           }
         }
 
-        m_debugger.RunInterruptOperation (delegate ()
+        m_debugger.RunInterruptOperation (delegate (CLangDebugger debugger)
         {
           string command = string.Format ("-break-after {0} {1}", GdbBreakpoint.ID, passCount);
 
-          MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+          MiResultRecord resultRecord = debugger.GdbClient.SendCommand (command);
 
           MiResultRecord.RequireOk (resultRecord, command);
         });

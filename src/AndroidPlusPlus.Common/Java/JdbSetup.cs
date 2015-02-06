@@ -75,7 +75,33 @@ namespace AndroidPlusPlus.Common
 
       LoggingUtils.PrintFunction ();
 
-      using (SyncRedirectProcess adbPortForward = AndroidAdb.AdbCommand (Process.HostDevice, "forward", string.Format ("tcp:{0} jdwp:{1}", Port, Process.Pid)))
+      StringBuilder forwardArgsBuilder = new StringBuilder ();
+
+      forwardArgsBuilder.AppendFormat ("tcp:{0} jdwp:{1}", Port, Process.Pid);
+
+      using (SyncRedirectProcess adbPortForward = AndroidAdb.AdbCommand (Process.HostDevice, "forward", forwardArgsBuilder.ToString ()))
+      {
+        adbPortForward.StartAndWaitForExit (1000);
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public void ClearPortForwarding ()
+    {
+      // 
+      // Clear network redirection.
+      // 
+
+      LoggingUtils.PrintFunction ();
+
+      StringBuilder forwardArgsBuilder = new StringBuilder ();
+
+      forwardArgsBuilder.AppendFormat ("--remove tcp:{0}", Port);
+
+      using (SyncRedirectProcess adbPortForward = AndroidAdb.AdbCommand (Process.HostDevice, "forward", forwardArgsBuilder.ToString ()))
       {
         adbPortForward.StartAndWaitForExit (1000);
       }

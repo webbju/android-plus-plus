@@ -74,6 +74,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private readonly CLangDebuggerCallback m_cLangEventCallback;
 
+    private readonly JavaLangDebuggerCallback m_javaLangEventCallback;
+
     private readonly Dictionary<Guid, DebuggerEventDelegate> m_debuggerCallback;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -87,6 +89,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       m_ad7EventCallback = ad7EventCallback;
 
       m_cLangEventCallback = new CLangDebuggerCallback ();
+
+      m_javaLangEventCallback = new JavaLangDebuggerCallback ();
 
       m_debuggerCallback = new Dictionary<Guid, DebuggerEventDelegate> ();
 
@@ -156,6 +160,13 @@ namespace AndroidPlusPlus.VsDebugEngine
         }
 
         handle = m_cLangEventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
+
+        if (handle != DebugEngineConstants.E_NOTIMPL)
+        {
+          LoggingUtils.RequireOk (handle);
+        }
+
+        handle = m_javaLangEventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
 
         if (handle != DebugEngineConstants.E_NOTIMPL)
         {

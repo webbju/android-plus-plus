@@ -41,7 +41,7 @@ namespace AndroidPlusPlus.Common
 
     private static readonly object m_updateLockMutex = new object ();
 
-    private static Hashtable m_connectedDevices = new Hashtable ();
+    private static Dictionary<string, AndroidDevice> m_connectedDevices = new Dictionary<string, AndroidDevice> ();
 
     private static List<StateListener> m_registeredDeviceStateListeners = new List<StateListener> ();
 
@@ -61,18 +61,18 @@ namespace AndroidPlusPlus.Common
 
         using (SyncRedirectProcess adbStartServer = new SyncRedirectProcess (AndroidSettings.SdkRoot + @"\platform-tools\adb.exe", "start-server"))
         {
-          adbStartServer.StartAndWaitForExit (10000);
+          adbStartServer.StartAndWaitForExit (30000);
         }
 
         using (SyncRedirectProcess adbDevices = new SyncRedirectProcess (AndroidSettings.SdkRoot + @"\platform-tools\adb.exe", "devices"))
         {
-          adbDevices.StartAndWaitForExit (5000);
+          adbDevices.StartAndWaitForExit (30000);
 
           // 
           // Parse 'devices' output, skipping headers and potential 'start-server' output.
           // 
 
-          Dictionary<string, string> currentConnectedDevices = new Dictionary<string, string> ();
+          Dictionary<string, string> currentAdbDevices = new Dictionary<string, string> ();
 
           LoggingUtils.Print (string.Format ("[AndroidAdb] Devices output: {0}", adbDevices.StandardOutput));
 
@@ -90,24 +90,46 @@ namespace AndroidPlusPlus.Common
 
                 string deviceType = segments [1];
 
-                currentConnectedDevices.Add (deviceName, deviceType);
+                currentAdbDevices.Add (deviceName, deviceType);
               }
             }
           }
 
           // 
-          // Identify which devices have connected or persisted.
+          // First identify any previously tracked devices which aren't in 'devices' output.
           // 
 
-          foreach (KeyValuePair <string, string> connectedDevicePair in currentConnectedDevices)
+          HashSet<string> disconnectedDevices = new HashSet<string> ();
+
+          foreach (string key in m_connectedDevices.Keys)
           {
-            string deviceName = connectedDevicePair.Key;
+            string deviceName = (string) key;
 
-            string deviceType = connectedDevicePair.Value;
-
-            if (!deviceType.Equals ("offline"))
+            if (!currentAdbDevices.ContainsKey (deviceName))
             {
-              if (m_connectedDevices.ContainsKey (deviceName))
+              disconnectedDevices.Add (deviceName);
+            }
+          }
+
+          // 
+          // Identify whether any devices have changed state; connected/persisted/disconnected.
+          // 
+
+          foreach (KeyValuePair <string, string> devicePair in currentAdbDevices)
+          {
+            string deviceName = devicePair.Key;
+
+            string deviceType = devicePair.Value;
+
+            if (deviceType.Equals ("offline"))
+            {
+              disconnectedDevices.Add (deviceName);
+            }
+            else
+            {
+              AndroidDevice connectedDevice;
+
+              if (m_connectedDevices.TryGetValue (deviceName, out connectedDevice))
               {
                 // 
                 // Device is pervasive. Refresh internal properties.
@@ -115,13 +137,11 @@ namespace AndroidPlusPlus.Common
 
                 LoggingUtils.Print (string.Format ("[AndroidAdb] Device pervaded: {0} - {1}", deviceName, deviceType));
 
-                AndroidDevice pervasiveDevice = (m_connectedDevices [connectedDevicePair.Key] as AndroidDevice);
-
-                pervasiveDevice.Refresh ();
+                connectedDevice.Refresh ();
 
                 foreach (StateListener deviceListener in m_registeredDeviceStateListeners)
                 {
-                  deviceListener.DevicePervasive (pervasiveDevice);
+                  deviceListener.DevicePervasive (connectedDevice);
                 }
               }
               else
@@ -132,7 +152,7 @@ namespace AndroidPlusPlus.Common
 
                 LoggingUtils.Print (string.Format ("[AndroidAdb] Device connected: {0} - {1}", deviceName, deviceType));
 
-                AndroidDevice connectedDevice = new AndroidDevice (deviceName);
+                connectedDevice = new AndroidDevice (deviceName);
 
                 connectedDevice.Refresh ();
 
@@ -147,36 +167,23 @@ namespace AndroidPlusPlus.Common
           }
 
           // 
-          // Use a reverse lookup to identify devices which have been 'disconnected'.
+          // Finally, handle device disconnection.
           // 
-
-          List<string> disconnectedDevices = new List<string> ();
-
-          foreach (string key in m_connectedDevices.Keys)
-          {
-            string deviceName = (string)key;
-
-            if (!currentConnectedDevices.ContainsKey (deviceName))
-            {
-              disconnectedDevices.Add (deviceName);
-            }
-          }
 
           foreach (string deviceName in disconnectedDevices)
           {
-            // 
-            // Device disconnected.
-            // 
+            AndroidDevice disconnectedDevice;
 
-            AndroidDevice disconnectedDevice = (AndroidDevice)m_connectedDevices [deviceName];
-
-            LoggingUtils.Print (string.Format ("[AndroidAdb] Device disconnected: {0}", deviceName));
-
-            m_connectedDevices.Remove (deviceName);
-
-            foreach (StateListener deviceListener in m_registeredDeviceStateListeners)
+            if (m_connectedDevices.TryGetValue (deviceName, out disconnectedDevice))
             {
-              deviceListener.DeviceDisconnected (disconnectedDevice);
+              LoggingUtils.Print (string.Format ("[AndroidAdb] Device disconnected: {0}", deviceName));
+
+              m_connectedDevices.Remove (deviceName);
+
+              foreach (StateListener deviceListener in m_registeredDeviceStateListeners)
+              {
+                deviceListener.DeviceDisconnected (disconnectedDevice);
+              }
             }
           }
         }
@@ -191,16 +198,9 @@ namespace AndroidPlusPlus.Common
     {
       lock (m_connectedDevices)
       {
-        uint i = 0;
-
         AndroidDevice [] deviceArray = new AndroidDevice [m_connectedDevices.Count];
 
-        foreach (object key in m_connectedDevices.Keys)
-        {
-          AndroidDevice device = (AndroidDevice)m_connectedDevices [key];
-
-          deviceArray [i++] = device;
-        }
+        m_connectedDevices.Values.CopyTo (deviceArray, 0);
 
         return deviceArray;
       }
@@ -255,18 +255,8 @@ namespace AndroidPlusPlus.Common
 
       lock (m_connectedDevices)
       {
-        foreach (object key in m_connectedDevices.Keys)
-        {
-          AndroidDevice device = (AndroidDevice)m_connectedDevices [key];
-
-          if (queryDevice.ID == device.ID)
-          {
-            return true;
-          }
-        }
+        return m_connectedDevices.ContainsKey (queryDevice.ID);
       }
-
-      return false;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -47,7 +47,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private readonly Guid m_portGuid;
 
-    private Dictionary<string, List<uint>> m_deviceProcessesPidsByName;
+    private Dictionary<string, HashSet<uint>> m_deviceProcessesPidsByName;
 
     private Dictionary<uint, DebuggeeProcess> m_deviceProcessesByPid;
 
@@ -67,7 +67,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       m_portGuid = Guid.NewGuid ();
 
-      m_deviceProcessesPidsByName = new Dictionary<string, List<uint>> ();
+      m_deviceProcessesPidsByName = new Dictionary<string, HashSet<uint>> ();
 
       m_deviceProcessesByPid = new Dictionary<uint, DebuggeeProcess> ();
 
@@ -106,17 +106,19 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         m_deviceProcessesPidsByName.Clear ();
 
-        AndroidProcess [] deviceProcesses = m_portDevice.GetAllProcesses ();
+        uint [] deviceActivePids = m_portDevice.GetActivePids ();
 
-        foreach (AndroidProcess process in deviceProcesses)
+        foreach (uint pid in deviceActivePids)
         {
-          m_deviceProcessesByPid [process.Pid] = new DebuggeeProcess (this, process);
+          AndroidProcess process = m_portDevice.GetProcessFromPid (pid);
 
-          List<uint> processPids;
+          m_deviceProcessesByPid [pid] = new DebuggeeProcess (this, process);
+
+          HashSet<uint> processPids;
 
           if (!m_deviceProcessesPidsByName.TryGetValue (process.Name, out processPids))
           {
-            processPids = new List<uint> ();
+            processPids = new HashSet<uint> ();
           }
 
           processPids.Add (process.Pid);
@@ -156,7 +158,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public DebuggeeProcess [] GetProcessesFromName (string processName)
     {
-      List<uint> processPidList;
+      HashSet<uint> processPidList;
 
       List<DebuggeeProcess> processList = new List<DebuggeeProcess> ();
 

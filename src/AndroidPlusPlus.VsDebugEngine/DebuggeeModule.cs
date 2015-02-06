@@ -43,6 +43,10 @@ namespace AndroidPlusPlus.VsDebugEngine
         : base (modules)
       {
       }
+      public Enumerator (IDebugModule2 [] modules)
+        : base (modules)
+      {
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -141,7 +145,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFields & enum_MODULE_INFO_FIELDS.MIF_DEBUGMESSAGE) != 0)
         {
-          infoArray [0].m_bstrDebugMessage = string.Format ("'{0}' [0x{1:X8}]", RemotePath, RemoteLoadAddress);
+          infoArray [0].m_bstrDebugMessage = RemotePath;
 
           infoArray [0].dwValidFields |= enum_MODULE_INFO_FIELDS.MIF_DEBUGMESSAGE;
         }

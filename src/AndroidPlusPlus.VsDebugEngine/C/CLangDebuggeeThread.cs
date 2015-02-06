@@ -27,10 +27,20 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public CLangDebuggeeThread (CLangDebuggeeProgram program, uint id)
-      : base (program.DebugProgram, id, string.Empty)
+    protected readonly CLangDebugger m_debugger;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public CLangDebuggeeThread (CLangDebugger debugger, CLangDebuggeeProgram program, uint id)
+      : base (program.DebugProgram, id, string.Format ("[Native-{0}]", id))
     {
+      m_debugger = debugger;
+
       NativeProgram = program;
+
+      RequiresRefresh = true;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -43,47 +53,42 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public override void Refresh ()
+    public bool RequiresRefresh { get; protected set; }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public void Refresh (ref MiResultValue threadData)
     {
-      m_debugProgram.AttachedEngine.NativeDebugger.RunInterruptOperation (delegate ()
+      //uint threadId = threadData ["id"] [0].GetUnsignedInt ();
+
+      if (threadData.HasField ("name"))
       {
-        string command = string.Format ("-thread-info {0}", m_threadId);
+        m_threadDisplayName = threadData ["name"] [0].GetString (); // user-specified name
+      }
+      else if (threadData.HasField ("target-id"))
+      {
+        m_threadDisplayName = threadData ["target-id"] [0].GetString (); // usually the raw name, i.e. 'Thread 18771'
+      }
 
-        MiResultRecord resultRecord = m_debugProgram.AttachedEngine.NativeDebugger.GdbClient.SendCommand (command);
+      if (threadData.HasField ("frame"))
+      {
+        MiResultValueTuple frameTuple = threadData ["frame"] [0] as MiResultValueTuple;
 
-        MiResultRecord.RequireOk (resultRecord, command);
+        uint stackLevel = frameTuple ["level"] [0].GetUnsignedInt ();
 
-        if (!resultRecord.HasField ("threads"))
+        string stackFrameId = m_threadName + "#" + stackLevel;
+
+        CLangDebuggeeStackFrame stackFrame = new CLangDebuggeeStackFrame (m_debugger, this, frameTuple, stackFrameId);
+
+        lock (m_threadStackFrames)
         {
-          throw new InvalidOperationException ("-thread-info result missing 'threads' field");
+          m_threadStackFrames.Add (stackFrame);
         }
+      }
 
-        List<MiResultValue> threadDataList = resultRecord ["threads"];
-
-        for (int i = 0; i < threadDataList.Count; ++i)
-        {
-          if (threadDataList [i].Values.Count > 0)
-          {
-            MiResultValueTuple threadData = (MiResultValueTuple) threadDataList [i] [0];
-
-            uint threadId = threadData ["id"] [0].GetUnsignedInt ();
-
-            if (threadId == m_threadId)
-            {
-              if (threadData.HasField ("name"))
-              {
-                m_threadName = threadData ["name"] [0].GetString (); // user-specified name
-              }
-              else if (threadData.HasField ("target-id"))
-              {
-                m_threadName = threadData ["target-id"] [0].GetString (); // usually the raw name, i.e. 'Thread 18771'
-              }
-
-              break;
-            }
-          }
-        }
-      });
+      RequiresRefresh = false;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -106,7 +111,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           LoggingUtils.RequireOk (GetThreadId (out threadId));
 
-          m_debugProgram.AttachedEngine.NativeDebugger.RunInterruptOperation (delegate ()
+          m_debugProgram.AttachedEngine.NativeDebugger.RunInterruptOperation (delegate (CLangDebugger debugger)
           {
             // 
             // Determine the maximum available stack depth.
@@ -120,7 +125,7 @@ namespace AndroidPlusPlus.VsDebugEngine
             {
               command = string.Format ("-stack-info-depth --thread {0}", threadId);
 
-              resultRecord = m_debugProgram.AttachedEngine.NativeDebugger.GdbClient.SendCommand (command);
+              resultRecord = debugger.GdbClient.SendCommand (command);
 
               MiResultRecord.RequireOk (resultRecord, command);
 
@@ -135,7 +140,7 @@ namespace AndroidPlusPlus.VsDebugEngine
             {
               command = string.Format ("-stack-list-frames --thread {0} {1} {2}", threadId, m_threadStackFrames.Count, depth - 1);
 
-              resultRecord = m_debugProgram.AttachedEngine.NativeDebugger.GdbClient.SendCommand (command);
+              resultRecord = debugger.GdbClient.SendCommand (command);
 
               MiResultRecord.RequireOk (resultRecord, command);
 
@@ -151,7 +156,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                   string stackFrameId = m_threadName + "#" + stackLevel;
 
-                  CLangDebuggeeStackFrame stackFrame = new CLangDebuggeeStackFrame (m_debugProgram.AttachedEngine.NativeDebugger, this, frameTuple, stackFrameId);
+                  CLangDebuggeeStackFrame stackFrame = new CLangDebuggeeStackFrame (debugger, this, frameTuple, stackFrameId);
 
                   lock (m_threadStackFrames)
                   {
@@ -193,7 +198,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         string location = "*" + contextInfo [0].bstrAddressAbsolute;
 
-        m_debugProgram.AttachedEngine.NativeDebugger.RunInterruptOperation (delegate ()
+        m_debugProgram.AttachedEngine.NativeDebugger.RunInterruptOperation (delegate (CLangDebugger debugger)
         {
           // 
           // Create a temporary breakpoint to stop -exec-jump continuing when we'd rather it didn't.
@@ -201,7 +206,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           string command = string.Format ("-break-insert -t \"{0}\"", location);
 
-          MiResultRecord resultRecord = m_debugProgram.AttachedEngine.NativeDebugger.GdbClient.SendCommand (command);
+          MiResultRecord resultRecord = debugger.GdbClient.SendCommand (command);
 
           MiResultRecord.RequireOk (resultRecord, command);
 
@@ -211,7 +216,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           command = string.Format ("-exec-jump --thread {0} \"{1}\"", m_threadId, location);
 
-          resultRecord = m_debugProgram.AttachedEngine.NativeDebugger.GdbClient.SendCommand (command);
+          resultRecord = debugger.GdbClient.SendCommand (command);
 
           MiResultRecord.RequireOk (resultRecord, command);
         });

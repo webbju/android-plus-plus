@@ -27,7 +27,7 @@ namespace AndroidPlusPlus.VsDebugEngine
   {
     int OnStartServer (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
 
-    int OnStopServer (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+    int OnTerminateServer (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
 
     int OnAttachClient (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
 
@@ -63,7 +63,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       m_debuggerCallback.Add (ComUtils.GuidOf (typeof (CLangDebuggerEvent.StartServer)), OnStartServer);
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (CLangDebuggerEvent.StopServer)), OnStopServer);
+      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (CLangDebuggerEvent.TerminateServer)), OnTerminateServer);
 
       m_debuggerCallback.Add (ComUtils.GuidOf (typeof (CLangDebuggerEvent.AttachClient)), OnAttachClient);
 
@@ -119,10 +119,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         CLangDebuggerEvent.StartServer debuggeeEvent = (pEvent as CLangDebuggerEvent.StartServer);
 
-        if (!debuggeeEvent.Debugger.GdbServer.Start ())
-        {
-          throw new InvalidOperationException ("Failed to start 'gdbserver'");
-        }
+        debuggeeEvent.Debugger.GdbServer.Start ();
 
         return DebugEngineConstants.S_OK;
       }
@@ -138,18 +135,15 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int OnStopServer (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
+    public int OnTerminateServer (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
       LoggingUtils.PrintFunction ();
 
       try
       {
-        CLangDebuggerEvent.StopServer debuggeeEvent = (pEvent as CLangDebuggerEvent.StopServer);
+        CLangDebuggerEvent.TerminateServer debuggeeEvent = (pEvent as CLangDebuggerEvent.TerminateServer);
 
-        if (!debuggeeEvent.Debugger.GdbServer.Stop ())
-        {
-          throw new InvalidOperationException ("Failed to stop 'gdbserver'");
-        }
+        debuggeeEvent.Debugger.GdbServer.Kill ();
 
         return DebugEngineConstants.S_OK;
       }
@@ -201,9 +195,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         ManualResetEvent detachLock = new ManualResetEvent (false);
 
-        debuggeeEvent.Debugger.RunInterruptOperation (delegate ()
+        debuggeeEvent.Debugger.RunInterruptOperation (delegate (CLangDebugger debugger)
         {
-          debuggeeEvent.Debugger.GdbClient.Detach ();
+          debugger.GdbClient.Detach ();
 
           detachLock.Set ();
         }, shouldContinue);

@@ -108,17 +108,17 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
     protected override void AddTaskSpecificDependencies (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
     {
-      // 
-      // Mark additional dependencies for .class files contained within specified class paths.
-      // 
-
       foreach (ITaskItem source in sources)
       {
-        string sourceFullPath = source.GetMetadata ("FullPath");
+        string fullPath = source.GetMetadata ("FullPath");
 
-        if (Directory.Exists (sourceFullPath))
+        // 
+        // Mark additional dependencies for .class files contained within specified folder class paths.
+        // 
+
+        if (Directory.Exists (fullPath))
         {
-          string [] classPathFiles = Directory.GetFiles (sourceFullPath, "*.class", SearchOption.AllDirectories);
+          string [] classPathFiles = Directory.GetFiles (fullPath, "*.class", SearchOption.AllDirectories);
 
           List<ITaskItem> classPathFileItems = new List<ITaskItem> (classPathFiles.Length);
 
@@ -128,6 +128,21 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
           }
 
           trackedFileManager.AddDependencyForSources (classPathFileItems.ToArray (), new ITaskItem [] { source });
+        }
+
+        // 
+        // Ensure configuration file(s) for MultiDex output are flagged as dependencies.
+        // 
+
+        bool multiDex = (source.GetMetadata ("MultiDex") == "true");
+
+        string multiDexMainList = source.GetMetadata ("MultiDexMainList");
+
+        if (multiDex && !string.IsNullOrWhiteSpace (multiDexMainList) && File.Exists (multiDexMainList))
+        {
+          ITaskItem multiDexMainListItem = new TaskItem (multiDexMainList);
+
+          trackedFileManager.AddDependencyForSources (new ITaskItem [] { multiDexMainListItem }, new ITaskItem [] { source });
         }
       }
     }
@@ -236,7 +251,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
         // When exporting to a directory, ensure the contents of such directory are listed as its output.
         // 
 
-        string [] dexOutputFiles = Directory.GetFiles (fullOutputPath, "*.*", SearchOption.AllDirectories);
+        string [] dexOutputFiles = Directory.GetFiles (fullOutputPath, "*.dex", SearchOption.AllDirectories);
 
         List<ITaskItem> dexFileItems = new List<ITaskItem> (dexOutputFiles.Length);
 

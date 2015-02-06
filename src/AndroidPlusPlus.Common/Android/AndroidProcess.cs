@@ -3,6 +3,8 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -22,9 +24,29 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private string m_remoteApkPath;
+    private string m_apkPath;
 
-    private string m_remoteNativeLibrariesPath;
+    private string m_codePath;
+
+    private string m_dataDir;
+
+    private string m_resourcePath;
+
+    private string m_nativeLibraryPath;
+
+    private string m_legacyNativeLibraryDir;
+
+    private string m_primaryCpuAbi;
+
+    private string m_secondaryCpuAbi;
+
+    private string m_firstInstallTime;
+
+    private string m_lastUpdateTime;
+
+    private string [] m_pkgFlags;
+
+    private HashSet<uint> m_threadIds;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -53,98 +75,149 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private void Refresh ()
+    private const string CODE_PATH_EXPRESSION = "      codePath=";
+
+    private const string RESOURCE_PATH_EXPRESSION = "      resourcePath=";
+
+    private const string DATA_DIR_EXPRESSION = "      dataDir=";
+
+    private const string NATIVE_LIBRARY_PATH_EXPRESSION = "      nativeLibraryPath=";
+
+    private const string LEGACY_NATIVE_LIBRARY_DIR_EXPRESSION = "      legacyNativeLibraryDir=";
+
+    private const string PRIMARY_CPU_ABI_EXPRESSION = "      primaryCpuAbi=";
+
+    private const string SECONDARY_CPU_ABI_EXPRESSION = "      secondaryCpuAbi=";
+
+    private const string FIRST_INSTALL_TIME_EXPRESSION = "      firstInstallTime=";
+
+    private const string LAST_UPDATE_TIME_EXPRESSION = "      lastUpdateTime=";
+
+    private const string PKG_FLAGS_EXPRESSION = "      pkgFlags=";
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public void RefreshPackageInfo ()
     {
       // 
       // Retrieves the install specific (coded) remote APK path.
       //   i.e: /data/app/com.example.hellogdbserver-2.apk
       // 
 
-      if (m_remoteApkPath == null)
+      string appRemotePath = HostDevice.Shell ("pm", string.Format ("path {0}", Name)).Replace ("\r", "").Replace ("\n", "");
+
+      if (appRemotePath.StartsWith ("package:"))
       {
-        string applicationPath = HostDevice.Shell ("pm", string.Format ("path {0}", Name)).Replace ("\r", "").Replace ("\n", "");
+        m_apkPath = appRemotePath.Substring ("package:".Length);
 
-        if (applicationPath.StartsWith ("package:"))
+        // 
+        // Perform an 'adb shell pm dump <package>' request, and parse output for relevant data.
+        // TODO: This is extremely sub-optimal, but will have to do for now.
+        // 
+
+        string [] packageDumpReport = HostDevice.Shell ("pm", string.Format ("dump {0}", Name)).Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+        for (int i = 0; i < packageDumpReport.Length; ++i)
         {
-          m_remoteApkPath = applicationPath.Substring ("package:".Length);
+          string line = packageDumpReport [i];
+
+          if (line.StartsWith (CODE_PATH_EXPRESSION))
+          {
+            m_codePath = line.Substring (CODE_PATH_EXPRESSION.Length);
+          }
+          else if (line.StartsWith (DATA_DIR_EXPRESSION))
+          {
+            m_dataDir = line.Substring (DATA_DIR_EXPRESSION.Length);
+          }
+          else if (line.StartsWith (RESOURCE_PATH_EXPRESSION))
+          {
+            m_resourcePath = line.Substring (RESOURCE_PATH_EXPRESSION.Length);
+          }
+          else if (line.StartsWith (NATIVE_LIBRARY_PATH_EXPRESSION))
+          {
+            m_nativeLibraryPath = line.Substring (NATIVE_LIBRARY_PATH_EXPRESSION.Length);
+          }
+          else if (line.StartsWith (LEGACY_NATIVE_LIBRARY_DIR_EXPRESSION))
+          {
+            m_legacyNativeLibraryDir = line.Substring (LEGACY_NATIVE_LIBRARY_DIR_EXPRESSION.Length);
+          }
+          else if (line.StartsWith (PRIMARY_CPU_ABI_EXPRESSION))
+          {
+            m_primaryCpuAbi = line.Substring (PRIMARY_CPU_ABI_EXPRESSION.Length);
+          }
+          else if (line.StartsWith (SECONDARY_CPU_ABI_EXPRESSION))
+          {
+            string secondaryAbi = line.Substring (SECONDARY_CPU_ABI_EXPRESSION.Length);
+
+            if (!secondaryAbi.Equals ("null"))
+            {
+              m_secondaryCpuAbi = secondaryAbi;
+            }
+          }
+          else if (line.StartsWith (FIRST_INSTALL_TIME_EXPRESSION))
+          {
+            m_firstInstallTime = line.Substring (FIRST_INSTALL_TIME_EXPRESSION.Length);
+          }
+          else if (line.StartsWith (LAST_UPDATE_TIME_EXPRESSION))
+          {
+            m_lastUpdateTime = line.Substring (LAST_UPDATE_TIME_EXPRESSION.Length);
+          }
+          else if (line.StartsWith (PKG_FLAGS_EXPRESSION))
+          {
+            m_pkgFlags = line.Substring (PKG_FLAGS_EXPRESSION.Length).Trim (new char [] { '[', ']' }).Split (new char [] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+          }
         }
-        else
+
+        // 
+        // Clean up some variables which may be empty or undefined.
+        // 
+
+        if (string.IsNullOrWhiteSpace (m_primaryCpuAbi))
         {
-          throw new InvalidOperationException ("Failed to retrieve remote application path");
+          m_primaryCpuAbi = HostDevice.SupportedCpuAbis [0];
         }
-      }
 
-      // 
-      // Since Jelly Bean 4.2?, Android has a /data/app-lib/[bundle] directory where it extracts application binaries.
-      // - They were moved from /data/data/[package]/lib, which no references /app-lib via symlink.
-      // - Note that 'app-lib' uses the bundle id (com.example.hellogdbserver-2) rather than package address.
-      // 
-
-      if (m_remoteNativeLibrariesPath == null)
-      {
-        AndroidSettings.VersionCode sdkVesionCode = HostDevice.SdkVersion;
-
-        if (sdkVesionCode >= AndroidSettings.VersionCode.LOLLIPOP)
+        if (string.IsNullOrWhiteSpace (m_primaryCpuAbi) && (HostDevice.SupportedCpuAbis.Length > 1))
         {
-          // 
-          // On Lollipop, native libraries are placed in a per-architecture folder alongside the base APK.
-          // 
+          m_secondaryCpuAbi = HostDevice.SupportedCpuAbis [1];
+        }
 
-          string baseApkDirectory = Path.GetDirectoryName (m_remoteApkPath);
-
-          baseApkDirectory = baseApkDirectory.Substring ("/data/app/".Length); // trim leading path
-
-          string [] supportedCpuAbis = HostDevice.SupportedCpuAbis;
-
+        if (string.IsNullOrWhiteSpace (m_nativeLibraryPath))
+        {
           string cpuAbiSubdirectory = string.Empty;
 
-          foreach (string abi in supportedCpuAbis)
+          switch (m_primaryCpuAbi)
           {
-            switch (abi)
+            case "armeabi":
+            case "armeabi-v7a":
             {
-              case "armeabi":
-              case "armeabi-v7a":
-              {
-                cpuAbiSubdirectory = "arm";
+              cpuAbiSubdirectory = "arm";
 
-                break;
-              }
-
-              case "arm64-v8a":
-              {
-                cpuAbiSubdirectory = "arm64";
-
-                break;
-              }
-
-              case "x86":
-              case "x86_64":
-              case "mips":
-              case "mips64":
-              {
-                cpuAbiSubdirectory = abi;
-
-                break;
-              }
+              break;
             }
 
-            if (!string.IsNullOrEmpty (cpuAbiSubdirectory))
+            case "arm64-v8a":
             {
+              cpuAbiSubdirectory = "arm64";
+
+              break;
+            }
+
+            case "x86":
+            case "x86_64":
+            case "mips":
+            case "mips64":
+            default:
+            {
+              cpuAbiSubdirectory = m_primaryCpuAbi;
+
               break;
             }
           }
 
-          m_remoteNativeLibrariesPath = string.Format ("/data/app/{0}/lib/{1}", baseApkDirectory, cpuAbiSubdirectory);
-        }
-        else if (sdkVesionCode >= AndroidSettings.VersionCode.JELLY_BEAN_MR1)
-        {
-          string bundleId = Path.GetFileNameWithoutExtension (m_remoteApkPath);
-
-          m_remoteNativeLibrariesPath = string.Format ("/data/app-lib/{0}", bundleId);
-        }
-        else
-        {
-          m_remoteNativeLibrariesPath = string.Format ("/data/data/{0}/lib", Name);
+          m_nativeLibraryPath = string.Format ("{0}/{1}", m_legacyNativeLibraryDir, cpuAbiSubdirectory);
         }
       }
     }
@@ -153,13 +226,11 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public string RemoteApplicationPath
+    public string RemoteApkPath
     {
       get
       {
-        Refresh ();
-
-        return m_remoteApkPath;
+        return m_apkPath;
       }
     }
 
@@ -167,11 +238,11 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public string InternalCacheDirectory
+    public string DataDirectory
     {
       get
       {
-        return "/data/data/" + Name;
+        return m_dataDir;
       }
     }
 
@@ -179,13 +250,35 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public string InternalNativeLibrariesDirectory
+    public string NativeLibraryPath
     {
       get
       {
-        Refresh ();
+        return m_nativeLibraryPath;
+      }
+    }
 
-        return m_remoteNativeLibrariesPath;
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public string PrimaryCpuAbi
+    {
+      get
+      {
+        return m_primaryCpuAbi;
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public string SecondaryCpuAbi
+    {
+      get
+      {
+        return m_secondaryCpuAbi;
       }
     }
 

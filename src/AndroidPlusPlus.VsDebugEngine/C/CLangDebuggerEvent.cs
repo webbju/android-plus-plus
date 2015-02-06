@@ -43,11 +43,11 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     [Guid ("D0464B89-1DDD-4A62-B23D-F748079F2BE8")]
-    public sealed class StopServer : AsynchronousDebugEvent
+    public sealed class TerminateServer : AsynchronousDebugEvent
     {
       public CLangDebugger Debugger { get; private set; }
 
-      public StopServer (CLangDebugger debugger)
+      public TerminateServer (CLangDebugger debugger)
       {
         Debugger = debugger;
       }

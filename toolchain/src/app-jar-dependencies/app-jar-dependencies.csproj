@@ -47,6 +47,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="JavaClassParser\AttributeInfo.cs" />
+    <Compile Include="JavaClassParser\EndianSwap.cs" />
+    <Compile Include="JavaClassParser\ConstantInfo.cs" />
+    <Compile Include="JavaClassParser\ClassFile.cs" />
+    <Compile Include="JavaClassParser\FieldInfo.cs" />
+    <Compile Include="JavaClassParser\MethodInfo.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

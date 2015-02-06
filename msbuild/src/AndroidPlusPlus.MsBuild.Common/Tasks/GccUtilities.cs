@@ -75,14 +75,14 @@ namespace AndroidPlusPlus.MsBuild.Common
 
           vsOutputBuilder.Clear ();
 
-          if (!string.IsNullOrWhiteSpace (sourcefile))
+          if (!string.IsNullOrWhiteSpace (sourcefile) && !sourcefile.Equals ("${sourcefile}"))
           {
             vsOutputBuilder.Append (PathUtils.ConvertPathCygwinToWindows (sourcefile));
           }
 
-          if (!string.IsNullOrWhiteSpace (row))
+          if (!string.IsNullOrWhiteSpace (row) && !row.Equals ("${row}"))
           {
-            if (!string.IsNullOrWhiteSpace (column))
+            if (string.IsNullOrWhiteSpace (column) && !column.Equals ("${column}"))
             {
               vsOutputBuilder.AppendFormat ("({0},{1})", row, column);
             }
@@ -110,9 +110,9 @@ namespace AndroidPlusPlus.MsBuild.Common
         }
       }
 
-      vsOutputBuilder.Replace ("error: ", "error :");
+      vsOutputBuilder.Replace ("error: ", "error : ");
 
-      vsOutputBuilder.Replace ("warning: ", "warning :");
+      vsOutputBuilder.Replace ("warning: ", "warning : ");
 
       return vsOutputBuilder.ToString ();
     }
@@ -128,17 +128,16 @@ namespace AndroidPlusPlus.MsBuild.Common
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-      private ITaskItem m_outputFile = new TaskItem ();
+      private ITaskItem m_outputFile;
 
-      private List<ITaskItem> m_dependencies = new List<ITaskItem> ();
+      private Dictionary<string, ITaskItem> m_dependencies;
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-      public DependencyParser (string dependencyFile)
+      public DependencyParser ()
       {
-        Parse (dependencyFile);
       }
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -157,11 +156,11 @@ namespace AndroidPlusPlus.MsBuild.Common
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-      public List<ITaskItem> Dependencies
+      public Dictionary<string, ITaskItem>.ValueCollection Dependencies
       {
         get
         {
-          return m_dependencies;
+          return m_dependencies.Values;
         }
       }
 
@@ -169,7 +168,7 @@ namespace AndroidPlusPlus.MsBuild.Common
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-      private void Parse (string dependencyFile)
+      public void Parse (string dependencyFile)
       {
         // 
         // Parse GCC and Java-style dependency files.
@@ -204,6 +203,8 @@ namespace AndroidPlusPlus.MsBuild.Common
               string outputFilePath = PathUtils.UnescapePath (line);
 
               m_outputFile = new TaskItem (outputFilePath);
+
+              m_dependencies = new Dictionary<string, ITaskItem> (dependencyEntries.Length);
             }
             else
             {
@@ -259,7 +260,10 @@ namespace AndroidPlusPlus.MsBuild.Common
 
             filename = PathUtils.ConvertPathCygwinToWindows (filename);
 
-            m_dependencies.Add (new TaskItem (filename));
+            if (!m_dependencies.ContainsKey (filename))
+            {
+              m_dependencies.Add (filename, new TaskItem (filename));
+            }
           }
 
           if (end == line.Length)

@@ -14,17 +14,33 @@
 
   <PropertyGroup>
 
-    <DebuggerConfiguration Condition="'$(DebuggerConfiguration)' == ''">Custom</DebuggerConfiguration>
+    <!--
+      Launch configuration options.
+    -->
 
-    <DebuggerTargetApk Condition="'$(DebuggerTargetApk)' == ''">$(OutDir)$(ProjectName)-$(Configuration.Replace(' ','_')).apk</DebuggerTargetApk>
+    <DebuggerConfigMode Condition="'$(DebuggerConfigMode)' == ''">Custom</DebuggerConfigMode>
 
-    <DebuggerCustomLaunchActivity Condition="'$(DebuggerCustomLaunchActivity)' == ''"></DebuggerCustomLaunchActivity>
+    <DebuggerConfigTargetApk Condition="'$(DebuggerConfigTargetApk)' == ''">$(OutDir)$(ProjectName)-$(Configuration.Replace(' ','_')).apk</DebuggerConfigTargetApk>
 
-    <DebuggerDebugMode Condition="'$(DebuggerDebugMode)' == ''">true</DebuggerDebugMode>
+    <DebuggerConfigUpToDateCheck Condition="'$(DebuggerConfigUpToDateCheck)' == ''">true</DebuggerConfigUpToDateCheck>
 
-    <DebuggerOpenGlTrace Condition="'$(DebuggerOpenGlTrace)' == ''">false</DebuggerOpenGlTrace>
+    <DebuggerConfigCustomLaunchActivity Condition="'$(DebuggerConfigCustomLaunchActivity)' == ''"></DebuggerConfigCustomLaunchActivity>
 
-    <DebuggerKeepAppData Condition="'$(DebuggerKeepAppData)' == ''">true</DebuggerKeepAppData>
+    <DebuggerConfigDebugMode Condition="'$(DebuggerConfigDebugMode)' == ''">true</DebuggerConfigDebugMode>
+
+    <DebuggerConfigOpenGlTrace Condition="'$(DebuggerConfigOpenGlTrace)' == ''">false</DebuggerConfigOpenGlTrace>
+
+    <DebuggerConfigKeepAppData Condition="'$(DebuggerConfigKeepAppData)' == ''">true</DebuggerConfigKeepAppData>
+
+    <DebuggerConfigInstallerPackage Condition="'$(DebuggerConfigInstallerPackage)' == ''"></DebuggerConfigInstallerPackage>
+
+    <!--
+      Launch properties.
+    -->
+
+    <DebuggerPropCheckJni Condition="'$(DebuggerPropCheckJni)' == ''">true</DebuggerPropCheckJni>
+
+    <DebuggerPropEglCallstack Condition="'$(DebuggerPropEglCallstack)' == ''">true</DebuggerPropEglCallstack>
 
   </PropertyGroup>
 

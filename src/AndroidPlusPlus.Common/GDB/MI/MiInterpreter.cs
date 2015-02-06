@@ -151,7 +151,7 @@ namespace AndroidPlusPlus.Common
 
             if (!string.IsNullOrWhiteSpace (stringToken))
             {
-              token = uint.Parse (stringToken);
+              uint.TryParse (stringToken, out token);
             }
 
             bufferStartPos = ++bufferCurrentPos;

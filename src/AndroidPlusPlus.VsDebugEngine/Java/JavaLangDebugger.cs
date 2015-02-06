@@ -27,13 +27,17 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public delegate void InterruptOperation ();
+    public delegate void InterruptOperation (JavaLangDebugger debugger);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     private JdbSetup m_jdbSetup;
+
+    private int m_interruptOperationCounter = 0;
+
+    private ManualResetEvent m_interruptOperationCompleted = null;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -43,9 +47,17 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       Engine = debugEngine;
 
+      JavaProgram = new JavaLangDebuggeeProgram (this, debugProgram);
+
       m_jdbSetup = new JdbSetup (debugProgram.DebugProcess.NativeProcess);
 
+      Engine.Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus, string.Format ("Configuring JDB for {0}:{1}...", m_jdbSetup.Host, m_jdbSetup.Port)), null, null);
+
       JdbClient = new JdbClient (m_jdbSetup);
+
+      JdbClient.OnAsyncStdout = OnClientAsyncOutput;
+
+      JdbClient.OnAsyncStderr = OnClientAsyncOutput;
 
       JdbClient.Start ();
     }
@@ -84,6 +96,107 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public DebugEngine Engine { get; protected set; }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public JavaLangDebuggeeProgram JavaProgram { get; protected set; }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private void OnClientAsyncOutput (string [] output)
+    {
+      LoggingUtils.PrintFunction ();
+
+      bool requestTermination = false;
+
+      foreach (string line in output)
+      {
+        if (line.StartsWith ("Unable to attach to target VM."))
+        {
+          // 
+          // Failed to connect to target. Usually because DDMS/Monitor is in use. Display an error message and close debug session.
+          // 
+
+          string message = "Unable to attach to target VM.\nThis is usually because there's already an active connection.\nPlease close any instances of DDMS/Monitor or JVM/JDB, and try again.";
+
+          Engine.Broadcast (new DebugEngineEvent.Error (message, true), JavaProgram.DebugProgram, null);
+
+          requestTermination = true;
+        }
+        else if (line.StartsWith ("The application has been disconnected"))
+        {
+          //string message = "Lost connection with JDB target application.\nThe application has been disconnected.";
+
+          //Engine.Broadcast (new DebugEngineEvent.Error (message, true), JavaProgram.DebugProgram, null);
+
+          requestTermination = true;
+        }
+        else if (line.StartsWith ("Exception occurred:"))
+        {
+          // 
+          // Target exception handling. 
+          // TODO: Just continuing execution until this is implemented properly.
+          // 
+
+          JdbClient.Continue ();
+        }
+      }
+
+      if (requestTermination)
+      {
+        ThreadPool.QueueUserWorkItem (delegate (object state)
+        {
+          try
+          {
+            LoggingUtils.RequireOk (Engine.TerminateProcess (JavaProgram.DebugProgram.DebugProcess));
+          }
+          catch (Exception e)
+          {
+            LoggingUtils.HandleException (e);
+          }
+        });
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public DebuggeeCodeContext GetCodeContextForLocation (string location)
+    {
+      LoggingUtils.PrintFunction ();
+
+      try
+      {
+        if (string.IsNullOrEmpty (location))
+        {
+          throw new ArgumentNullException ("location");
+        }
+
+        if (location.StartsWith ("0x"))
+        {
+          location = "*" + location;
+        }
+        else if (location.StartsWith ("\""))
+        {
+          location = location.Replace ("\\", "/");
+
+          location = location.Replace ("\"", "\\\""); // required to escape the nested string.
+        }
+
+        throw new NotImplementedException ();
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+      }
+
+      return null;
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

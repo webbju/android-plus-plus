@@ -9,6 +9,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -84,6 +85,64 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    public class Signal
+    {
+      private readonly GdbClient m_gdbClient;
+
+      public Signal (GdbClient gdbClient, string name, string description, bool shouldStop, bool shouldPassToProgram)
+      {
+        m_gdbClient = gdbClient;
+
+        Name = name;
+
+        Description = description;
+
+        ShouldStop = shouldStop;
+
+        ShouldPassToProgram = shouldPassToProgram;
+      }
+
+      public void SetShouldStop (bool shouldStop)
+      {
+        if (ShouldStop != shouldStop)
+        {
+          string command = string.Format ("-interpreter-exec console \"handle {0} {1}\"", Name, shouldStop ? "stop" : "nostop");
+
+          MiResultRecord resultRecord = m_gdbClient.SendCommand (command);
+
+          MiResultRecord.RequireOk (resultRecord, command);
+
+          ShouldStop = shouldStop;
+        }
+      }
+
+      public void SetShouldPassToProgram (bool shouldPassToProgram)
+      {
+        if (ShouldPassToProgram != shouldPassToProgram)
+        {
+          string command = string.Format ("-interpreter-exec console \"handle {0} {1}\"", Name, shouldPassToProgram ? "pass" : "nopass");
+
+          MiResultRecord resultRecord = m_gdbClient.SendCommand (command);
+
+          MiResultRecord.RequireOk (resultRecord, command);
+
+          ShouldPassToProgram = shouldPassToProgram;
+        }
+      }
+
+      public string Name { get; protected set; }
+
+      public string Description { get; protected set; }
+
+      public bool ShouldStop { get; protected set; }
+
+      public bool ShouldPassToProgram { get; protected set; }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     private readonly GdbSetup m_gdbSetup;
 
     private GdbServer m_gdbServer = null;
@@ -94,7 +153,9 @@ namespace AndroidPlusPlus.Common
 
     private HashSet<string> m_gdbSupportedTargetMiFeatures = new HashSet<string> ();
 
-    private Dictionary<uint, AsyncCommandData> m_asyncCommandData = new Dictionary<uint,AsyncCommandData> ();
+    private Dictionary<string, Signal> m_gdbSupportedClientSignals = new Dictionary<string, Signal> ();
+
+    private Dictionary<uint, AsyncCommandData> m_asyncCommandData = new Dictionary<uint, AsyncCommandData> ();
 
     private Dictionary<string, ManualResetEvent> m_syncCommandLocks = new Dictionary<string, ManualResetEvent> ();
 
@@ -102,7 +163,7 @@ namespace AndroidPlusPlus.Common
 
     private ManualResetEvent m_sessionStarted = new ManualResetEvent (false);
 
-    private uint m_sessionCommandToken = 1; // Start at 1 so 0 can represent an invalid token.
+    private uint m_sessionCommandToken = 0;
 
     private Dictionary<uint, string> m_registerIdMapping = new Dictionary<uint, string> ();
 
@@ -118,6 +179,8 @@ namespace AndroidPlusPlus.Common
 
     public GdbClient (GdbSetup gdbSetup)
     {
+      LoggingUtils.PrintFunction ();
+
       m_gdbSetup = gdbSetup;
     }
 
@@ -136,6 +199,11 @@ namespace AndroidPlusPlus.Common
         MiResultRecord resultRecord = SendCommand (command);
 
         MiResultRecord.RequireOk (resultRecord, command);
+
+        if (m_gdbClientInstance != null)
+        {
+          m_gdbClientInstance.Kill ();
+        }
       }
       catch (Exception e)
       {
@@ -143,18 +211,18 @@ namespace AndroidPlusPlus.Common
       }
       finally
       {
-        if (m_gdbClientInstance != null)
-        {
-          m_gdbClientInstance.Dispose ();
-
-          m_gdbClientInstance = null;
-        }
-
         if (m_asyncRecordWorkerThread != null)
         {
           m_asyncRecordWorkerThreadSignal.Set ();
 
           m_asyncRecordWorkerThread = null;
+        }
+
+        if (m_gdbClientInstance != null)
+        {
+          m_gdbClientInstance.Dispose ();
+
+          m_gdbClientInstance = null;
         }
       }
     }
@@ -226,16 +294,84 @@ namespace AndroidPlusPlus.Common
       // Evaluate this client's GDB/MI support and capabilities. 
       // 
 
-      MiResultRecord resultRecord = SendCommand ("-list-features");
-
-      MiResultRecord.RequireOk (resultRecord, "-list-features");
-
-      if (resultRecord.HasField ("features"))
+      try
       {
-        foreach (MiResultValue feature in resultRecord ["features"] [0].Values)
+        MiResultRecord resultRecord = SendCommand ("-list-features");
+
+        MiResultRecord.RequireOk (resultRecord, "-list-features");
+
+        if (resultRecord.HasField ("features"))
         {
-          m_gdbSupportedClientMiFeatures.Add (feature.GetString ());
+          foreach (MiResultValue feature in resultRecord ["features"] [0].Values)
+          {
+            m_gdbSupportedClientMiFeatures.Add (feature.GetString ());
+          }
         }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        throw;
+      }
+
+      // 
+      // Evaluate available signals and their current 'should stop' status.
+      // 
+
+      try
+      {
+        string command = string.Format ("-interpreter-exec console \"info signals\"");
+
+        MiResultRecord resultRecord = SendCommand (command);
+
+        MiResultRecord.RequireOk (resultRecord, command);
+
+        string pattern = @"(?<sig>[^ ]+)[ ]+(?<stop>[^\\t]+)\\t(?<print>[^\\t]+)\\t(?<pass>[^\\t]+)\\t\\t(?<desc>[^\\]+)";
+
+        Regex regExMatcher = new Regex (pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+        for (int i = 2; i < resultRecord.Records.Count; ++i) // Skip the first rows (2) of headers
+        {
+          MiStreamRecord record = resultRecord.Records [i];
+
+          Match regExLineMatch = regExMatcher.Match (record.Stream);
+
+          if (regExLineMatch.Success)
+          {
+            string sig = regExLineMatch.Result ("${sig}");
+
+            bool stop = regExLineMatch.Result ("${stop}").Equals ("Yes");
+
+            bool print = regExLineMatch.Result ("${print}").Equals ("Yes");
+
+            bool passToProgram = regExLineMatch.Result ("${pass}").Equals ("Yes");
+
+            string desc = regExLineMatch.Result ("${desc}");
+
+            Signal signal = new Signal (this, sig, desc, stop, passToProgram);
+
+            m_gdbSupportedClientSignals.Add (sig, signal);
+          }
+        }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        throw;
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public void Kill ()
+    {
+      if (m_gdbClientInstance != null)
+      {
+        m_gdbClientInstance.Kill ();
       }
     }
 
@@ -367,19 +503,19 @@ namespace AndroidPlusPlus.Common
       SetSetting ("sysroot", PathUtils.SantiseWindowsPath (m_gdbSetup.CacheSysRoot), false);
 
       {
-        string [] sharedLibraryPathsArray = new string [sharedLibrarySearchPaths.Count];
+        string [] array = new string [sharedLibrarySearchPaths.Count];
 
-        sharedLibrarySearchPaths.CopyTo (sharedLibraryPathsArray, 0);
+        sharedLibrarySearchPaths.CopyTo (array, 0);
 
-        SetSetting ("solib-search-path", string.Join (";", sharedLibraryPathsArray), true);
+        SetSetting ("solib-search-path", string.Join (";", array), true);
       }
 
       {
-        string [] debugFileDirectoryPathsArray = new string [debugFileDirectoryPaths.Count];
+        string [] array = new string [debugFileDirectoryPaths.Count];
 
-        debugFileDirectoryPaths.CopyTo (debugFileDirectoryPathsArray, 0);
+        debugFileDirectoryPaths.CopyTo (array, 0);
 
-        SetSetting ("debug-file-directory", string.Join (";", debugFileDirectoryPathsArray), true);
+        SetSetting ("debug-file-directory", string.Join (";", array), true);
       }
 
       // 
@@ -387,16 +523,34 @@ namespace AndroidPlusPlus.Common
       // TODO: Android-L supports 64-bit app_process binaries, so add very early support for this here.
       // 
 
-      string cachedTargetBinary = Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\app_process64");
+      string cachedTargetBinary;
 
-      if (!File.Exists (cachedTargetBinary))
+      string appProcessOriginal = Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\app_process");
+
+      string appProcess32Bit = Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\app_process32");
+
+      string appProcess64Bit = Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\app_process64");
+
+      if (m_gdbSetup.Process.PrimaryCpuAbi.Contains ("64") && File.Exists (appProcess64Bit))
       {
-        cachedTargetBinary = Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\app_process32");
+        cachedTargetBinary = appProcess64Bit;
       }
-
-      if (!File.Exists (cachedTargetBinary))
+      else if (File.Exists (appProcess32Bit))
+      {
+        cachedTargetBinary = appProcess32Bit;
+      }
+      else if (File.Exists (appProcessOriginal))
+      {
+        cachedTargetBinary = appProcessOriginal;
+      }
+      else
       {
         cachedTargetBinary = Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\linker");
+      }
+
+      if (string.IsNullOrEmpty (cachedTargetBinary) || !File.Exists (cachedTargetBinary))
+      {
+        throw new InvalidOperationException (string.Format ("Could not locate target binary: {0}", cachedTargetBinary));
       }
 
       try
@@ -704,6 +858,19 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    public Signal GetClientSignal (string sig)
+    {
+      Signal signal = null;
+
+      m_gdbSupportedClientSignals.TryGetValue (sig, out signal);
+
+      return signal;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public bool GetClientFeatureSupported (string feature)
     {
       return m_gdbSupportedClientMiFeatures.Contains (feature);
@@ -819,6 +986,13 @@ namespace AndroidPlusPlus.Common
         return syncResultRecord;
       }
 
+#if false
+      if (!command.StartsWith ("-interpreter-exec"))
+      {
+        command = string.Format ("-interpreter-exec mi \"{0}\"", command);
+      }
+#endif
+
       ManualResetEvent syncCommandLock = new ManualResetEvent (false);
 
       m_syncCommandLocks [command] = syncCommandLock;
@@ -886,6 +1060,8 @@ namespace AndroidPlusPlus.Common
 
       commandData.ResultDelegate = asyncDelegate;
 
+      ++m_sessionCommandToken;
+
       lock (m_asyncCommandData)
       {
         m_asyncCommandData.Add (m_sessionCommandToken, commandData);
@@ -897,15 +1073,9 @@ namespace AndroidPlusPlus.Common
 
       command = m_sessionCommandToken + command;
 
-      ++m_sessionCommandToken;
-
       m_gdbClientInstance.SendCommand (command);
 
       m_timeSinceLastOperation.Restart ();
-
-      //m_asyncInputJobQueue.Enqueue (new ProcessGdbMiAsyncInputParamType (command, asyncDelegate));
-
-      //Thread.Yield ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1028,10 +1198,7 @@ namespace AndroidPlusPlus.Common
       {
         m_timeSinceLastOperation.Restart ();
 
-        if (!string.IsNullOrWhiteSpace (args.Data))
-        {
-          LoggingUtils.Print (string.Format ("[GdbClient] ProcessStderr: {0}", args.Data));
-        }
+        LoggingUtils.Print (string.Format ("[GdbClient] ProcessStderr: {0}", args.Data));
       }
       catch (Exception e)
       {
@@ -1074,65 +1241,6 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /*private void AsyncInputWorkerThreadBody ()
-    {
-      // 
-      // Thread body - 
-      // 
-
-      try
-      {
-        ProcessGdbMiAsyncInputParamType asyncInput = null;
-
-        while (true)
-        {
-          if (m_asyncInputJobQueue.TryDequeue (out asyncInput) && (asyncInput != null))
-          {
-            LoggingUtils.Print (string.Format ("[GdbClient] AsyncInputWorkerThreadBody: {0}", asyncInput));
-
-            string command = (string) asyncInput.Item1;
-
-            GdbClient.OnResultRecordDelegate resultDelegate = (GdbClient.OnResultRecordDelegate) asyncInput.Item2;
-
-            AsyncCommandData commandData = new AsyncCommandData ();
-
-            commandData.Command = command;
-
-            commandData.ResultDelegate = resultDelegate;
-
-            lock (m_asyncCommandData)
-            {
-              m_asyncCommandData.Add (m_sessionCommandToken, commandData);
-            }
-
-            // 
-            // Prepend (and increment) GDB/MI token.
-            // 
-
-            command = m_sessionCommandToken + command;
-
-            ++m_sessionCommandToken;
-
-            m_gdbClientInstance.SendCommand (command);
-
-            m_timeSinceLastOperation.Restart ();
-          }
-
-          Thread.Yield ();
-
-          asyncInput = null;
-        }
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-      }
-    }*/
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     private void AsyncOutputWorkerThreadBody ()
     {
       // 
@@ -1162,6 +1270,10 @@ namespace AndroidPlusPlus.Common
             {
               LoggingUtils.HandleException (e);
             }
+          }
+          else
+          {
+            Thread.Sleep (100);
           }
 
           asyncRecord = null;

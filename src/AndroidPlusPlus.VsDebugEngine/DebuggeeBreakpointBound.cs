@@ -31,6 +31,10 @@ namespace AndroidPlusPlus.VsDebugEngine
         : base (breakpoints)
       {
       }
+      public Enumerator (IDebugBoundBreakpoint2 [] breakpoints)
+        : base (breakpoints)
+      {
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -52,7 +56,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugBreakpointBoundEvent2.EnumBoundBreakpoints (out IEnumDebugBoundBreakpoints2 ppEnum)
       {
-        ppEnum = new DebuggeeBreakpointBound.Enumerator (new List<IDebugBoundBreakpoint2> { m_boundBreakpoint });
+        IDebugBoundBreakpoint2 [] breakpoints = new IDebugBoundBreakpoint2 [] { m_boundBreakpoint };
+
+        ppEnum = new DebuggeeBreakpointBound.Enumerator (breakpoints);
 
         return DebugEngineConstants.S_OK;
       }

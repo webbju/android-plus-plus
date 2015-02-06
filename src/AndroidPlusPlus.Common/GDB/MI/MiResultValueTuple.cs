@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -61,14 +62,18 @@ namespace AndroidPlusPlus.Common
 
     public override string ToString ()
     {
-      string output = Variable + "={";
+      StringBuilder valueListBuilder = new StringBuilder (Variable);
+
+      valueListBuilder.Append ("={");
 
       foreach (MiResultValue value in m_valueList)
       {
-        output += value.ToString ();
+        valueListBuilder.Append (value.ToString ());
       }
 
-      return output + "}";
+      valueListBuilder.Append ("}");
+
+      return valueListBuilder.ToString ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -134,7 +134,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        enumCodeContexts = new DebuggeeCodeContext.Enumerator (new List<IDebugCodeContext2> { m_codeContext });
+        IDebugCodeContext2 [] codeContexts = new IDebugCodeContext2 [] { m_codeContext };
+
+        enumCodeContexts = new DebuggeeCodeContext.Enumerator (codeContexts);
 
         if (enumCodeContexts == null)
         {
