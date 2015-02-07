@@ -9,12 +9,14 @@ New functionality:
  - (Debugger) Added automated control of 'debug.checkjni' and 'debug.egl.callstack' properties (configurable by debugger rules).
  - (Debugger) Added ability to disable GDB stopping on certain signal types; controllable via Debug -> Exceptions.
  - (Debugger) Added support for GDB 'common.setup' script for controlling ART debugging in r10c onwards.
+ - (Debugger) Now using 'ps -t' results to seed nice thread display names for System/VM processes.
 
 Fixes/Improvements:
 
  - (MSBuild) Fixed a number of issues causing dependencies to not be evaluated properly between library projects and Applications.
  - (MSBuild) Ensured compression strength when adding resources to unsigned APKs is set to maximum.
  - (Debugger) Fixed a number of issues causing debugging of 32-bit builds on 64-bit devices to fail.
+ - (MSBuild) Upgraded and reorganised SDL2 sample projects.
 
 --------------------------------------------------------------------------------------------------------------------------------
 
@@ -24,7 +26,7 @@ New functionality:
 
  - Added support for Android L Preview and Android Lollipop.
  - Added a custom-built version of 'zipalign' to support APK archives above 2GB.
- - Added a custom-build version of 'ndk-depends' to manually supply up-to-date listings of internal device libraries.
+ - Added a custom-built version of 'ndk-depends' to manually supply up-to-date listings of internal device libraries.
  - (MSBuild) Added support for NDK r10c and 64-bit targets. Currently only 'arm64-v8a' supported.
  - (MSBuild) Added support for armeabi-v7a-hard (hard-float).
  - (MSBuild) Added support for whole program optimisations via ProGuard integration.

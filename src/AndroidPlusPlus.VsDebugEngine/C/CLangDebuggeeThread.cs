@@ -61,15 +61,24 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void Refresh (ref MiResultValue threadData)
     {
-      //uint threadId = threadData ["id"] [0].GetUnsignedInt ();
-
       if (threadData.HasField ("name"))
       {
         m_threadDisplayName = threadData ["name"] [0].GetString (); // user-specified name
       }
       else if (threadData.HasField ("target-id"))
       {
+        uint threadPid;
+
         m_threadDisplayName = threadData ["target-id"] [0].GetString (); // usually the raw name, i.e. 'Thread 18771'
+
+        if (m_threadDisplayName.StartsWith ("Thread ") && uint.TryParse (m_threadDisplayName.Substring ("Thread ".Length), out threadPid))
+        {
+          AndroidDevice hostDevice = NativeProgram.DebugProgram.DebugProcess.NativeProcess.HostDevice;
+
+          AndroidProcess threadProcess = hostDevice.GetProcessFromPid (threadPid);
+
+          m_threadDisplayName = threadProcess.Name;
+        }
       }
 
       if (threadData.HasField ("frame"))
