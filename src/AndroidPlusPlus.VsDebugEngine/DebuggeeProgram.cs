@@ -801,9 +801,15 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.Terminate ());
+        if (AttachedEngine.NativeDebugger.NativeProgram != null)
+        {
+          LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.Terminate ());
+        }
 
-        LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.Terminate ());
+        if (AttachedEngine.JavaDebugger.JavaProgram != null)
+        {
+          LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.Terminate ());
+        }
 
         return DebugEngineConstants.S_OK;
       }

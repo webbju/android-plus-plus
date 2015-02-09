@@ -255,15 +255,15 @@ namespace AndroidPlusPlus.Common
       // Spawn a new GDB instance which executes gdb.setup and begins debugging file 'app_process'.
       // 
 
-      m_timeSinceLastOperation.Start ();
-
       string clientArguments = m_gdbSetup.GdbToolArguments + string.Format (@" -fullname -x {0}", PathUtils.SantiseWindowsPath (Path.Combine (m_gdbSetup.CacheDirectory, "gdb.setup")));
 
       m_gdbClientInstance = new AsyncRedirectProcess (m_gdbSetup.GdbToolPath, clientArguments);
 
       m_gdbClientInstance.Start (this);
 
-      uint timeout = 5000;
+      m_timeSinceLastOperation.Start ();
+
+      uint timeout = 15000;
 
       bool responseSignaled = false;
 

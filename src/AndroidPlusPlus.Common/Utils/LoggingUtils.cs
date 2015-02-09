@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -25,9 +26,7 @@ namespace AndroidPlusPlus.Common
 
     public static void Print (string format)
     {
-      DateTime logTime = DateTime.Now;
-
-      Trace.WriteLine (string.Format ("{0:D2}-{1:D2}-{2:D4} {3:D2}:{4:D2}:{5:D2}.{6:D4} : {7}", logTime.Day, logTime.Month, logTime.Year, logTime.Hour, logTime.Minute, logTime.Second, logTime.Millisecond, format));
+      Trace.WriteLine (string.Format ("[{0}] {1}", DateTime.Now.ToString ("u"), format));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

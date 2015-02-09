@@ -29,11 +29,11 @@ namespace AndroidPlusPlus.Common
 
     private Dictionary<string, string> m_deviceProperties = new Dictionary<string, string> ();
 
-    private Dictionary<string, List<uint>> m_deviceProcessesPidsByName = new Dictionary<string, List<uint>> ();
+    private Dictionary<string, HashSet<uint>> m_deviceProcessesPidsByName = new Dictionary<string, HashSet<uint>> ();
 
     private Dictionary<uint, AndroidProcess> m_deviceProcessesByPid = new Dictionary<uint, AndroidProcess> ();
 
-    private Dictionary<uint, List<AndroidProcess>> m_deviceProcessesByPpid = new Dictionary<uint, List<AndroidProcess>> ();
+    private Dictionary<uint, Dictionary<uint, AndroidProcess>> m_deviceProcessesByPpid = new Dictionary<uint, Dictionary<uint, AndroidProcess>> ();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -78,7 +78,7 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      PopulateProcesses ();
+      RefreshProcesses ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -116,13 +116,13 @@ namespace AndroidPlusPlus.Common
 
     public AndroidProcess [] GetProcessesFromName (string processName)
     {
-      List <uint> processPidList;
+      HashSet <uint> processPidSet;
 
       List<AndroidProcess> processList = new List<AndroidProcess> ();
 
-      if (m_deviceProcessesPidsByName.TryGetValue (processName, out processPidList))
+      if (m_deviceProcessesPidsByName.TryGetValue (processName, out processPidSet))
       {
-        foreach (uint pid in processPidList)
+        foreach (uint pid in processPidSet)
         {
           processList.Add (GetProcessFromPid (pid));
         }
@@ -135,16 +135,20 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public AndroidProcess [] GetChildProcessesFromPid (uint processId)
+    public uint [] GetChildPidsFromPpid (uint parentProcessId)
     {
-      List<AndroidProcess> processesList;
+      Dictionary<uint, AndroidProcess> processes;
 
-      if (m_deviceProcessesByPpid.TryGetValue (processId, out processesList))
+      uint [] processesArray = new uint [] { };
+
+      if (m_deviceProcessesByPpid.TryGetValue (parentProcessId, out processes))
       {
-        return processesList.ToArray ();
+        processesArray = new uint [processes.Count];
+
+        processes.Keys.CopyTo (processesArray, 0);
       }
 
-      return null;
+      return processesArray;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -312,15 +316,15 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private void PopulateProcesses ()
+    public void RefreshProcesses (uint processIdFilter = 0)
     {
       // 
-      // Skip the first line, and read in tab-seperated process data.
+      // Skip the first line, and read in tab-separated process data.
       // 
 
       LoggingUtils.PrintFunction ();
 
-      string deviceProcessList = Shell ("ps", "-t");
+      string deviceProcessList = Shell ("ps", string.Format ("-t {0}", ((processIdFilter == 0) ? "" : processIdFilter.ToString ())));
 
       if (!String.IsNullOrEmpty (deviceProcessList))
       {
@@ -367,14 +371,17 @@ namespace AndroidPlusPlus.Common
             // 
 
             {
-              List<uint> processPidsList;
+              HashSet<uint> processPidsList;
 
               if (!m_deviceProcessesPidsByName.TryGetValue (processName, out processPidsList))
               {
-                processPidsList = new List<uint> ();
+                processPidsList = new HashSet<uint> ();
               }
 
-              processPidsList.Add (processPid);
+              if (!processPidsList.Contains (processPid))
+              {
+                processPidsList.Add (processPid);
+              }
 
               m_deviceProcessesPidsByName [processName] = processPidsList;
             }
@@ -385,14 +392,17 @@ namespace AndroidPlusPlus.Common
 
             if (m_deviceProcessesByPid.ContainsKey (processPpid))
             {
-              List<AndroidProcess> processThreadPidsList;
+              Dictionary<uint, AndroidProcess> processThreadPidsList;
 
               if (!m_deviceProcessesByPpid.TryGetValue (processPpid, out processThreadPidsList))
               {
-                processThreadPidsList = new List<AndroidProcess> ();
+                processThreadPidsList = new Dictionary<uint, AndroidProcess> ();
               }
 
-              processThreadPidsList.Add (process);
+              if (processThreadPidsList.ContainsKey (process.Pid))
+              {
+                processThreadPidsList.Add (process.Pid, process);
+              }
 
               m_deviceProcessesByPpid [processPpid] = processThreadPidsList;
             }

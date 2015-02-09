@@ -325,7 +325,10 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (Interlocked.Increment (ref m_interruptOperationCounter) == 1)
         {
-          targetWasRunning = NativeProgram.IsRunning;
+          lock (NativeProgram)
+          {
+            targetWasRunning = NativeProgram.IsRunning;
+          }
 
           if (targetWasRunning)
           {
@@ -521,33 +524,36 @@ namespace AndroidPlusPlus.VsDebugEngine
               // The target is now running. The thread field tells which specific thread is now running, can be 'all' if every thread is running.
               // 
 
-              NativeProgram.SetRunning (true);
-
-              string threadId = asyncRecord ["thread-id"] [0].GetString ();
-
-              if (threadId.Equals ("all"))
+              lock (NativeProgram)
               {
-                Dictionary<uint, DebuggeeThread> programThreads = NativeProgram.GetThreads ();
+                NativeProgram.SetRunning (true);
 
-                lock (programThreads)
+                string threadId = asyncRecord ["thread-id"] [0].GetString ();
+
+                if (threadId.Equals ("all"))
                 {
-                  foreach (DebuggeeThread thread in programThreads.Values)
+                  Dictionary<uint, DebuggeeThread> programThreads = NativeProgram.GetThreads ();
+
+                  lock (programThreads)
+                  {
+                    foreach (DebuggeeThread thread in programThreads.Values)
+                    {
+                      thread.SetRunning (true);
+                    }
+                  }
+                }
+                else
+                {
+                  uint numericThreadId = uint.Parse (threadId);
+
+                  NativeProgram.CurrentThreadId = numericThreadId;
+
+                  CLangDebuggeeThread thread = NativeProgram.GetThread (numericThreadId);
+
+                  if (thread != null)
                   {
                     thread.SetRunning (true);
                   }
-                }
-              }
-              else
-              {
-                uint numericThreadId = uint.Parse (threadId);
-
-                NativeProgram.CurrentThreadId = numericThreadId;
-
-                CLangDebuggeeThread thread = NativeProgram.GetThread (numericThreadId);
-
-                if (thread != null)
-                {
-                  thread.SetRunning (true);
                 }
               }
 
@@ -560,71 +566,74 @@ namespace AndroidPlusPlus.VsDebugEngine
               // The target has stopped.
               // 
 
-              NativeProgram.SetRunning (false);
-
               CLangDebuggeeThread stoppedThread = null;
 
-              if (asyncRecord.HasField ("thread-id"))
+              lock (NativeProgram)
               {
-                uint threadId = asyncRecord ["thread-id"] [0].GetUnsignedInt ();
+                NativeProgram.SetRunning (false);
 
-                NativeProgram.CurrentThreadId = threadId;
-              }
-
-              if (stoppedThread == null)
-              {
-                stoppedThread = NativeProgram.GetThread (NativeProgram.CurrentThreadId);
-              }
-
-              if (stoppedThread != null)
-              {
-                stoppedThread.SetRunning (false);
-              }
-              else
-              {
-                throw new InvalidOperationException ("Could not evaluate a thread on which we stopped");
-              }
-
-              // 
-              // Flag some or all of the program's threads as stopped, directed by 'stopped-threads' field.
-              // 
-
-              bool hasStoppedThreads = asyncRecord.HasField ("stopped-threads");
-
-              if (hasStoppedThreads)
-              {
-                // 
-                // If all threads are stopped, the stopped field will have the value of "all". 
-                // Otherwise, the value of the stopped field will be a list of thread identifiers.
-                // 
-
-                MiResultValue stoppedThreadsRecord = asyncRecord ["stopped-threads"] [0];
-
-                if (stoppedThreadsRecord is MiResultValueList)
+                if (asyncRecord.HasField ("thread-id"))
                 {
-                  MiResultValueList stoppedThreads = stoppedThreadsRecord as MiResultValueList;
+                  uint threadId = asyncRecord ["thread-id"] [0].GetUnsignedInt ();
 
-                  foreach (MiResultValue stoppedThreadValue in stoppedThreads.List)
-                  {
-                    uint stoppedThreadId = stoppedThreadValue.GetUnsignedInt ();
+                  NativeProgram.CurrentThreadId = threadId;
+                }
 
-                    CLangDebuggeeThread thread = NativeProgram.GetThread (stoppedThreadId);
+                if (stoppedThread == null)
+                {
+                  stoppedThread = NativeProgram.GetThread (NativeProgram.CurrentThreadId);
+                }
 
-                    if (thread != null)
-                    {
-                      thread.SetRunning (false);
-                    }
-                  }
+                if (stoppedThread != null)
+                {
+                  stoppedThread.SetRunning (false);
                 }
                 else
                 {
-                  Dictionary<uint, DebuggeeThread> programThreads = NativeProgram.GetThreads ();
+                  throw new InvalidOperationException ("Could not evaluate a thread on which we stopped");
+                }
 
-                  lock (programThreads)
+                // 
+                // Flag some or all of the program's threads as stopped, directed by 'stopped-threads' field.
+                // 
+
+                bool hasStoppedThreads = asyncRecord.HasField ("stopped-threads");
+
+                if (hasStoppedThreads)
+                {
+                  // 
+                  // If all threads are stopped, the stopped field will have the value of "all". 
+                  // Otherwise, the value of the stopped field will be a list of thread identifiers.
+                  // 
+
+                  MiResultValue stoppedThreadsRecord = asyncRecord ["stopped-threads"] [0];
+
+                  if (stoppedThreadsRecord is MiResultValueList)
                   {
-                    foreach (DebuggeeThread thread in programThreads.Values)
+                    MiResultValueList stoppedThreads = stoppedThreadsRecord as MiResultValueList;
+
+                    foreach (MiResultValue stoppedThreadValue in stoppedThreads.List)
                     {
-                      thread.SetRunning (false);
+                      uint stoppedThreadId = stoppedThreadValue.GetUnsignedInt ();
+
+                      CLangDebuggeeThread thread = NativeProgram.GetThread (stoppedThreadId);
+
+                      if (thread != null)
+                      {
+                        thread.SetRunning (false);
+                      }
+                    }
+                  }
+                  else
+                  {
+                    Dictionary<uint, DebuggeeThread> programThreads = NativeProgram.GetThreads ();
+
+                    lock (programThreads)
+                    {
+                      foreach (DebuggeeThread thread in programThreads.Values)
+                      {
+                        thread.SetRunning (false);
+                      }
                     }
                   }
                 }
@@ -652,7 +661,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 #endif
 
 #if true
-              NativeProgram.RefreshThread (0);
+              NativeProgram.RefreshAllThreads ();
 #endif
 
               Engine.BreakpointManager.RefreshBreakpoints ();

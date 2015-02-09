@@ -102,6 +102,8 @@ namespace AndroidPlusPlus.VsDebugEngine
             case ".java":
             {
               throw new NotImplementedException ();
+
+              break;
             }
 
             default:

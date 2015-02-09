@@ -253,7 +253,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             NativeDebugger.RunInterruptOperation (delegate (CLangDebugger debugger)
             {
-              debugger.NativeProgram.RefreshThread (0);
+              debugger.NativeProgram.RefreshAllThreads ();
 
               currentThread = debugger.NativeProgram.GetThread (debugger.NativeProgram.CurrentThreadId);
 

@@ -124,12 +124,24 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    public void RefreshAllThreads ()
+    {
+      LoggingUtils.PrintFunction ();
+
+      RefreshThread (0);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public void RefreshThread (uint tid)
     {
       LoggingUtils.PrintFunction ();
 
       try
       {
+
         string command = string.Format ("-thread-info {0}", (tid == 0) ? "" : tid.ToString ());
 
         MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
@@ -145,9 +157,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         List <MiResultValue> threadsData = threadsValueList.List;
 
+        bool refreshedProcesses = false;
+
         lock (m_debugThreads)
         {
-          for (int i = threadsData.Count - 1; i >= 0; --i) // reported threads are in decending order.
+          for (int i = threadsData.Count - 1; i >= 0; --i) // reported threads are in descending order.
           {
             uint id = threadsData [i] ["id"] [0].GetUnsignedInt ();
 
@@ -161,6 +175,15 @@ namespace AndroidPlusPlus.VsDebugEngine
             if (thread.RequiresRefresh)
             {
               MiResultValue threadData = threadsData [i];
+
+              if (!refreshedProcesses)
+              {
+                AndroidDevice hostDevice = DebugProgram.DebugProcess.NativeProcess.HostDevice;
+
+                hostDevice.RefreshProcesses (DebugProgram.DebugProcess.NativeProcess.Pid);
+
+                refreshedProcesses = true;
+              }
 
               thread.Refresh (ref threadData);
             }

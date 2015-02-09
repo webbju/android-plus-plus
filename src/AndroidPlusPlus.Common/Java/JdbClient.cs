@@ -124,11 +124,9 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public bool Start ()
+    public void Start ()
     {
       LoggingUtils.PrintFunction ();
-
-      m_timeSinceLastOperation.Start ();
 
       // 
       // Export an execution script ('jdb.ini') for standard start-up properties.
@@ -148,15 +146,11 @@ namespace AndroidPlusPlus.Common
       // Prepare a new JDB instance. Connections must be made on the command line, so delay this until an attach request.
       // 
 
-      m_timeSinceLastOperation.Start ();
-
       StringBuilder argumentBuilder = new StringBuilder ();
 
       argumentBuilder.Append (string.Format (" -connect com.sun.jdi.SocketAttach:hostname={0},port={1}", m_jdbSetup.Host, m_jdbSetup.Port));
 
       m_jdbClientInstance = new AsyncRedirectProcess (Path.Combine (JavaSettings.JdkRoot, @"bin\jdb.exe"), argumentBuilder.ToString ());
-
-      return true;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -195,6 +189,27 @@ namespace AndroidPlusPlus.Common
         m_jdbSetup.SetupPortForwarding ();
 
         m_jdbClientInstance.Start (this);
+
+        m_timeSinceLastOperation.Start ();
+
+        /*uint timeout = 15000;
+
+        bool responseSignaled = false;
+
+        while ((!responseSignaled) && (m_timeSinceLastOperation.ElapsedMilliseconds < timeout))
+        {
+          responseSignaled = m_sessionStarted.WaitOne (0);
+
+          if (!responseSignaled)
+          {
+            Thread.Yield ();
+          }
+        }
+
+        if (!responseSignaled)
+        {
+          throw new TimeoutException ("Timed out waiting for JDB client to execute/attach");
+        }*/
       }
       catch (Exception e)
       {
@@ -366,7 +381,7 @@ namespace AndroidPlusPlus.Common
 
       bool responseSignaled = false;
 
-      while ((!responseSignaled) && (m_timeSinceLastOperation.ElapsedMilliseconds < timeout))
+      /*while ((!responseSignaled) && (m_timeSinceLastOperation.ElapsedMilliseconds < timeout))
       {
         responseSignaled = syncCommandLock.WaitOne (0);
 
@@ -374,14 +389,14 @@ namespace AndroidPlusPlus.Common
         {
           Thread.Yield ();
         }
-      }
+      }*/
 
       m_syncCommandLocks.Remove (command);
 
-      if (!responseSignaled)
+      /*if (!responseSignaled)
       {
         throw new TimeoutException ("Timed out waiting for synchronous response for command: " + command);
-      }
+      }*/
 
       return syncOutput;
     }
@@ -440,7 +455,10 @@ namespace AndroidPlusPlus.Common
         {
           m_timeSinceLastOperation.Restart ();
 
-          m_sessionStarted.Set ();
+          if (args.Data.Equals ("Initializing jdb ..."))
+          {
+            m_sessionStarted.Set ();
+          }
 
           // 
           // Distribute result records to registered delegate callbacks.

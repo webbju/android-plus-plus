@@ -77,7 +77,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           AndroidProcess threadProcess = hostDevice.GetProcessFromPid (threadPid);
 
-          m_threadDisplayName = threadProcess.Name;
+          if (threadProcess != null)
+          {
+            m_threadDisplayName = threadProcess.Name;
+          }
         }
       }
 
