@@ -519,43 +519,31 @@ namespace AndroidPlusPlus.Common
       }
 
       // 
-      // Specify the executable file to be debugged. 'ndk-gdb' uses app_process for this, so we will too.
-      // TODO: Android-L supports 64-bit app_process binaries, so add very early support for this here.
+      // Figure out the target executable file to be debugged.
       // 
+      //   AFAIK the most reliable way to evaluate this is to read the symbolic link 'exe' for the target process:
+      //   - This should also support 64-bit (app_process64) processes.
+      // 
+      //   lrwxrwxrwx u0_a91   u0_a91            2015-02-09 14:13 exe -> /system/bin/app_process32
+      //
 
-      string cachedTargetBinary;
+      string targetAppProcess = m_gdbSetup.Process.HostDevice.Shell ("run-as", string.Format ("{0} readlink /proc/{1}/exe", m_gdbSetup.Process.Name, m_gdbSetup.Process.Pid));
 
-      string appProcessOriginal = Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\app_process");
+      string cachedAppProcess = Path.Combine (m_gdbSetup.CacheSysRoot, targetAppProcess.Replace ("\r", "").Replace ("\n", "").Substring (1));
 
-      string appProcess32Bit = Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\app_process32");
-
-      string appProcess64Bit = Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\app_process64");
-
-      if (m_gdbSetup.Process.PrimaryCpuAbi.Contains ("64") && File.Exists (appProcess64Bit))
+      if (!File.Exists (cachedAppProcess))
       {
-        cachedTargetBinary = appProcess64Bit;
-      }
-      else if (File.Exists (appProcess32Bit))
-      {
-        cachedTargetBinary = appProcess32Bit;
-      }
-      else if (File.Exists (appProcessOriginal))
-      {
-        cachedTargetBinary = appProcessOriginal;
-      }
-      else
-      {
-        cachedTargetBinary = Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\linker");
+        cachedAppProcess = Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\linker");
       }
 
-      if (string.IsNullOrEmpty (cachedTargetBinary) || !File.Exists (cachedTargetBinary))
+      if (string.IsNullOrEmpty (cachedAppProcess) || !File.Exists (cachedAppProcess))
       {
-        throw new InvalidOperationException (string.Format ("Could not locate target binary: {0}", cachedTargetBinary));
+        throw new InvalidOperationException (string.Format ("Could not locate target binary: {0}", cachedAppProcess));
       }
 
       try
       {
-        string command = "-file-exec-and-symbols " + PathUtils.SantiseWindowsPath (cachedTargetBinary);
+        string command = "-file-exec-and-symbols " + PathUtils.SantiseWindowsPath (cachedAppProcess);
 
         MiResultRecord resultRecord = SendCommand (command);
 

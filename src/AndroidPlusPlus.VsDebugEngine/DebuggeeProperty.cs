@@ -32,6 +32,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public sealed class Enumerator : DebugEnumerator<DEBUG_PROPERTY_INFO, IEnumDebugPropertyInfo2>, IEnumDebugPropertyInfo2
     {
+      public Enumerator (DEBUG_PROPERTY_INFO [] properties)
+        : base (properties)
+      {
+      }
+
       public Enumerator (List<DEBUG_PROPERTY_INFO> properties)
         : base (properties)
       {
@@ -186,18 +191,77 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        List<DEBUG_PROPERTY_INFO> debugPropertyInfoList = new List<DEBUG_PROPERTY_INFO> ();
+        List<DEBUG_PROPERTY_INFO> childPropertyInfo = new List<DEBUG_PROPERTY_INFO> ();
+
+        List<DebuggeeProperty> childRegisterProperties = new List<DebuggeeProperty> ();
 
         foreach (DebuggeeProperty child in m_children)
         {
+          bool displayProperty = false;
+
           DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
 
           LoggingUtils.RequireOk (child.GetPropertyInfo (dwFields, dwRadix, dwTimeout, null, 0, infoArray));
 
-          debugPropertyInfoList.Add (infoArray [0]);
+          if ((guidFilter == DebuggeeProperty.Filters.guidFilterRegisters) 
+            || (guidFilter == DebuggeeProperty.Filters.guidFilterAutoRegisters))
+          {
+            if ((infoArray [0].dwAttrib & enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_STORAGE_REGISTER) != 0)
+            {
+              childRegisterProperties.Add (child);
+            }
+          }
+          else if ((guidFilter == DebuggeeProperty.Filters.guidFilterArgs)
+            || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs)
+            || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
+          {
+            displayProperty |= ((infoArray [0].dwAttrib & enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_DATA) != 0);
+          }
+          else if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals)
+            || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs)
+            || (guidFilter == DebuggeeProperty.Filters.guidFilterLocals)
+            || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
+          {
+            displayProperty |= ((infoArray [0].dwAttrib & enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_DATA) != 0);
+          }
+          else
+          {
+            displayProperty = true;
+          }
+
+          /*if ((infoArray [0].dwAttrib & dwAttribFilter) != 0)
+          {
+            displayProperty = false;
+          }*/
+
+          if (displayProperty)
+          {
+            childPropertyInfo.Add (infoArray [0]);
+          }
         }
 
-        ppEnum = new DebuggeeProperty.Enumerator (debugPropertyInfoList);
+        if ((guidFilter == DebuggeeProperty.Filters.guidFilterRegisters)
+            || (guidFilter == DebuggeeProperty.Filters.guidFilterAutoRegisters))
+        {
+          // 
+          // 
+          // Registers must be specified in a collection/list as children of a 'CPU' property.
+          // 
+          // Other types documented: https://msdn.microsoft.com/en-us/library/aa290860(v=vs.71).aspx
+          // 
+
+          DebuggeeProperty registersProperty = new DebuggeeProperty (m_debugEngine, m_stackFrame, "CPU", string.Empty);
+
+          LoggingUtils.RequireOk (registersProperty.AddChildren (childRegisterProperties.ToArray ()));
+
+          DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
+
+          LoggingUtils.RequireOk (registersProperty.GetPropertyInfo (dwFields, dwRadix, dwTimeout, null, 0, infoArray));
+
+          childPropertyInfo.Add (infoArray [0]);
+        }
+
+        ppEnum = new DebuggeeProperty.Enumerator (childPropertyInfo);
 
         return DebugEngineConstants.S_OK;
       }
@@ -351,7 +415,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE) != 0)
         {
-#if false
           if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND) != 0)
           {
           }
@@ -363,7 +426,6 @@ namespace AndroidPlusPlus.VsDebugEngine
           if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_NO_TOSTRING) != 0)
           {
           }
-#endif
 
           propertyInfoArray [0].bstrValue = m_value;
 
@@ -375,6 +437,11 @@ namespace AndroidPlusPlus.VsDebugEngine
           if ((m_children != null) && (m_children.Count > 0))
           {
             propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_OBJ_IS_EXPANDABLE;
+          }
+
+          if (m_expression.StartsWith ("$")) // Register. '$r0'
+          {
+            propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_STORAGE_REGISTER;
           }
 
           propertyInfoArray [0].dwFields |= enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_ATTRIB;

@@ -139,7 +139,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new ArgumentNullException ("thread");
         }
 
-        LoggingUtils.RequireOk (callback.Event (this, null, program, thread, debugEvent, ref eventGuid, eventAttributes));
+        int handle = callback.Event (this, null, program, thread, debugEvent, ref eventGuid, eventAttributes);
 
         if ((eventAttributes & (uint) enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS) != 0)
         {
@@ -147,6 +147,11 @@ namespace AndroidPlusPlus.VsDebugEngine
           {
             Thread.Yield ();
           }
+        }
+
+        if (handle != DebugEngineConstants.E_NOTIMPL)
+        {
+          LoggingUtils.RequireOk (handle);
         }
       }
       catch (Exception e)

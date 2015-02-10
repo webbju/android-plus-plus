@@ -236,21 +236,27 @@ namespace AndroidPlusPlus.VsDebugEngine
         }
 #endif
 
-        if ((m_gdbVariable != null) && (requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NAME) != 0)
+        if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NAME) != 0)
         {
-          propertyInfoArray [0].bstrName = m_gdbVariable.Expression;
+          if (m_gdbVariable != null)
+          {
+            propertyInfoArray [0].bstrName = m_gdbVariable.Expression;
 
-          propertyInfoArray [0].dwFields |= enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NAME;
+            propertyInfoArray [0].dwFields |= enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NAME;
+          }
         }
 
-        if ((m_gdbVariable != null) && (requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_TYPE) != 0)
+        if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_TYPE) != 0)
         {
-          propertyInfoArray [0].bstrType = m_gdbVariable.Type;
+          if (m_gdbVariable != null)
+          {
+            propertyInfoArray [0].bstrType = m_gdbVariable.Type;
 
-          propertyInfoArray [0].dwFields |= enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_TYPE;
+            propertyInfoArray [0].dwFields |= enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_TYPE;
+          }
         }
 
-        if ((m_gdbVariable != null) && (requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE) != 0)
+        if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE) != 0)
         {
 #if false
           if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE_AUTOEXPAND) != 0)
@@ -265,54 +271,66 @@ namespace AndroidPlusPlus.VsDebugEngine
           {
           }
 #endif
-          propertyInfoArray [0].bstrValue = m_gdbVariable.Value;
+          if (m_gdbVariable != null)
+          {
+            propertyInfoArray [0].bstrValue = m_gdbVariable.Value;
 
-          propertyInfoArray [0].dwFields |= enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE;
+            propertyInfoArray [0].dwFields |= enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE;
+          }
         }
 
-        if ((m_gdbVariable != null) && (requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_ATTRIB) != 0)
+        if ((requestedFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_ATTRIB) != 0)
         {
-          if (m_gdbVariable.HasChildren)
+          if (m_gdbVariable != null)
           {
-            propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_OBJ_IS_EXPANDABLE;
-          }
+            if (m_gdbVariable.HasChildren)
+            {
+              propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_OBJ_IS_EXPANDABLE;
+            }
 
-          if (m_gdbVariable.Expression.StartsWith ("$")) // Register. '$r0'
-          {
-            propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_STORAGE_REGISTER;
+            if (m_gdbVariable.Expression.StartsWith ("$")) // Register. '$r0'
+            {
+              propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_STORAGE_REGISTER;
 
-            propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_ACCESS_NONE;
-          }
-          else if (string.IsNullOrEmpty (m_gdbVariable.Type))
-          {
-            propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_PROPERTY;
-          }
-          else if (m_gdbVariable.Value.Equals ("{...}"))
-          {
-            propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_PROPERTY;
-          }
-          else if (m_gdbVariable.Type.Contains ("(")) // Function. 'bool (void)'
-          {
-            propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_METHOD;
+              propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_DATA;
 
-            propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_ACCESS_NONE;
-          }
-          else
-          {
-            propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_DATA;
-          }
+              propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_ACCESS_NONE;
+            }
+            else if (string.IsNullOrEmpty (m_gdbVariable.Type))
+            {
+              propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_PROPERTY;
+            }
+            else if (m_gdbVariable.Value.Equals ("{...}"))
+            {
+              propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_PROPERTY;
 
-          if (m_gdbVariable.Name.Contains (".public"))
-          {
-            propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_ACCESS_PUBLIC;
-          }
-          else if (m_gdbVariable.Name.Contains (".private"))
-          {
-            propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_ACCESS_PRIVATE;
-          }
-          else if (m_gdbVariable.Name.Contains (".protected"))
-          {
-            propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_ACCESS_PROTECTED;
+              propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_CLASS;
+            }
+            else if (m_gdbVariable.Type.Contains ("(")) // Function, i.e: 'bool (void)'
+            {
+              propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_METHOD;
+
+              propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_VALUE_READONLY;
+
+              propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_ACCESS_NONE;
+            }
+            else
+            {
+              propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_DATA;
+            }
+
+            if (m_gdbVariable.Name.Contains (".public"))
+            {
+              propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_ACCESS_PUBLIC;
+            }
+            else if (m_gdbVariable.Name.Contains (".private"))
+            {
+              propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_ACCESS_PRIVATE;
+            }
+            else if (m_gdbVariable.Name.Contains (".protected"))
+            {
+              propertyInfoArray [0].dwAttrib |= enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_ACCESS_PROTECTED;
+            }
           }
 
           propertyInfoArray [0].dwFields |= enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_ATTRIB;

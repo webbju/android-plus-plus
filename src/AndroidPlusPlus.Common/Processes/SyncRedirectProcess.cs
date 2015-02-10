@@ -280,7 +280,14 @@ namespace AndroidPlusPlus.Common
 
       StandardError = m_stdErrorBuilder.ToString ();
 
-      m_exitCode = ((Process)sendingProcess).ExitCode;
+      try
+      {
+        m_exitCode = ((Process) sendingProcess).ExitCode;
+      }
+      catch (InvalidOperationException)
+      {
+        // Ignore: 'No process is associated with this object'.
+      }
 
       m_exitMutex.Set ();
 
