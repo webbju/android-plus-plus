@@ -41,9 +41,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private bool m_locationIsSymbolicated;
 
-    private bool m_queriedArgumentsAndLocals;
-
     private bool m_queriedRegisters;
+
+    private bool m_queriedArgumentsAndLocals;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -59,9 +59,9 @@ namespace AndroidPlusPlus.VsDebugEngine
         throw new ArgumentNullException ("frameTuple");
       }
 
-      m_queriedArgumentsAndLocals = false;
-
       m_queriedRegisters = false;
+
+      m_queriedArgumentsAndLocals = false;
 
       GetInfoFromCurrentLevel (frameTuple);
     }
@@ -352,6 +352,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
+        if (m_stackRegisters.TryGetValue (expression, out property))
+        {
+          return property;
+        }
+
         if (m_stackArguments.TryGetValue (expression, out property))
         {
           return property;
@@ -367,10 +372,6 @@ namespace AndroidPlusPlus.VsDebugEngine
           return property;
         }
 
-        if (m_stackRegisters.TryGetValue (expression, out property))
-        {
-          return property;
-        }
 
         // 
         // Check if this expression has already been queried via a child property.
@@ -560,6 +561,11 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       try
       {
+        if ((guidFilter == DebuggeeProperty.Filters.guidFilterRegisters) || (guidFilter == DebuggeeProperty.Filters.guidFilterAutoRegisters))
+        {
+          LoggingUtils.RequireOk (QueryRegisters ());
+        }
+
         if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals) ||
             (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) ||
             (guidFilter == DebuggeeProperty.Filters.guidFilterArgs) ||
@@ -567,11 +573,6 @@ namespace AndroidPlusPlus.VsDebugEngine
             (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
         {
           LoggingUtils.RequireOk (QueryArgumentsAndLocals ());
-        }
-
-        if ((guidFilter == DebuggeeProperty.Filters.guidFilterRegisters) || (guidFilter == DebuggeeProperty.Filters.guidFilterAutoRegisters))
-        {
-          LoggingUtils.RequireOk (QueryRegisters ());
         }
 
         LoggingUtils.RequireOk (base.EnumProperties (requestedFields, radix, ref guidFilter, timeout, out elementsReturned, out enumDebugProperty));

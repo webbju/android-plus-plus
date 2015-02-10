@@ -270,9 +270,16 @@ namespace AndroidPlusPlus.Common
 
       try
       {
-        m_exitMutex.Set ();
-
         m_exitCode = ((Process) sendingProcess).ExitCode;
+      }
+      catch (InvalidOperationException)
+      {
+        // Ignore: 'No process is associated with this object'.
+      }
+
+      try
+      {
+        m_exitMutex.Set ();
 
         if (m_listener != null)
         {

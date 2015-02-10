@@ -57,11 +57,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     protected DebuggeeProperty m_property;
 
+    protected ConcurrentDictionary<string, DebuggeeProperty> m_stackRegisters;
+
     protected ConcurrentDictionary<string, DebuggeeProperty> m_stackArguments;
 
     protected ConcurrentDictionary<string, DebuggeeProperty> m_stackLocals;
-
-    protected ConcurrentDictionary<string, DebuggeeProperty> m_stackRegisters;
 
     protected ConcurrentDictionary<string, DebuggeeProperty> m_customExpressions;
 
@@ -81,11 +81,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       m_property = new DebuggeeProperty (engine, this, frameName, string.Empty);
 
+      m_stackRegisters = new ConcurrentDictionary<string, DebuggeeProperty> ();
+
       m_stackArguments = new ConcurrentDictionary<string, DebuggeeProperty> ();
 
       m_stackLocals = new ConcurrentDictionary<string, DebuggeeProperty> ();
-
-      m_stackRegisters = new ConcurrentDictionary<string, DebuggeeProperty> ();
 
       m_customExpressions = new ConcurrentDictionary<string, DebuggeeProperty> ();
     }
@@ -96,11 +96,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual void Delete ()
     {
+      m_stackRegisters.Clear ();
+
       m_stackArguments.Clear ();
 
       m_stackLocals.Clear ();
-
-      m_stackRegisters.Clear ();
 
       m_customExpressions.Clear ();
     }
@@ -181,30 +181,86 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        List<DEBUG_PROPERTY_INFO> filteredProperties = new List<DEBUG_PROPERTY_INFO> ();
-
-        /*if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs))
-        {
-          DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
-
-          LoggingUtils.RequireOk (m_property.GetPropertyInfo (requestedFields, radix, timeout, null, 0, infoArray));
-
-          filteredProperties.Add (infoArray [0]);
-        }*/
-
-        uint numProperties;
+        uint numEnumeratedProperties;
 
         IEnumDebugPropertyInfo2 enumeratedProperties;
 
         LoggingUtils.RequireOk (m_property.EnumChildren (requestedFields, radix, ref guidFilter, enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_ALL, string.Empty, timeout, out enumeratedProperties));
 
-        LoggingUtils.RequireOk (enumeratedProperties.GetCount (out numProperties));
+        LoggingUtils.RequireOk (enumeratedProperties.GetCount (out numEnumeratedProperties));
 
-        if (numProperties > 0)
+        elementsReturned = numEnumeratedProperties;
+
+        enumDebugProperty = enumeratedProperties;
+
+#if false
+        //List<DEBUG_PROPERTY_INFO> filteredProperties;
+
+        if ((guidFilter == DebuggeeProperty.Filters.guidFilterRegisters) 
+          || (guidFilter == DebuggeeProperty.Filters.guidFilterAutoRegisters))
         {
-          DEBUG_PROPERTY_INFO [] debugProperties = new DEBUG_PROPERTY_INFO [numProperties];
+          // 
+          // Registers must be specified in a collection/list as children of a 'CPU' property.
+          // 
 
-          LoggingUtils.RequireOk (enumeratedProperties.Next (numProperties, debugProperties, out numProperties));
+          DEBUG_PROPERTY_INFO [] debugProperties = new DEBUG_PROPERTY_INFO [numEnumeratedProperties];
+
+          LoggingUtils.RequireOk (enumeratedProperties.Next (numEnumeratedProperties, debugProperties, out numEnumeratedProperties));
+
+          DebuggeeProperty registersProperty = new DebuggeeProperty (m_debugEngine, this, "CPU", string.Empty);
+
+          for (uint i = 0; i < numEnumeratedProperties; ++i)
+          {
+            DebuggeeProperty register;
+
+            if (m_stackRegisters.TryGetValue (debugProperties [i].bstrName, out register))
+            {
+              registersProperty.AddChildren (new DebuggeeProperty [] { register });
+            }
+          }
+
+          DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
+
+          LoggingUtils.RequireOk (registersProperty.GetPropertyInfo (requestedFields, radix, timeout, null, 0, infoArray));
+
+          elementsReturned = (uint) infoArray.Length;
+
+          enumDebugProperty = new DebuggeeProperty.Enumerator (infoArray);
+        }
+
+        /*DEBUG_PROPERTY_INFO [] debugProperties = new DEBUG_PROPERTY_INFO [numProperties];
+
+        LoggingUtils.RequireOk (enumeratedProperties.Next (numProperties, debugProperties, out numProperties));
+
+        if ((guidFilter == DebuggeeProperty.Filters.guidFilterRegisters) || (guidFilter == DebuggeeProperty.Filters.guidFilterAutoRegisters))
+        {
+          // 
+          // Registers must be specified in a collection/list as children of a 'CPU' property.
+          // 
+
+          DebuggeeProperty registersProperty = new DebuggeeProperty (m_debugEngine, this, "CPU", string.Empty);
+
+          for (uint i = 0; i < numProperties; ++i)
+          {
+            DebuggeeProperty register;
+
+            if (m_stackRegisters.TryGetValue (debugProperties [i].bstrName, out register))
+            {
+              registersProperty.AddChildren (new DebuggeeProperty [] { register });
+            }
+          }
+
+          DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
+
+          LoggingUtils.RequireOk (registersProperty.GetPropertyInfo (requestedFields, radix, timeout, null, 0, infoArray));
+
+          filteredProperties = new List<DEBUG_PROPERTY_INFO> (1);
+
+          filteredProperties.Add (infoArray [0]);
+        }
+        else
+        {
+          filteredProperties = new List<DEBUG_PROPERTY_INFO> ((int)numProperties);
 
           for (uint i = 0; i < numProperties; ++i)
           {
@@ -214,51 +270,36 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             bool displayProperty = false;
 
-            if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs))
+            DEBUG_PROPERTY_INFO prop = debugProperties [i];
+
+            if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals) 
+              || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs))
             {
               displayProperty |= true;
             }
 
-            if ((guidFilter == DebuggeeProperty.Filters.guidFilterArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
+            if ((guidFilter == DebuggeeProperty.Filters.guidFilterArgs) 
+              || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) 
+              || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
             {
-              displayProperty |= m_stackArguments.ContainsKey (debugProperties [i].bstrName);
+              displayProperty |= m_stackArguments.ContainsKey (prop.bstrName);
             }
 
-            if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals) || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocals) || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
+            if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals) 
+              || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs)
+              || (guidFilter == DebuggeeProperty.Filters.guidFilterLocals) 
+              || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
             {
-              displayProperty |= m_stackLocals.ContainsKey (debugProperties [i].bstrName);
+              displayProperty |= m_stackLocals.ContainsKey (prop.bstrName);
             }
 
             if (displayProperty)
             {
-              filteredProperties.Add (debugProperties [i]);
+              filteredProperties.Add (prop);
             }
           }
-        }
-
-        if ((guidFilter == DebuggeeProperty.Filters.guidFilterRegisters) || (guidFilter == DebuggeeProperty.Filters.guidFilterAutoRegisters))
-        {
-          // 
-          // Registers must be specified in a collection/list as children of a 'CPU' property.
-          // 
-
-          DebuggeeProperty registersPropertyList = new DebuggeeProperty (m_debugEngine, this, "CPU", string.Empty);
-
-          foreach (KeyValuePair<string, DebuggeeProperty> register in m_stackRegisters)
-          {
-            LoggingUtils.RequireOk (registersPropertyList.AddChildren (new DebuggeeProperty [] { register.Value }));
-          }
-
-          DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
-
-          LoggingUtils.RequireOk (registersPropertyList.GetPropertyInfo (requestedFields, radix, timeout, null, 0, infoArray));
-
-          filteredProperties.Add (infoArray [0]);
-        }
-
-        elementsReturned = (uint)filteredProperties.Count;
-
-        enumDebugProperty = new DebuggeeProperty.Enumerator (filteredProperties);
+        }*/
+#endif
 
         return DebugEngineConstants.S_OK;
       }

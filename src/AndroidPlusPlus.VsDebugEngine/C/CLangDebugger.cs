@@ -330,7 +330,7 @@ namespace AndroidPlusPlus.VsDebugEngine
             targetWasRunning = NativeProgram.IsRunning;
           }
 
-          if (targetWasRunning)
+          if (targetWasRunning && (GdbClient != null))
           {
             // 
             // GDB 'stopped' events usually don't provide a token to which they are associated (only get ^done confirmation).
@@ -350,7 +350,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           }
         }
 
-        if (operation != null)
+        if ((operation != null) && (GdbClient != null))
         {
           operation (this);
         }
@@ -365,7 +365,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         try
         {
-          if ((Interlocked.Decrement (ref m_interruptOperationCounter) == 0) && targetWasRunning && shouldContinue)
+          if ((Interlocked.Decrement (ref m_interruptOperationCounter) == 0) && targetWasRunning && shouldContinue && (GdbClient != null))
           {
             GdbClient.Continue ();
           }
@@ -597,6 +597,10 @@ namespace AndroidPlusPlus.VsDebugEngine
                 // Flag some or all of the program's threads as stopped, directed by 'stopped-threads' field.
                 // 
 
+#if true
+                NativeProgram.RefreshAllThreads ();
+#endif
+
                 bool hasStoppedThreads = asyncRecord.HasField ("stopped-threads");
 
                 if (hasStoppedThreads)
@@ -658,10 +662,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
 #if false
               RefreshSharedLibraries ();
-#endif
-
-#if true
-              NativeProgram.RefreshAllThreads ();
 #endif
 
               Engine.BreakpointManager.RefreshBreakpoints ();

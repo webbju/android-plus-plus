@@ -143,12 +143,12 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.Print ("[DebugEngineCallback] Event: " + riidEvent.ToString ());
 
+      DebuggerEventDelegate eventCallback;
+
+      int handle = DebugEngineConstants.E_NOTIMPL;
+
       try
       {
-        DebuggerEventDelegate eventCallback;
-
-        int handle = DebugEngineConstants.E_NOTIMPL;
-
         if (m_debuggerCallback.TryGetValue (riidEvent, out eventCallback))
         {
           handle = eventCallback (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
@@ -158,50 +158,69 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           LoggingUtils.RequireOk (handle);
         }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+      }
 
+      try
+      {
         handle = m_cLangEventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
 
         if (handle != DebugEngineConstants.E_NOTIMPL)
         {
           LoggingUtils.RequireOk (handle);
         }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+      }
 
+      try
+      {
         handle = m_javaLangEventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
 
         if (handle != DebugEngineConstants.E_NOTIMPL)
         {
           LoggingUtils.RequireOk (handle);
         }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+      }
 
+      try
+      {
         handle = m_ad7EventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
 
         if (handle != DebugEngineConstants.E_NOTIMPL)
         {
           LoggingUtils.RequireOk (handle);
         }
-
-        // 
-        // (Managed Code) It is strongly advised that ReleaseComObject be invoked on the various interfaces that are passed to IDebugEventCallback2::Event.
-        // 
-
-        /*Marshal.ReleaseComObject (pEngine);
-
-        Marshal.ReleaseComObject (pProcess);
-
-        Marshal.ReleaseComObject (pProgram);
-
-        Marshal.ReleaseComObject (pThread);
-
-        Marshal.ReleaseComObject (pEvent);*/
-
-        return handle;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
-
-        throw;
       }
+
+      // 
+      // (Managed Code) It is strongly advised that ReleaseComObject be invoked on the various interfaces that are passed to IDebugEventCallback2::Event.
+      // 
+
+      /*Marshal.ReleaseComObject (pEngine);
+
+      Marshal.ReleaseComObject (pProcess);
+
+      Marshal.ReleaseComObject (pProgram);
+
+      Marshal.ReleaseComObject (pThread);
+
+      Marshal.ReleaseComObject (pEvent);*/
+
+      return handle;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
