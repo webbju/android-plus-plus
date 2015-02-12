@@ -42,12 +42,12 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public class Enumerator : DebugEnumerator<IDebugCodeContext2, IEnumDebugCodeContexts2>, IEnumDebugCodeContexts2
     {
-      public Enumerator (List<IDebugCodeContext2> contexts)
+      public Enumerator (IDebugCodeContext2 [] contexts)
         : base (contexts)
       {
       }
 
-      public Enumerator (IDebugCodeContext2 [] contexts)
+      public Enumerator (List<IDebugCodeContext2> contexts)
         : base (contexts)
       {
       }
@@ -57,7 +57,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private readonly DebugEngine m_engine;
+    protected readonly DebugEngine m_engine;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -93,6 +93,79 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public DebuggeeAddress Address { get; set; }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected virtual int SetInfo (enum_CONTEXT_INFO_FIELDS requestedFields, CONTEXT_INFO [] infoArray)
+    {
+      LoggingUtils.PrintFunction ();
+
+      try
+      {
+        if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_MODULEURL) != 0)
+        {
+          infoArray [0].bstrModuleUrl = "file://";
+
+          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_MODULEURL;
+        }
+
+        if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION) != 0)
+        {
+          infoArray [0].bstrFunction = "<unknown function>";
+
+          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION;
+        }
+
+        if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_FUNCTIONOFFSET) != 0)
+        {
+#if false
+          if (DocumentContext != null)
+          {
+            TEXT_POSITION [] startOffset = new TEXT_POSITION [1];
+
+            TEXT_POSITION [] endOffset = new TEXT_POSITION [1];
+
+            LoggingUtils.RequireOk (DocumentContext.GetStatementRange (startOffset, endOffset));
+
+            infoArray [0].posFunctionOffset = startOffset [0];
+
+            infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_FUNCTIONOFFSET;
+          }
+#endif
+        }
+
+        if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS) != 0)
+        {
+          infoArray [0].bstrAddress = Address.ToString ();
+
+          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS;
+        }
+
+        if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSOFFSET) != 0)
+        {
+          infoArray [0].bstrAddressOffset = Address.ToString ();
+
+          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSOFFSET;
+        }
+
+        if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSABSOLUTE) != 0)
+        {
+          infoArray [0].bstrAddressAbsolute = Address.ToString ();
+
+          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSABSOLUTE;
+        }
+
+        return DebugEngineConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return DebugEngineConstants.E_FAIL;
+      }
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -313,55 +386,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        infoArray [0] = new CONTEXT_INFO ();
-
-        if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_MODULEURL) != 0)
-        {
-          infoArray [0].bstrModuleUrl = "file://";
-
-          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_MODULEURL;
-        }
-
-        if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION) != 0)
-        {
-          infoArray [0].bstrFunction = "<unknown function>";
-
-          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION;
-        }
-
-        if ((DocumentContext != null) && (requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_FUNCTIONOFFSET) != 0)
-        {
-          TEXT_POSITION [] startOffset = new TEXT_POSITION [1];
-
-          TEXT_POSITION [] endOffset = new TEXT_POSITION [1];
-
-          LoggingUtils.RequireOk (DocumentContext.GetStatementRange (startOffset, endOffset));
-
-          infoArray [0].posFunctionOffset = startOffset [0];
-
-          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_FUNCTIONOFFSET;
-        }
-
-        if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS) != 0)
-        {
-          infoArray [0].bstrAddress = Address.ToString ();
-
-          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS;
-        }
-
-        if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSOFFSET) != 0)
-        {
-          infoArray [0].bstrAddressOffset = Address.ToString ();
-
-          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSOFFSET;
-        }
-
-        if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSABSOLUTE) != 0)
-        {
-          infoArray [0].bstrAddressAbsolute = Address.ToString ();
-
-          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSABSOLUTE;
-        }
+        LoggingUtils.RequireOk (SetInfo (requestedFields, infoArray));
 
         return DebugEngineConstants.S_OK;
       }
@@ -425,22 +450,20 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      languageName = "Unknown";
-
-      languageGuid = Guid.Empty;
-
       try
       {
-        IDebugDocumentContext2 documentContext = null;
+        IDebugDocumentContext2 documentContext;
+
+        languageGuid = DebugEngineGuids.guidLanguageUnknown;
+
+        languageName = DebugEngineGuids.GetLanguageName (languageGuid);
 
         LoggingUtils.RequireOk (GetDocumentContext (out documentContext));
 
-        if (documentContext == null)
+        if (documentContext != null)
         {
-          throw new InvalidOperationException ();
+          LoggingUtils.RequireOk (documentContext.GetLanguageInfo (ref languageName, ref languageGuid));
         }
-
-        LoggingUtils.RequireOk (documentContext.GetLanguageInfo (ref languageName, ref languageGuid));
 
         return DebugEngineConstants.S_OK;
       }

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
+using System.Text.RegularExpressions;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -179,19 +180,37 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        if ((m_gdbVariable != null) && m_gdbVariable.Value.StartsWith ("0x"))
+        // 
+        // Pick out a memory address from a pool of potential strings.
+        // 
+        //   This is mainly to support GDB reporting symbols like: 
+        // 
+        //   {void (JNIEnv *, jclass)} 0xb3e66c84 <Java_com_example_hellogdbserver_HelloGdbServer_invokeCrash>
+        // 
+
+        string [] expressionPool = { m_expression, m_gdbVariable.Value };
+
+        string pattern = "(?<address>0x[A-Za-z0-9]+)";
+
+        Regex regExMatcher = new Regex (pattern, RegexOptions.IgnoreCase);
+
+        foreach (string expression in expressionPool)
         {
-          // 
-          // Note: Sometimes GDB can return 0xADDRESS <SYMBOL>.
-          // 
+          Match regExLineMatch = regExMatcher.Match (expression);
 
-          string [] valueSegments = m_gdbVariable.Value.Split (' ');
+          if (regExLineMatch.Success)
+          {
+            string address = regExLineMatch.Result ("${address}");
 
-          memoryContext = m_debugger.GetCodeContextForLocation (valueSegments [0]);
+            memoryContext = CLangDebuggeeCodeContext.GetCodeContextForLocation (m_debugger, address);
+
+            break;
+          }
         }
-        else if (m_expression.StartsWith ("0x"))
+
+        if (memoryContext == null)
         {
-          memoryContext = m_debugger.GetCodeContextForLocation (m_expression);
+          return DebugEngineConstants.S_GETMEMORYCONTEXT_NO_MEMORY_CONTEXT;
         }
 
         return DebugEngineConstants.S_OK;
@@ -200,14 +219,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        if (memoryContext == null)
-        {
-          return DebugEngineConstants.S_GETMEMORYCONTEXT_NO_MEMORY_CONTEXT;
-        }
-        else
-        {
-          return DebugEngineConstants.E_FAIL;
-        }
+        return DebugEngineConstants.E_FAIL;
       }
     }
 

@@ -311,6 +311,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           codeContexts.AddRange (codeContextArray);
         }
 
+#if false
         {
           LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.EnumCodeContexts (pDocPos, out ppEnum));
 
@@ -322,6 +323,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           codeContexts.AddRange (codeContextArray);
         }
+#endif
 
         ppEnum = new DebuggeeCodeContext.Enumerator (codeContexts);
 
@@ -365,7 +367,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.EnumCodePaths (pszHint, pStart, pFrame, fSource, out ppEnum, out ppSafety));
 
-        LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.EnumCodePaths (pszHint, pStart, pFrame, fSource, out ppEnum, out ppSafety));
+        //LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.EnumCodePaths (pszHint, pStart, pFrame, fSource, out ppEnum, out ppSafety));
 
         return DebugEngineConstants.S_OK;
       }

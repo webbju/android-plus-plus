@@ -97,14 +97,22 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           for (int i = m_boundBreakpoints.Count - 1; i >= 0; --i)
           {
-            m_boundBreakpoints [i].Delete ();
+            int handle = m_boundBreakpoints [i].Delete ();
+
+            if (handle != DebugEngineConstants.E_BP_DELETED)
+            {
+              LoggingUtils.RequireOk (handle);
+            }
           }
 
           m_boundBreakpoints.Clear ();
         }
+
       }
-      catch (Exception)
+      catch (Exception e)
       {
+        LoggingUtils.HandleException (e);
+
         throw;
       }
     }
@@ -117,16 +125,9 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      try
+      lock (m_errorBreakpoints)
       {
-        lock (m_errorBreakpoints)
-        {
-          m_errorBreakpoints.Clear ();
-        }
-      }
-      catch (Exception)
-      {
-        throw;
+        m_errorBreakpoints.Clear ();
       }
     }
 
@@ -170,7 +171,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
               LoggingUtils.RequireOk (documentPostion.GetRange (startPos, endPos));
 
-              documentContext = new DebuggeeDocumentContext (m_breakpointManager.Engine, fileName, startPos [0], endPos [0], DebugEngineGuids.guidLanguageCpp, new DebuggeeAddress ("0x0"));
+              documentContext = new DebuggeeDocumentContext (m_breakpointManager.Engine, fileName, startPos [0], endPos [0]);
 
               location = string.Format ("\"{0}:{1}\"", fileName, startPos [0].dwLine + 1);
             }
@@ -308,7 +309,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        DebuggeeBreakpointError errorBreakpoint = new DebuggeeBreakpointError (m_breakpointManager, this, documentContext.GetCodeContext (), errorReason);
+        DebuggeeBreakpointError errorBreakpoint = new DebuggeeBreakpointError (m_breakpointManager, this, codeContext, errorReason);
 
         lock (m_errorBreakpoints)
         {
@@ -520,7 +521,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        ppEnum = new DebuggeeBreakpointBound.Enumerator (m_boundBreakpoints);
+        ppEnum = new DebuggeeBreakpointBound.Enumerator (m_boundBreakpoints.ToArray ());
 
         return DebugEngineConstants.S_OK;
       }
@@ -548,7 +549,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        ppEnum = new DebuggeeBreakpointError.Enumerator (m_errorBreakpoints);
+        ppEnum = new DebuggeeBreakpointError.Enumerator (m_errorBreakpoints.ToArray ());
 
         if (m_breakpointDeleted)
         {
@@ -654,12 +655,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        lock (m_boundBreakpoints)
+        foreach (DebuggeeBreakpointBound boundBreakpoint in m_boundBreakpoints.ToArray ())
         {
-          foreach (DebuggeeBreakpointBound boundBreakpoint in m_boundBreakpoints)
-          {
-            LoggingUtils.RequireOk (boundBreakpoint.SetCondition (bpCondition));
-          }
+          LoggingUtils.RequireOk (boundBreakpoint.SetCondition (bpCondition));
         }
 
         return DebugEngineConstants.S_OK;
@@ -691,12 +689,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           return DebugEngineConstants.E_BP_DELETED;
         }
 
-        lock (m_boundBreakpoints)
+        foreach (DebuggeeBreakpointBound boundBreakpoint in m_boundBreakpoints.ToArray ())
         {
-          foreach (DebuggeeBreakpointBound boundBreakpoint in m_boundBreakpoints)
-          {
-            LoggingUtils.RequireOk (boundBreakpoint.SetPassCount (bpPassCount));
-          }
+          LoggingUtils.RequireOk (boundBreakpoint.SetPassCount (bpPassCount));
         }
 
         return DebugEngineConstants.S_OK;

@@ -194,29 +194,7 @@ namespace AndroidPlusPlus.Common
 
       try
       {
-        string command = "-gdb-exit";
-
-        MiResultRecord resultRecord = SendCommand (command);
-
-        MiResultRecord.RequireOk (resultRecord, command);
-
-        if (m_gdbClientInstance != null)
-        {
-          m_gdbClientInstance.Kill ();
-        }
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-      }
-      finally
-      {
-        if (m_asyncRecordWorkerThread != null)
-        {
-          m_asyncRecordWorkerThreadSignal.Set ();
-
-          m_asyncRecordWorkerThread = null;
-        }
+        Kill ();
 
         if (m_gdbClientInstance != null)
         {
@@ -224,6 +202,12 @@ namespace AndroidPlusPlus.Common
 
           m_gdbClientInstance = null;
         }
+
+        m_asyncRecordWorkerThreadSignal.Dispose ();
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
       }
     }
 
@@ -369,9 +353,31 @@ namespace AndroidPlusPlus.Common
 
     public void Kill ()
     {
-      if (m_gdbClientInstance != null)
+      LoggingUtils.PrintFunction ();
+
+      try
       {
-        m_gdbClientInstance.Kill ();
+        string command = "-gdb-exit";
+
+        MiResultRecord resultRecord = SendCommand (command);
+
+        MiResultRecord.RequireOk (resultRecord, command);
+
+        if (m_gdbClientInstance != null)
+        {
+          m_gdbClientInstance.Kill ();
+        }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+      }
+      finally
+      {
+        if (m_asyncRecordWorkerThreadSignal != null)
+        {
+          m_asyncRecordWorkerThreadSignal.Set ();
+        }
       }
     }
 

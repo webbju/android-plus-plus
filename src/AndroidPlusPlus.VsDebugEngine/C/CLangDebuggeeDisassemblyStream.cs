@@ -61,19 +61,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        string location = string.Format ("0x{0}", uCodeLocationId);
+        string location = string.Format ("0x{0:X8}", uCodeLocationId);
 
-        ppCodeContext = m_debugger.GetCodeContextForLocation (location.ToString ());
+        ppCodeContext = CLangDebuggeeCodeContext.GetCodeContextForLocation (m_debugger, location);
 
         if (ppCodeContext == null)
         {
-          IDebugDocumentContext2 documentContext;
-
-          LoggingUtils.RequireOk (m_codeContext.GetDocumentContext (out documentContext));
-
-          DebuggeeDocumentContext debuggeeDocumentContext = documentContext as DebuggeeDocumentContext;
-
-          ppCodeContext = new DebuggeeCodeContext (m_debugger.Engine, debuggeeDocumentContext, new DebuggeeAddress (uCodeLocationId));
+          throw new InvalidOperationException ();
         }
 
         return DebugEngineConstants.S_OK;
@@ -200,7 +194,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         ulong endAddress = startAddress + ((ulong)(dwInstructions) * 4); // TODO: 4 for a 32-bit instruction set?
 
-        string disassemblyCommand = string.Format ("-data-disassemble -s 0x{0} -e 0x{1} -- 1", startAddress.ToString ("X8"), endAddress.ToString ("X8"));
+        string disassemblyCommand = string.Format ("-data-disassemble -s 0x{0:X8} -e 0x{1:X8} -- 1", startAddress, endAddress);
 
         MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (disassemblyCommand);
 
@@ -213,9 +207,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         MiResultValueList assemblyRecords = (MiResultValueList) resultRecord ["asm_insns"] [0];
 
-        int currentInstruction = 0;
-
         long maxInstructions = Math.Min (assemblyRecords.Values.Count, dwInstructions);
+
+        if (maxInstructions == 0)
+        {
+          throw new InvalidOperationException ();
+        }
+
+        int currentInstruction = 0;
 
         for (int i = 0; i < assemblyRecords.Values.Count; ++i)
         {
@@ -346,14 +345,6 @@ namespace AndroidPlusPlus.VsDebugEngine
         pdwInstructionsRead = (uint) currentInstruction;
 
         return DebugEngineConstants.S_OK;
-      }
-      catch (NotImplementedException e)
-      {
-        LoggingUtils.HandleException (e);
-
-        pdwInstructionsRead = 0;
-
-        return DebugEngineConstants.E_NOTIMPL;
       }
       catch (Exception e)
       {

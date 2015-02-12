@@ -6,11 +6,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Threading;
-using System.Text.RegularExpressions;
 using System.IO;
-using Microsoft.VisualStudio.Debugger.Interop;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Windows.Forms;
 using AndroidPlusPlus.Common;
+using Microsoft.VisualStudio.Debugger.Interop;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -40,7 +41,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private int m_interruptOperationCounter = 0;
 
-    private ManualResetEvent m_interruptOperationCompleted = null;
+    private ManualResetEvent m_interruptOperationCompleted = new ManualResetEvent (false);
 
     private Dictionary<string, uint> m_threadGroupStatus = new Dictionary<string, uint> ();
 
@@ -319,39 +320,116 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
+      if (operation == null)
+      {
+        throw new ArgumentNullException ("operation");
+      }
+
+      if (GdbClient == null)
+      {
+        throw new InvalidOperationException ("Can not perform interrupt; GdbClient is not present");
+      }
+
       bool targetWasRunning = false;
 
       try
       {
-        if (Interlocked.Increment (ref m_interruptOperationCounter) == 1)
+        lock (this)
         {
-          lock (NativeProgram)
-          {
-            targetWasRunning = NativeProgram.IsRunning;
-          }
+          targetWasRunning = NativeProgram.IsRunning;
 
-          if (targetWasRunning && (GdbClient != null))
+          if ((Interlocked.Increment (ref m_interruptOperationCounter) == 1) && targetWasRunning)
+          {
+            LoggingUtils.Print ("RunInterruptOperation: Issuing interrupt.");
+
+            m_interruptOperationCompleted.Reset ();
+
+            GdbClient.Stop ();
+          }
+        }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+      }
+
+      try
+      {
+        bool interruptSignalled = !NativeProgram.IsRunning;
+
+        while (!interruptSignalled)
+        {
+          LoggingUtils.Print ("RunInterruptOperation: Waiting for interrupt to stop target.");
+
+          interruptSignalled = m_interruptOperationCompleted.WaitOne (0);
+
+          if (!interruptSignalled)
+          {
+            Application.DoEvents ();
+
+            Thread.Yield ();
+          }
+        }
+
+        operation (this);
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+      }
+      finally
+      {
+        try
+        {
+          lock (this)
+          {
+            if ((Interlocked.Decrement (ref m_interruptOperationCounter) == 0) && targetWasRunning && shouldContinue)
+            {
+              LoggingUtils.Print ("RunInterruptOperation: Returning target to running state.");
+
+              GdbClient.Continue ();
+            }
+          }
+        }
+        catch (Exception e)
+        {
+          LoggingUtils.HandleException (e);
+        }
+      }
+
+#if false
+      try
+      {
+        lock (this)
+        {
+          Interlocked.Increment (ref m_interruptOperationCounter);
+
+          targetWasRunning = NativeProgram.IsRunning;
+
+          if (targetWasRunning)
           {
             // 
             // GDB 'stopped' events usually don't provide a token to which they are associated (only get ^done confirmation).
             // This should block until the requested interrupt has been received and completely handled by VS.
             // 
 
-            m_interruptOperationCompleted = new ManualResetEvent (false);
+            m_interruptOperationCompleted
 
-            GdbClient.Stop ();
-
-            while (!m_interruptOperationCompleted.WaitOne (0))
+            using (m_interruptOperationCompleted)
             {
-              Thread.Yield ();
+              GdbClient.Stop ();
+
+              while (!m_interruptOperationCompleted.WaitOne (0))
+              {
+                Application.DoEvents ();
+
+                Thread.Yield ();
+              }
             }
 
             m_interruptOperationCompleted = null;
           }
-        }
 
-        if ((operation != null) && (GdbClient != null))
-        {
           operation (this);
         }
       }
@@ -365,9 +443,12 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         try
         {
-          if ((Interlocked.Decrement (ref m_interruptOperationCounter) == 0) && targetWasRunning && shouldContinue && (GdbClient != null))
+          lock (this)
           {
-            GdbClient.Continue ();
+            if ((Interlocked.Decrement (ref m_interruptOperationCounter) == 0) && targetWasRunning && shouldContinue)
+            {
+              GdbClient.Continue ();
+            }
           }
         }
         catch (Exception e)
@@ -377,6 +458,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw;
         }
       }
+#endif
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1151,93 +1233,6 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
       }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public DebuggeeCodeContext GetCodeContextForLocation (string location)
-    {
-      LoggingUtils.PrintFunction ();
-
-      try
-      {
-        if (string.IsNullOrEmpty (location))
-        {
-          throw new ArgumentNullException ("location");
-        }
-
-        if (location.StartsWith ("0x"))
-        {
-          location = "*" + location;
-        }
-        else if (location.StartsWith ("\""))
-        {
-          location = location.Replace ("\\", "/");
-
-          location = location.Replace ("\"", "\\\""); // required to escape the nested string.
-        }
-
-        string command = string.Format ("-interpreter-exec console \"info line {0}\"", location);
-
-        MiResultRecord resultRecord = GdbClient.SendCommand (command);
-
-        MiResultRecord.RequireOk (resultRecord, command);
-
-        string pattern = "Line (?<line>[0-9]+) of \"(?<file>[^\\\"]+?)\" starts at address (?<start>[^ ]+) [<]?(?<startsym>[^>]+)[>]? (but contains no code|and ends at (?<end>[^ ]+) [<]?(?<endsym>[^>.]+)[>]?)";
-
-        Regex regExMatcher = new Regex (pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-        foreach (MiStreamRecord record in resultRecord.Records)
-        {
-          if (!record.Stream.StartsWith ("Line"))
-          {
-            continue; // early rejection.
-          }
-
-          string unescapedStream = Regex.Unescape (record.Stream);
-
-          Match regExLineMatch = regExMatcher.Match (unescapedStream);
-
-          if (regExLineMatch.Success)
-          {
-            string line = regExLineMatch.Result ("${line}");
-
-            string file = regExLineMatch.Result ("${file}");
-
-            string start = regExLineMatch.Result ("${start}");
-
-            string startsym = regExLineMatch.Result ("${startsym}");
-
-            string end = regExLineMatch.Result ("${end}");
-
-            string endsym = regExLineMatch.Result ("${endsym}");
-
-            TEXT_POSITION [] documentPositions = new TEXT_POSITION [2];
-
-            documentPositions [0].dwLine = uint.Parse (line) - 1;
-
-            documentPositions [0].dwColumn = 0;
-
-            documentPositions [1].dwLine = documentPositions [0].dwLine;
-
-            documentPositions [1].dwColumn = uint.MaxValue;
-
-            DebuggeeAddress startAddress = new DebuggeeAddress (start);
-
-            DebuggeeDocumentContext documentContext = new DebuggeeDocumentContext (Engine, file, documentPositions [0], documentPositions [1], DebugEngineGuids.guidLanguageCpp, startAddress);
-
-            return new DebuggeeCodeContext (Engine, documentContext, startAddress);
-          }
-        }
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-      }
-
-      return null;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

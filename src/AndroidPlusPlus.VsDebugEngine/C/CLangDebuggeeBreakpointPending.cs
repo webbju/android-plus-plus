@@ -52,24 +52,22 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.RequireOk (base.EvaluateBreakpointLocation (out documentContext, out codeContext, out location));
 
-        switch (m_breakpointRequestInfo.bpLocation.bpLocationType)
+        /*switch (m_breakpointRequestInfo.bpLocation.bpLocationType)
         {
           case (uint) enum_BP_LOCATION_TYPE.BPLT_CODE_FILE_LINE:
           {
-            DebuggeeCodeContext gdbCodeContext = m_debugger.GetCodeContextForLocation (location);
+            codeContext = CLangDebuggeeCodeContext.GetCodeContextForLocation (m_debugger, location);
 
-            if (gdbCodeContext != null)
+            if (codeContext == null)
             {
-              DebuggeeDocumentContext gdbDocumentContext = gdbCodeContext.DocumentContext;
+              throw new InvalidOperationException ();
+            }
 
-              if (gdbDocumentContext == null)
-              {
-                throw new InvalidOperationException ();
-              }
+            documentContext = codeContext.DocumentContext;
 
-              codeContext = gdbCodeContext;
-
-              documentContext = gdbDocumentContext;
+            if (documentContext == null)
+            {
+              throw new InvalidOperationException ();
             }
 
             break;
@@ -79,7 +77,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           {
             break;
           }
-        }
+        }*/
 
         return DebugEngineConstants.S_OK;
       }
@@ -133,7 +131,7 @@ namespace AndroidPlusPlus.VsDebugEngine
                 errorReason = resultRecord ["msg"] [0].GetString ();
               }
 
-              LoggingUtils.RequireOk (CreateErrorBreakpoint (errorReason, documentContext, documentContext.GetCodeContext ()));
+              LoggingUtils.RequireOk (CreateErrorBreakpoint (errorReason, documentContext, codeContext));
             }
             else
             {
@@ -170,10 +168,12 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        CLangDebuggeeBreakpointError errorBreakpoint = new CLangDebuggeeBreakpointError (m_debugger, m_breakpointManager, this, documentContext.GetCodeContext (), gdbBreakpoint, errorReason);
+        CLangDebuggeeBreakpointError errorBreakpoint = new CLangDebuggeeBreakpointError (m_debugger, m_breakpointManager, this, codeContext, gdbBreakpoint, errorReason);
 
         lock (m_errorBreakpoints)
         {
+          m_errorBreakpoints.Clear ();
+
           m_errorBreakpoints.Add (errorBreakpoint);
         }
 
@@ -220,7 +220,11 @@ namespace AndroidPlusPlus.VsDebugEngine
           // Address can't be satisfied. Unsatisfied likely indicates the modules or symbols associated with the context aren't loaded, yet.
           // 
 
-          LoggingUtils.RequireOk (CreateErrorBreakpoint ("Additional library symbols required.", breakpoint, documentContext, documentContext.GetCodeContext ()));
+          DebuggeeAddress pendingAddress = new DebuggeeAddress (MiBreakpoint.Pending);
+
+          DebuggeeCodeContext pendingContext = new CLangDebuggeeCodeContext (m_debugger, pendingAddress, documentContext);
+
+          LoggingUtils.RequireOk (CreateErrorBreakpoint ("Additional library symbols required.", breakpoint, documentContext, pendingContext));
         }
         else if (breakpoint.IsMultiple ())
         {
@@ -228,7 +232,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           // Breakpoint satisfied to multiple locations, no single memory address available.
           // 
 
-          CLangDebuggeeBreakpointBound boundBreakpoint = new CLangDebuggeeBreakpointBound (m_debugger, m_breakpointManager, this, documentContext.GetCodeContext (), breakpoint);
+          CLangDebuggeeBreakpointBound boundBreakpoint = new CLangDebuggeeBreakpointBound (m_debugger, m_breakpointManager, this, codeContext, breakpoint);
 
           lock (m_boundBreakpoints)
           {
@@ -247,7 +251,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           DebuggeeAddress boundAddress = new DebuggeeAddress (breakpoint.Address);
 
-          DebuggeeCodeContext addressContext = new DebuggeeCodeContext (m_debugger.Engine, documentContext, boundAddress);
+          DebuggeeCodeContext addressContext = new CLangDebuggeeCodeContext (m_debugger, boundAddress, documentContext);
 
           CLangDebuggeeBreakpointBound boundBreakpoint = new CLangDebuggeeBreakpointBound (m_debugger, m_breakpointManager, this, addressContext, breakpoint);
 
@@ -283,17 +287,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      lock (m_boundBreakpoints)
+      foreach (IDebugBoundBreakpoint2 boundBreakpoint in m_boundBreakpoints.ToArray ())
       {
-        if (m_boundBreakpoints.Count > 0)
-        {
-          List<IDebugBoundBreakpoint2> boundBreakpoints = new List<IDebugBoundBreakpoint2> (m_boundBreakpoints);
-
-          foreach (IDebugBoundBreakpoint2 boundBreakpoint in boundBreakpoints)
-          {
-            RefreshBreakpoint (boundBreakpoint);
-          }
-        }
+        RefreshBreakpoint (boundBreakpoint);
       }
     }
 
@@ -309,19 +305,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      lock (m_errorBreakpoints)
+      foreach (IDebugErrorBreakpoint2 errorBreakpoint in m_errorBreakpoints.ToArray ())
       {
-        if (m_errorBreakpoints.Count > 0)
+        if (errorBreakpoint is CLangDebuggeeBreakpointError)
         {
-          List<IDebugErrorBreakpoint2> errorBreakpoints = new List<IDebugErrorBreakpoint2> (m_errorBreakpoints);
-
-          foreach (IDebugErrorBreakpoint2 errorBreakpoint in errorBreakpoints)
-          {
-            if (errorBreakpoint is CLangDebuggeeBreakpointError)
-            {
-              RefreshBreakpoint (errorBreakpoint);
-            }
-          }
+          RefreshBreakpoint (errorBreakpoint);
         }
       }
     }
@@ -427,15 +415,19 @@ namespace AndroidPlusPlus.VsDebugEngine
       }
       else
       {
+        // 
+        // We've probably got sane breakpoint information back. Update current breakpoint values and re-process.
+        // 
+
         MiResultValue breakpointData = resultRecord ["BreakpointTable"] [0] ["body"] [0] ["bkpt"] [0];
 
-        gdbBreakpoint = new MiBreakpoint (breakpointData.Values);
+        MiBreakpoint currentGdbBreakpoint = new MiBreakpoint (breakpointData.Values);
 
         DebuggeeCodeContext codeContext = (resolution as DebuggeeBreakpointResolution).CodeContext;
 
         DebuggeeDocumentContext documentContext = codeContext.DocumentContext;
 
-        LoggingUtils.RequireOk (CreateBoundBreakpoint (gdbBreakpoint, documentContext, codeContext));
+        LoggingUtils.RequireOk (CreateBoundBreakpoint (currentGdbBreakpoint, documentContext, codeContext));
       }
     }
 

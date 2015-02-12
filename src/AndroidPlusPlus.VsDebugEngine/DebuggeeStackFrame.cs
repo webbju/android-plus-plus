@@ -437,22 +437,20 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      languageName = "Unknown";
-
-      languageGuid = Guid.Empty;
-
       try
       {
-        IDebugDocumentContext2 documentContext = null;
+        IDebugDocumentContext2 documentContext;
+
+        languageGuid = DebugEngineGuids.guidLanguageUnknown;
+
+        languageName = DebugEngineGuids.GetLanguageName (languageGuid);
 
         LoggingUtils.RequireOk (GetDocumentContext (out documentContext));
 
-        if (documentContext == null)
+        if (documentContext != null)
         {
-          throw new InvalidOperationException ();
+          LoggingUtils.RequireOk (documentContext.GetLanguageInfo (ref languageName, ref languageGuid));
         }
-
-        LoggingUtils.RequireOk (documentContext.GetLanguageInfo (ref languageName, ref languageGuid));
 
         return DebugEngineConstants.S_OK;
       }

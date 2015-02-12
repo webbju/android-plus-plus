@@ -71,59 +71,6 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /*public void RefreshThreads ()
-    {
-      LoggingUtils.PrintFunction ();
-
-      try
-      {
-        string command = "-thread-list-ids";
-
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
-
-        MiResultRecord.RequireOk (resultRecord, command);
-
-        if (!resultRecord.HasField ("thread-ids"))
-        {
-          throw new InvalidOperationException ("-thread-list-ids result missing 'thread-ids' field");
-        }
-
-        List<MiResultValue> threadIds = resultRecord ["thread-ids"] [0] ["thread-id"];
-
-        lock (m_debugThreads)
-        {
-          List<uint> invalidThreadIds = new List<uint> (m_debugThreads.Keys);
-
-          for (int i = 0; i < threadIds.Count; ++i)
-          {
-            uint id = threadIds [i].GetUnsignedInt ();
-
-            RefreshThread (id);
-
-            invalidThreadIds.Remove (id);
-          }
-
-          foreach (uint id in invalidThreadIds)
-          {
-            RemoveThread (id, uint.MaxValue);
-          }
-        }
-
-        if (resultRecord.HasField ("current-thread-id"))
-        {
-          CurrentThreadId = resultRecord ["current-thread-id"] [0].GetUnsignedInt ();
-        }
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-      }
-    }*/
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     public void RefreshAllThreads ()
     {
       LoggingUtils.PrintFunction ();
@@ -141,59 +88,61 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-
-        string command = string.Format ("-thread-info {0}", (tid == 0) ? "" : tid.ToString ());
-
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
-
-        MiResultRecord.RequireOk (resultRecord, command);
-
-        if (!resultRecord.HasField ("threads"))
+        m_debugger.RunInterruptOperation (delegate (CLangDebugger debugger)
         {
-          throw new InvalidOperationException ("-thread-info result missing 'threads' field");
-        }
+          string command = string.Format ("-thread-info {0}", (tid == 0) ? "" : tid.ToString ());
 
-        MiResultValueList threadsValueList = (MiResultValueList) resultRecord ["threads"] [0];
+          MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
 
-        List <MiResultValue> threadsData = threadsValueList.List;
+          MiResultRecord.RequireOk (resultRecord, command);
 
-        bool refreshedProcesses = false;
-
-        lock (m_debugThreads)
-        {
-          for (int i = threadsData.Count - 1; i >= 0; --i) // reported threads are in descending order.
+          if (!resultRecord.HasField ("threads"))
           {
-            uint id = threadsData [i] ["id"] [0].GetUnsignedInt ();
+            throw new InvalidOperationException ("-thread-info result missing 'threads' field");
+          }
 
-            CLangDebuggeeThread thread = GetThread (id);
+          MiResultValueList threadsValueList = (MiResultValueList) resultRecord ["threads"] [0];
 
-            if (thread == null)
+          List<MiResultValue> threadsData = threadsValueList.List;
+
+          bool refreshedProcesses = false;
+
+          lock (m_debugThreads)
+          {
+            for (int i = threadsData.Count - 1; i >= 0; --i) // reported threads are in descending order.
             {
-              thread = AddThread (id);
-            }
+              uint id = threadsData [i] ["id"] [0].GetUnsignedInt ();
 
-            if (thread.RequiresRefresh)
-            {
-              MiResultValue threadData = threadsData [i];
+              CLangDebuggeeThread thread = GetThread (id);
 
-              if (!refreshedProcesses)
+              if (thread == null)
               {
-                AndroidDevice hostDevice = DebugProgram.DebugProcess.NativeProcess.HostDevice;
-
-                hostDevice.RefreshProcesses (DebugProgram.DebugProcess.NativeProcess.Pid);
-
-                refreshedProcesses = true;
+                thread = AddThread (id);
               }
 
-              thread.Refresh (ref threadData);
+              if (thread.RequiresRefresh)
+              {
+                MiResultValue threadData = threadsData [i];
+
+                if (!refreshedProcesses)
+                {
+                  AndroidDevice hostDevice = DebugProgram.DebugProcess.NativeProcess.HostDevice;
+
+                  hostDevice.RefreshProcesses (DebugProgram.DebugProcess.NativeProcess.Pid);
+
+                  refreshedProcesses = true;
+                }
+
+                thread.Refresh (ref threadData);
+              }
             }
           }
-        }
 
-        if (resultRecord.HasField ("current-thread-id"))
-        {
-          CurrentThreadId = resultRecord ["current-thread-id"] [0].GetUnsignedInt ();
-        }
+          if (resultRecord.HasField ("current-thread-id"))
+          {
+            CurrentThreadId = resultRecord ["current-thread-id"] [0].GetUnsignedInt ();
+          }
+        });
       }
       catch (Exception e)
       {
@@ -513,16 +462,16 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         LoggingUtils.RequireOk (pDocPos.GetRange (startPos, endPos));
 
-        string location = string.Format ("\"{0}:{1}\"", fileName, startPos [0].dwLine + 1);
+        DebuggeeDocumentContext documentContext = new DebuggeeDocumentContext (m_debugger.Engine, fileName, startPos [0], endPos [0]);
 
-        DebuggeeCodeContext codeContext = m_debugger.GetCodeContextForLocation (location);
+        CLangDebuggeeCodeContext codeContext = CLangDebuggeeCodeContext.GetCodeContextForDocumentContext (m_debugger, documentContext);
 
         if (codeContext == null)
         {
           throw new InvalidOperationException ("Failed evaluating code-context for location.");
         }
 
-        DebuggeeCodeContext [] codeContexts = new DebuggeeCodeContext [] { codeContext };
+        CLangDebuggeeCodeContext [] codeContexts = new CLangDebuggeeCodeContext [] { codeContext };
 
         ppEnum = new DebuggeeCodeContext.Enumerator (codeContexts);
 

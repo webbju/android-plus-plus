@@ -43,15 +43,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     protected readonly TEXT_POSITION m_endPosition;
 
-    protected readonly Guid m_languageGuid;
-
-    protected readonly DebuggeeCodeContext m_codeContext;
+    protected DebuggeeCodeContext m_codeContext;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public DebuggeeDocumentContext (DebugEngine engine, string fileName, TEXT_POSITION beginPosition, TEXT_POSITION endPosition, Guid languageGuid, DebuggeeAddress memoryAddress)
+    public DebuggeeDocumentContext (DebugEngine engine, string fileName, TEXT_POSITION beginPosition, TEXT_POSITION endPosition)
     {
       m_engine = engine;
 
@@ -61,18 +59,20 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       m_endPosition = endPosition;
 
-      m_languageGuid = languageGuid;
-
-      m_codeContext = new DebuggeeCodeContext (m_engine, this, memoryAddress);
+      m_codeContext = null;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public DebuggeeCodeContext GetCodeContext ()
+    public int SetCodeContext (DebuggeeCodeContext codeContext)
     {
-      return m_codeContext;
+      LoggingUtils.PrintFunction ();
+
+      m_codeContext = codeContext;
+
+      return DebugEngineConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -134,7 +134,16 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        IDebugCodeContext2 [] codeContexts = new IDebugCodeContext2 [] { m_codeContext };
+        IDebugCodeContext2 [] codeContexts;
+        
+        if (m_codeContext != null)
+        {
+          codeContexts = new IDebugCodeContext2 [] { m_codeContext };
+        }
+        else
+        {
+          codeContexts = new IDebugCodeContext2 [0];
+        }
 
         enumCodeContexts = new DebuggeeCodeContext.Enumerator (codeContexts);
 
@@ -185,9 +194,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      languageGuid = m_languageGuid;
+      languageGuid = DebugEngineGuids.guidLanguageCpp;
 
-      languageName = DebugEngineGuids.GetLanguageName (m_languageGuid);
+      languageName = DebugEngineGuids.GetLanguageName (languageGuid);
 
       return DebugEngineConstants.S_OK;
     }
@@ -196,7 +205,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int GetName (enum_GETNAME_TYPE type, out string fileName)
+    public int GetName (enum_GETNAME_TYPE type, out string name)
     {
       // 
       // Gets the displayable name of the document that contains this document context.
@@ -204,7 +213,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      fileName = string.Empty;
+      name = string.Empty;
 
       try
       {
@@ -216,7 +225,7 @@ namespace AndroidPlusPlus.VsDebugEngine
             // Specifies a friendly name of the document or context.
             // 
 
-            fileName = Path.GetFileNameWithoutExtension (m_fileName);
+            name = Path.GetFileNameWithoutExtension (m_fileName);
 
             break;
           }
@@ -227,7 +236,7 @@ namespace AndroidPlusPlus.VsDebugEngine
             // Specifies the full path of the document or context.
             // 
 
-            fileName = m_fileName;
+            name = m_fileName;
 
             break;
           }
@@ -238,7 +247,7 @@ namespace AndroidPlusPlus.VsDebugEngine
             // Specifies a base file name instead of a full path of the document or context.
             // 
 
-            fileName = Path.GetFileName (m_fileName);
+            name = Path.GetFileName (m_fileName);
 
             break;
           }
@@ -249,7 +258,7 @@ namespace AndroidPlusPlus.VsDebugEngine
             // Specifies a unique name of the document or context in the form of a moniker.
             // 
 
-            fileName = m_fileName;
+            name = m_fileName;
 
             break;
           }
@@ -260,7 +269,7 @@ namespace AndroidPlusPlus.VsDebugEngine
             // Specifies a URL name of the document or context.
             // 
 
-            fileName = "file://" + m_fileName.Replace ("\\", "/");
+            name = "file://" + m_fileName.Replace ("\\", "/");
 
             break;
           }
@@ -271,7 +280,7 @@ namespace AndroidPlusPlus.VsDebugEngine
             // Specifies a title of the document, if one exists.
             // 
 
-            fileName = Path.GetFileName (m_fileName);
+            name = Path.GetFileName (m_fileName);
 
             break;
           }
@@ -282,13 +291,13 @@ namespace AndroidPlusPlus.VsDebugEngine
             // Gets the starting page URL for processes.
             // 
 
-            fileName = "file://" + m_fileName.Replace ("\\", "/");
+            name = "file://" + m_fileName.Replace ("\\", "/");
 
             break;
           }
         }
 
-        if (string.IsNullOrEmpty (fileName))
+        if (string.IsNullOrEmpty (name))
         {
           throw new InvalidOperationException ();
         }
@@ -319,21 +328,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        beginPosition [0].dwLine = m_beginPosition.dwLine;
-
-        beginPosition [0].dwColumn = m_beginPosition.dwColumn;
-
-        endPosition [0].dwLine = m_endPosition.dwLine;
-
-        endPosition [0].dwColumn = m_endPosition.dwColumn;
-
-        return DebugEngineConstants.S_OK;
+        throw new NotImplementedException ();
       }
-      catch (Exception e)
+      catch (NotImplementedException e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return DebugEngineConstants.E_NOTIMPL;
       }
     }
 

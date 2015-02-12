@@ -245,13 +245,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
+#if false
       try
       {
         // 
         // Get the entire call-stack for the current thread, and enumerate.
         // 
 
-#if false
         CLangDebuggeeStackFrame stackFrame = pFrame as CLangDebuggeeStackFrame;
 
         IDebugThread2 thread;
@@ -291,16 +291,14 @@ namespace AndroidPlusPlus.VsDebugEngine
         ppEnum = new DebuggeeProgram.EnumeratorCodePaths (threadCodePaths);
 
         ppSafety = null;
-#else
-        throw new NotImplementedException ();
-#endif
 
         return DebugEngineConstants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
-
+#endif
+      {
         ppEnum = null;
 
         ppSafety = null;

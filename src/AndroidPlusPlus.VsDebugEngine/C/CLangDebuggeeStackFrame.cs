@@ -174,9 +174,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           string filename = PathUtils.ConvertPathCygwinToWindows (frameTuple ["fullname"] [0].GetString ());
 
-          m_documentContext = new DebuggeeDocumentContext (m_debugger.Engine, filename, textPositions [0], textPositions [1], DebugEngineGuids.guidLanguageCpp, m_locationAddress);
+          m_documentContext = new DebuggeeDocumentContext (m_debugger.Engine, filename, textPositions [0], textPositions [1]);
 
-          m_codeContext = m_documentContext.GetCodeContext ();
+          m_codeContext = CLangDebuggeeCodeContext.GetCodeContextForLocation (m_debugger, m_locationAddress.ToString ());
 
           if (m_codeContext == null)
           {
@@ -185,7 +185,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         }
         else
         {
-          m_codeContext = m_debugger.GetCodeContextForLocation ("*" + m_locationAddress.ToString ());
+          m_codeContext = CLangDebuggeeCodeContext.GetCodeContextForLocation (m_debugger, m_locationAddress.ToString ());
 
           m_documentContext = (m_codeContext != null) ? m_codeContext.DocumentContext : null;
         }
@@ -605,16 +605,18 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        IDebugDocumentContext2 documentContext = null;
+        IDebugDocumentContext2 documentContext;
+
+        languageGuid = DebugEngineGuids.guidLanguageUnknown;
+
+        languageName = DebugEngineGuids.GetLanguageName (languageGuid);
 
         LoggingUtils.RequireOk (GetDocumentContext (out documentContext));
 
-        if (documentContext == null)
+        if (documentContext != null)
         {
-          throw new InvalidOperationException ();
+          LoggingUtils.RequireOk (documentContext.GetLanguageInfo (ref languageName, ref languageGuid));
         }
-
-        LoggingUtils.RequireOk (documentContext.GetLanguageInfo (ref languageName, ref languageGuid));
 
         return DebugEngineConstants.S_OK;
       }
