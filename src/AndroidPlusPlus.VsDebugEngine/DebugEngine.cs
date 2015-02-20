@@ -135,8 +135,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (((eventAttributes & (uint) enum_EVENTATTRIBUTES.EVENT_STOPPING) != 0) && (thread == null))
         {
-          // For stopping events, this parameter cannot be a null value as the stack frame is obtained from this parameter.
-          throw new ArgumentNullException ("thread");
+          throw new ArgumentNullException ("thread", "For stopping events, this parameter cannot be a null value as the stack frame is obtained from this parameter.");
         }
 
         int handle = callback.Event (this, null, program, thread, debugEvent, ref eventGuid, eventAttributes);

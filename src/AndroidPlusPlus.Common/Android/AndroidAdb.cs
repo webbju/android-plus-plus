@@ -125,6 +125,10 @@ namespace AndroidPlusPlus.Common
             {
               disconnectedDevices.Add (deviceName);
             }
+            else if (deviceType.Equals ("unauthorized"))
+            {
+              // User needs to allow USB debugging.
+            }
             else
             {
               AndroidDevice connectedDevice;

@@ -177,6 +177,12 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    public bool IsAttached { get; protected set; }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public GdbClient (GdbSetup gdbSetup)
     {
       LoggingUtils.PrintFunction ();
@@ -573,6 +579,8 @@ namespace AndroidPlusPlus.Common
         MiResultRecord resultRecord = SendCommand (command, 60000);
 
         MiResultRecord.RequireOk (resultRecord, command);
+
+        IsAttached = true;
       }
       catch (Exception e)
       {
@@ -636,6 +644,8 @@ namespace AndroidPlusPlus.Common
         m_gdbServer = null;
 
         m_gdbSetup.ClearPortForwarding ();
+
+        IsAttached = false;
       }
     }
 
@@ -781,8 +791,8 @@ namespace AndroidPlusPlus.Common
 
       switch (stepType)
       {
-        case StepType.Statement:
         case StepType.Line:
+        case StepType.Statement:
         {
           // 
           // -exec-next
@@ -1224,6 +1234,8 @@ namespace AndroidPlusPlus.Common
         {
           syncKeyPair.Value.Set ();
         }
+
+        IsAttached = false;
       }
       catch (Exception e)
       {

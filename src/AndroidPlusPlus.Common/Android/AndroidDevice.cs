@@ -338,6 +338,8 @@ namespace AndroidPlusPlus.Common
 
         m_deviceProcessesPidsByName.Clear ();
 
+        m_deviceProcessesByPpid.Clear ();
+
         for (uint i = 1; i < processesOutputLines.Length; ++i)
         {
           if (!String.IsNullOrEmpty (processesOutputLines [i]))

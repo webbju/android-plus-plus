@@ -107,34 +107,31 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           bool refreshedProcesses = false;
 
-          lock (m_debugThreads)
+          for (int i = threadsData.Count - 1; i >= 0; --i) // reported threads are in descending order.
           {
-            for (int i = threadsData.Count - 1; i >= 0; --i) // reported threads are in descending order.
+            uint id = threadsData [i] ["id"] [0].GetUnsignedInt ();
+
+            CLangDebuggeeThread thread = GetThread (id);
+
+            if (thread == null)
             {
-              uint id = threadsData [i] ["id"] [0].GetUnsignedInt ();
+              thread = AddThread (id);
+            }
 
-              CLangDebuggeeThread thread = GetThread (id);
+            if (thread.RequiresRefresh)
+            {
+              MiResultValue threadData = threadsData [i];
 
-              if (thread == null)
+              if (!refreshedProcesses)
               {
-                thread = AddThread (id);
+                AndroidDevice hostDevice = DebugProgram.DebugProcess.NativeProcess.HostDevice;
+
+                hostDevice.RefreshProcesses (DebugProgram.DebugProcess.NativeProcess.Pid);
+
+                refreshedProcesses = true;
               }
 
-              if (thread.RequiresRefresh)
-              {
-                MiResultValue threadData = threadsData [i];
-
-                if (!refreshedProcesses)
-                {
-                  AndroidDevice hostDevice = DebugProgram.DebugProcess.NativeProcess.HostDevice;
-
-                  hostDevice.RefreshProcesses (DebugProgram.DebugProcess.NativeProcess.Pid);
-
-                  refreshedProcesses = true;
-                }
-
-                thread.Refresh (ref threadData);
-              }
+              thread.Refresh (ref threadData);
             }
           }
 
@@ -172,15 +169,18 @@ namespace AndroidPlusPlus.VsDebugEngine
           module = new CLangDebuggeeModule (m_debugger.Engine, asyncRecord);
 
           m_debugModules.Add (moduleName, module);
+        }
+      }
 
-          m_debugger.Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, true), DebugProgram, null);
+      if (module != null)
+      {
+        m_debugger.Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, true), DebugProgram, null);
 
-          if (module.SymbolsLoaded)
-          {
-            m_debugger.Engine.Broadcast (new DebugEngineEvent.BeforeSymbolSearch (module as IDebugModule3), DebugProgram, null);
+        if (module.SymbolsLoaded)
+        {
+          m_debugger.Engine.Broadcast (new DebugEngineEvent.BeforeSymbolSearch (module as IDebugModule3), DebugProgram, null);
 
-            m_debugger.Engine.Broadcast (new DebugEngineEvent.SymbolSearch (module as IDebugModule3, module.Name), DebugProgram, null);
-          }
+          m_debugger.Engine.Broadcast (new DebugEngineEvent.SymbolSearch (module as IDebugModule3, module.Name), DebugProgram, null);
         }
       }
 
@@ -214,7 +214,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void RemoveModule (string moduleName)
+    public bool RemoveModule (string moduleName)
     {
       LoggingUtils.PrintFunction ();
 
@@ -223,17 +223,22 @@ namespace AndroidPlusPlus.VsDebugEngine
         throw new ArgumentNullException ("moduleName");
       }
 
+      DebuggeeModule module = null;
+
       lock (m_debugModules)
       {
-        DebuggeeModule module = null;
-
         if (m_debugModules.TryGetValue (moduleName, out module))
         {
           m_debugModules.Remove (moduleName);
-
-          m_debugger.Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, false), DebugProgram, null);
         }
       }
+
+      if (module != null)
+      {
+        m_debugger.Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, false), DebugProgram, null);
+      }
+
+      return (module != null);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -253,9 +258,12 @@ namespace AndroidPlusPlus.VsDebugEngine
           thread = new CLangDebuggeeThread (m_debugger, this, threadId);
 
           m_debugThreads.Add (threadId, thread);
-
-          m_debugger.Engine.Broadcast (new DebugEngineEvent.ThreadCreate (), DebugProgram, thread);
         }
+      }
+
+      if (thread != null)
+      {
+        m_debugger.Engine.Broadcast (new DebugEngineEvent.ThreadCreate (), DebugProgram, thread);
       }
 
       return (CLangDebuggeeThread) thread;
@@ -265,21 +273,26 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void RemoveThread (uint threadId, uint exitCode)
+    public bool RemoveThread (uint threadId, uint exitCode)
     {
       LoggingUtils.PrintFunction ();
 
+      DebuggeeThread thread = null;
+
       lock (m_debugThreads)
       {
-        DebuggeeThread thread = null;
-
         if (m_debugThreads.TryGetValue (threadId, out thread))
         {
           m_debugThreads.Remove (threadId);
-
-          m_debugger.Engine.Broadcast (new DebugEngineEvent.ThreadDestroy (exitCode), DebugProgram, thread);
         }
       }
+
+      if (thread != null)
+      {
+        m_debugger.Engine.Broadcast (new DebugEngineEvent.ThreadDestroy (exitCode), DebugProgram, thread);
+      }
+
+      return (thread != null);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

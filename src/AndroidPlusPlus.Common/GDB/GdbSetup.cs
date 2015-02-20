@@ -307,21 +307,26 @@ namespace AndroidPlusPlus.Common
 #endif
 
       // 
-      // From NDK r10c there's an additional script for controlling native debugging behaviour on ART.
+      // Include a script copied from 'platform/development' (Android Git) which allows JVM stack traces on via Python.
+      // - It also define a special mode for controlling debugging behaviour on ART.
       // 
 
-      string commonSetupScript = Path.Combine (AndroidSettings.NdkRoot, "prebuilt", "common", "gdb", "common.setup");
+      string androidPlusPlusRoot = Environment.GetEnvironmentVariable ("ANDROID_PLUS_PLUS");
 
-      if (File.Exists (commonSetupScript))
+      string dalkvikGdbScriptPath = Path.Combine (androidPlusPlusRoot, "contrib", "gdb", "scripts", "dalvik.gdb");
+
+      if (File.Exists (dalkvikGdbScriptPath))
       {
-        gdbExecutionCommands.Add ("source " + PathUtils.SantiseWindowsPath (commonSetupScript));
+        gdbExecutionCommands.Add ("source " + PathUtils.SantiseWindowsPath (dalkvikGdbScriptPath));
 
+#if false
         if (Process.HostDevice.SdkVersion >= AndroidSettings.VersionCode.LOLLIPOP)
         {
           gdbExecutionCommands.Add ("art-on");
 
           gdbExecutionCommands.Add ("handle SIGSEGV print stop");
         }
+#endif
       }
 
       return gdbExecutionCommands.ToArray ();

@@ -26,7 +26,9 @@ namespace AndroidPlusPlus.Common
 
     public static void Print (string format)
     {
-      Trace.WriteLine (string.Format ("[{0}] {1}", DateTime.Now.ToString ("u"), format));
+      DateTime now = DateTime.Now;
+
+      Trace.WriteLine (string.Format ("[{0}] {1}", now.ToString ("u"), format));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
