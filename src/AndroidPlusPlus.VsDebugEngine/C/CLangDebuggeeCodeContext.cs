@@ -54,15 +54,22 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       MiResultRecord.RequireOk (resultRecord, command);
 
-      string pattern = "(?<symbol>[^ ]+) \\+ (?<offset>[0-9]+) (in section (?<section>[^ ]+) of) (?<module>.+)";
+      string pattern = "(?<symbol>.+)( [\\+] (?<offset>[0-9]+))? (in section (?<section>[^ ]+) of) (?<module>.+)";
 
       Regex regExMatcher = new Regex (pattern, RegexOptions.IgnoreCase);
 
       foreach (MiStreamRecord record in resultRecord.Records)
       {
-        string sanitisedStream = record.Stream.Substring (0, record.Stream.Length - 2); // Strip trailing "\\n"
+        if (!record.Stream.StartsWith ("No symbol"))
+        {
+          continue; // early rejection.
+        }
 
-        Match regExLineMatch = regExMatcher.Match (sanitisedStream);
+        StringBuilder sanitisedStream = new StringBuilder (record.Stream);
+
+        sanitisedStream.Length -= 2; // Strip trailing "\\n"
+
+        Match regExLineMatch = regExMatcher.Match (sanitisedStream.ToString ());
 
         if (regExLineMatch.Success)
         {
@@ -76,7 +83,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           m_symbolName = symbol;
 
-          m_symbolOffset = ulong.Parse (offset);
+          if (!ulong.TryParse (offset, out m_symbolOffset))
+          {
+            m_symbolOffset = 0ul;
+          }
 
           m_symbolSection = section;
 
@@ -117,7 +127,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         MiResultRecord.RequireOk (resultRecord, command);
 
-        string pattern = "Line (?<line>[0-9]+) of \"(?<file>[^\\\"]+?)\" starts at address (?<start>[^ ]+) [<]?(?<startsym>[^>]+)[>]? (but contains no code|and ends at (?<end>[^ ]+) [<]?(?<endsym>[^>.]+)[>]?)";
+        string pattern = "Line (?<line>[0-9]+) of ([\\]*\"(?<file>.+)[\\]*[\"]+) starts at address (?<startaddr>[^ ]+) (?<startsym>[^+]+[+]?[0-9]*[>]?) (but contains no code|and ends at (?<endaddr>[^ ]+) (?<endsym>[^+]+[+]?[0-9]*[>]?)?)";
+
+        pattern = pattern.Replace ("\\", "\\\\");
 
         Regex regExMatcher = new Regex (pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
@@ -128,9 +140,13 @@ namespace AndroidPlusPlus.VsDebugEngine
             continue; // early rejection.
           }
 
-          string unescapedStream = Regex.Unescape (record.Stream);
+          StringBuilder sanitisedStream = new StringBuilder (record.Stream);
 
-          Match regExLineMatch = regExMatcher.Match (unescapedStream);
+          sanitisedStream.Replace ("\\\"", "\"");
+
+          sanitisedStream.Replace ("\\\\", "\\");
+
+          Match regExLineMatch = regExMatcher.Match (sanitisedStream.ToString ());
 
           if (regExLineMatch.Success)
           {
@@ -138,11 +154,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             string file = regExLineMatch.Result ("${file}");
 
-            string start = regExLineMatch.Result ("${start}");
+            string startaddr = regExLineMatch.Result ("${startaddr}");
 
             string startsym = regExLineMatch.Result ("${startsym}");
 
-            string end = regExLineMatch.Result ("${end}");
+            string endaddr = regExLineMatch.Result ("${endaddr}");
 
             string endsym = regExLineMatch.Result ("${endsym}");
 
@@ -156,7 +172,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             documentPositions [1].dwColumn = uint.MaxValue;
 
-            DebuggeeAddress startAddress = new DebuggeeAddress (start);
+            DebuggeeAddress startAddress = new DebuggeeAddress (startaddr);
 
             DebuggeeDocumentContext documentContext = new DebuggeeDocumentContext (debugger.Engine, file, documentPositions [0], documentPositions [1]);
 
@@ -215,17 +231,20 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_MODULEURL) != 0)
         {
-          string moduleFile = Path.GetFileName (m_symbolModule);
+          if (!string.IsNullOrWhiteSpace (m_symbolModule))
+          {
+            string moduleFile = Path.GetFileName (m_symbolModule);
 
-          CLangDebuggeeModule module = m_debugger.NativeProgram.GetModule (moduleFile);
+            CLangDebuggeeModule module = m_debugger.NativeProgram.GetModule (moduleFile);
 
-          MODULE_INFO [] moduleArray = new MODULE_INFO [1];
+            MODULE_INFO [] moduleArray = new MODULE_INFO [1];
 
-          LoggingUtils.RequireOk (module.GetInfo (enum_MODULE_INFO_FIELDS.MIF_URL, moduleArray));
+            LoggingUtils.RequireOk (module.GetInfo (enum_MODULE_INFO_FIELDS.MIF_URL, moduleArray));
 
-          infoArray [0].bstrModuleUrl = moduleArray [0].m_bstrUrl;
+            infoArray [0].bstrModuleUrl = moduleArray [0].m_bstrUrl;
 
-          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_MODULEURL;
+            infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_MODULEURL;
+          }
         }
 
         if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION) != 0)

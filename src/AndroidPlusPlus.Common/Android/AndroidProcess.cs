@@ -109,12 +109,16 @@ namespace AndroidPlusPlus.Common
       if (appRemotePath.StartsWith ("package:"))
       {
         m_apkPath = appRemotePath.Substring ("package:".Length);
+      }
 
-        // 
-        // Perform an 'adb shell pm dump <package>' request, and parse output for relevant data.
-        // TODO: This is extremely sub-optimal, but will have to do for now.
-        // 
+      // 
+      // Perform an 'adb shell pm dump <package>' request, and parse output for relevant data.
+      // - This isn't available on older devices; it's a fairly recent addition. JB+ possibly?
+      // - TODO: This is extremely sub-optimal, but will have to do for now.
+      // 
 
+      if (HostDevice.SdkVersion >= AndroidSettings.VersionCode.JELLY_BEAN_MR1)
+      {
         string [] packageDumpReport = HostDevice.Shell ("pm", string.Format ("dump {0}", Name)).Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
         for (int i = 0; i < packageDumpReport.Length; ++i)
@@ -167,22 +171,51 @@ namespace AndroidPlusPlus.Common
             m_pkgFlags = line.Substring (PKG_FLAGS_EXPRESSION.Length).Trim (new char [] { '[', ']' }).Split (new char [] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
           }
         }
+      }
 
-        // 
-        // Clean up some variables which may be empty or undefined.
-        // 
+      // 
+      // Clean up some variables which may be empty or undefined.
+      // 
 
-        if (string.IsNullOrWhiteSpace (m_primaryCpuAbi))
+      if (string.IsNullOrWhiteSpace (m_codePath))
+      {
+        m_codePath = string.Format ("/data/data/{0}", Name);
+      }
+
+      if (string.IsNullOrWhiteSpace (m_dataDir))
+      {
+        m_dataDir = string.Format ("/data/data/{0}", Name);
+      }
+
+      if (string.IsNullOrWhiteSpace (m_primaryCpuAbi))
+      {
+        m_primaryCpuAbi = HostDevice.SupportedCpuAbis [0];
+      }
+
+      if (string.IsNullOrWhiteSpace (m_primaryCpuAbi) && (HostDevice.SupportedCpuAbis.Length > 1))
+      {
+        m_secondaryCpuAbi = HostDevice.SupportedCpuAbis [1];
+      }
+
+      if (string.IsNullOrWhiteSpace (m_legacyNativeLibraryDir))
+      {
+        if (HostDevice.SdkVersion >= AndroidSettings.VersionCode.JELLY_BEAN_MR1)
         {
-          m_primaryCpuAbi = HostDevice.SupportedCpuAbis [0];
-        }
+          string bundleId = Path.GetFileNameWithoutExtension (m_apkPath);
 
-        if (string.IsNullOrWhiteSpace (m_primaryCpuAbi) && (HostDevice.SupportedCpuAbis.Length > 1))
+          m_legacyNativeLibraryDir = string.Format ("/data/app-lib/{0}", bundleId);
+        }
+        else
         {
-          m_secondaryCpuAbi = HostDevice.SupportedCpuAbis [1];
+          m_legacyNativeLibraryDir = string.Format ("{0}/lib", m_codePath);
         }
+      }
 
-        if (string.IsNullOrWhiteSpace (m_nativeLibraryPath))
+      if (string.IsNullOrWhiteSpace (m_nativeLibraryPath))
+      {
+        m_nativeLibraryPath = m_legacyNativeLibraryDir;
+
+        if (HostDevice.SdkVersion >= AndroidSettings.VersionCode.JELLY_BEAN_MR1)
         {
           string cpuAbiSubdirectory = string.Empty;
 

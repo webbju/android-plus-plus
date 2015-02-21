@@ -149,6 +149,22 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
+        handle = m_ad7EventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
+
+        if (handle != DebugEngineConstants.E_NOTIMPL)
+        {
+          LoggingUtils.RequireOk (handle);
+        }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        throw;
+      }
+
+      try
+      {
         if (m_debuggerCallback.TryGetValue (riidEvent, out eventCallback))
         {
           handle = eventCallback (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
@@ -162,6 +178,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
+
+        throw;
       }
 
       try
@@ -176,6 +194,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
+
+        throw;
       }
 
       try
@@ -190,20 +210,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
-      }
 
-      try
-      {
-        handle = m_ad7EventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
-
-        if (handle != DebugEngineConstants.E_NOTIMPL)
-        {
-          LoggingUtils.RequireOk (handle);
-        }
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
+        throw;
       }
 
       // 

@@ -12,6 +12,7 @@ using System.Threading;
 using System.Windows.Forms;
 using AndroidPlusPlus.Common;
 using Microsoft.VisualStudio.Debugger.Interop;
+using System.Text;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -142,17 +143,17 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (/*archIs64Bit && */Environment.Is64BitOperatingSystem)
       {
-        string clientIdentifier = (forceNdkR9dClient) ? "7.3.1-x86_64-ndk_r9d" : "7.6.0-x86_64-ndk_r10b";
+        string clientIdentifier = (forceNdkR9dClient) ? "7.3.1" : "7.6.0";
 
-        contribGdbCommandPath = Path.Combine (androidPlusPlusRoot, "contrib", "redist-gdb-python-x86_64", clientIdentifier);
+        contribGdbCommandPath = Path.Combine (androidPlusPlusRoot, "contrib", "gdb", "bin", "x86_64", clientIdentifier);
 
         contribGdbMatches = Directory.GetFiles (contribGdbCommandPath, contribGdbCommandFilePattern, SearchOption.TopDirectoryOnly);
       }
       else
       {
-        string clientIdentifier = (forceNdkR9dClient) ? "7.3.1-x86-ndk_r9d" : "7.6.0-x86-ndk_r10b";
+        string clientIdentifier = (forceNdkR9dClient) ? "7.3.1" : "7.6.0";
 
-        contribGdbCommandPath = Path.Combine (androidPlusPlusRoot, "contrib", "redist-gdb-python-x86", clientIdentifier);
+        contribGdbCommandPath = Path.Combine (androidPlusPlusRoot, "contrib", "gdb", "bin", "x86", clientIdentifier);
 
         contribGdbMatches = Directory.GetFiles (contribGdbCommandPath, contribGdbCommandFilePattern, SearchOption.TopDirectoryOnly);
       }
@@ -336,7 +337,10 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         lock (this)
         {
-          targetWasRunning = NativeProgram.IsRunning;
+          lock (NativeProgram)
+          {
+            targetWasRunning = NativeProgram.IsRunning;
+          }
 
           if ((Interlocked.Increment (ref m_interruptOperationCounter) == 1) && targetWasRunning)
           {
@@ -355,27 +359,37 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        bool interruptSignalled = !NativeProgram.IsRunning;
-
-        while (!interruptSignalled)
+        lock (this)
         {
-          LoggingUtils.Print ("RunInterruptOperation: Waiting for interrupt to stop target.");
+          bool interruptSignalled = false;
 
-          interruptSignalled = m_interruptOperationCompleted.WaitOne (0);
-
-          if (!interruptSignalled)
+          lock (NativeProgram)
           {
-            Application.DoEvents ();
-
-            Thread.Yield ();
+            interruptSignalled = !NativeProgram.IsRunning;
           }
-        }
 
-        operation (this);
+          while (!interruptSignalled)
+          {
+            LoggingUtils.Print ("RunInterruptOperation: Waiting for interrupt to stop target.");
+
+            interruptSignalled = m_interruptOperationCompleted.WaitOne (0);
+
+            if (!interruptSignalled)
+            {
+              Application.DoEvents ();
+
+              Thread.Yield ();
+            }
+          }
+
+          operation (this);
+        }
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
+
+        throw; // Allows the caller of RunInterruptOperation to be informed of operation() failures.
       }
       finally
       {
@@ -396,69 +410,6 @@ namespace AndroidPlusPlus.VsDebugEngine
           LoggingUtils.HandleException (e);
         }
       }
-
-#if false
-      try
-      {
-        lock (this)
-        {
-          Interlocked.Increment (ref m_interruptOperationCounter);
-
-          targetWasRunning = NativeProgram.IsRunning;
-
-          if (targetWasRunning)
-          {
-            // 
-            // GDB 'stopped' events usually don't provide a token to which they are associated (only get ^done confirmation).
-            // This should block until the requested interrupt has been received and completely handled by VS.
-            // 
-
-            m_interruptOperationCompleted
-
-            using (m_interruptOperationCompleted)
-            {
-              GdbClient.Stop ();
-
-              while (!m_interruptOperationCompleted.WaitOne (0))
-              {
-                Application.DoEvents ();
-
-                Thread.Yield ();
-              }
-            }
-
-            m_interruptOperationCompleted = null;
-          }
-
-          operation (this);
-        }
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-
-        throw;
-      }
-      finally
-      {
-        try
-        {
-          lock (this)
-          {
-            if ((Interlocked.Decrement (ref m_interruptOperationCounter) == 0) && targetWasRunning && shouldContinue)
-            {
-              GdbClient.Continue ();
-            }
-          }
-        }
-        catch (Exception e)
-        {
-          LoggingUtils.HandleException (e);
-
-          throw;
-        }
-      }
-#endif
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -886,11 +837,32 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                         default:
                         {
+                          StringBuilder signalDescription = new StringBuilder ();
+
+                          signalDescription.AppendFormat ("{0} ({1})", signalName, signalMeaning);
+
+                          if (asyncRecord.HasField ("frame"))
+                          {
+                            MiResultValueTuple frameTuple = asyncRecord ["frame"] [0] as MiResultValueTuple;
+
+                            if (frameTuple.HasField ("addr"))
+                            {
+                              string address = frameTuple ["addr"] [0].GetString ();
+
+                              signalDescription.AppendFormat (" at {0}", address);
+                            }
+
+                            if (frameTuple.HasField ("func"))
+                            {
+                              string function = frameTuple ["func"] [0].GetString ();
+
+                              signalDescription.AppendFormat (" ({0})", function);
+                            }
+                          }
+
                           bool canContinue = true;
 
-                          string signalDescription = string.Format ("{0} ({1})", signalName, signalMeaning);
-
-                          DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, signalName, signalDescription, 0x80000000, canContinue);
+                          DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, signalName, signalDescription.ToString (), 0x80000000, canContinue);
 
                           Engine.Broadcast (exception, NativeProgram.DebugProgram, stoppedThread);
 

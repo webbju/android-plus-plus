@@ -104,6 +104,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
+#if false
         if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_MODULEURL) != 0)
         {
           infoArray [0].bstrModuleUrl = "file://";
@@ -120,7 +121,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_FUNCTIONOFFSET) != 0)
         {
-#if false
           if (DocumentContext != null)
           {
             TEXT_POSITION [] startOffset = new TEXT_POSITION [1];
@@ -133,8 +133,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_FUNCTIONOFFSET;
           }
-#endif
         }
+#endif
 
         if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS) != 0)
         {

@@ -51,6 +51,7 @@
     <Compile Include="C\CLangDebuggeeBreakpointBound.cs" />
     <Compile Include="C\CLangDebuggeeBreakpointError.cs" />
     <Compile Include="C\CLangDebuggeeBreakpointPending.cs" />
+    <Compile Include="C\CLangDebuggeeCodeContext.cs" />
     <Compile Include="C\CLangDebuggeeDisassemblyStream.cs" />
     <Compile Include="C\CLangDebuggeeMemoryBytes.cs" />
     <Compile Include="C\CLangDebuggeeProperty.cs" />
