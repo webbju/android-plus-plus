@@ -100,7 +100,9 @@
     <ClInclude Include="src\common.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\sdl2-library\AndroidManifest.xml" />
+    <None Include="..\sdl2-library\AndroidManifest.xml">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="proguard-project.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -35,6 +35,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private JdbSetup m_jdbSetup;
 
+    private JavaLangDebuggerCallback m_javaLangCallback = null;
+
     private int m_interruptOperationCounter = 0;
 
     private ManualResetEvent m_interruptOperationCompleted = null;
@@ -46,6 +48,8 @@ namespace AndroidPlusPlus.VsDebugEngine
     public JavaLangDebugger (DebugEngine debugEngine, DebuggeeProgram debugProgram)
     {
       Engine = debugEngine;
+
+      m_javaLangCallback = new JavaLangDebuggerCallback (debugEngine);
 
       JavaProgram = new JavaLangDebuggeeProgram (this, debugProgram);
 
@@ -60,6 +64,20 @@ namespace AndroidPlusPlus.VsDebugEngine
       JdbClient.OnAsyncStderr = OnClientAsyncOutput;
 
       JdbClient.Start ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public void Kill ()
+    {
+      LoggingUtils.PrintFunction ();
+
+      if (JdbClient != null)
+      {
+        JdbClient.Kill ();
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -129,11 +147,9 @@ namespace AndroidPlusPlus.VsDebugEngine
         }
         else if (line.StartsWith ("The application has been disconnected"))
         {
-          //string message = "Lost connection with JDB target application.\nThe application has been disconnected.";
+          string message = "Lost connection with JDB target application.\nThe application has been disconnected.";
 
-          //Engine.Broadcast (new DebugEngineEvent.Error (message, true), JavaProgram.DebugProgram, null);
-
-          requestTermination = true;
+          Engine.Broadcast (new DebugEngineEvent.Error (message, true), JavaProgram.DebugProgram, null);
         }
         else if (line.StartsWith ("Exception occurred:"))
         {
@@ -152,7 +168,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           try
           {
-            LoggingUtils.RequireOk (Engine.TerminateProcess (JavaProgram.DebugProgram.DebugProcess));
+            LoggingUtils.RequireOk (Engine.Detach (JavaProgram.DebugProgram));
           }
           catch (Exception e)
           {

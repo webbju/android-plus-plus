@@ -200,8 +200,6 @@ namespace AndroidPlusPlus.Common
 
       try
       {
-        Kill ();
-
         if (m_gdbClientInstance != null)
         {
           m_gdbClientInstance.Dispose ();
@@ -209,7 +207,12 @@ namespace AndroidPlusPlus.Common
           m_gdbClientInstance = null;
         }
 
-        m_asyncRecordWorkerThreadSignal.Dispose ();
+        if (m_asyncRecordWorkerThreadSignal != null)
+        {
+          m_asyncRecordWorkerThreadSignal.Dispose ();
+
+          m_asyncRecordWorkerThreadSignal = null;
+        }
       }
       catch (Exception e)
       {
@@ -276,9 +279,12 @@ namespace AndroidPlusPlus.Common
       // Create asynchronous input and output job queue threads.
       // 
 
-      m_asyncRecordWorkerThread = new Thread (AsyncOutputWorkerThreadBody);
+      if (m_asyncRecordWorkerThread == null)
+      {
+        m_asyncRecordWorkerThread = new Thread (AsyncOutputWorkerThreadBody);
 
-      m_asyncRecordWorkerThread.Start ();
+        m_asyncRecordWorkerThread.Start ();
+      }
 
       // 
       // Evaluate this client's GDB/MI support and capabilities. 
@@ -368,22 +374,10 @@ namespace AndroidPlusPlus.Common
         MiResultRecord resultRecord = SendCommand (command);
 
         MiResultRecord.RequireOk (resultRecord, command);
-
-        if (m_gdbClientInstance != null)
-        {
-          m_gdbClientInstance.Kill ();
-        }
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
-      }
-      finally
-      {
-        if (m_asyncRecordWorkerThreadSignal != null)
-        {
-          m_asyncRecordWorkerThreadSignal.Set ();
-        }
       }
     }
 
@@ -413,61 +407,24 @@ namespace AndroidPlusPlus.Common
       SetSetting ("breakpoint pending", "on", false); // an unrecognized breakpoint location should automatically result in a pending breakpoint being created.
 
       // 
-      // Probe each 'application' library for special embedded 'gdb.setup' sections.
+      // Figure out the target executable and architecture to be debugged.
       // 
+      //   AFAIK the most reliable way to evaluate this is to read the symbolic link 'exe' for the target process:
+      //   - This should also support 64-bit (app_process64) processes.
+      // 
+      //   lrwxrwxrwx u0_a91   u0_a91            2015-02-09 14:13 exe -> /system/bin/app_process32
+      //
 
-      string [] cachedAppBinaries = m_gdbSetup.CacheApplicationBinaries ();
+      bool debugging64bitProcess = false;
 
-#if FALSE
-      string gnuObjdumpToolPath = m_gdbSetup.GdbToolPath.Replace ("-gdb", "-objdump");
+      string targetAppProcess = m_gdbSetup.Process.HostDevice.Shell ("run-as", string.Format ("{0} readlink /proc/{1}/exe", m_gdbSetup.Process.Name, m_gdbSetup.Process.Pid)).Replace ("\r", "").Replace ("\n", "");
 
-      foreach (string binary in cachedAppBinaries)
+      string cachedAppProcess = Path.Combine (m_gdbSetup.CacheSysRoot, targetAppProcess.Substring (1));
+
+      if (targetAppProcess.Contains ("app_process64"))
       {
-        string embeddedGdbSetupSection = GnuObjdump.GetElfSectionData (gnuObjdumpToolPath, binary, "gdb.setup");
-
-        if (!string.IsNullOrWhiteSpace (embeddedGdbSetupSection))
-        {
-          string [] embeddedCommands = embeddedGdbSetupSection.Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-
-          foreach (string command in embeddedCommands)
-          {
-            // 
-            // Sanitise path arguments, but only if they are rooted.
-            // 
-
-            bool setCommand = command.StartsWith ("set ");
-
-            string [] arguments = command.Replace ("set ", "").Split (new char [] { ' ', ';' }, StringSplitOptions.RemoveEmptyEntries);
-
-            StringBuilder joinedArguments = new StringBuilder ();
-
-            for (int i = 1; i < arguments.Length; ++i)
-            {
-              if (Path.IsPathRooted (arguments [i]))
-              {
-                arguments [i] = PathUtils.SantiseWindowsPath (arguments [i]);
-              }
-
-              joinedArguments.Append (";" + arguments [i]);
-            }
-
-            if (joinedArguments.Length > 0)
-            {
-              joinedArguments.Remove (0, 1); // clear leading ';'
-            }
-
-            if (setCommand)
-            {
-              SetSetting (arguments [0], joinedArguments.ToString (), true);
-            }
-            else
-            {
-              SendCommand (arguments [0] + " " + joinedArguments.ToString ());
-            }
-          }
-        }
+        debugging64bitProcess = true;
       }
-#endif
 
       // 
       // Pull required system and application binaries from the device.
@@ -478,11 +435,13 @@ namespace AndroidPlusPlus.Common
 
       HashSet<string> debugFileDirectoryPaths = new HashSet<string> ();
 
-      sharedLibrarySearchPaths.Add (PathUtils.SantiseWindowsPath (m_gdbSetup.CacheSysRoot));
+      string [] cachedSystemBinaries = m_gdbSetup.CacheSystemBinaries (debugging64bitProcess);
 
-      string [] cachedSystemBinaries = m_gdbSetup.CacheSystemBinaries ();
+      string [] cachedSystemLibraries = m_gdbSetup.CacheSystemLibraries (debugging64bitProcess);
 
-      foreach (string systemBinary in cachedSystemBinaries)
+      sharedLibrarySearchPaths.Add (PathUtils.SantiseWindowsPath (m_gdbSetup.CacheSysRoot)); // prioritise sysroot parent.
+
+      foreach (string systemBinary in cachedSystemLibraries)
       {
         string posixSystemBinaryDirectory = PathUtils.SantiseWindowsPath (Path.GetDirectoryName (systemBinary));
 
@@ -492,7 +451,9 @@ namespace AndroidPlusPlus.Common
         }
       }
 
-      foreach (string appBinary in cachedAppBinaries)
+      string [] cachedAppLibraries = m_gdbSetup.CacheApplicationLibraries ();
+
+      foreach (string appBinary in cachedAppLibraries)
       {
         string posixAppBinaryDirectory = PathUtils.SantiseWindowsPath (Path.GetDirectoryName (appBinary));
 
@@ -514,6 +475,7 @@ namespace AndroidPlusPlus.Common
 
       SetSetting ("sysroot", PathUtils.SantiseWindowsPath (m_gdbSetup.CacheSysRoot), false);
 
+#if true
       {
         string [] array = new string [sharedLibrarySearchPaths.Count];
 
@@ -521,7 +483,9 @@ namespace AndroidPlusPlus.Common
 
         SetSetting ("solib-search-path", string.Join (";", array), true);
       }
+#endif
 
+#if true
       {
         string [] array = new string [debugFileDirectoryPaths.Count];
 
@@ -529,23 +493,13 @@ namespace AndroidPlusPlus.Common
 
         SetSetting ("debug-file-directory", string.Join (";", array), true);
       }
-
-      // 
-      // Figure out the target executable file to be debugged.
-      // 
-      //   AFAIK the most reliable way to evaluate this is to read the symbolic link 'exe' for the target process:
-      //   - This should also support 64-bit (app_process64) processes.
-      // 
-      //   lrwxrwxrwx u0_a91   u0_a91            2015-02-09 14:13 exe -> /system/bin/app_process32
-      //
-
-      string targetAppProcess = m_gdbSetup.Process.HostDevice.Shell ("run-as", string.Format ("{0} readlink /proc/{1}/exe", m_gdbSetup.Process.Name, m_gdbSetup.Process.Pid));
-
-      string cachedAppProcess = Path.Combine (m_gdbSetup.CacheSysRoot, targetAppProcess.Replace ("\r", "").Replace ("\n", "").Substring (1));
+#endif
 
       if (!File.Exists (cachedAppProcess))
       {
-        cachedAppProcess = Path.Combine (m_gdbSetup.CacheSysRoot, @"system\bin\linker");
+        string linker = (debugging64bitProcess) ? @"system\bin\linker64" : @"system\bin\linker";
+
+        cachedAppProcess = Path.Combine (m_gdbSetup.CacheSysRoot, linker);
       }
 
       if (string.IsNullOrEmpty (cachedAppProcess) || !File.Exists (cachedAppProcess))
@@ -1053,7 +1007,7 @@ namespace AndroidPlusPlus.Common
 
       if (m_gdbClientInstance == null)
       {
-        return;
+        throw new InvalidOperationException ("No GdbClient instance bound");
       }
 
       m_timeSinceLastOperation.Restart ();
@@ -1220,11 +1174,12 @@ namespace AndroidPlusPlus.Common
       {
         m_timeSinceLastOperation.Restart ();
 
-        LoggingUtils.Print (string.Format ("[GdbClient] ProcessExited: {0}", args));
+        LoggingUtils.Print (string.Format ("[GdbClient] ProcessExited"));
 
-        m_asyncRecordWorkerThreadSignal.Set ();
-
-        m_gdbClientInstance = null;
+        if (m_asyncRecordWorkerThreadSignal != null)
+        {
+          m_asyncRecordWorkerThreadSignal.Set ();
+        }
 
         // 
         // If we're waiting on a synchronous command, signal a finish to process termination.
@@ -1234,6 +1189,8 @@ namespace AndroidPlusPlus.Common
         {
           syncKeyPair.Value.Set ();
         }
+
+        m_gdbClientInstance = null;
 
         IsAttached = false;
       }
@@ -1253,19 +1210,14 @@ namespace AndroidPlusPlus.Common
       // Thread body - parses GDB/MI output. If a command has be completely processed, call its associated registered delegate.
       // 
 
+      LoggingUtils.Print (string.Format ("[GdbClient] AsyncOutputWorkerThreadBody: Entered"));
+
       try
       {
         MiAsyncRecord asyncRecord = null;
 
-        LoggingUtils.Print (string.Format ("[GdbClient] AsyncOutputWorkerThreadBody: Entered"));
-
-        while (!m_asyncRecordWorkerThreadSignal.WaitOne (0))
+        while (m_asyncRecordWorkerThreadSignal != null)
         {
-          if (m_gdbClientInstance == null)
-          {
-            break;
-          }
-
           if (m_asyncRecordWorkerQueue.TryDequeue (out asyncRecord))
           {
             try
@@ -1277,20 +1229,24 @@ namespace AndroidPlusPlus.Common
               LoggingUtils.HandleException (e);
             }
           }
+          else if (m_asyncRecordWorkerThreadSignal.WaitOne (0))
+          {
+            break; // Thread exit was signaled, and we've finished processing.
+          }
           else
           {
-            Thread.Sleep (100);
+            Thread.Sleep (10);
           }
 
           asyncRecord = null;
         }
-
-        LoggingUtils.Print (string.Format ("[GdbClient] AsyncOutputWorkerThreadBody: Exited"));
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
       }
+
+      LoggingUtils.Print (string.Format ("[GdbClient] AsyncOutputWorkerThreadBody: Exited"));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

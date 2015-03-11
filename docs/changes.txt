@@ -17,6 +17,7 @@ Fixes/Improvements:
  - (MSBuild) Ensured compression strength when adding resources to unsigned APKs is set to maximum.
  - (Debugger) Fixed a number of issues causing debugging of 32-bit builds on 64-bit devices to fail.
  - (MSBuild) Upgraded and reorganised SDL2 sample projects.
+ - (MSBuild) Increased Java -source & -target versions to 1.7 (JDK 7). Required for targeting Android API 21.
 
 --------------------------------------------------------------------------------------------------------------------------------
 

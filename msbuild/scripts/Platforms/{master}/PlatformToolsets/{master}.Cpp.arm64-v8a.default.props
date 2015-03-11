@@ -88,6 +88,10 @@
 
       <UnswitchLoops Condition="'%(ClCompile.UnswitchLoops)' == ''">true</UnswitchLoops>
 
+      <PositionIndependentCode Condition="'%(ClCompile.PositionIndependentCode)' == ''">PIC</PositionIndependentCode>
+
+      <PositionIndependentExecutable Condition="'%(ClCompile.PositionIndependentExecutable)' == '' and '$(AndroidNdkLevel)' >= '16'">PIE</PositionIndependentExecutable>
+
     </ClCompile>
 
   </ItemDefinitionGroup>
@@ -105,6 +109,8 @@
       <AdditionalOptions>%(Link.AdditionalOptions)</AdditionalOptions>
 
       <SysRoot Condition="'%(Link.SysRoot)' == ''">$(PlatformToolsetSysRoot)</SysRoot>
+
+      <PositionIndependentExecutable Condition="'%(ClCompile.PositionIndependentExecutable)' == '' and '$(AndroidNdkLevel)' >= '16'">Both</PositionIndependentExecutable>
 
     </Link>
 

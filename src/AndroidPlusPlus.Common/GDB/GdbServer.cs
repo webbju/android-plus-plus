@@ -147,8 +147,6 @@ namespace AndroidPlusPlus.Common
         if (m_gdbServerInstance != null)
         {
           m_gdbServerInstance.Kill ();
-
-          m_gdbServerInstance = null;
         }
       }
       catch (Exception e)
@@ -262,7 +260,7 @@ namespace AndroidPlusPlus.Common
 
     public void ProcessExited (object sendingProcess, EventArgs args)
     {
-      LoggingUtils.Print (string.Format ("[GdbServer] ProcessExited: {0}", args));
+      LoggingUtils.Print (string.Format ("[GdbServer] ProcessExited"));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

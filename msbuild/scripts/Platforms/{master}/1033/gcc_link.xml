@@ -263,6 +263,35 @@
   />
 
   <!--
+    PositionIndependentExecutable
+  -->
+
+  <EnumProperty
+    Name="PositionIndependentExecutable"
+    DisplayName="Generate Position-Independent Executable"
+    Description="Generate position-independent code (PIC) suitable for use in executables."
+    Category="Advanced">
+
+    <EnumValue
+      Name="pie"
+      Switch="-fpie"
+      DisplayName="-fpie"
+    />
+
+    <EnumValue
+      Name="PIE"
+      Switch="-fPIE"
+      DisplayName="-fPIE"
+    />
+
+    <EnumValue
+      Name="Both"
+      Switch="-fpie -fPIE"
+      DisplayName="-fpie and -fPIE"
+    />
+
+  </EnumProperty>
+  <!--
     RDynamic
   -->
 

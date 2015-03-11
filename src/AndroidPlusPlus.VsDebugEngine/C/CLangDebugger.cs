@@ -247,6 +247,25 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    public void Kill ()
+    {
+      LoggingUtils.PrintFunction ();
+
+      if (GdbClient != null)
+      {
+        GdbClient.Kill ();
+      }
+
+      if (GdbServer != null)
+      {
+        GdbServer.Kill ();
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public void Dispose ()
     {
       LoggingUtils.PrintFunction ();
@@ -271,7 +290,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         m_gdbSetup = null;
       }
-   }
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -344,7 +363,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           if ((Interlocked.Increment (ref m_interruptOperationCounter) == 1) && targetWasRunning)
           {
-            LoggingUtils.Print ("RunInterruptOperation: Issuing interrupt.");
+            LoggingUtils.Print ("[CLangDebugger] RunInterruptOperation: Issuing interrupt.");
 
             m_interruptOperationCompleted.Reset ();
 
@@ -370,7 +389,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           while (!interruptSignalled)
           {
-            LoggingUtils.Print ("RunInterruptOperation: Waiting for interrupt to stop target.");
+            LoggingUtils.Print ("[CLangDebugger] RunInterruptOperation: Waiting for interrupt to stop target.");
 
             interruptSignalled = m_interruptOperationCompleted.WaitOne (0);
 
@@ -399,7 +418,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           {
             if ((Interlocked.Decrement (ref m_interruptOperationCounter) == 0) && targetWasRunning && shouldContinue)
             {
-              LoggingUtils.Print ("RunInterruptOperation: Returning target to running state.");
+              LoggingUtils.Print ("[CLangDebugger] RunInterruptOperation: Returning target to running state.");
 
               GdbClient.Continue ();
             }
@@ -428,6 +447,52 @@ namespace AndroidPlusPlus.VsDebugEngine
           // 
           // "^done" [ "," results ]: The synchronous operation was successful, results are the return values.
           // 
+
+          try
+          {
+            if (resultRecord.HasField ("reason"))
+            {
+              int stoppedIndex = resultRecord ["reason"].Count - 1;
+
+              MiResultValue stoppedReason = resultRecord ["reason"] [stoppedIndex];
+
+              switch (stoppedReason.GetString ())
+              {
+                case "exited":
+                case "exited-normally":
+                case "exited-signalled":
+                {
+                  if (m_interruptOperationCompleted != null)
+                  {
+                    m_interruptOperationCompleted.Set ();
+                  }
+
+                  ThreadPool.QueueUserWorkItem (delegate (object state)
+                  {
+                    try
+                    {
+                      LoggingUtils.RequireOk (Engine.Detach (NativeProgram.DebugProgram));
+                    }
+                    catch (Exception e)
+                    {
+                      LoggingUtils.HandleException (e);
+                    }
+                  });
+
+                  break;
+                }
+
+                default:
+                {
+                  throw new NotImplementedException ();
+                }
+              }
+            }
+          }
+          catch (Exception e)
+          {
+            LoggingUtils.HandleException (e);
+          }
 
           break;
         }
@@ -519,7 +584,7 @@ namespace AndroidPlusPlus.VsDebugEngine
             {
               try
               {
-                LoggingUtils.RequireOk (Engine.TerminateProcess (NativeProgram.DebugProgram.DebugProcess));
+                LoggingUtils.RequireOk (Engine.Detach (NativeProgram.DebugProgram));
               }
               catch (Exception e)
               {
@@ -630,10 +695,6 @@ namespace AndroidPlusPlus.VsDebugEngine
                 // Flag some or all of the program's threads as stopped, directed by 'stopped-threads' field.
                 // 
 
-#if true
-                NativeProgram.RefreshAllThreads ();
-#endif
-
                 bool hasStoppedThreads = asyncRecord.HasField ("stopped-threads");
 
                 if (hasStoppedThreads)
@@ -695,6 +756,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
 #if false
               RefreshSharedLibraries ();
+#endif
+
+
+#if false
+              NativeProgram.RefreshAllThreads ();
 #endif
 
               Engine.BreakpointManager.RefreshBreakpoints ();
@@ -900,7 +966,7 @@ namespace AndroidPlusPlus.VsDebugEngine
                       {
                         try
                         {
-                          LoggingUtils.RequireOk (Engine.TerminateProcess (NativeProgram.DebugProgram.DebugProcess));
+                          LoggingUtils.RequireOk (Engine.Detach (NativeProgram.DebugProgram));
                         }
                         catch (Exception e)
                         {

@@ -104,11 +104,23 @@ namespace AndroidPlusPlus.Common
       //   i.e: /data/app/com.example.hellogdbserver-2.apk
       // 
 
-      string appRemotePath = HostDevice.Shell ("pm", string.Format ("path {0}", Name)).Replace ("\r", "").Replace ("\n", "");
+      string remoteAppPath = HostDevice.Shell ("pm", string.Format ("path {0}", Name)).Replace ("\r", "").Replace ("\n", "");
 
-      if (appRemotePath.StartsWith ("package:"))
+      if (remoteAppPath.StartsWith ("package:"))
       {
-        m_apkPath = appRemotePath.Substring ("package:".Length);
+        m_apkPath = remoteAppPath.Substring ("package:".Length);
+      }
+
+      // 
+      // Retrieves the data directory associated with an installed application.
+      //   i.e: /data/data/com.example.hellogdbserver/
+      // 
+
+      string remoteDataDirectory = HostDevice.Shell ("run-as", string.Format ("{0} /system/bin/sh -c pwd", Name)).Replace ("\r", "").Replace ("\n", "");
+
+      if (remoteDataDirectory.StartsWith ("/data/"))
+      {
+        m_dataDir = remoteDataDirectory;
       }
 
       // 
@@ -177,14 +189,21 @@ namespace AndroidPlusPlus.Common
       // Clean up some variables which may be empty or undefined.
       // 
 
-      if (string.IsNullOrWhiteSpace (m_codePath))
-      {
-        m_codePath = string.Format ("/data/data/{0}", Name);
-      }
-
       if (string.IsNullOrWhiteSpace (m_dataDir))
       {
         m_dataDir = string.Format ("/data/data/{0}", Name);
+      }
+
+      if (string.IsNullOrWhiteSpace (m_codePath))
+      {
+        if (!string.IsNullOrWhiteSpace (m_dataDir))
+        {
+          m_codePath = m_dataDir;
+        }
+        else
+        {
+          m_codePath = string.Format ("/data/data/{0}", Name);
+        }
       }
 
       if (string.IsNullOrWhiteSpace (m_primaryCpuAbi))

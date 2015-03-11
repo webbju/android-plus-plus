@@ -199,12 +199,14 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
         LoggingUtils.Print ("[DebuggerEventListener] Event: " + riidEvent.ToString ());
 
+        int handle = DebugEngineConstants.E_NOTIMPL;
+
         if (!m_eventCallbacks.TryGetValue (riidEvent, out callback))
         {
-          return DebugEngineConstants.E_NOTIMPL;
+          return handle;
         }
 
-        int handle = callback (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
+        handle = callback (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
 
         if (handle != DebugEngineConstants.E_NOTIMPL)
         {

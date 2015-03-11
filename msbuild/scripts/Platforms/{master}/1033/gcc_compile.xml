@@ -368,13 +368,53 @@
     PositionIndependentCode
   -->
 
-  <BoolProperty
+  <EnumProperty
     Name="PositionIndependentCode"
     DisplayName="Generate Position-Independent Code"
     Description="Generate position-independent code (PIC) suitable for use in a shared library."
-    Category="Code Generation"
-    Switch="-fpic"
-  />
+    Category="Code Generation">
+
+    <EnumValue
+      Name="pic"
+      Switch="-fpic"
+      DisplayName="-fpic"
+      Description="Define the macros __pic__ and __PIC__, which have the value 1."
+    />
+
+    <EnumValue
+      Name="PIC"
+      Switch="-fPIC"
+      DisplayName="-fPIC"
+      Description="Define the macros __pic__ and __PIC__, which have the value 2."
+    />
+
+  </EnumProperty>
+
+  <!--
+    PositionIndependentExecutable
+  -->
+
+  <EnumProperty
+    Name="PositionIndependentExecutable"
+    DisplayName="Generate Position-Independent Executable"
+    Description="Generate position-independent code (PIC) suitable for use in executables."
+    Category="Code Generation">
+
+    <EnumValue
+      Name="pie"
+      Switch="-fpie"
+      DisplayName="-fpie"
+      Description="Define the macros __pie__ and __PIE__, which have the value 1."
+    />
+
+    <EnumValue
+      Name="PIE"
+      Switch="-fPIE"
+      DisplayName="-fPIE"
+      Description="Define the macros __pie__ and __PIE__, which have the value 2."
+    />
+
+  </EnumProperty>
 
   <!--
     InlineLimitSize

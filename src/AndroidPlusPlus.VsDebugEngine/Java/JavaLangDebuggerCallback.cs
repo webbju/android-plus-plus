@@ -22,7 +22,7 @@ namespace AndroidPlusPlus.VsDebugEngine
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public delegate int JavaLangDebuggerEventDelegate (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+  public delegate int JavaLangDebuggerEventDelegate (JavaLangDebugger debugger);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -30,27 +30,29 @@ namespace AndroidPlusPlus.VsDebugEngine
 
   public interface JavaLangDebuggerEventInterface
   {
-    int OnAttachClient (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+    int OnAttachClient (JavaLangDebugger debugger);
 
-    int OnDetachClient (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+    int OnDetachClient (JavaLangDebugger debugger);
 
-    int OnStopClient (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+    int OnStopClient (JavaLangDebugger debugger);
 
-    int OnContinueClient (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+    int OnContinueClient (JavaLangDebugger debugger);
  
-    int OnTerminateClient (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+    int OnTerminateClient (JavaLangDebugger debugger);
   }
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class JavaLangDebuggerCallback : JavaLangDebuggerEventInterface
+  public class JavaLangDebuggerCallback : JavaLangDebuggerEventInterface, IDebugEventCallback2
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private readonly DebugEngine m_debugEngine;
 
     private readonly Dictionary<Guid, JavaLangDebuggerEventDelegate> m_debuggerCallback;
 
@@ -58,8 +60,14 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public JavaLangDebuggerCallback ()
+    public JavaLangDebuggerCallback (DebugEngine engine)
     {
+      m_debugEngine = engine;
+
+      // 
+      // Register function handlers for specific events.
+      // 
+
       m_debuggerCallback = new Dictionary<Guid, JavaLangDebuggerEventDelegate> ();
 
       m_debuggerCallback.Add (ComUtils.GuidOf (typeof (JavaLangDebuggerEvent.AttachClient)), OnAttachClient);
@@ -71,6 +79,15 @@ namespace AndroidPlusPlus.VsDebugEngine
       m_debuggerCallback.Add (ComUtils.GuidOf (typeof (JavaLangDebuggerEvent.ContinueClient)), OnContinueClient);
 
       m_debuggerCallback.Add (ComUtils.GuidOf (typeof (JavaLangDebuggerEvent.TerminateClient)), OnTerminateClient);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public bool IsRegistered (ref Guid riidEvent)
+    {
+      return m_debuggerCallback.ContainsKey (riidEvent);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -96,7 +113,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           return DebugEngineConstants.E_NOTIMPL;
         }
 
-        LoggingUtils.RequireOk (eventCallback (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib));
+        LoggingUtils.RequireOk (eventCallback (m_debugEngine.JavaDebugger));
 
         return DebugEngineConstants.S_OK;
 
@@ -113,75 +130,110 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int OnAttachClient (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
+    public int OnAttachClient (JavaLangDebugger debugger)
     {
       LoggingUtils.PrintFunction ();
 
-      JavaLangDebuggerEvent.AttachClient debuggeeEvent = (pEvent as JavaLangDebuggerEvent.AttachClient);
+      try
+      {
+        debugger.JdbClient.Attach ();
 
-      debuggeeEvent.Debugger.JdbClient.Attach ();
+        return DebugEngineConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
 
-      return DebugEngineConstants.S_OK;
+        throw;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int OnDetachClient (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
+    public int OnDetachClient (JavaLangDebugger debugger)
     {
       LoggingUtils.PrintFunction ();
 
-      JavaLangDebuggerEvent.DetachClient debuggeeEvent = (pEvent as JavaLangDebuggerEvent.DetachClient);
+      try
+      {
+        debugger.JdbClient.Detach ();
 
-      debuggeeEvent.Debugger.JdbClient.Detach ();
+        return DebugEngineConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
 
-      return DebugEngineConstants.S_OK;
+        throw;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int OnStopClient (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
+    public int OnStopClient (JavaLangDebugger debugger)
     {
       LoggingUtils.PrintFunction ();
 
-      JavaLangDebuggerEvent.StopClient debuggeeEvent = (pEvent as JavaLangDebuggerEvent.StopClient);
+      try
+      {
+        debugger.JdbClient.Stop ();
 
-      debuggeeEvent.Debugger.JdbClient.Stop ();
+        return DebugEngineConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
 
-      return DebugEngineConstants.S_OK;
+        throw;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int OnContinueClient (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
+    public int OnContinueClient (JavaLangDebugger debugger)
     {
       LoggingUtils.PrintFunction ();
 
-      JavaLangDebuggerEvent.ContinueClient debuggeeEvent = (pEvent as JavaLangDebuggerEvent.ContinueClient);
+      try
+      {
+        debugger.JdbClient.Continue ();
 
-      debuggeeEvent.Debugger.JdbClient.Continue ();
+        return DebugEngineConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
 
-      return DebugEngineConstants.S_OK;
+        throw;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int OnTerminateClient (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
+    public int OnTerminateClient (JavaLangDebugger debugger)
     {
       LoggingUtils.PrintFunction ();
 
-      JavaLangDebuggerEvent.TerminateClient debuggeeEvent = (pEvent as JavaLangDebuggerEvent.TerminateClient);
+      try
+      {
+        debugger.JdbClient.Terminate ();
 
-      debuggeeEvent.Debugger.JdbClient.Terminate ();
+        return DebugEngineConstants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
 
-      return DebugEngineConstants.S_OK;
+        throw;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -23,43 +23,57 @@ namespace AndroidPlusPlus.VsDebugEngine
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  public delegate int CLangDebuggerEventDelegate (CLangDebugger debugger);
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   public interface CLangDebuggerEventInterface
   {
-    int OnStartServer (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+    int OnStartServer (CLangDebugger debugger);
 
-    int OnTerminateServer (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+    int OnTerminateServer (CLangDebugger debugger);
 
-    int OnAttachClient (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+    int OnAttachClient (CLangDebugger debugger);
 
-    int OnDetachClient (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+    int OnDetachClient (CLangDebugger debugger);
 
-    int OnStopClient (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+    int OnStopClient (CLangDebugger debugger);
 
-    int OnContinueClient (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+    int OnContinueClient (CLangDebugger debugger);
 
-    int OnTerminateClient (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib);
+    int OnTerminateClient (CLangDebugger debugger);
   }
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class CLangDebuggerCallback : CLangDebuggerEventInterface
+  public class CLangDebuggerCallback : CLangDebuggerEventInterface, IDebugEventCallback2
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private readonly Dictionary<Guid, DebuggerEventDelegate> m_debuggerCallback;
+    private readonly DebugEngine m_debugEngine;
+
+    private readonly Dictionary<Guid, CLangDebuggerEventDelegate> m_debuggerCallback;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public CLangDebuggerCallback ()
+    public CLangDebuggerCallback (DebugEngine engine)
     {
-      m_debuggerCallback = new Dictionary<Guid, DebuggerEventDelegate> ();
+      m_debugEngine = engine;
+
+      // 
+      // Register function handlers for specific events.
+      // 
+
+      m_debuggerCallback = new Dictionary<Guid, CLangDebuggerEventDelegate> ();
 
       m_debuggerCallback.Add (ComUtils.GuidOf (typeof (CLangDebuggerEvent.StartServer)), OnStartServer);
 
@@ -80,6 +94,15 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    public bool IsRegistered (ref Guid riidEvent)
+    {
+      return m_debuggerCallback.ContainsKey (riidEvent);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public int Event (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
       // 
@@ -90,14 +113,14 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.Print ("[CLangDebuggerCallback] Event: " + riidEvent.ToString ());
 
-        DebuggerEventDelegate eventCallback;
+        CLangDebuggerEventDelegate eventCallback;
 
         if (!m_debuggerCallback.TryGetValue (riidEvent, out eventCallback))
         {
           return DebugEngineConstants.E_NOTIMPL;
         }
 
-        return eventCallback (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
+        return eventCallback (m_debugEngine.NativeDebugger);
       }
       catch (Exception e)
       {
@@ -111,15 +134,13 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int OnStartServer (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
+    public int OnStartServer (CLangDebugger debugger)
     {
       LoggingUtils.PrintFunction ();
 
       try
       {
-        CLangDebuggerEvent.StartServer debuggeeEvent = (pEvent as CLangDebuggerEvent.StartServer);
-
-        debuggeeEvent.Debugger.GdbServer.Start ();
+        debugger.GdbServer.Start ();
 
         return DebugEngineConstants.S_OK;
       }
@@ -135,15 +156,13 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int OnTerminateServer (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
+    public int OnTerminateServer (CLangDebugger debugger)
     {
       LoggingUtils.PrintFunction ();
 
       try
       {
-        CLangDebuggerEvent.TerminateServer debuggeeEvent = (pEvent as CLangDebuggerEvent.TerminateServer);
-
-        debuggeeEvent.Debugger.GdbServer.Kill ();
+        debugger.GdbServer.Kill ();
 
         return DebugEngineConstants.S_OK;
       }
@@ -159,15 +178,15 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int OnAttachClient (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
+    public int OnAttachClient (CLangDebugger debugger)
     {
       LoggingUtils.PrintFunction ();
 
       try
       {
-        CLangDebuggerEvent.AttachClient debuggeeEvent = (pEvent as CLangDebuggerEvent.AttachClient);
+        GdbServer gdbServer = debugger.GdbServer;
 
-        debuggeeEvent.Debugger.GdbClient.Attach (debuggeeEvent.Debugger.GdbServer);
+        debugger.GdbClient.Attach (gdbServer);
 
         return DebugEngineConstants.S_OK;
       }
@@ -183,21 +202,19 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int OnDetachClient (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
+    public int OnDetachClient (CLangDebugger debugger)
     {
       LoggingUtils.PrintFunction ();
 
       try
       {
-        CLangDebuggerEvent.DetachClient debuggeeEvent = (pEvent as CLangDebuggerEvent.DetachClient);
-
         bool shouldContinue = false;
 
         ManualResetEvent detachLock = new ManualResetEvent (false);
 
-        debuggeeEvent.Debugger.RunInterruptOperation (delegate (CLangDebugger debugger)
+        debugger.RunInterruptOperation (delegate (CLangDebugger _debugger)
         {
-          debugger.GdbClient.Detach ();
+          _debugger.GdbClient.Detach ();
 
           detachLock.Set ();
         }, shouldContinue);
@@ -223,15 +240,13 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int OnStopClient (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
+    public int OnStopClient (CLangDebugger debugger)
     {
       LoggingUtils.PrintFunction ();
 
       try
       {
-        CLangDebuggerEvent.StopClient debuggeeEvent = (pEvent as CLangDebuggerEvent.StopClient);
-
-        debuggeeEvent.Debugger.GdbClient.Stop ();
+        debugger.GdbClient.Stop ();
 
         return DebugEngineConstants.S_OK;
       }
@@ -247,15 +262,13 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int OnContinueClient (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
+    public int OnContinueClient (CLangDebugger debugger)
     {
       LoggingUtils.PrintFunction ();
 
       try
       {
-        CLangDebuggerEvent.ContinueClient debuggeeEvent = (pEvent as CLangDebuggerEvent.ContinueClient);
-
-        debuggeeEvent.Debugger.GdbClient.Continue ();
+        debugger.GdbClient.Continue ();
 
         return DebugEngineConstants.S_OK;
       }
@@ -271,17 +284,15 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int OnTerminateClient (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
+    public int OnTerminateClient (CLangDebugger debugger)
     {
       LoggingUtils.PrintFunction ();
 
       try
       {
-        CLangDebuggerEvent.TerminateClient debuggeeEvent = (pEvent as CLangDebuggerEvent.TerminateClient);
+        debugger.GdbClient.Stop ();
 
-        debuggeeEvent.Debugger.GdbClient.Stop ();
-
-        debuggeeEvent.Debugger.GdbClient.Terminate ();
+        debugger.GdbClient.Terminate ();
 
         return DebugEngineConstants.S_OK;
       }
@@ -289,7 +300,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        throw;
+        return DebugEngineConstants.E_FAIL;
       }
     }
 
