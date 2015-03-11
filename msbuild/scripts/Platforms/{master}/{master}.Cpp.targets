@@ -390,6 +390,8 @@
       </Lib>
     </ItemGroup>
 
+    <Delete Files="%(Lib.OutputFile)" />
+
     <GccLib
       BuildingInIDE="$(BuildingInsideVisualStudio)"
       Sources="@(Lib)"

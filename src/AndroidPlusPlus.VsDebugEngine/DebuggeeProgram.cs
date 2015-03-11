@@ -256,9 +256,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.Detach ());
-
-        LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.Detach ());
+        LoggingUtils.RequireOk (AttachedEngine.Detach (this));
 
         return DebugEngineConstants.S_OK;
       }
@@ -267,10 +265,6 @@ namespace AndroidPlusPlus.VsDebugEngine
         LoggingUtils.HandleException (e);
 
         return DebugEngineConstants.E_FAIL;
-      }
-      finally
-      {
-        AttachedEngine.Broadcast (new DebugEngineEvent.ProgramDestroy (0), this, null);
       }
     }
 

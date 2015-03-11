@@ -31,9 +31,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private DebuggerConnectionWindow m_debuggerConnectionWindow;
+    private DebuggerConnectionWindow m_debuggerConnectionWindow = null;
 
-    private StringBuilder m_textBuffer;
+    private StringBuilder m_textBuffer = new StringBuilder ();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -41,9 +41,6 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     public DebuggerConnectionService ()
     {
-      m_debuggerConnectionWindow = null;
-
-      m_textBuffer = new StringBuilder ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -61,6 +58,11 @@ namespace AndroidPlusPlus.VsIntegratedPackage
           m_debuggerConnectionWindow = new DebuggerConnectionWindow ();
 
           m_debuggerConnectionWindow.Closed += LaunchWindowClosed;
+        }
+
+        if (m_debuggerConnectionWindow == null)
+        {
+          throw new InvalidOperationException ("Failed to create connection window");
         }
 
         lock (m_debuggerConnectionWindow)
@@ -109,21 +111,24 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
         m_textBuffer.AppendLine (line);
 
-        lock (m_debuggerConnectionWindow)
+        if (m_debuggerConnectionWindow != null)
         {
           m_debuggerConnectionWindow.Dispatcher.Invoke ((Action) (() =>
           {
-            m_debuggerConnectionWindow.textBox1.BeginChange ();
+            lock (m_debuggerConnectionWindow)
+            {
+              m_debuggerConnectionWindow.textBox1.BeginChange ();
 
-            m_debuggerConnectionWindow.textBox1.Text = m_textBuffer.ToString ();
+              m_debuggerConnectionWindow.textBox1.Text = m_textBuffer.ToString ();
 
-            m_debuggerConnectionWindow.textBox1.EndChange ();
+              m_debuggerConnectionWindow.textBox1.EndChange ();
 
-            m_debuggerConnectionWindow.textBox1.ScrollToEnd ();
+              m_debuggerConnectionWindow.textBox1.ScrollToEnd ();
 
-            m_debuggerConnectionWindow.progressBar1.IsIndeterminate = !isError;
+              m_debuggerConnectionWindow.progressBar1.IsIndeterminate = !isError;
 
-            m_debuggerConnectionWindow.Activate ();
+              m_debuggerConnectionWindow.Activate ();
+            }
           }));
         }
 
@@ -147,10 +152,16 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
       try
       {
-        m_debuggerConnectionWindow.Dispatcher.Invoke ((Action) (() =>
+        if (m_debuggerConnectionWindow != null)
         {
-          m_debuggerConnectionWindow.Close ();
-        }));
+          m_debuggerConnectionWindow.Dispatcher.Invoke ((Action) (() =>
+          {
+            lock (m_debuggerConnectionWindow)
+            {
+              m_debuggerConnectionWindow.Close ();
+            }
+          }));
+        }
 
         return VSConstants.S_OK;
       }
@@ -168,11 +179,18 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     private void LaunchWindowClosed (object sender, EventArgs e)
     {
-      m_textBuffer.Clear ();
-
-      lock (m_debuggerConnectionWindow)
+      try
       {
-        m_debuggerConnectionWindow = null;
+        m_textBuffer.Clear ();
+
+        lock (m_debuggerConnectionWindow)
+        {
+          m_debuggerConnectionWindow = null;
+        }
+      }
+      catch (Exception ex)
+      {
+        LoggingUtils.HandleException (ex);
       }
     }
 

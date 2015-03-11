@@ -88,9 +88,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       m_ad7EventCallback = ad7EventCallback;
 
-      m_cLangEventCallback = new CLangDebuggerCallback ();
+      m_cLangEventCallback = new CLangDebuggerCallback (engine);
 
-      m_javaLangEventCallback = new JavaLangDebuggerCallback ();
+      m_javaLangEventCallback = new JavaLangDebuggerCallback (engine);
+
+      // 
+      // Register function handlers for specific events.
+      // 
 
       m_debuggerCallback = new Dictionary<Guid, DebuggerEventDelegate> ();
 
@@ -143,28 +147,16 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.Print ("[DebugEngineCallback] Event: " + riidEvent.ToString ());
 
-      DebuggerEventDelegate eventCallback;
+      // 
+      // Process any registered function handler before passing the event to AD7 callback.
+      // 
 
       int handle = DebugEngineConstants.E_NOTIMPL;
 
       try
       {
-        handle = m_ad7EventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
+        DebuggerEventDelegate eventCallback;
 
-        if (handle != DebugEngineConstants.E_NOTIMPL)
-        {
-          LoggingUtils.RequireOk (handle);
-        }
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-
-        throw;
-      }
-
-      try
-      {
         if (m_debuggerCallback.TryGetValue (riidEvent, out eventCallback))
         {
           handle = eventCallback (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
@@ -181,44 +173,31 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         throw;
       }
-
-      try
+      finally
       {
-        handle = m_cLangEventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
-
-        if (handle != DebugEngineConstants.E_NOTIMPL)
+        try
         {
-          LoggingUtils.RequireOk (handle);
+          handle = m_ad7EventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
+
+          if (handle != DebugEngineConstants.E_NOTIMPL)
+          {
+            LoggingUtils.RequireOk (handle);
+          }
         }
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-
-        throw;
-      }
-
-      try
-      {
-        handle = m_javaLangEventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
-
-        if (handle != DebugEngineConstants.E_NOTIMPL)
+        catch (Exception e)
         {
-          LoggingUtils.RequireOk (handle);
-        }
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
+          LoggingUtils.HandleException (e);
 
-        throw;
+          throw;
+        }
       }
 
       // 
       // (Managed Code) It is strongly advised that ReleaseComObject be invoked on the various interfaces that are passed to IDebugEventCallback2::Event.
       // 
 
-      /*Marshal.ReleaseComObject (pEngine);
+#if false
+      Marshal.ReleaseComObject (pEngine);
 
       Marshal.ReleaseComObject (pProcess);
 
@@ -226,7 +205,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       Marshal.ReleaseComObject (pThread);
 
-      Marshal.ReleaseComObject (pEvent);*/
+      Marshal.ReleaseComObject (pEvent);
+#endif
 
       return handle;
     }

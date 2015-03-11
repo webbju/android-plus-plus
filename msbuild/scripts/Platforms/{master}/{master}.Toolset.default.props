@@ -60,7 +60,9 @@
 
       <UserHeaderDependenciesOnly Condition="'%(ClCompile.UserHeaderDependenciesOnly)' == ''">false</UserHeaderDependenciesOnly>
 
-      <PositionIndependentCode Condition="'%(ClCompile.PositionIndependentCode)' == ''">$(LinkCompiled)</PositionIndependentCode>
+      <PositionIndependentCode Condition="'%(ClCompile.PositionIndependentCode)' == ''"></PositionIndependentCode>
+
+      <PositionIndependentExecutable Condition="'%(ClCompile.PositionIndependentExecutable)' == ''"></PositionIndependentExecutable>
 
       <NoExecutableStack Condition="'%(ClCompile.NoExecutableStack)' == ''">false</NoExecutableStack>
 

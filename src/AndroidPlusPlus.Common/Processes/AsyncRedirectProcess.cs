@@ -193,7 +193,10 @@ namespace AndroidPlusPlus.Common
 
       try
       {
-        m_process.Kill ();
+        if ((m_process != null) && (!m_process.HasExited))
+        {
+          m_process.Kill ();
+        }
       }
       catch (Exception e)
       {
@@ -208,6 +211,16 @@ namespace AndroidPlusPlus.Common
     public virtual void SendCommand (string command)
     {
       LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] SendCommand: {0}", command));
+
+      if (string.IsNullOrWhiteSpace (command))
+      {
+        throw new ArgumentNullException ("command");
+      }
+
+      if (m_stdInputWriter == null)
+      {
+        throw new InvalidOperationException ("No input writer stream bound. Process has not been started");
+      }
 
       m_stdInputWriter.WriteLine (command);
     }
@@ -266,16 +279,16 @@ namespace AndroidPlusPlus.Common
 
     protected void ProcessExited (object sendingProcess, EventArgs args)
     {
-      LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessExited: {0}", args));
-
       try
       {
-        m_exitCode = ((Process) sendingProcess).ExitCode;
+        m_exitCode = m_process.ExitCode;
       }
       catch (InvalidOperationException)
       {
         // Ignore: 'No process is associated with this object'.
       }
+
+      LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] {0} exited ({1}) in {2} ms", StartInfo.FileName, m_exitCode, Environment.TickCount - m_startTicks));
 
       try
       {
@@ -289,10 +302,6 @@ namespace AndroidPlusPlus.Common
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
-      }
-      finally
-      {
-        LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] {0} exited ({1}) in {2} ms", StartInfo.FileName, m_exitCode, Environment.TickCount - m_startTicks));
       }
     }
 

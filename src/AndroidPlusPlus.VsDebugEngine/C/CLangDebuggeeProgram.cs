@@ -355,9 +355,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        m_debugger.Engine.Broadcast (new CLangDebuggerEvent.StartServer (m_debugger), DebugProgram, null);
+        m_debugger.Engine.Broadcast (new CLangDebuggerEvent.StartServer (), DebugProgram, null);
 
-        m_debugger.Engine.Broadcast (new CLangDebuggerEvent.AttachClient (m_debugger), DebugProgram, null);
+        m_debugger.Engine.Broadcast (new CLangDebuggerEvent.AttachClient (), DebugProgram, null);
 
         return DebugEngineConstants.S_OK;
       }
@@ -390,7 +390,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        m_debugger.Engine.Broadcast (new CLangDebuggerEvent.StopClient (m_debugger), DebugProgram, null);
+        m_debugger.Engine.Broadcast (new CLangDebuggerEvent.StopClient (), DebugProgram, null);
 
         return DebugEngineConstants.S_OK;
       }
@@ -414,7 +414,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (!IsRunning)
         {
-          m_debugger.Engine.Broadcast (new CLangDebuggerEvent.ContinueClient (m_debugger), DebugProgram, null);
+          m_debugger.Engine.Broadcast (new CLangDebuggerEvent.ContinueClient (), DebugProgram, null);
         }
 
         return DebugEngineConstants.S_OK;
@@ -437,9 +437,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        m_debugger.Engine.Broadcast (new CLangDebuggerEvent.DetachClient (m_debugger), DebugProgram, null);
+        m_debugger.Engine.Broadcast (new CLangDebuggerEvent.DetachClient (), DebugProgram, null);
 
-        m_debugger.Engine.Broadcast (new CLangDebuggerEvent.TerminateServer (m_debugger), DebugProgram, null);
+        m_debugger.Engine.Broadcast (new CLangDebuggerEvent.TerminateServer (), DebugProgram, null);
 
         return DebugEngineConstants.S_OK;
       }
@@ -904,7 +904,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        m_debugger.Engine.Broadcast (new CLangDebuggerEvent.TerminateClient (m_debugger), DebugProgram, null);
+        m_debugger.Engine.Broadcast (new CLangDebuggerEvent.TerminateClient (), DebugProgram, null);
 
         return DebugEngineConstants.S_OK;
       }

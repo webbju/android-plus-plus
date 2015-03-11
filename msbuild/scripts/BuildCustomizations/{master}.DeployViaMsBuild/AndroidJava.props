@@ -51,9 +51,9 @@
 
       <SourcePath Condition="'%(AndroidJava.SourcePath)' == ''"></SourcePath>
 
-      <SourceCodeVersion Condition="'%(AndroidJava.SourceCodeVersion)' == ''">1.5</SourceCodeVersion>
+      <SourceCodeVersion Condition="'%(AndroidJava.SourceCodeVersion)' == ''">1.7</SourceCodeVersion>
 
-      <TargetCodeVersion Condition="'%(AndroidJava.TargetCodeVersion)' == ''">1.5</TargetCodeVersion>
+      <TargetCodeVersion Condition="'%(AndroidJava.TargetCodeVersion)' == ''">1.7</TargetCodeVersion>
 
       <CharacterEncoding Condition="'%(AndroidJava.CharacterEncoding)' == ''">UTF-8</CharacterEncoding>
 

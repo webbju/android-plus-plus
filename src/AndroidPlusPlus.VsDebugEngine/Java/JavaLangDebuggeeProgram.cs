@@ -92,7 +92,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        m_debugger.Engine.Broadcast (new JavaLangDebuggerEvent.AttachClient (m_debugger), DebugProgram, null);
+        m_debugger.Engine.Broadcast (new JavaLangDebuggerEvent.AttachClient (), DebugProgram, null);
 
         return DebugEngineConstants.S_OK;
       }
@@ -125,7 +125,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        m_debugger.Engine.Broadcast (new JavaLangDebuggerEvent.StopClient (m_debugger), DebugProgram, null);
+        m_debugger.Engine.Broadcast (new JavaLangDebuggerEvent.StopClient (), DebugProgram, null);
 
         return DebugEngineConstants.S_OK;
       }
@@ -149,7 +149,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (!IsRunning)
         {
-          m_debugger.Engine.Broadcast (new JavaLangDebuggerEvent.ContinueClient (m_debugger), DebugProgram, null);
+          m_debugger.Engine.Broadcast (new JavaLangDebuggerEvent.ContinueClient (), DebugProgram, null);
         }
 
         return DebugEngineConstants.S_OK;
@@ -172,7 +172,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        m_debugger.Engine.Broadcast (new JavaLangDebuggerEvent.DetachClient (m_debugger), DebugProgram, null);
+        m_debugger.Engine.Broadcast (new JavaLangDebuggerEvent.DetachClient (), DebugProgram, null);
 
         return DebugEngineConstants.S_OK;
       }
@@ -636,7 +636,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        m_debugger.Engine.Broadcast (new JavaLangDebuggerEvent.TerminateClient (m_debugger), DebugProgram, null);
+        m_debugger.Engine.Broadcast (new JavaLangDebuggerEvent.TerminateClient (), DebugProgram, null);
 
         return DebugEngineConstants.S_OK;
       }

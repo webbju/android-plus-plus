@@ -93,6 +93,7 @@ namespace AndroidPlusPlus.VsDebugEngine
             case ".h":
             case ".hpp":
             case ".asm":
+            case ".inl":
             {
               breakpoint = new CLangDebuggeeBreakpointPending (Engine.NativeDebugger, this, breakpointRequest);
 

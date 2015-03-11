@@ -152,56 +152,70 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public string [] CacheSystemBinaries ()
+    public string [] CacheSystemBinaries (bool only64bit)
     {
       // 
-      // Pull the required binaries from the device.
+      // Evaluate remote binaries required for debugging, which must be cached on the host device.
       // 
 
       LoggingUtils.PrintFunction ();
 
       List<string> deviceBinaries = new List<string> ();
 
-      string [] remoteBinaries = 
+      if (only64bit && (Process.HostDevice.SdkVersion >= AndroidSettings.VersionCode.LOLLIPOP))
       {
-        "/system/bin/app_process",
-        "/system/bin/app_process32",
-        "/system/bin/app_process64",
-        "/system/bin/linker",
-        "/system/lib/libandroid.so",
-        "/system/lib/libandroid_runtime.so",
-        "/system/lib/libart.so",
-        "/system/lib/libbinder.so",
-        "/system/lib/libc.so",
-        "/system/lib/libdvm.so",
-        "/system/lib/libEGL.so",
-        "/system/lib/libGLESv1_CM.so",
-        "/system/lib/libGLESv2.so",
-        "/system/lib/libGLESv3.so",
-        "/system/lib/libutils.so",
-      };
+        deviceBinaries.AddRange (new string []
+        {
+          "/system/bin/app_process64",
+          "/system/bin/linker64",
+        });
+      }
+      else
+      {
+        deviceBinaries.AddRange (new string []
+        {
+          "/system/bin/app_process",
+          "/system/bin/app_process32",
+          "/system/bin/linker",
+        });
+      }
 
-      foreach (string binary in remoteBinaries)
+      // 
+      // Pull the required binaries from the device.
+      // 
+
+      List<string> hostBinaries = new List<string> ();
+
+      foreach (string binary in deviceBinaries)
       {
         string cachedBinary = Path.Combine (CacheSysRoot, binary.Substring (1));
 
-        string cahedBinaryFullPath = Path.Combine (Path.GetDirectoryName (cachedBinary), Path.GetFileName (cachedBinary));
+        string cachedBinaryDir = Path.GetDirectoryName (cachedBinary);
 
-        Directory.CreateDirectory (Path.GetDirectoryName (cahedBinaryFullPath));
+        string cachedBinaryFullPath = Path.Combine (cachedBinaryDir, Path.GetFileName (cachedBinary));
 
-        if (File.Exists (cahedBinaryFullPath))
+        Directory.CreateDirectory (cachedBinaryDir);
+
+        FileInfo cachedBinaryFileInfo = new FileInfo (cachedBinaryFullPath);
+
+        bool usedCached = false;
+
+        if (cachedBinaryFileInfo.Exists && (DateTime.UtcNow - cachedBinaryFileInfo.CreationTimeUtc) < TimeSpan.FromDays (1))
         {
-          deviceBinaries.Add (cahedBinaryFullPath);
-
           LoggingUtils.Print (string.Format ("[GdbSetup] Using cached {0}.", binary));
+
+          hostBinaries.Add (cachedBinaryFullPath);
+
+          usedCached = true;
         }
-        else
+
+        if (!usedCached)
         {
           try
           {
             Process.HostDevice.Pull (binary, cachedBinary);
 
-            deviceBinaries.Add (cahedBinaryFullPath);
+            hostBinaries.Add (cachedBinaryFullPath);
 
             LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", binary));
           }
@@ -212,14 +226,112 @@ namespace AndroidPlusPlus.Common
         }
       }
 
-      return deviceBinaries.ToArray ();
+      return hostBinaries.ToArray ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public string [] CacheApplicationBinaries ()
+    public string [] CacheSystemLibraries (bool only64bit)
+    {
+      // 
+      // Evaluate the remote libraries required for debugging on the host device.
+      // 
+
+      LoggingUtils.PrintFunction ();
+
+      List<string> deviceLibraries = new List<string> ();
+
+      if (only64bit && (Process.HostDevice.SdkVersion >= AndroidSettings.VersionCode.LOLLIPOP))
+      {
+        deviceLibraries.AddRange (new string []
+        {
+          //"/system/lib64/libandroid.so",
+          //"/system/lib64/libandroid_runtime.so",
+          //"/system/lib64/libart.so",
+          //"/system/lib64/libbinder.so",
+          "/system/lib64/libc.so",
+          //"/system/lib64/libdvm.so",
+          //"/system/lib64/libEGL.so",
+          //"/system/lib64/libGLESv1_CM.so",
+          //"/system/lib64/libGLESv2.so",
+          //"/system/lib64/libGLESv3.so",
+          //"/system/lib64/libutils.so",
+        });
+      }
+      else
+      {
+        deviceLibraries.AddRange (new string []
+        {
+          "/system/lib/libandroid.so",
+          "/system/lib/libandroid_runtime.so",
+          //"/system/lib/libart.so",
+          "/system/lib/libbinder.so",
+          "/system/lib/libc.so",
+          //"/system/lib/libdvm.so",
+          "/system/lib/libEGL.so",
+          "/system/lib/libGLESv1_CM.so",
+          "/system/lib/libGLESv2.so",
+          "/system/lib/libGLESv3.so",
+          "/system/lib/libutils.so",
+        });
+      }
+
+      // 
+      // Pull the required libraries from the device.
+      // 
+
+      List<string> hostBinaries = new List<string> ();
+
+      foreach (string binary in deviceLibraries)
+      {
+        string cachedBinary = Path.Combine (CacheSysRoot, binary.Substring (1));
+
+        string cachedBinaryDir = Path.GetDirectoryName (cachedBinary);
+
+        string cachedBinaryFullPath = Path.Combine (Path.GetDirectoryName (cachedBinary), Path.GetFileName (cachedBinary));
+
+        Directory.CreateDirectory (cachedBinaryDir);
+
+        FileInfo cachedBinaryFileInfo = new FileInfo (cachedBinaryFullPath);
+
+        bool usedCached = false;
+
+        if (cachedBinaryFileInfo.Exists && (DateTime.UtcNow - cachedBinaryFileInfo.CreationTimeUtc) < TimeSpan.FromDays (1))
+        {
+          LoggingUtils.Print (string.Format ("[GdbSetup] Using cached {0}.", binary));
+
+          hostBinaries.Add (cachedBinaryFullPath);
+
+          usedCached = true;
+        }
+
+        if (!usedCached)
+        {
+          try
+          {
+            Process.HostDevice.Pull (binary, cachedBinary);
+
+            hostBinaries.Add (cachedBinaryFullPath);
+
+            LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", binary));
+          }
+          catch (Exception e)
+          {
+            LoggingUtils.HandleException (e);
+          }
+        }
+      }
+
+      return hostBinaries.ToArray ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public string [] CacheApplicationLibraries ()
     {
       // 
       // Application binaries (those under /lib/ of an installed application).
@@ -249,7 +361,7 @@ namespace AndroidPlusPlus.Common
 
             string temporaryStorage = "/data/local/tmp/" + lib;
 
-            Process.HostDevice.Shell ("cp", string.Format ("{0} {1}", remoteLib, temporaryStorage));
+            Process.HostDevice.Shell ("cp", string.Format ("-fH {0} {1}", remoteLib, temporaryStorage));
 
             Process.HostDevice.Pull (temporaryStorage, libraryCachePath);
 
@@ -319,14 +431,12 @@ namespace AndroidPlusPlus.Common
       {
         gdbExecutionCommands.Add ("source " + PathUtils.SantiseWindowsPath (dalkvikGdbScriptPath));
 
-#if false
         if (Process.HostDevice.SdkVersion >= AndroidSettings.VersionCode.LOLLIPOP)
         {
           gdbExecutionCommands.Add ("art-on");
 
           gdbExecutionCommands.Add ("handle SIGSEGV print stop");
         }
-#endif
       }
 
       return gdbExecutionCommands.ToArray ();

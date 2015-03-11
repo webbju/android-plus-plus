@@ -148,8 +148,22 @@
       <EnumValue
         Name="1.6"
         DisplayName="1.6"
-        Description="This is the default value. No language changes were introduced in Java SE 6. However, encoding errors in source files are now reported as errors, instead of warnings, as previously."
+        Description="No language changes were introduced in Java SE 6. However, encoding errors in source files are now reported as errors instead of warnings as in earlier releases of Java Platform, Standard Edition."
         Switch="-source 1.6"
+      />
+
+      <EnumValue
+        Name="1.7"
+        DisplayName="1.7"
+        Description="The compiler accepts code with features introduced in Java SE 7."
+        Switch="-source 1.7"
+      />
+
+      <EnumValue
+        Name="1.8"
+        DisplayName="1.8"
+        Description="The compiler accepts code with features introduced in Java SE 8."
+        Switch="-source 1.8"
       />
 
     </EnumProperty>
@@ -161,35 +175,43 @@
     <EnumProperty
       Name="TargetCodeVersion"
       DisplayName="Target Code Version"
-      Description="Specifies the version of source code accepted."
+      Description="Generates class files that target a specified release of the virtual machine. Class files will run on the specified target and on later releases, but not on earlier releases of the JVM."
       Category="Advanced">
 
       <EnumValue
         Name="1.3"
         DisplayName="1.3"
-        Description="The compiler does not support assertions, generics, or other language features introduced after JDK 1.3."
         Switch="-target 1.3"
       />
 
       <EnumValue
         Name="1.4"
         DisplayName="1.4"
-        Description="The compiler accepts code containing assertions, which were introduced in JDK 1.4."
         Switch="-target 1.4"
       />
 
       <EnumValue
         Name="1.5"
         DisplayName="1.5"
-        Description="The compiler accepts code containing generics and other language features introduced in JDK 5."
         Switch="-target 1.5"
       />
 
       <EnumValue
         Name="1.6"
         DisplayName="1.6"
-        Description="This is the default value. No language changes were introduced in Java SE 6. However, encoding errors in source files are now reported as errors, instead of warnings, as previously."
         Switch="-target 1.6"
+      />
+
+      <EnumValue
+        Name="1.7"
+        DisplayName="1.7"
+        Switch="-target 1.7"
+      />
+
+      <EnumValue
+        Name="1.8"
+        DisplayName="1.8"
+        Switch="-target 1.8"
       />
 
     </EnumProperty>

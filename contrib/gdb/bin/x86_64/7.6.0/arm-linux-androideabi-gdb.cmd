@@ -1,4 +1,4 @@
-
+@echo off
 
 call ..\bootstrap_python.cmd
 

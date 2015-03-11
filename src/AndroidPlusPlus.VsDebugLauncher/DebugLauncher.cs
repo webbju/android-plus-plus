@@ -450,8 +450,13 @@ namespace AndroidPlusPlus.VsDebugLauncher
           installArgsBuilder.Append (targetRemoteTemporaryFile);
 
           // 
-          // Explicitly install the target APK using 'am' tool, as this allows more customisation.
-          // (APKs must already be on the device for this tool to work.)
+          // Explicitly install the target APK using 'pm' tool, as this allows more customisation.
+          // 
+          //  1) APKs must already be on the device for this tool to work. We push these manually.
+          // 
+          //  2) Installations can fail for various reasons; errors are reported thusly:
+          //         pkg: /data/local/tmp/hello-gdbserver-Debug.apk
+          //       Failure [INSTALL_FAILED_INVALID_URI]
           // 
 
           m_debugConnectionService.LaunchDialogUpdate (string.Format ("[adb:push] {0} {1}", targetLocalApk, targetRemoteTemporaryPath), false);
@@ -460,7 +465,14 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
           m_debugConnectionService.LaunchDialogUpdate (string.Format ("[adb:shell:pm] {0} {1}", "install", installArgsBuilder.ToString ()), false);
 
-          debuggingDevice.Shell ("pm", "install " + installArgsBuilder.ToString (), int.MaxValue);
+          string installReport = debuggingDevice.Shell ("pm", "install " + installArgsBuilder.ToString (), int.MaxValue);
+
+          if (installReport.Contains ("Failure ["))
+          {
+            int failureIndex = installReport.IndexOf ("Failure [");
+
+            throw new InvalidOperationException (string.Format ("Failed to install: {0}", installReport.Substring (failureIndex)));
+          }
 
           m_debugConnectionService.LaunchDialogUpdate (string.Format ("[adb:shell:rm] {0}", targetRemoteTemporaryFile), false);
 

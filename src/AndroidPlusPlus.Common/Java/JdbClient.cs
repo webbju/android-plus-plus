@@ -99,7 +99,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void Dispose ()
+    public void Kill ()
     {
       LoggingUtils.PrintFunction ();
 
@@ -108,7 +108,26 @@ namespace AndroidPlusPlus.Common
         if (m_jdbClientInstance != null)
         {
           m_jdbClientInstance.Kill ();
+        }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+      }
+    }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public void Dispose ()
+    {
+      LoggingUtils.PrintFunction ();
+
+      try
+      {
+        if (m_jdbClientInstance != null)
+        {
           m_jdbClientInstance.Dispose ();
 
           m_jdbClientInstance = null;
@@ -161,17 +180,7 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      try
-      {
-        if (m_jdbClientInstance != null)
-        {
-          m_jdbClientInstance.Kill ();
-        }
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-      }
+      Kill ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -556,7 +565,7 @@ namespace AndroidPlusPlus.Common
       {
         m_timeSinceLastOperation.Restart ();
 
-        LoggingUtils.Print (string.Format ("[JdbClient] ProcessExited: {0}", args));
+        LoggingUtils.Print (string.Format ("[JdbClient] ProcessExited"));
 
         m_jdbClientInstance = null;
 

@@ -89,9 +89,12 @@ namespace AndroidPlusPlus.Common
     {
       string prop;
 
-      m_deviceProperties.TryGetValue (property, out prop);
+      if (m_deviceProperties.TryGetValue (property, out prop))
+      {
+        return prop;
+      }
 
-      return prop ?? string.Empty;
+      return string.Empty;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -114,21 +117,20 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public AndroidProcess [] GetProcessesFromName (string processName)
+    public uint [] GetPidsFromName (string processName)
     {
-      HashSet <uint> processPidSet;
+      HashSet<uint> processPidSet;
 
-      List<AndroidProcess> processList = new List<AndroidProcess> ();
+      uint [] processesArray = new uint [] { };
 
       if (m_deviceProcessesPidsByName.TryGetValue (processName, out processPidSet))
       {
-        foreach (uint pid in processPidSet)
-        {
-          processList.Add (GetProcessFromPid (pid));
-        }
+        processesArray = new uint [processPidSet.Count];
+
+        processPidSet.CopyTo (processesArray, 0);
       }
 
-      return processList.ToArray ();
+      return processesArray;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -208,7 +210,7 @@ namespace AndroidPlusPlus.Common
       {
         int exitCode = -1;
 
-        using (SyncRedirectProcess process = AndroidAdb.AdbCommand (this, "push", string.Format ("{0} {1}", PathUtils.SantiseWindowsPath (localPath), remotePath)))
+        using (SyncRedirectProcess process = AndroidAdb.AdbCommand (this, "push", string.Format ("{0} {1}", PathUtils.QuoteIfNeeded (localPath), remotePath)))
         {
           exitCode = process.StartAndWaitForExit ();
 
@@ -240,7 +242,7 @@ namespace AndroidPlusPlus.Common
       {
         int exitCode = -1;
 
-        using (SyncRedirectProcess process = AndroidAdb.AdbCommand (this, "pull", string.Format ("{0} {1}", remotePath, PathUtils.SantiseWindowsPath (localPath))))
+        using (SyncRedirectProcess process = AndroidAdb.AdbCommand (this, "pull", string.Format ("{0} {1}", remotePath, PathUtils.QuoteIfNeeded (localPath))))
         {
           exitCode = process.StartAndWaitForExit ();
 
@@ -249,7 +251,8 @@ namespace AndroidPlusPlus.Common
             throw new InvalidOperationException (string.Format ("pull returned error code: {0}", exitCode));
           }
 
-          return process.StandardOutput;
+          return process.StandardOutput; 
+
         }
       }
       catch (Exception e)

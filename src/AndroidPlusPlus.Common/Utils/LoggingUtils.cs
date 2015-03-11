@@ -91,7 +91,7 @@ namespace AndroidPlusPlus.Common
 
     public static void HandleException (Exception e)
     {
-      Print (string.Format ("[Exception] {0}\n{1}", e.Message, e.StackTrace));
+      Print (string.Format ("[Exception] {0}: {1}\n{2}", e.GetType ().ToString (), e.Message, e.StackTrace));
 
 #if DEBUG && false
       System.Diagnostics.Debugger.Break ();

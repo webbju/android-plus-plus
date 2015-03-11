@@ -27,6 +27,8 @@ namespace AndroidPlusPlus.VsDebugEngine
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  [ComVisible (true)]
+  [ClassInterface (ClassInterfaceType.None)]
   public class SynchronousDebugEvent : IDebugEvent2
   {
     int IDebugEvent2.GetAttributes (out uint pdwAttrib)
@@ -41,6 +43,8 @@ namespace AndroidPlusPlus.VsDebugEngine
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  [ComVisible (true)]
+  [ClassInterface (ClassInterfaceType.None)]
   public class AsynchronousDebugEvent : IDebugEvent2
   {
     int IDebugEvent2.GetAttributes (out uint pdwAttrib)
@@ -55,6 +59,8 @@ namespace AndroidPlusPlus.VsDebugEngine
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  [ComVisible (true)]
+  [ClassInterface (ClassInterfaceType.None)]
   public class SynchronousStopDebugEvent : IDebugEvent2
   {
     int IDebugEvent2.GetAttributes (out uint pdwAttrib)
@@ -69,6 +75,8 @@ namespace AndroidPlusPlus.VsDebugEngine
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  [ComVisible (true)]
+  [ClassInterface (ClassInterfaceType.None)]
   public class AsynchronousStopDebugEvent : IDebugEvent2
   {
     int IDebugEvent2.GetAttributes (out uint pdwAttrib)
@@ -83,6 +91,8 @@ namespace AndroidPlusPlus.VsDebugEngine
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  [ComVisible (true)]
+  [ClassInterface (ClassInterfaceType.None)]
   public class ImmediateDebugEvent : IDebugEvent2
   {
     int IDebugEvent2.GetAttributes (out uint pdwAttrib)
@@ -97,6 +107,8 @@ namespace AndroidPlusPlus.VsDebugEngine
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  [ComVisible (true)]
+  [ClassInterface (ClassInterfaceType.None)]
   public class ExpressionEvaluationDebugEvent : IDebugEvent2
   {
     int IDebugEvent2.GetAttributes (out uint pdwAttrib)
@@ -124,8 +136,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugSessionCreateEvent2))]
-    public sealed class SessionCreate : SynchronousDebugEvent, IDebugSessionCreateEvent2
+    public sealed class SessionCreate : SynchronousDebugEvent, IDebugEvent2, IDebugSessionCreateEvent2
     {
     }
 
@@ -133,8 +147,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugSessionDestroyEvent2))]
-    public sealed class SessionDestroy : SynchronousDebugEvent, IDebugSessionDestroyEvent2
+    public sealed class SessionDestroy : SynchronousDebugEvent, IDebugEvent2, IDebugSessionDestroyEvent2
     {
     }
 
@@ -142,8 +158,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugEngineCreateEvent2))]
-    public sealed class EngineCreate : SynchronousDebugEvent, IDebugEngineCreateEvent2
+    public sealed class EngineCreate : SynchronousDebugEvent, IDebugEvent2, IDebugEngineCreateEvent2
     {
       private readonly IDebugEngine2 m_engine;
 
@@ -164,8 +182,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugProcessCreateEvent2))]
-    public sealed class ProcessCreate : SynchronousDebugEvent, IDebugProcessCreateEvent2
+    public sealed class ProcessCreate : SynchronousDebugEvent, IDebugEvent2, IDebugProcessCreateEvent2
     {
     }
 
@@ -173,8 +193,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugProcessDestroyEvent2))]
-    public sealed class ProcessDestroy : SynchronousDebugEvent, IDebugProcessDestroyEvent2
+    public sealed class ProcessDestroy : SynchronousDebugEvent, IDebugEvent2, IDebugProcessDestroyEvent2
     {
     }
 
@@ -182,8 +204,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugProgramCreateEvent2))]
-    public sealed class ProgramCreate : SynchronousDebugEvent, IDebugProgramCreateEvent2
+    public sealed class ProgramCreate : SynchronousDebugEvent, IDebugEvent2, IDebugProgramCreateEvent2
     {
     }
 
@@ -191,8 +215,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugProgramDestroyEvent2))]
-    public sealed class ProgramDestroy : SynchronousDebugEvent, IDebugProgramDestroyEvent2
+    public sealed class ProgramDestroy : SynchronousDebugEvent, IDebugEvent2, IDebugProgramDestroyEvent2
     {
       private readonly uint m_exitCode;
 
@@ -213,8 +239,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugThreadCreateEvent2))]
-    public sealed class ThreadCreate : AsynchronousDebugEvent, IDebugThreadCreateEvent2
+    public sealed class ThreadCreate : AsynchronousDebugEvent, IDebugEvent2, IDebugThreadCreateEvent2
     {
     }
 
@@ -222,8 +250,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugThreadDestroyEvent2))]
-    public sealed class ThreadDestroy : AsynchronousDebugEvent, IDebugThreadDestroyEvent2
+    public sealed class ThreadDestroy : AsynchronousDebugEvent, IDebugEvent2, IDebugThreadDestroyEvent2
     {
       private readonly uint m_exitCode;
 
@@ -244,8 +274,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugLoadCompleteEvent2))]
-    public sealed class LoadComplete : AsynchronousStopDebugEvent, IDebugLoadCompleteEvent2
+    public sealed class LoadComplete : AsynchronousStopDebugEvent, IDebugEvent2, IDebugLoadCompleteEvent2
     {
     }
 
@@ -253,8 +285,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugEntryPointEvent2))]
-    public sealed class EntryPoint : AsynchronousStopDebugEvent, IDebugEntryPointEvent2
+    public sealed class EntryPoint : AsynchronousStopDebugEvent, IDebugEvent2, IDebugEntryPointEvent2
     {
     }
 
@@ -262,8 +296,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugStepCompleteEvent2))]
-    public sealed class StepComplete : AsynchronousStopDebugEvent, IDebugStepCompleteEvent2
+    public sealed class StepComplete : AsynchronousStopDebugEvent, IDebugEvent2, IDebugStepCompleteEvent2
     {
     }
 
@@ -271,8 +307,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugCanStopEvent2))]
-    public sealed class CanStop : SynchronousStopDebugEvent, IDebugCanStopEvent2
+    public sealed class CanStop : SynchronousStopDebugEvent, IDebugEvent2, IDebugCanStopEvent2
     {
       private readonly IDebugCodeContext2 m_codeContext;
 
@@ -326,8 +364,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugBreakEvent2))]
-    public sealed class Break : AsynchronousStopDebugEvent, IDebugBreakEvent2
+    public sealed class Break : AsynchronousStopDebugEvent, IDebugEvent2, IDebugBreakEvent2
     {
     }
 
@@ -335,8 +375,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugBreakpointEvent2))]
-    public sealed class BreakpointHit : AsynchronousStopDebugEvent, IDebugBreakpointEvent2
+    public sealed class BreakpointHit : AsynchronousStopDebugEvent, IDebugEvent2, IDebugBreakpointEvent2
     {
       private readonly IEnumDebugBoundBreakpoints2 m_boundBreakpoints;
 
@@ -357,8 +399,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugExceptionEvent2))]
-    public sealed class Exception : AsynchronousStopDebugEvent, IDebugExceptionEvent2
+    public sealed class Exception : AsynchronousStopDebugEvent, IDebugEvent2, IDebugExceptionEvent2
     {
       private readonly DebuggeeProgram m_debugProgram;
 
@@ -438,8 +482,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugOutputStringEvent2))]
-    public sealed class OutputString : AsynchronousDebugEvent, IDebugOutputStringEvent2
+    public sealed class OutputString : AsynchronousDebugEvent, IDebugEvent2, IDebugOutputStringEvent2
     {
       private readonly string m_outputString;
 
@@ -460,8 +506,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugModuleLoadEvent2))]
-    public sealed class ModuleLoad : AsynchronousDebugEvent, IDebugModuleLoadEvent2
+    public sealed class ModuleLoad : AsynchronousDebugEvent, IDebugEvent2, IDebugModuleLoadEvent2
     {
       private readonly IDebugModule2 m_debugModule;
 
@@ -503,8 +551,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugSymbolSearchEvent2))]
-    public sealed class SymbolSearch : AsynchronousDebugEvent, IDebugSymbolSearchEvent2
+    public sealed class SymbolSearch : AsynchronousDebugEvent, IDebugEvent2, IDebugSymbolSearchEvent2
     {
       private readonly IDebugModule3 m_debugModule;
 
@@ -535,8 +585,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugBeforeSymbolSearchEvent2))]
-    public sealed class BeforeSymbolSearch : AsynchronousDebugEvent, IDebugBeforeSymbolSearchEvent2
+    public sealed class BeforeSymbolSearch : AsynchronousDebugEvent, IDebugEvent2, IDebugBeforeSymbolSearchEvent2
     {
       private readonly IDebugModule2 m_debugModule;
 
@@ -572,8 +624,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugPropertyCreateEvent2))]
-    public sealed class PropertyCreate : AsynchronousDebugEvent, IDebugPropertyCreateEvent2
+    public sealed class PropertyCreate : AsynchronousDebugEvent, IDebugEvent2, IDebugPropertyCreateEvent2
     {
       private readonly IDebugProperty2 m_debugProperty;
 
@@ -594,8 +648,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugPropertyDestroyEvent2))]
-    public sealed class PropertyDestroy : AsynchronousDebugEvent, IDebugPropertyDestroyEvent2
+    public sealed class PropertyDestroy : AsynchronousDebugEvent, IDebugEvent2, IDebugPropertyDestroyEvent2
     {
       private readonly IDebugProperty2 m_debugProperty;
 
@@ -616,8 +672,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugBreakpointBoundEvent2))]
-    public sealed class BreakpointBound : AsynchronousDebugEvent, IDebugBreakpointBoundEvent2
+    public sealed class BreakpointBound : AsynchronousDebugEvent, IDebugEvent2, IDebugBreakpointBoundEvent2
     {
       private readonly IDebugPendingBreakpoint2 m_pendingBreakpoint;
 
@@ -653,8 +711,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugBreakpointUnboundEvent2))]
-    public sealed class BreakpointUnbound : AsynchronousDebugEvent, IDebugBreakpointUnboundEvent2
+    public sealed class BreakpointUnbound : AsynchronousDebugEvent, IDebugEvent2, IDebugBreakpointUnboundEvent2
     {
       private readonly IDebugBoundBreakpoint2 m_boundBreakpoint;
 
@@ -682,8 +742,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugBreakpointErrorEvent2))]
-    public sealed class BreakpointError : AsynchronousDebugEvent, IDebugBreakpointErrorEvent2
+    public sealed class BreakpointError : AsynchronousDebugEvent, IDebugEvent2, IDebugBreakpointErrorEvent2
     {
       private IDebugErrorBreakpoint2 m_errorBreakpoint;
 
@@ -704,8 +766,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugExpressionEvaluationCompleteEvent2))]
-    public sealed class ExpressionEvaluationComplete : AsynchronousDebugEvent, IDebugExpressionEvaluationCompleteEvent2
+    public sealed class ExpressionEvaluationComplete : AsynchronousDebugEvent, IDebugEvent2, IDebugExpressionEvaluationCompleteEvent2
     {
       private readonly IDebugExpression2 m_debugExpression;
 
@@ -737,8 +801,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugReturnValueEvent2))]
-    public sealed class ReturnValue : AsynchronousDebugEvent, IDebugReturnValueEvent2
+    public sealed class ReturnValue : AsynchronousDebugEvent, IDebugEvent2, IDebugReturnValueEvent2
     {
       private readonly IDebugProperty2 m_debugProperty;
 
@@ -759,8 +825,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugNoSymbolsEvent2))]
-    public sealed class NoSymbols : AsynchronousDebugEvent, IDebugNoSymbolsEvent2
+    public sealed class NoSymbols : AsynchronousDebugEvent, IDebugEvent2, IDebugNoSymbolsEvent2
     {
     }
 
@@ -768,8 +836,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugProgramNameChangedEvent2))]
-    public sealed class ProgramNameChanged : AsynchronousDebugEvent, IDebugProgramNameChangedEvent2
+    public sealed class ProgramNameChanged : AsynchronousDebugEvent, IDebugEvent2, IDebugProgramNameChangedEvent2
     {
     }
 
@@ -777,8 +847,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugThreadNameChangedEvent2))]
-    public sealed class ThreadNameChanged : AsynchronousDebugEvent, IDebugThreadNameChangedEvent2
+    public sealed class ThreadNameChanged : AsynchronousDebugEvent, IDebugEvent2, IDebugThreadNameChangedEvent2
     {
     }
 
@@ -787,7 +859,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     [InheritGuid (typeof (IDebugMessageEvent2))]
-    public sealed class Message : AsynchronousDebugEvent, IDebugMessageEvent2
+    public sealed class Message : AsynchronousDebugEvent, IDebugEvent2, IDebugMessageEvent2
     {
       private readonly string m_userMessage;
 
@@ -831,8 +903,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugErrorEvent2))]
-    public sealed class Error : AsynchronousDebugEvent, IDebugErrorEvent2
+    public sealed class Error : AsynchronousDebugEvent, IDebugEvent2, IDebugErrorEvent2
     {
       private readonly string m_errorMessage;
 
@@ -867,8 +941,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugActivateDocumentEvent2))]
-    public sealed class ActivateDocument : AsynchronousDebugEvent, IDebugActivateDocumentEvent2
+    public sealed class ActivateDocument : AsynchronousDebugEvent, IDebugEvent2, IDebugActivateDocumentEvent2
     {
       private readonly IDebugDocument2 m_document;
 
@@ -900,8 +976,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugInterceptExceptionCompleteEvent2))]
-    public sealed class InterceptExceptionComplete : AsynchronousDebugEvent, IDebugInterceptExceptionCompleteEvent2
+    public sealed class InterceptExceptionComplete : AsynchronousDebugEvent, IDebugEvent2, IDebugInterceptExceptionCompleteEvent2
     {
       private readonly ulong m_interceptCookie;
 
@@ -922,8 +1000,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugAttachCompleteEvent2))]
-    public sealed class AttachComplete : SynchronousDebugEvent, IDebugAttachCompleteEvent2
+    public sealed class AttachComplete : SynchronousDebugEvent, IDebugEvent2, IDebugAttachCompleteEvent2
     {
     }
 
@@ -931,8 +1011,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugFuncEvalAbortedEvent2))]
-    public sealed class FuncEvalAborted : AsynchronousDebugEvent, IDebugFuncEvalAbortedEvent2
+    public sealed class FuncEvalAborted : AsynchronousDebugEvent, IDebugEvent2, IDebugFuncEvalAbortedEvent2
     {
       private readonly string m_functionName;
 
@@ -964,8 +1046,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [InheritGuid (typeof (IDebugStopCompleteEvent2))]
-    public sealed class StopComplete : SynchronousStopDebugEvent, IDebugStopCompleteEvent2
+    public sealed class StopComplete : SynchronousStopDebugEvent, IDebugEvent2, IDebugStopCompleteEvent2
     {
 
     }
@@ -974,18 +1058,23 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /*[InheritGuid (typeof (IDebugSessionEvent2))]
-    public sealed class Session : AsynchronousStopDebugEvent, IDebugSessionEvent2
+#if false
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
+    [InheritGuid (typeof (IDebugSessionEvent2))]
+    public sealed class Session : AsynchronousStopDebugEvent, IDebugEvent2, IDebugSessionEvent2
     {
-
-    }*/
+    }
+#endif
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [Guid ("4A6700A3-A51E-43AE-8F35-945170451454")]
-    public sealed class DebuggerLogcatEvent : AsynchronousDebugEvent
+    public sealed class DebuggerLogcatEvent : AsynchronousDebugEvent, IDebugEvent2
     {
       public DebuggerLogcatEvent (AndroidDevice device)
       {
@@ -999,8 +1088,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [ComVisible (true)]
+    [ClassInterface (ClassInterfaceType.None)]
     [Guid ("DA9A360F-0380-41EB-8BC8-70996E9072BE")]
-    public sealed class DebuggerConnectionEvent : AsynchronousDebugEvent
+    public sealed class DebuggerConnectionEvent : AsynchronousDebugEvent, IDebugEvent2
     {
       public enum EventType
       {
