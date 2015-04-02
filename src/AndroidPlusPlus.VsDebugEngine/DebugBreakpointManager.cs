@@ -8,10 +8,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Runtime.InteropServices;
-
 using Microsoft.VisualStudio.Debugger.Interop;
-
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -129,7 +128,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         SetDirty ();
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (NotImplementedException e)
       {
@@ -137,7 +136,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         pendingBreakpoint = null;
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
       catch (Exception e)
       {
@@ -145,7 +144,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         pendingBreakpoint = null;
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -169,7 +168,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           {
             int handle = m_pendingBreakpoints [i].Delete ();
 
-            if (handle != DebugEngineConstants.E_BP_DELETED)
+            if (handle != Constants.E_BP_DELETED)
             {
               LoggingUtils.RequireOk (handle);
             }

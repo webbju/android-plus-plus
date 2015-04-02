@@ -54,6 +54,8 @@
 
       <CompileAs Condition="'%(ClCompile.CompileAs)' == ''">Default</CompileAs>
 
+      <StandardLanguageDialect Condition="'%(ClCompile.StandardLanguageDialect)' == ''">Default</StandardLanguageDialect>
+
       <ForcedIncludeFiles Condition="'%(ClCompile.ForcedIncludeFiles)' == ''"></ForcedIncludeFiles>
 
       <PreprocessorDefinitions>ANDROID;__ANDROID__;ANDROID_NDK;%(PreprocessorDefinitions)</PreprocessorDefinitions>

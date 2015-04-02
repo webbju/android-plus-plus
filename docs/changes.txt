@@ -1,5 +1,14 @@
 
-Version 0.4.1
+Version 0.5.0
+
+New functionality:
+ - (MSBuild) Amalgamated app-javac-dependencies and app-jar-dependencies into a single exectuable; app-java-builder.
+
+Fixes/Improvements:
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+Version 0.4.1 [private]
 
 New functionality:
  - (MSBuild) Added customised class parsing to app-jar-dependencies, to avoid invocation of javap. Circa 30x speed improvement.
@@ -10,6 +19,7 @@ New functionality:
  - (Debugger) Added ability to disable GDB stopping on certain signal types; controllable via Debug -> Exceptions.
  - (Debugger) Added support for GDB 'common.setup' script for controlling ART debugging in r10c onwards.
  - (Debugger) Now using 'ps -t' results to seed nice thread display names for System/VM processes.
+ - (MSBuild) Added additional properties to generate position independent executables (PIE).
 
 Fixes/Improvements:
 
@@ -18,6 +28,8 @@ Fixes/Improvements:
  - (Debugger) Fixed a number of issues causing debugging of 32-bit builds on 64-bit devices to fail.
  - (MSBuild) Upgraded and reorganised SDL2 sample projects.
  - (MSBuild) Increased Java -source & -target versions to 1.7 (JDK 7). Required for targeting Android API 21.
+ - (Debugger) Fixed errors upon installation not being reported appropriately.
+ - (Debugger) Fixed event broadcasts so that errors in C or Java handlers do not affect AD7.
 
 --------------------------------------------------------------------------------------------------------------------------------
 

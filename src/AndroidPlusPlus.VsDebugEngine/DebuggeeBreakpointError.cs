@@ -5,10 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-
 using Microsoft.VisualStudio.Debugger.Interop;
-
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -58,7 +57,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         ppErrorBP = m_errorBreakpoint;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
     }
 
@@ -120,7 +119,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       ppErrorResolution = m_breakpointResolution;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -133,7 +132,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       ppPendingBreakpoint = m_pendingBreakpoint;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

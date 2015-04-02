@@ -6,10 +6,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-
 using Microsoft.VisualStudio.Debugger.Interop;
-
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -149,7 +148,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.S_OK; 
+      return Constants.S_OK; 
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -183,7 +182,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         enumDebugFrame = new DebuggeeStackFrame.Enumerator (frameInfo);
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -191,7 +190,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         enumDebugFrame = null;
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -209,7 +208,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       threadName = m_threadName;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -222,7 +221,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       program = m_debugProgram;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -235,7 +234,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       threadId = m_threadId;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -321,13 +320,13 @@ namespace AndroidPlusPlus.VsDebugEngine
           propertiesArray [0].dwFields |= enum_THREADPROPERTY_FIELDS.TPF_LOCATION;
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -346,7 +345,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       suspendCount = --m_threadSuspendCount;
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -364,7 +363,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       suspendCount = ++m_threadSuspendCount;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -379,7 +378,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -396,7 +395,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       logicalThread = null;
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -413,7 +412,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       m_threadName = name;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -438,7 +437,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       name = m_threadDisplayName;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -451,7 +450,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       m_threadDisplayName = name;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -466,7 +465,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -483,7 +482,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       flags = m_threadFlags;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -500,7 +499,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       m_threadFlags = flags;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -584,13 +583,13 @@ namespace AndroidPlusPlus.VsDebugEngine
           propertiesArray [0].dwFields |= (uint) enum_THREADPROPERTY_FIELDS100.TPF100_PRIORITY_ID;
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 

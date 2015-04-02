@@ -5,10 +5,9 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-
 using Microsoft.VisualStudio.Debugger.Interop;
-
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -77,16 +76,16 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           processArray [0].ProgramNodes.dwCount = (uint)programNodes.Length;
 
-          return DebugEngineConstants.S_OK;
+          return Constants.S_OK;
         }
 
-        return DebugEngineConstants.S_FALSE;
+        return Constants.S_FALSE;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -105,7 +104,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       ppProgramNode = null;
 
       // This method is used for Just-In-Time debugging support, which this program provider does not support
-      return DebugEngineConstants.E_NOTIMPL; 
+      return Constants.E_NOTIMPL; 
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -120,7 +119,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -146,7 +145,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

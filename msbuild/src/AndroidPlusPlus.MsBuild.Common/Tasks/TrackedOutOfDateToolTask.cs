@@ -213,7 +213,7 @@ namespace AndroidPlusPlus.MsBuild.Common
         }
 #endif
 
-        if ((retCode == 0) && TrackFileAccess)
+        if (/*(retCode == 0) &&*/ TrackFileAccess)
         {
           OutputWriteTLog (m_commandBuffer, OutOfDateSources);
 
@@ -230,53 +230,62 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected Dictionary<string, List <ITaskItem>> GenerateCommandLinesFromTlog ()
+    protected static Dictionary<string, List <ITaskItem>> GenerateCommandLinesFromTlog (ITaskItem tlog)
     {
       // 
       // Extract command-line attributes for each saved file in the TLog.
       // 
 
+      if (tlog == null)
+      {
+        throw new ArgumentNullException ("tlog");
+      }
+
+      string tlogFullPath = (!string.IsNullOrEmpty (tlog.GetMetadata ("FullPath")) ? tlog.GetMetadata ("FullPath") : Path.GetFullPath (tlog.ItemSpec));
+
+      if (string.IsNullOrEmpty (tlogFullPath))
+      {
+        throw new ArgumentException ("Could not evaluate full path for TLog: " + tlog);
+      }
+
       Dictionary<string, List<ITaskItem>> commandLineSourceDictionary = new Dictionary<string, List<ITaskItem>> ();
 
-      if (TLogCommandFile != null)
+      if (!File.Exists (tlogFullPath))
       {
-        string commandFileFullPath = (!string.IsNullOrEmpty (TLogCommandFile.GetMetadata ("FullPath"))) ? TLogCommandFile.GetMetadata ("FullPath") : Path.GetFullPath (TLogCommandFile.ItemSpec);
+        return commandLineSourceDictionary; // Don't error as sometimes this is expected; full rebuilds for example.
+      }
 
-        if (File.Exists (commandFileFullPath))
+      using (StreamReader reader = File.OpenText (tlogFullPath))
+      {
+        // 
+        // Construct a dictionary for each unique tracked command, with an associated list of paired files (separated by '|').
+        // 
+
+        for (string line = reader.ReadLine (); !string.IsNullOrEmpty (line); line = reader.ReadLine ())
         {
-          using (StreamReader reader = File.OpenText (commandFileFullPath))
+          if (line.StartsWith ("^"))
           {
-            // 
-            // Construct a dictionary for each unique tracked command, with an associated list of paired files (separated by '|').
-            // 
+            string [] trackedFiles = line.Substring (1).Split ('|');
 
-            for (string line = reader.ReadLine (); !string.IsNullOrEmpty (line); line = reader.ReadLine ())
+            string command = reader.ReadLine ();
+
+            List<ITaskItem> sourceList;
+
+            if (!commandLineSourceDictionary.TryGetValue (command, out sourceList))
             {
-              if (line.StartsWith ("^"))
-              {
-                string [] trackedFiles = line.Substring (1).Split ('|');
-
-                string command = reader.ReadLine ();
-
-                List <ITaskItem> sourceList;
-
-                if (!commandLineSourceDictionary.TryGetValue (command, out sourceList))
-                {
-                  sourceList = new List<ITaskItem> ();
-                }
-
-                foreach (string file in trackedFiles)
-                {
-                  sourceList.Add (new TaskItem (file));
-                }
-
-                commandLineSourceDictionary [command] = sourceList;
-              }
+              sourceList = new List<ITaskItem> ();
             }
 
-            reader.Close ();
+            foreach (string file in trackedFiles)
+            {
+              sourceList.Add (new TaskItem (file));
+            }
+
+            commandLineSourceDictionary [command] = sourceList;
           }
         }
+
+        reader.Close ();
       }
 
       return commandLineSourceDictionary;
@@ -292,7 +301,12 @@ namespace AndroidPlusPlus.MsBuild.Common
       // Evaluate a list of the currently saved commands, and check whether these are considered out-of-date.
       // 
 
-      Dictionary<string, List<ITaskItem>> commandLineFromTLog = GenerateCommandLinesFromTlog ();
+      if (TLogCommandFile == null)
+      {
+        return new ITaskItem [] { };
+      }
+
+      Dictionary<string, List<ITaskItem>> commandLineFromTLog = GenerateCommandLinesFromTlog (TLogCommandFile);
 
       Dictionary<string, List<ITaskItem>> commandLineFromSources = GenerateCommandLineBuffer (uncheckedSources);
 
@@ -358,104 +372,104 @@ namespace AndroidPlusPlus.MsBuild.Common
       // *Keeps existing entries in the command log. Updates entries for sources which have been compiled/modified.*
       // 
 
-      if (TLogCommandFile != null)
+      if (TLogCommandFile == null)
       {
-        string commandFilePath = TLogCommandFile.GetMetadata ("FullPath");
-
-        // 
-        // Merge existing and new dictionaries. This is quite expensive, but means we can utilise a more simple base export implementation.
-        // 
-
-        Dictionary<string, List<ITaskItem>> cachedCommandLogDictionary = GenerateCommandLinesFromTlog ();
-
-        Dictionary<string, List<ITaskItem>> mergedCommandLogDictionary = new Dictionary<string, List<ITaskItem>> ();
-
-        // 
-        // Add recently changed sources first, ensuring these take precedence.
-        // 
-
-        foreach (KeyValuePair<string, List<ITaskItem>> entry in commandDictionary)
-        {
-          List <ITaskItem> mergedLogDictionaryList;
-
-          HashSet<string> mergedLogDictionaryListAsFullPaths = new HashSet<string> ();
-
-          if (mergedCommandLogDictionary.TryGetValue (entry.Key, out mergedLogDictionaryList))
-          {
-            foreach (ITaskItem source in mergedLogDictionaryList)
-            {
-              string sourceFullPath = TrackedFileManager.ConvertToTrackerFormat (source.GetMetadata ("FullPath"));
-
-              if (!mergedLogDictionaryListAsFullPaths.Contains (sourceFullPath))
-              {
-                mergedLogDictionaryListAsFullPaths.Add (sourceFullPath);
-              }
-            }
-          }
-          else
-          {
-            mergedLogDictionaryList = new List<ITaskItem> ();
-          }
-
-          foreach (ITaskItem source in entry.Value)
-          {
-            string sourceFullPath = TrackedFileManager.ConvertToTrackerFormat (source.GetMetadata ("FullPath"));
-
-            if (!mergedLogDictionaryListAsFullPaths.Contains (sourceFullPath))
-            {
-              mergedLogDictionaryList.Add (source);
-
-              mergedLogDictionaryListAsFullPaths.Add (sourceFullPath);
-            }
-          }
-
-          mergedCommandLogDictionary [entry.Key] = mergedLogDictionaryList;
-        }
-
-        // 
-        // Continue by adding the remaining cached source commands, if they won't overwrite any existing entries.
-        // 
-
-        foreach (KeyValuePair<string, List<ITaskItem>> entry in cachedCommandLogDictionary)
-        {
-          List<ITaskItem> mergedLogDictionaryList;
-
-          HashSet<string> mergedLogDictionaryListAsFullPaths = new HashSet<string> ();
-
-          if (mergedCommandLogDictionary.TryGetValue (entry.Key, out mergedLogDictionaryList))
-          {
-            foreach (ITaskItem source in mergedLogDictionaryList)
-            {
-              string sourceFullPath = TrackedFileManager.ConvertToTrackerFormat (source.GetMetadata ("FullPath"));
-
-              if (!mergedLogDictionaryListAsFullPaths.Contains (sourceFullPath))
-              {
-                mergedLogDictionaryListAsFullPaths.Add (sourceFullPath);
-              }
-            }
-          }
-          else
-          {
-            mergedLogDictionaryList = new List<ITaskItem> ();
-          }
-
-          foreach (ITaskItem source in entry.Value)
-          {
-            string sourceFullPath = TrackedFileManager.ConvertToTrackerFormat (source.GetMetadata ("FullPath"));
-
-            if (!mergedLogDictionaryListAsFullPaths.Contains (sourceFullPath))
-            {
-              mergedLogDictionaryList.Add (source);
-
-              mergedLogDictionaryListAsFullPaths.Add (sourceFullPath);
-            }
-          }
-
-          mergedCommandLogDictionary [entry.Key] = mergedLogDictionaryList;
-        }
-
-        base.OutputCommandTLog (mergedCommandLogDictionary);
+        throw new InvalidOperationException ("TLogCommandFile is invalid");
       }
+
+      // 
+      // Merge existing and new dictionaries. This is quite expensive, but means we can utilise a more simple base export implementation.
+      // 
+
+      Dictionary<string, List<ITaskItem>> cachedCommandLogDictionary = GenerateCommandLinesFromTlog (TLogCommandFile);
+
+      Dictionary<string, List<ITaskItem>> mergedCommandLogDictionary = new Dictionary<string, List<ITaskItem>> ();
+
+      // 
+      // Add recently changed sources first, ensuring these take precedence.
+      // 
+
+      foreach (KeyValuePair<string, List<ITaskItem>> entry in commandDictionary)
+      {
+        List<ITaskItem> mergedLogDictionaryList;
+
+        HashSet<string> mergedLogDictionaryListAsFullPaths = new HashSet<string> ();
+
+        if (mergedCommandLogDictionary.TryGetValue (entry.Key, out mergedLogDictionaryList))
+        {
+          foreach (ITaskItem source in mergedLogDictionaryList)
+          {
+            string trackerFormat = TrackedFileManager.ConvertToTrackerFormat (source.GetMetadata ("FullPath"));
+
+            if (!mergedLogDictionaryListAsFullPaths.Contains (trackerFormat))
+            {
+              mergedLogDictionaryListAsFullPaths.Add (trackerFormat);
+            }
+          }
+        }
+        else
+        {
+          mergedLogDictionaryList = new List<ITaskItem> ();
+        }
+
+        foreach (ITaskItem source in entry.Value)
+        {
+          string trackerFormat = TrackedFileManager.ConvertToTrackerFormat (source.GetMetadata ("FullPath"));
+
+          if (!mergedLogDictionaryListAsFullPaths.Contains (trackerFormat))
+          {
+            mergedLogDictionaryList.Add (source);
+
+            mergedLogDictionaryListAsFullPaths.Add (trackerFormat);
+          }
+        }
+
+        mergedCommandLogDictionary [entry.Key] = mergedLogDictionaryList;
+      }
+
+      // 
+      // Continue by adding the remaining cached source commands, if they won't overwrite any existing entries.
+      // 
+
+      foreach (KeyValuePair<string, List<ITaskItem>> entry in cachedCommandLogDictionary)
+      {
+        List<ITaskItem> mergedLogDictionaryList;
+
+        HashSet<string> mergedLogDictionaryListAsFullPaths = new HashSet<string> ();
+
+        if (mergedCommandLogDictionary.TryGetValue (entry.Key, out mergedLogDictionaryList))
+        {
+          foreach (ITaskItem source in mergedLogDictionaryList)
+          {
+            string trackerFormat = TrackedFileManager.ConvertToTrackerFormat (source.GetMetadata ("FullPath"));
+
+            if (!mergedLogDictionaryListAsFullPaths.Contains (trackerFormat))
+            {
+              mergedLogDictionaryListAsFullPaths.Add (trackerFormat);
+            }
+          }
+        }
+        else
+        {
+          mergedLogDictionaryList = new List<ITaskItem> ();
+        }
+
+        foreach (ITaskItem source in entry.Value)
+        {
+          string trackerFormat = TrackedFileManager.ConvertToTrackerFormat (source.GetMetadata ("FullPath"));
+
+          if (!mergedLogDictionaryListAsFullPaths.Contains (trackerFormat))
+          {
+            mergedLogDictionaryList.Add (source);
+
+            mergedLogDictionaryListAsFullPaths.Add (trackerFormat);
+          }
+        }
+
+        mergedCommandLogDictionary [entry.Key] = mergedLogDictionaryList;
+      }
+
+      base.OutputCommandTLog (mergedCommandLogDictionary);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

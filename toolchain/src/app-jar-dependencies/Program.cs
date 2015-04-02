@@ -62,7 +62,9 @@ namespace app_jar_dependencies
           Directory.Delete (workingDirectory, true);
         }
 
-#if true
+        long failedParsedClassFiles = 0;
+
+#if false
         Parallel.ForEach (s_classFileList, classFilePath =>
 #else
         foreach (string classFilePath in s_classFileList)
@@ -70,7 +72,9 @@ namespace app_jar_dependencies
         {
           try
           {
+#if DEBUG
             Log ("Processing: " + classFilePath);
+#endif
 
             string classId = string.Empty;
 
@@ -100,29 +104,32 @@ namespace app_jar_dependencies
 
               string classPackageAsDir = Path.Combine (workingDirectory, classPackage);
 
-              if (!Directory.Exists (classPackageAsDir))
-              {
-                Directory.CreateDirectory (classPackageAsDir);
-
-                Log (string.Format ("Created: {0}", classPackageAsDir));
-              }
+              Directory.CreateDirectory (classPackageAsDir);
 
               string targetPath = string.Format ("{0}/{1}.class", classPackageAsDir, className);
 
-              File.Copy (classFilePath, targetPath);
-
+              File.Copy (classFilePath, targetPath, true);
+#if DEBUG
               Log (string.Format ("Copied: '{0}' to '{1}'", classFilePath, targetPath));
+#endif
             }
           }
           catch (Exception e)
           {
             LogException (e);
+
+            Interlocked.Increment (ref failedParsedClassFiles);
           }
-#if true
+#if false
         });
 #else
         }
 #endif
+
+        if (failedParsedClassFiles > 0)
+        {
+          throw new InvalidOperationException (string.Format ("Failed to parse {0} files.", failedParsedClassFiles));
+        }
 
         // 
         // c    create new archive
@@ -146,6 +153,8 @@ namespace app_jar_dependencies
         {
           argumentsModeBuilder.Append ("c");
         }
+
+        argumentsModeBuilder.Append ("v");
 
         argumentsModeBuilder.Append ("f");
 
@@ -172,15 +181,25 @@ namespace app_jar_dependencies
 
         HashSet<string> filesWritten = new HashSet<string> ();
 
+        filesWritten.Add (s_jarToolOutputFile);
+
         using (Process trackedProcess = new Process ())
         {
           trackedProcess.StartInfo = new ProcessStartInfo (Path.Combine (s_jdkHomePath, "bin", "jar.exe"), compositeArguments);
 
+          trackedProcess.StartInfo.CreateNoWindow = true;
+
           trackedProcess.StartInfo.UseShellExecute = false;
+
+          trackedProcess.StartInfo.LoadUserProfile = false;
+
+          trackedProcess.StartInfo.ErrorDialog = false;
 
           trackedProcess.StartInfo.RedirectStandardOutput = true;
 
           trackedProcess.StartInfo.RedirectStandardError = true;
+
+          trackedProcess.StartInfo.RedirectStandardInput = true;
 
           trackedProcess.OutputDataReceived += (sender, e) =>
           {
@@ -219,13 +238,18 @@ namespace app_jar_dependencies
 
         if (returnCode == 0)
         {
-          using (StreamWriter writer = new StreamWriter (s_jarToolOutputFile + ".d", false, Encoding.Unicode))
+          foreach (string output in filesWritten)
           {
-            writer.WriteLine (string.Format ("{0}: \\", ConvertPathWindowsToGccDependency (s_jarToolOutputFile)));
-
-            foreach (string dependency in s_classFileList)
+            using (StreamWriter writer = new StreamWriter (output + ".d", false, Encoding.Unicode))
             {
-              writer.WriteLine (string.Format ("  {0} \\", ConvertPathWindowsToGccDependency (dependency)));
+              writer.WriteLine (string.Format ("{0}: \\", ConvertPathWindowsToGccDependency (output)));
+
+              foreach (string dependency in s_classFileList)
+              {
+                writer.WriteLine (string.Format ("  {0} \\", ConvertPathWindowsToGccDependency (dependency)));
+              }
+
+              writer.Close ();
             }
           }
         }
@@ -284,31 +308,33 @@ namespace app_jar_dependencies
             {
               using (StreamReader reader = new StreamReader (args [i].Substring (1)))
               {
-                string fileContents = reader.ReadToEnd ();
+                string line = reader.ReadLine ();
 
-                fileContents = fileContents.Replace ("\r", "").Replace ("\n", " ").Trim (); // pad new lines with spaces
+                int startIndex = 0;
 
-                while (fileContents.Length > 0)
+                while ((line.Length > 1) && !string.IsNullOrWhiteSpace (line))
                 {
-                  int end = FindEndOfFilename (fileContents);
+                  int end = FindEndOfFilename (line, startIndex);
 
-                  string filename = fileContents.Substring (0, end);
-
-                  if (!string.IsNullOrWhiteSpace (filename))
-                  {
-                    s_classFileList.Add (filename.Trim ());
-                  }
-
-                  if (end == fileContents.Length)
+                  if ((end - startIndex) == 0)
                   {
                     break;
                   }
 
-                  fileContents = fileContents.Substring (end + 1);
+                  string filename = line.Substring (startIndex, end - startIndex);
+
+                  if (string.IsNullOrWhiteSpace (filename))
+                  {
+                    break;
+                  }
+
+                  s_classFileList.Add (filename);
+
+                  startIndex = end + 1;
                 }
               }
             }
-            else if (Path.GetExtension (args [i]).ToLowerInvariant () == ".class")
+            else if (Path.GetExtension (args [i]).ToLowerInvariant ().Equals (".class"))
             {
               s_classFileList.Add (args [i]);
             }
@@ -361,19 +387,34 @@ namespace app_jar_dependencies
 
     private static void ProcessJarOutput (string singleLine, ref HashSet<string> filesRead, ref HashSet<string> filesWritten)
     {
-      Debug.WriteLine (singleLine);
-
-      Console.WriteLine (singleLine);
-
       if (string.IsNullOrWhiteSpace (singleLine))
       {
         return;
       }
-      else if (singleLine.StartsWith ("adding:"))
+
+#if DEBUG
+      Debug.WriteLine (singleLine);
+#endif
+
+      Console.WriteLine (singleLine);
+
+      if (singleLine.StartsWith ("adding:"))
       {
         string fileRead = singleLine.Substring ("adding: ".Length);
 
-        fileRead = fileRead.Substring (0, fileRead.IndexOf ('('));
+        int index = fileRead.IndexOf ('(');
+
+        if (index == -1)
+        {
+          return;
+        }
+
+        fileRead = fileRead.Substring (0, index);
+
+        if (fileRead.EndsWith ("\\") || fileRead.EndsWith ("/"))
+        {
+          return;
+        }
 
         if (!filesRead.Contains (fileRead))
         {
@@ -432,33 +473,29 @@ namespace app_jar_dependencies
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private static int FindEndOfFilename (string line)
+    private static int FindEndOfFilename (string line, int startIndex)
     {
       // 
       // Search line for an unescaped space character (which represents the end of file), or EOF.
       // 
 
-      int i;
+      int index = startIndex;
 
-      bool escapedSequence = false;
-
-      for (i = 0; i < line.Length; ++i)
+      while (index != -1)
       {
-        if (line [i] == '\\')
-        {
-          escapedSequence = true;
-        }
-        else if ((line [i] == ' ') && !escapedSequence)
+        index = line.IndexOfAny (new char [] { ' ' }, index);
+
+        if (index == -1)
         {
           break;
         }
-        else if (escapedSequence)
+        else if (line [index - 1] != '\\')
         {
-          escapedSequence = false;
+          return index;
         }
       }
 
-      return i;
+      return line.Length;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -467,7 +504,9 @@ namespace app_jar_dependencies
 
     private static void Log (string log)
     {
+#if DEBUG
       Debug.WriteLine ("[app-jar-dependencies] " + log);
+#endif
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -476,7 +515,9 @@ namespace app_jar_dependencies
 
     private static void LogException (Exception e)
     {
+#if DEBUG
       Debug.WriteLine ("[app-jar-depedencies] Encountered exception: " + e.Message + "\nStack trace: " + e.StackTrace);
+#endif
 
       Console.WriteLine ("[app-jar-depedencies] Encountered exception: " + e.Message + "\nStack trace: " + e.StackTrace);
     }

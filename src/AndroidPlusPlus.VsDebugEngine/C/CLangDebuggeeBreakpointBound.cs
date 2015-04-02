@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -68,7 +69,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         int handle = base.Delete ();
 
-        if (handle == DebugEngineConstants.E_BP_DELETED)
+        if (handle == Constants.E_BP_DELETED)
         {
           return handle;
         }
@@ -84,13 +85,13 @@ namespace AndroidPlusPlus.VsDebugEngine
           MiResultRecord.RequireOk (resultRecord, command);
         });
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -110,7 +111,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         int handle = base.Enable (fEnable);
 
-        if (handle == DebugEngineConstants.E_BP_DELETED)
+        if (handle == Constants.E_BP_DELETED)
         {
           return handle;
         }
@@ -126,13 +127,13 @@ namespace AndroidPlusPlus.VsDebugEngine
           MiResultRecord.RequireOk (resultRecord, command);
         });
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -152,7 +153,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         int handle = base.SetCondition (bpCondition);
 
-        if (handle == DebugEngineConstants.E_BP_DELETED)
+        if (handle == Constants.E_BP_DELETED)
         {
           return handle;
         }
@@ -188,19 +189,19 @@ namespace AndroidPlusPlus.VsDebugEngine
           });
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (NotImplementedException e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -220,7 +221,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         int handle = base.SetPassCount (bpPassCount);
 
-        if (handle == DebugEngineConstants.E_BP_DELETED)
+        if (handle == Constants.E_BP_DELETED)
         {
           return handle;
         }
@@ -258,19 +259,19 @@ namespace AndroidPlusPlus.VsDebugEngine
           MiResultRecord.RequireOk (resultRecord, command);
         });
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (NotImplementedException e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 

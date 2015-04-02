@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Text;
 using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -70,7 +71,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -78,7 +79,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         ppCodeContext = null;
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -96,7 +97,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       puCodeLocationId = (pCodeContext as DebuggeeCodeContext).Address.MemoryAddress;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -113,7 +114,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       puCodeLocationId = m_codeContext.Address.MemoryAddress;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -138,7 +139,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         ppDocument = null;
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
     }
 
@@ -156,7 +157,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       pdwScope [0] = m_streamScope;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -173,7 +174,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       pnSize = 1024; // TODO: this seems a reasonable amount, right now.
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -344,7 +345,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         pdwInstructionsRead = (uint) currentInstruction;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -352,7 +353,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         pdwInstructionsRead = 0;
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -459,19 +460,19 @@ namespace AndroidPlusPlus.VsDebugEngine
           }
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (NotImplementedException e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 

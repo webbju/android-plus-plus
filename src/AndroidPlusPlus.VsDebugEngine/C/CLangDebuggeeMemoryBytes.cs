@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Text;
 using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -54,7 +55,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       pqwSize = 0xffffffffL;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -105,7 +106,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         pdwUnreadable = 0;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -115,7 +116,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         pdwUnreadable = dwCount;
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -148,13 +149,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         MiResultRecord.RequireOk (resultRecord, command);
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 

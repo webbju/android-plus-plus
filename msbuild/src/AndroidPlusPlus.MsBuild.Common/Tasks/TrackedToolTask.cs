@@ -224,7 +224,7 @@ namespace AndroidPlusPlus.MsBuild.Common
         }
 #endif
 
-        if ((retCode == 0) && TrackFileAccess)
+        if (/*(retCode == 0) &&*/ TrackFileAccess)
         {
           OutputWriteTLog (m_commandBuffer, OutputFiles);
 
@@ -361,17 +361,21 @@ namespace AndroidPlusPlus.MsBuild.Common
                 {
                   string responseFile = Path.Combine (TrackerLogDirectory, string.Format ("{0}_{1}.rcf", ToolName, Guid.NewGuid ().ToString ()));
 
+                  using (StreamWriter writer = new StreamWriter (responseFile, false, Encoding.ASCII))
+                  {
+                    writer.WriteLine (responseFileCommands);
+
+                    writer.Close ();
+                  }
+
                   string responseFileSwitch = GetResponseFileSwitch (responseFile);
 
-                  if (!string.IsNullOrWhiteSpace (responseFileSwitch))
+                  if (string.IsNullOrWhiteSpace (responseFileSwitch))
                   {
-                    using (StreamWriter writer = new StreamWriter (responseFile, false, Encoding.ASCII))
-                    {
-                      writer.WriteLine (responseFileCommands);
-                    }
-
-                    responseFileCommands = responseFileSwitch;
+                    throw new InvalidOperationException ("Invalid or empty response file switch.");
                   }
+
+                  responseFileCommands = responseFileSwitch;
                 }
 
                 if (OutputCommandLine)
@@ -397,7 +401,7 @@ namespace AndroidPlusPlus.MsBuild.Common
                   {
                     try
                     {
-                      if (!String.IsNullOrWhiteSpace (args.Data))
+                      if (!string.IsNullOrWhiteSpace (args.Data))
                       {
                         TrackedExecuteToolOutput (threadKeyPair, args.Data);
                       }
@@ -412,7 +416,7 @@ namespace AndroidPlusPlus.MsBuild.Common
                   {
                     try
                     {
-                      if (!String.IsNullOrWhiteSpace (args.Data))
+                      if (!string.IsNullOrWhiteSpace (args.Data))
                       {
                         TrackedExecuteToolOutput (threadKeyPair, args.Data);
                       }
@@ -954,17 +958,19 @@ namespace AndroidPlusPlus.MsBuild.Common
 
                   foreach (ITaskItem dependency in parser.Dependencies)
                   {
-                    if (collatedFullPathSources.ContainsKey (dependency.GetMetadata ("FullPath")))
+                    string dependencyFullPath = dependency.GetMetadata ("FullPath");
+
+                    if (collatedFullPathSources.ContainsKey (dependencyFullPath))
                     {
                       continue;
                     }
 
-                    if (nonSourceDependencies.ContainsKey (dependency.GetMetadata ("FullPath")))
+                    if (nonSourceDependencies.ContainsKey (dependencyFullPath))
                     {
                       continue;
                     }
 
-                    nonSourceDependencies.Add (dependency.GetMetadata ("FullPath"), dependency);
+                    nonSourceDependencies.Add (dependencyFullPath, dependency);
                   }
 
                   ITaskItem [] nonSourceDependenciesArray = new ITaskItem [nonSourceDependencies.Count];

@@ -7,10 +7,9 @@ using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
-
 using Microsoft.VisualStudio.Debugger.Interop;
-
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -117,7 +116,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (!m_debuggerCallback.TryGetValue (riidEvent, out eventCallback))
         {
-          return DebugEngineConstants.E_NOTIMPL;
+          return Constants.E_NOTIMPL;
         }
 
         return eventCallback (m_debugEngine.NativeDebugger);
@@ -142,7 +141,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         debugger.GdbServer.Start ();
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -164,7 +163,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         debugger.GdbServer.Kill ();
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -188,7 +187,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         debugger.GdbClient.Attach (gdbServer);
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -226,7 +225,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ("Failed to detach GDB client");
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -248,7 +247,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         debugger.GdbClient.Stop ();
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -270,7 +269,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         debugger.GdbClient.Continue ();
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -294,13 +293,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         debugger.GdbClient.Terminate ();
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 

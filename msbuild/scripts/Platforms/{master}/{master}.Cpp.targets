@@ -26,15 +26,15 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <UsingTask TaskName="GccCompile" AssemblyFile="$(ANDROID_PLUS_PLUS)\msbuild\bin\AndroidPlusPlus.MsBuild.CppTasks.dll" />
+  <UsingTask TaskName="NativeCompile" AssemblyFile="$(ANDROID_PLUS_PLUS)\msbuild\bin\AndroidPlusPlus.MsBuild.CppTasks.dll" />
 
-  <UsingTask TaskName="GccLink" AssemblyFile="$(ANDROID_PLUS_PLUS)\msbuild\bin\AndroidPlusPlus.MsBuild.CppTasks.dll" />
+  <UsingTask TaskName="NativeLink" AssemblyFile="$(ANDROID_PLUS_PLUS)\msbuild\bin\AndroidPlusPlus.MsBuild.CppTasks.dll" />
 
-  <UsingTask TaskName="GccLib" AssemblyFile="$(ANDROID_PLUS_PLUS)\msbuild\bin\AndroidPlusPlus.MsBuild.CppTasks.dll" />
+  <UsingTask TaskName="NativeLib" AssemblyFile="$(ANDROID_PLUS_PLUS)\msbuild\bin\AndroidPlusPlus.MsBuild.CppTasks.dll" />
 
-  <UsingTask TaskName="GccStrip" AssemblyFile="$(ANDROID_PLUS_PLUS)\msbuild\bin\AndroidPlusPlus.MsBuild.CppTasks.dll" />
+  <UsingTask TaskName="NativeStrip" AssemblyFile="$(ANDROID_PLUS_PLUS)\msbuild\bin\AndroidPlusPlus.MsBuild.CppTasks.dll" />
 
-  <UsingTask TaskName="GccBuildId" AssemblyFile="$(ANDROID_PLUS_PLUS)\msbuild\bin\AndroidPlusPlus.MsBuild.CppTasks.dll" />
+  <UsingTask TaskName="NativeBuildId" AssemblyFile="$(ANDROID_PLUS_PLUS)\msbuild\bin\AndroidPlusPlus.MsBuild.CppTasks.dll" />
 
   <UsingTask TaskName="VCMessage" AssemblyName="Microsoft.Build.CppTasks.Common, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
 
@@ -47,7 +47,7 @@
   <PropertyGroup>
 
     <!--
-      Define a custom target to evaluate build requirements and additional dependencies.     
+      Define a custom target to evaluate build requirements and additional dependencies.
     -->
 
     <PlatformPrepareForBuildDependsOn>PlatformToolsetPrepareForBuild;$(PlatformPrepareForBuildDependsOn)</PlatformPrepareForBuildDependsOn>
@@ -88,13 +88,16 @@
         <CompileAs Condition="('%(ClCompile.CompileAs)' == 'Default' and '%(ClCompile.Extension)' == '.asm')">CompileAsAsm</CompileAs>
         <CompileAs Condition="('%(ClCompile.CompileAs)' == 'Default' and ('%(ClCompile.Extension)' != '.c' and '%(ClCompile.Extension)' != '.s' and '%(ClCompile.Extension)' != '.asm'))">CompileAsCpp</CompileAs>
 
-        <NoExecutableStack Condition="'%(ClCompile.CompileAs)' == 'CompileAsAsm'">true</NoExecutableStack>
-
         <MinimalRebuildFromTracking Condition="'%(ClCompile.MinimalRebuildFromTracking)' == '' and '$(BuildType)' == 'Build' and '$(ForceRebuild)' != 'true'">true</MinimalRebuildFromTracking>
 
         <!-- 'Inline function limit' and 'Unswitch loops' are not supported by Clang. -->
         <InlineLimitSize Condition="'$(LlvmVersion)' != ''"></InlineLimitSize>
         <UnswitchLoops Condition="'$(LlvmVersion)' != ''"></UnswitchLoops>
+      </ClCompile>
+      <ClCompile>
+        <!-- Enforce compilation of .c sources under straight-C dialect, otherwise we'll get C++ feature errors. -->
+        <StandardLanguageDialect Condition="'%(ClCompile.CompileAs)' == 'CompileAsC'">Default</StandardLanguageDialect>
+        <NoExecutableStack Condition="'%(ClCompile.CompileAs)' == 'CompileAsAsm'">true</NoExecutableStack>
       </ClCompile>
     </ItemGroup>
 
@@ -111,7 +114,10 @@
         <CompileAs Condition="'%(ClCompile.CompileAs)' != 'CompileAsC'">CompileAsCppHeader</CompileAs>
         <LinkCompiled Condition="'%(ClCompile.PrecompiledHeader)' == 'Create'">false</LinkCompiled>
       </ClCompilePch>
-
+      <ClCompilePch>
+        <StandardLanguageDialect Condition="'%(ClCompile.CompileAs)' == 'CompileAsCHeader'">Default</StandardLanguageDialect>
+      </ClCompilePch>
+      
       <!-- GCC and Clang use slightly different methods of including PCHs. Clang also allows them to be placed in intermediate directories. -->
       <ClCompile>
         <OutputFile Condition="('%(ClCompile.PrecompiledHeader)' == 'Create' and '$(LlvmVersion)' == '')">%(ClCompile.PrecompiledHeaderOutputFile)</OutputFile>
@@ -127,7 +133,7 @@
       To mimic this we need to first process the PCH export, and then follow this with actual OBJ compilation.
     -->
 
-    <GccCompile
+    <NativeCompile
       Condition="'%(ClCompile.ExcludedFromBuild)'!='true'"
       BuildingInIDE="$(BuildingInsideVisualStudio)"
       Sources="@(ClCompilePch)"
@@ -144,15 +150,15 @@
       OutputCommandLine="%(ClCompile.OutputCommandLine)"
       ToolPath="$(PlatformToolsetCompileToolPath)"
       ToolExe="$(PlatformToolsetCompileTool)"
-      PropertiesFile="$(VCTargetsPath)\Platforms\Android++\$(LangID)\gcc_compile.xml">
+      PropertiesFile="$(VCTargetsPath)\Platforms\{master}\$(LangID)\native_compile.xml">
 
-    </GccCompile>
+    </NativeCompile>
 
     <!--
       Compile all sources, including those flagged to 'Create' PCH files (Reasoning above). 
     -->
 
-    <GccCompile
+    <NativeCompile
       Condition="'%(ClCompile.ExcludedFromBuild)'!='true'"
       BuildingInIDE="$(BuildingInsideVisualStudio)"
       Sources="@(ClCompile)"
@@ -169,9 +175,9 @@
       OutputCommandLine="%(ClCompile.OutputCommandLine)"
       ToolPath="$(PlatformToolsetCompileToolPath)"
       ToolExe="$(PlatformToolsetCompileTool)"
-      PropertiesFile="$(VCTargetsPath)\Platforms\Android++\$(LangID)\gcc_compile.xml">
+      PropertiesFile="$(VCTargetsPath)\Platforms\{master}\$(LangID)\native_compile.xml">
 
-    </GccCompile>
+    </NativeCompile>
 
   </Target>
 
@@ -202,7 +208,7 @@
       </Link>
     </ItemGroup>
 
-    <GccLink
+    <NativeLink
       BuildingInIDE="$(BuildingInsideVisualStudio)"
       Sources="@(Link)"
 
@@ -215,13 +221,13 @@
       OutputCommandLine="%(Link.OutputCommandLine)"
       ToolPath="$(PlatformToolsetLinkToolPath)"
       ToolExe="$(PlatformToolsetLinkTool)"
-      PropertiesFile="$(VCTargetsPath)\Platforms\Android++\$(LangID)\gcc_link.xml">
+      PropertiesFile="$(VCTargetsPath)\Platforms\{master}\$(LangID)\native_link.xml">
 
       <Output TaskParameter="OutputFiles" ItemName="LinkOutputFiles" />
 
       <Output TaskParameter="SkippedExecution" PropertyName="LinkSkippedExecution" />
 
-    </GccLink>
+    </NativeLink>
 
     <Message Condition="'$(LinkSkippedExecution)' == 'false'" Text="$(MSBuildProjectFile) -&gt; @(LinkOutputFiles)" Importance="High" />
 
@@ -264,7 +270,7 @@
       </LinkOutputFiles>
     </ItemGroup>
 
-    <GccStrip
+    <NativeStrip
       BuildingInIDE="$(BuildingInsideVisualStudio)"
       Condition="('@(LinkOutputFiles)' != '' and '$(_LinkStripSymbolsRequired)' == 'true')"
       Sources="@(LinkOutputFiles)"
@@ -276,7 +282,7 @@
       OutputCommandLine="%(LinkOutputFiles.OutputCommandLine)"
       ToolPath="$(PlatformToolsetStripToolPath)"
       ToolExe="$(PlatformToolsetStripTool)"
-      PropertiesFile="$(VCTargetsPath)\Platforms\Android++\$(LangID)\gcc_strip.xml"
+      PropertiesFile="$(VCTargetsPath)\Platforms\{master}\$(LangID)\native_strip.xml"
     />
 
     <Exec 
@@ -289,14 +295,14 @@
       - More info: https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
     -->
 
-    <GccBuildId
+    <NativeBuildId
       Condition="('@(LinkOutputFiles)' != '' and '$(_LinkStripSymbolsRequired)' == 'true')"
       TargetElf="$(_DebugLinkSharedLibrary)"
       OutputCommandLine="%(LinkOutputFiles.OutputCommandLine)"
       ToolPath="$(PlatformToolsetReadElfToolPath)"
       ToolExe="$(PlatformToolsetReadElfTool)">
       <Output TaskParameter="BuildId" PropertyName="_DebugLinkSharedLibaryBuildId" />
-    </GccBuildId>
+    </NativeBuildId>
 
     <PropertyGroup Condition="'$(_DebugLinkSharedLibaryBuildId)' != ''">
       <_DebugLinkBuildIdPath>$([System.IO.Path]::GetDirectoryName('$(_DebugLinkSharedLibrary)'))\.build-id\$(_DebugLinkSharedLibaryBuildId.Substring(0,2))</_DebugLinkBuildIdPath>
@@ -308,14 +314,15 @@
       Directories="$(_DebugLinkBuildIdPath)"
     />
 
-    <Delete
-      Condition="('@(LinkOutputFiles)' != '' and '$(_LinkStripSymbolsRequired)' == 'true')"
-      Files="$(_DebugLinkBuildIdPath)\$(_DebugLinkBuildIdFilename)"
-    />
-
     <!--
       Create a symbolic link to the original .debug symbols file. This should hopefully reduce sprawling build sizes.
     --> 
+
+    <Exec
+      Condition="('@(LinkOutputFiles)' != '' and '$(_LinkStripSymbolsRequired)' == 'true')"
+      Command="del /q &quot;$(_DebugLinkBuildIdPath)\$(_DebugLinkBuildIdFilename)&quot;"
+      IgnoreExitCode="true"
+    />
 
     <Exec
       Condition="('@(LinkOutputFiles)' != '' and '$(_LinkStripSymbolsRequired)' == 'true')"
@@ -392,7 +399,7 @@
 
     <Delete Files="%(Lib.OutputFile)" />
 
-    <GccLib
+    <NativeLib
       BuildingInIDE="$(BuildingInsideVisualStudio)"
       Sources="@(Lib)"
 
@@ -405,13 +412,13 @@
       OutputCommandLine="%(Lib.OutputCommandLine)"
       ToolPath="$(PlatformToolsetLibToolPath)"
       ToolExe="$(PlatformToolsetLibTool)"
-      PropertiesFile="$(VCTargetsPath)\Platforms\Android++\$(LangID)\gcc_lib.xml">
+      PropertiesFile="$(VCTargetsPath)\Platforms\{master}\$(LangID)\native_lib.xml">
 
       <Output TaskParameter="OutputFiles" ItemName="LibOutputFiles" />
 
       <Output TaskParameter="SkippedExecution" PropertyName="LibSkippedExecution" />
 
-    </GccLib>
+    </NativeLib>
 
     <Message Condition="'$(LibSkippedExecution)' == 'false'" Text="$(MSBuildProjectFile) -&gt; @(LibOutputFiles)" Importance="High" />
 
@@ -423,7 +430,7 @@
       <LibOutputFiles>
         <StripUnusedSymbols>%(Lib.StripUnusedSymbols)</StripUnusedSymbols>
         <StripDebugSymbols>%(Lib.StripDebugSymbols)</StripDebugSymbols>
-        <!-- Obviously I don't understand MSBuild, because referencing these props directly in GccStrip doesn't work. -->
+        <!-- Obviously I don't understand MSBuild, because referencing these props directly in NativeStrip doesn't work. -->
         <TrackerLogDirectory>%(Lib.TrackerLogDirectory)</TrackerLogDirectory>
         <MinimalRebuildFromTracking>%(Lib.MinimalRebuildFromTracking)</MinimalRebuildFromTracking>
         <OutputCommandLine>%(Lib.OutputCommandLine)</OutputCommandLine>
@@ -436,7 +443,7 @@
       DestinationFiles="$(OutDir)$(TargetName)$(TargetExt).unstripped" 
     />
 
-    <GccStrip
+    <NativeStrip
       BuildingInIDE="$(BuildingInsideVisualStudio)"
       Condition="('@(LibOutputFiles)' != '' and ('%(StripUnusedSymbols)' == 'true' or '%(StripDebugSymbols)' == 'true'))"
       Sources="@(LibOutputFiles)"
@@ -448,7 +455,7 @@
       OutputCommandLine="%(LibOutputFiles.OutputCommandLine)"
       ToolPath="$(PlatformToolsetStripToolPath)"
       ToolExe="$(PlatformToolsetStripTool)"
-      PropertiesFile="$(VCTargetsPath)\Platforms\Android++\$(LangID)\gcc_strip.xml"
+      PropertiesFile="$(VCTargetsPath)\Platforms\{master}\$(LangID)\native_strip.xml"
     />
 
   </Target> 
@@ -481,9 +488,9 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <Import Project="$(VCTargetsPath)\Platforms\Android++\Android++.CppBuild.targets" />
+  <Import Project="$(VCTargetsPath)\Platforms\{master}\{master}.CppBuild.targets" />
 
-  <Import Project="$(VCTargetsPath)\Platforms\Android++\Android++.CppStubs.targets" />
+  <Import Project="$(VCTargetsPath)\Platforms\{master}\{master}.CppStubs.targets" />
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

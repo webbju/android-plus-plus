@@ -36,7 +36,7 @@ namespace AndroidPlusPlus.Common
 
     protected int m_startTicks = 0;
 
-    protected int m_exitCode = 0;
+    protected int m_exitCode = -1;
 
     protected ManualResetEvent m_exitMutex = null;
 
@@ -282,22 +282,33 @@ namespace AndroidPlusPlus.Common
     {
       try
       {
-        m_exitCode = m_process.ExitCode;
+        try
+        {
+          m_exitCode = m_process.ExitCode;
+        }
+        catch (InvalidOperationException)
+        {
+          // Ignore: 'No process is associated with this object'.
+        }
+
+        m_lastOutputTimestamp = Environment.TickCount;
+
+        StandardOutput = m_stdOutputBuilder.ToString ();
+
+        StandardError = m_stdErrorBuilder.ToString ();
+
+        m_exitMutex.Set ();
       }
-      catch (InvalidOperationException)
+      catch (Exception e)
       {
-        // Ignore: 'No process is associated with this object'.
+        LoggingUtils.HandleException (e);
       }
+      finally
+      {
+        LoggingUtils.Print (string.Format ("[SyncRedirectProcess] {0} exited ({1}) in {2} ms", StartInfo.FileName, m_exitCode, Environment.TickCount - m_startTicks));
 
-      LoggingUtils.Print (string.Format ("[SyncRedirectProcess] {0} exited ({1}) in {2} ms", StartInfo.FileName, m_exitCode, Environment.TickCount - m_startTicks));
-
-      m_lastOutputTimestamp = Environment.TickCount;
-
-      StandardOutput = m_stdOutputBuilder.ToString ();
-
-      StandardError = m_stdErrorBuilder.ToString ();
-
-      m_exitMutex.Set ();
+        Dispose ();
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

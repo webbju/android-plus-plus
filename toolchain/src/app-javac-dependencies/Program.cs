@@ -59,11 +59,19 @@ namespace app_javac_dependencies
 
           trackedProcess.StartInfo = new ProcessStartInfo (Path.Combine (s_jdkHomePath, "bin", "javac.exe"), argumentsBuilder.ToString ());
 
+          trackedProcess.StartInfo.CreateNoWindow = true;
+
           trackedProcess.StartInfo.UseShellExecute = false;
+
+          trackedProcess.StartInfo.LoadUserProfile = false;
+
+          trackedProcess.StartInfo.ErrorDialog = false;
 
           trackedProcess.StartInfo.RedirectStandardOutput = true;
 
           trackedProcess.StartInfo.RedirectStandardError = true;
+
+          trackedProcess.StartInfo.RedirectStandardInput = true;
 
           trackedProcess.OutputDataReceived += (sender, e) =>
           {
@@ -112,6 +120,8 @@ namespace app_javac_dependencies
               {
                 writer.WriteLine (string.Format ("  {0} \\", ConvertPathWindowsToGccDependency (dependency)));
               }
+
+              writer.Close ();
             }
           }
         }
@@ -382,47 +392,15 @@ namespace app_javac_dependencies
       return "\"" + arg + "\"";
     }
 
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    private static int FindEndOfFilename (string line)
-    {
-      // 
-      // Search line for an unescaped space character (which represents the end of file), or EOF.
-      // 
-
-      int i;
-
-      bool escapedSequence = false;
-
-      for (i = 0; i < line.Length; ++i)
-      {
-        if (line [i] == '\\')
-        {
-          escapedSequence = true;
-        }
-        else if ((line [i] == ' ') && !escapedSequence)
-        {
-          break;
-        }
-        else if (escapedSequence)
-        {
-          escapedSequence = false;
-        }
-      }
-
-      return i;
-    }
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     private static void LogException (Exception e)
     {
+#if DEBUG
       Debug.WriteLine ("[app-javac-depedencies] Encountered exception: " + e.Message + "\nStack trace: " + e.StackTrace);
+#endif
 
       Console.WriteLine ("[app-javac-depedencies] Encountered exception: " + e.Message + "\nStack trace: " + e.StackTrace);
     }

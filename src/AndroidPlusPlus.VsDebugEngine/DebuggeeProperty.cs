@@ -7,10 +7,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
-
 using Microsoft.VisualStudio.Debugger.Interop;
-
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -161,13 +160,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         m_children.AddRange (children);
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -263,7 +262,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         ppEnum = new DebuggeeProperty.Enumerator (childPropertyInfo);
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -271,7 +270,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         ppEnum = null;
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -290,7 +289,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       derivedMostProperty = null;
 
-      return DebugEngineConstants.S_GETDERIVEDMOST_NO_DERIVED_MOST;
+      return Constants.S_GETDERIVEDMOST_NO_DERIVED_MOST;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -308,7 +307,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       extendedInfo = null;
 
-      return DebugEngineConstants.S_GETEXTENDEDINFO_NO_EXTENDEDINFO;
+      return Constants.S_GETEXTENDEDINFO_NO_EXTENDEDINFO;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -325,7 +324,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       memoryBytes = null;
 
-      return DebugEngineConstants.S_GETMEMORYBYTES_NO_MEMORY_BYTES;
+      return Constants.S_GETMEMORYBYTES_NO_MEMORY_BYTES;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -342,7 +341,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       memoryContext = null;
 
-      return DebugEngineConstants.S_GETMEMORYCONTEXT_NO_MEMORY_CONTEXT;
+      return Constants.S_GETMEMORYCONTEXT_NO_MEMORY_CONTEXT;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -368,13 +367,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         parentProperty = m_parent;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.S_GETPARENT_NO_PARENT;
+        return Constants.S_GETPARENT_NO_PARENT;
       }
     }
 
@@ -458,13 +457,13 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -482,7 +481,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       debugReference = null;
 
-      return DebugEngineConstants.E_GETREFERENCE_NO_REFERENCE;
+      return Constants.E_GETREFERENCE_NO_REFERENCE;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -499,7 +498,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       size = 0;
 
-      return DebugEngineConstants.S_GETSIZE_NO_SIZE;
+      return Constants.S_GETSIZE_NO_SIZE;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -514,7 +513,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.E_SETVALUEASREFERENCE_NOTSUPPORTED;
+      return Constants.E_SETVALUEASREFERENCE_NOTSUPPORTED;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -529,7 +528,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

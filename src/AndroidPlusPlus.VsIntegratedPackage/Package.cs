@@ -23,6 +23,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.OLE.Interop;
 
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 using AndroidPlusPlus.VsDebugEngine;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

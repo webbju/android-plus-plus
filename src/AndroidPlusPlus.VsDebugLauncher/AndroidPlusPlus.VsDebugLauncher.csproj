@@ -1,0 +1,191 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+    <ProductVersion>8.0.30424</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{7C701BB4-BAD8-40DA-AFDC-B9820A04F005}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <NoStandardLibraries>false</NoStandardLibraries>
+    <RootNamespace>AndroidPlusPlus.VsDebugLauncher</RootNamespace>
+    <AssemblyName>AndroidPlusPlus.VsDebugLauncher</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\Key.snk</AssemblyOriginatorKeyFile>
+    <GeneratePkgDefFile>false</GeneratePkgDefFile>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetFrameworkVersion Condition="'$(VisualStudioVersion)' == '10.0'">v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion Condition="'$(VisualStudioVersion)' == '11.0'">v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion Condition="'$(VisualStudioVersion)' == '12.0'">v4.5</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\build\vs$(VisualStudioVersion)\bin\$(Configuration)\</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\vs$(VisualStudioVersion)\obj\$(Configuration)\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <DeploymentDirectory>$(OutputPath)</DeploymentDirectory>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <WarningLevel>4</WarningLevel>
+    <IncrementalBuild>false</IncrementalBuild>
+    <RegisterForComInterop>false</RegisterForComInterop>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <DebugType>full</DebugType>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\build\vs$(VisualStudioVersion)\bin\$(Configuration)\</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\vs$(VisualStudioVersion)\obj\$(Configuration)\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <DeploymentDirectory>$(OutputPath)</DeploymentDirectory>
+    <DefineConstants>TRACE</DefineConstants>
+    <WarningLevel>4</WarningLevel>
+    <IncrementalBuild>false</IncrementalBuild>
+    <DebugType>pdbonly</DebugType>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(VisualStudioVersion)' == '10.0'">$(DefineConstants);VS2010</DefineConstants>
+    <DefineConstants Condition="'$(VisualStudioVersion)' == '11.0'">$(DefineConstants);VS2012</DefineConstants>
+    <DefineConstants Condition="'$(VisualStudioVersion)' == '12.0'">$(DefineConstants);VS2013</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Core" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <PropertyGroup>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="EnvDTE, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+    <Reference Include="EnvDTE90, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+    <Reference Include="EnvDTE100, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    
+    <Reference Include="Microsoft.VisualStudio.Shell.Interop, Version=7.1.40304.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+    <Reference Include="Microsoft.VisualStudio.Shell.Interop.8.0, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+    <Reference Include="Microsoft.VisualStudio.Shell.Interop.9.0, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+  </ItemGroup>
+  <!-- Visual Studio 2010 -->
+  <ItemGroup>
+    <Reference Condition="'$(VisualStudioVersion)' == '10.0'" Include="Microsoft.VisualStudio.Project.Contracts, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Condition="'$(VisualStudioVersion)' == '10.0'" Include="Microsoft.VisualStudio.Project.Framework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Condition="'$(VisualStudioVersion)' == '10.0'" Include="Microsoft.VisualStudio.Project.Utilities.v10.0, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Condition="'$(VisualStudioVersion)' == '10.0'" Include="Microsoft.VisualStudio.Shell.10.0, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Condition="'$(VisualStudioVersion)' == '10.0'" Include="Microsoft.VisualStudio.Shell.Immutable.10.0, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Condition="'$(VisualStudioVersion)' == '10.0'" Include="Microsoft.VisualStudio.VCProjectEngine, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+      <HintPath>C:\Program Files (x86)\Microsoft Visual Studio 10.0\Common7\IDE\PublicAssemblies\Microsoft.VisualStudio.VCProjectEngine.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Visual Studio 2012 -->
+    <Reference Condition="'$(VisualStudioVersion)' == '11.0'" Include="PresentationCore" />
+    <Reference Condition="'$(VisualStudioVersion)' == '11.0'" Include="PresentationFramework" />
+    <Reference Condition="'$(VisualStudioVersion)' == '11.0'" Include="System.Xaml" />
+    <Reference Condition="'$(VisualStudioVersion)' == '11.0'" Include="Microsoft.Build" />
+    <Reference Condition="'$(VisualStudioVersion)' == '11.0'" Include="Microsoft.Build.Framework" />
+    <Reference Condition="'$(VisualStudioVersion)' == '11.0'" Include="Microsoft.Collections.Immutable" />
+    <Reference Condition="'$(VisualStudioVersion)' == '11.0'" Include="Microsoft.VisualStudio.Project.v11Only">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files (x86)\Microsoft Visual Studio 11.0\Common7\IDE\CommonExtensions\Microsoft\Project\Microsoft.VisualStudio.Project.v11Only.dll</HintPath>
+    </Reference>
+    <Reference Condition="'$(VisualStudioVersion)' == '11.0'" Include="Microsoft.VisualStudio.Project.VS.V11Only">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files (x86)\Microsoft Visual Studio 11.0\Common7\IDE\CommonExtensions\Microsoft\Project\Microsoft.VisualStudio.Project.VS.V11Only.dll</HintPath>
+    </Reference>
+    <Reference Condition="'$(VisualStudioVersion)' == '11.0'" Include="Microsoft.VisualStudio.Project.Utilities.v11.0" />
+    <Reference Condition="'$(VisualStudioVersion)' == '11.0'" Include="Microsoft.VisualStudio.Shell.11.0, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Condition="'$(VisualStudioVersion)' == '11.0'" Include="Microsoft.VisualStudio.Shell.Immutable.10.0, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Condition="'$(VisualStudioVersion)' == '11.0'" Include="Microsoft.VisualStudio.Shell.Immutable.11.0, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Condition="'$(VisualStudioVersion)' == '11.0'" Include="Microsoft.VisualStudio.Shell.Interop.10.0, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Condition="'$(VisualStudioVersion)' == '11.0'" Include="Microsoft.VisualStudio.Shell.Interop.11.0, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Condition="'$(VisualStudioVersion)' == '11.0'" Include="Microsoft.VisualStudio.Threading" />
+    <Reference Condition="'$(VisualStudioVersion)' == '11.0'" Include="Microsoft.VisualStudio.VCProjectEngine, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Visual Studio 2013 -->
+    <Reference Condition="'$(VisualStudioVersion)' == '12.0'" Include="PresentationCore" />
+    <Reference Condition="'$(VisualStudioVersion)' == '12.0'" Include="PresentationFramework" />
+    <Reference Condition="'$(VisualStudioVersion)' == '12.0'" Include="System.Xaml" />
+    <Reference Condition="'$(VisualStudioVersion)' == '12.0'" Include="Microsoft.Build">
+      <HintPath>C:\Program Files (x86)\MSBuild\12.0\Bin\Microsoft.Build.dll</HintPath>
+    </Reference>
+    <Reference Condition="'$(VisualStudioVersion)' == '12.0'" Include="Microsoft.Build.Framework, Version=12.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files (x86)\MSBuild\12.0\Bin\Microsoft.Build.Framework.dll</HintPath>
+    </Reference>
+    <Reference Condition="'$(VisualStudioVersion)' == '12.0'" Include="Microsoft.Collections.Immutable" />
+    <Reference Condition="'$(VisualStudioVersion)' == '12.0'" Include="Microsoft.VisualStudio.ProjectSystem.v12Only" />
+    <Reference Condition="'$(VisualStudioVersion)' == '12.0'" Include="Microsoft.VisualStudio.ProjectSystem.VS.v12Only" />
+    <Reference Condition="'$(VisualStudioVersion)' == '12.0'" Include="Microsoft.VisualStudio.ProjectSystem.Utilities.v12.0" />
+    <Reference Condition="'$(VisualStudioVersion)' == '12.0'" Include="Microsoft.VisualStudio.Shell.12.0, Version=12.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Condition="'$(VisualStudioVersion)' == '12.0'" Include="Microsoft.VisualStudio.Shell.Immutable.10.0, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Condition="'$(VisualStudioVersion)' == '12.0'" Include="Microsoft.VisualStudio.Shell.Immutable.11.0, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Condition="'$(VisualStudioVersion)' == '12.0'" Include="Microsoft.VisualStudio.Shell.Interop.10.0, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Condition="'$(VisualStudioVersion)' == '12.0'" Include="Microsoft.VisualStudio.Shell.Interop.11.0, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Condition="'$(VisualStudioVersion)' == '12.0'" Include="Microsoft.VisualStudio.Threading" />
+    <Reference Condition="'$(VisualStudioVersion)' == '12.0'" Include="Microsoft.VisualStudio.VCProjectEngine, Version=12.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\AndroidPlusPlus.Common\Properties\SharedAssemblyInfo.cs">
+      <Link>Properties\SharedAssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="DebugLauncher.cs" />
+    <Compile Include="IDebugLauncher.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup >
+    <Compile Condition="'$(VisualStudioVersion)' == '10.0'" Include="DebugLauncherX.cs" />
+  </ItemGroup>
+  <ItemGroup >
+    <Compile Condition="'$(VisualStudioVersion)' == '11.0'" Include="DebugLauncherXI.cs" />
+    <Compile Condition="'$(VisualStudioVersion)' == '11.0'" Include="RulePropertiesXI.cs" />
+  </ItemGroup>
+  <ItemGroup >
+    <Compile Condition="'$(VisualStudioVersion)' == '12.0'" Include="DebugLauncherXII.cs" />
+    <Compile Condition="'$(VisualStudioVersion)' == '12.0'" Include="RulePropertiesXII.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Key.snk">
+      <Link>Key.snk</Link>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AndroidPlusPlus.Common\AndroidPlusPlus.Common.csproj">
+      <Project>{6D575221-37D1-4C3D-82A5-5FEB632069AA}</Project>
+      <Name>AndroidPlusPlus.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\AndroidPlusPlus.VsDebugCommon\AndroidPlusPlus.VsDebugCommon.csproj">
+      <Project>{72DEB30B-76E5-4B4A-9075-5ABC3412B8DB}</Project>
+      <Name>AndroidPlusPlus.VsDebugCommon</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.Targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy /y /b "$(TargetDir)$(TargetName).dll" "$(ProjectDir)..\..\bin\v$(VisualStudioVersion)\$(TargetName).dll"
+copy /y /b "$(TargetDir)$(TargetName).pdb" "$(ProjectDir)..\..\bin\v$(VisualStudioVersion)\$(TargetName).pdb"</PostBuildEvent>
+  </PropertyGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

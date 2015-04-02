@@ -21,7 +21,7 @@
     Evaluate JDK installation version and directory. 
   -->
 
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'">
 
     <!-- Crude 64-bit detection -->
     <SixtyFourBit Condition="'$(ProgramW6432)' != ''">true</SixtyFourBit>
@@ -48,17 +48,29 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidManifest.props" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidManifest.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidJava.props" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidJava.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidProguard.props" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidProguard.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidDalvik.props" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidDalvik.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidApk.props" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidApk.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidApkSign.props" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidApkSign.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <PropertyGroup>
+
+    <__DeployViaMsBuildTargetsProps>true</__DeployViaMsBuildTargetsProps>
+
+  </PropertyGroup>
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

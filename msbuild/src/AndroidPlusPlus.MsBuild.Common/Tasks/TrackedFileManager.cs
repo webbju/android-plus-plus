@@ -35,18 +35,9 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private Dictionary<string, HashSet<string>> m_sourceDependencyTable;
+    private Dictionary<string, HashSet<string>> m_sourceDependencyTable = new Dictionary<string, HashSet<string>> ();
 
     private Encoding m_defaultEncoding = Encoding.Unicode;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public TrackedFileManager ()
-    {
-      m_sourceDependencyTable = new Dictionary<string, HashSet<string>> ();
-    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -75,89 +66,90 @@ namespace AndroidPlusPlus.MsBuild.Common
 
       if (string.IsNullOrEmpty (tlogFullPath))
       {
-        throw new ArgumentException ("Could not get 'FullPath' metadata for TLog. " + tlog);
+        throw new ArgumentException ("Could not evaluate full path for TLog: " + tlog);
       }
 
-      if (File.Exists (tlogFullPath))
+      if (!File.Exists (tlogFullPath))
       {
-        try
+        return; // Don't error as sometimes this is expected; full rebuilds for example.
+      }
+
+      using (StreamReader reader = new StreamReader (tlogFullPath, m_defaultEncoding))
+      {
+        string trackedSourceLineData = reader.ReadLine ();
+
+        while (!string.IsNullOrWhiteSpace (trackedSourceLineData))
         {
-          using (StreamReader reader = new StreamReader (tlogFullPath, m_defaultEncoding))
+          if (trackedSourceLineData.StartsWith ("^"))
           {
-            if (reader != null)
+            // 
+            // Encountered a canonical source root node. Add each of the sources referenced here to the dependency graph.
+            // 
+
+            HashSet<string> trackedSources = new HashSet<string> (trackedSourceLineData.Substring (1).ToUpperInvariant ().Split ('|'));
+
+            foreach (string source in trackedSources)
             {
-              string trackedSourceLineData = reader.ReadLine ();
+              string trackedFormat = ConvertToTrackerFormat (source);
 
-              while (!string.IsNullOrWhiteSpace (trackedSourceLineData))
+              if (!m_sourceDependencyTable.ContainsKey (trackedFormat))
               {
-                if (trackedSourceLineData.StartsWith ("^"))
+                m_sourceDependencyTable.Add (trackedFormat, new HashSet<string> ());
+              }
+            }
+
+            // 
+            // Parse the next line, if it contains source dependencies process them - otherwise handle a new root node.
+            // 
+
+            trackedSourceLineData = reader.ReadLine ();
+
+            if (string.IsNullOrWhiteSpace (trackedSourceLineData) || trackedSourceLineData.StartsWith ("^"))
+            {
+              continue;
+            }
+
+            HashSet<string> trackedSourceDependencies = new HashSet<string> ();
+
+            while (trackedSourceLineData != null)
+            {
+              if (string.IsNullOrWhiteSpace (trackedSourceLineData))
+              {
+                break;
+              }
+              else if (trackedSourceLineData.StartsWith ("^"))
+              {
+                break;
+              }
+              else
+              {
+                string trackedFormat = ConvertToTrackerFormat (trackedSourceLineData);
+
+                if (!trackedSourceDependencies.Contains (trackedFormat))
                 {
-                  // 
-                  // Encountered a canonical source root node. Add each of the sources referenced here to the dependency graph.
-                  // 
-
-                  HashSet<string> trackedSources = new HashSet<string> (trackedSourceLineData.Substring (1).ToUpperInvariant ().Split ('|'));
-
-                  foreach (string source in trackedSources)
-                  {
-                    if (!m_sourceDependencyTable.ContainsKey (ConvertToTrackerFormat (source)))
-                    {
-                      m_sourceDependencyTable.Add (ConvertToTrackerFormat (source), new HashSet<string> ());
-                    }
-                  }
-
-                  // 
-                  // Parse the next line, if it contains source dependencies process them - otherwise handle a new root node.
-                  // 
-
-                  trackedSourceLineData = reader.ReadLine ();
-
-                  if (string.IsNullOrWhiteSpace (trackedSourceLineData) || trackedSourceLineData.StartsWith ("^"))
-                  {
-                    continue;
-                  }
-
-                  HashSet<string> trackedSourceDependencies = new HashSet<string> ();
-
-                  while (trackedSourceLineData != null)
-                  {
-                    if (trackedSourceLineData.StartsWith ("^"))
-                    {
-                      break;
-                    }
-
-                    if (!string.IsNullOrWhiteSpace (trackedSourceLineData))
-                    {
-                      if (!trackedSourceDependencies.Contains (ConvertToTrackerFormat (trackedSourceLineData)))
-                      {
-                        trackedSourceDependencies.Add (ConvertToTrackerFormat (trackedSourceLineData));
-                      }
-                    }
-
-                    trackedSourceLineData = reader.ReadLine ();
-                  }
-
-                  foreach (string dependency in trackedSourceDependencies)
-                  {
-                    foreach (string source in trackedSources)
-                    {
-                      if (!m_sourceDependencyTable [ConvertToTrackerFormat (source)].Contains (dependency))
-                      {
-                        m_sourceDependencyTable [ConvertToTrackerFormat (source)].Add (dependency);
-                      }
-                    }
-                  }
+                  trackedSourceDependencies.Add (trackedFormat);
                 }
               }
 
-              reader.Close ();
+              trackedSourceLineData = reader.ReadLine ();
+            }
+
+            foreach (string dependency in trackedSourceDependencies)
+            {
+              foreach (string source in trackedSources)
+              {
+                string trackedFormat = ConvertToTrackerFormat (source);
+
+                if (!m_sourceDependencyTable [trackedFormat].Contains (dependency))
+                {
+                  m_sourceDependencyTable [trackedFormat].Add (dependency);
+                }
+              }
             }
           }
         }
-        catch (Exception)
-        {
-          throw;
-        }
+
+        reader.Close ();
       }
     }
 
@@ -180,21 +172,14 @@ namespace AndroidPlusPlus.MsBuild.Common
       // Register a set of provided sources, without an associated dependency.
       // 
 
-      try
+      foreach (ITaskItem source in sources)
       {
-        foreach (ITaskItem source in sources)
-        {
-          string sourceFileTrackerFormat = ConvertToTrackerFormat (source.GetMetadata ("FullPath"));
+        string trackerFormat = ConvertToTrackerFormat (source.GetMetadata ("FullPath"));
 
-          if (!m_sourceDependencyTable.ContainsKey (sourceFileTrackerFormat))
-          {
-            m_sourceDependencyTable.Add (sourceFileTrackerFormat, new HashSet<string> ());
-          }
+        if (!m_sourceDependencyTable.ContainsKey (trackerFormat))
+        {
+          m_sourceDependencyTable.Add (trackerFormat, new HashSet<string> ());
         }
-      }
-      catch (Exception)
-      {
-        throw;
       }
     }
 
@@ -208,47 +193,42 @@ namespace AndroidPlusPlus.MsBuild.Common
       // Register a dependency for a set of provided sources. Will add unregistered sources to table if required.
       // 
 
-      try
+      AddSourcesToTable (sources);
+
+      foreach (ITaskItem dependency in dependencies)
       {
-        AddSourcesToTable (sources);
+        string dependencyFullPath = dependency.GetMetadata ("FullPath");
 
-        foreach (ITaskItem dependency in dependencies)
+        if (Directory.Exists (dependencyFullPath))
         {
-          string dependencyFullPath = dependency.GetMetadata ("FullPath");
+          continue; // Skip any references to directories.
+        }
 
-          if (Directory.Exists (dependencyFullPath))
+#if DEBUG
+        if (!File.Exists (dependencyFullPath))
+        {
+          throw new FileNotFoundException ("Could not find specified dependency: " + dependencyFullPath);
+        }
+#endif
+
+        string dependencyFileTrackerFormat = ConvertToTrackerFormat (dependencyFullPath);
+
+        foreach (ITaskItem source in sources)
+        {
+          string sourceFullPath = source.GetMetadata ("FullPath");
+
+          if (dependencyFullPath.Equals (sourceFullPath))
           {
-            continue; // Skip any references to directories.
+            continue; // Don't list sources as their own dependencies.
           }
 
-          if (!File.Exists (dependencyFullPath))
+          string sourceFileTrackerFormat = ConvertToTrackerFormat (sourceFullPath);
+
+          if (!m_sourceDependencyTable [sourceFileTrackerFormat].Contains (dependencyFileTrackerFormat))
           {
-            throw new FileNotFoundException ("Could not find specified dependency: " + dependencyFullPath);
-          }
-
-          foreach (ITaskItem source in sources)
-          {
-            string sourceFullPath = source.GetMetadata ("FullPath");
-
-            if (dependencyFullPath.Equals (sourceFullPath))
-            {
-              continue; // Don't list sources as their own dependencies.
-            }
-
-            string sourceFileTrackerFormat = ConvertToTrackerFormat (sourceFullPath);
-
-            string dependencyFileTrackerFormat = ConvertToTrackerFormat (dependencyFullPath);
-
-            if (!m_sourceDependencyTable [sourceFileTrackerFormat].Contains (dependencyFileTrackerFormat))
-            {
-              m_sourceDependencyTable [sourceFileTrackerFormat].Add (dependencyFileTrackerFormat);
-            }
+            m_sourceDependencyTable [sourceFileTrackerFormat].Add (dependencyFileTrackerFormat);
           }
         }
-      }
-      catch (Exception)
-      {
-        throw;
       }
     }
 
@@ -262,18 +242,11 @@ namespace AndroidPlusPlus.MsBuild.Common
       // Iterate through the entire dependency table removing any of the specified sources. Remove empty entries.
       // 
 
-      try
+      foreach (ITaskItem source in sources)
       {
-        foreach (ITaskItem source in sources)
-        {
-          string sourceFileTrackerFormat = ConvertToTrackerFormat (source.GetMetadata ("FullPath"));
+        string sourceFileTrackerFormat = ConvertToTrackerFormat (source.GetMetadata ("FullPath"));
 
-          m_sourceDependencyTable.Remove (sourceFileTrackerFormat);
-        }
-      }
-      catch (Exception)
-      {
-        throw;
+        m_sourceDependencyTable.Remove (sourceFileTrackerFormat);
       }
     }
 
@@ -295,99 +268,92 @@ namespace AndroidPlusPlus.MsBuild.Common
       //    FILE3.OBJ
       // 
 
-      try
+      if (tlog == null)
       {
-        if (tlog == null)
-        {
-          throw new ArgumentNullException ("tlog");
-        }
+        throw new ArgumentNullException ("tlog");
+      }
 
-        string tlogFullPath = (!string.IsNullOrEmpty (tlog.GetMetadata ("FullPath")) ? tlog.GetMetadata ("FullPath") : Path.GetFullPath (tlog.ItemSpec));
+      string tlogFullPath = (!string.IsNullOrEmpty (tlog.GetMetadata ("FullPath")) ? tlog.GetMetadata ("FullPath") : Path.GetFullPath (tlog.ItemSpec));
 
-        if (string.IsNullOrEmpty (tlogFullPath))
-        {
-          throw new ArgumentException ("Could not get 'FullPath' metadata for TLog. " + tlog);
-        }
+      if (string.IsNullOrEmpty (tlogFullPath))
+      {
+        throw new ArgumentException ("Could not evaluate full path for TLog: " + tlog);
+      }
 
 #if true
-        using (StreamWriter writer = new StreamWriter (tlogFullPath, false, Encoding.Unicode))
+      using (StreamWriter writer = new StreamWriter (tlogFullPath, false, Encoding.Unicode))
+      {
+        foreach (KeyValuePair<string, HashSet<string>> sourceEntry in m_sourceDependencyTable)
         {
-          foreach (KeyValuePair<string, HashSet<string>> sourceEntry in m_sourceDependencyTable)
+          writer.WriteLine ('^' + sourceEntry.Key);
+
+          foreach (string dependency in sourceEntry.Value)
           {
-            writer.WriteLine ('^' + sourceEntry.Key);
-
-            foreach (string dependency in sourceEntry.Value)
-            {
-              writer.WriteLine (dependency);
-            }
+            writer.WriteLine (dependency);
           }
-
-          writer.Close ();
         }
+
+        writer.Close ();
+      }
 #else
-        // 
-        // Reorder the dependency graph data so it can be easily output in a condensed format.
-        // 
+      // 
+      // Reorder the dependency graph data so it can be easily output in a condensed format.
+      // 
 
-        Dictionary<string, List<string>> condensedDependencyTable = new Dictionary<string, List<string>> ();
+      Dictionary<string, List<string>> condensedDependencyTable = new Dictionary<string, List<string>> ();
 
-        StringBuilder sourceFileList = new StringBuilder ();
+      StringBuilder sourceFileList = new StringBuilder ();
 
-        foreach (KeyValuePair<string, List<string>> tableEntry in m_dependencyTable)
+      foreach (KeyValuePair<string, List<string>> tableEntry in m_dependencyTable)
+      {
+        sourceFileList.Length = 0;
+
+        foreach (string source in tableEntry.Value)
         {
-          sourceFileList.Length = 0;
+          sourceFileList.Append ("|" + source.ToUpperInvariant ());
+        }
+
+        sourceFileList.Replace ('|', '^', 0, 1);
+
+        string key = sourceFileList.ToString ();
+
+        List<string> condensedDependencyEntryList = null;
+
+        if (condensedDependencyTable.TryGetValue (key, out condensedDependencyEntryList))
+        {
+          condensedDependencyEntryList.Add (tableEntry.Key);
+
+          condensedDependencyTable [key] = condensedDependencyEntryList;
+        }
+        else
+        {
+          condensedDependencyEntryList = new List<string> ();
+
+          condensedDependencyEntryList.Add (tableEntry.Key);
+
+          condensedDependencyTable.Add (key, condensedDependencyEntryList);
+        }
+      }
+
+      // 
+      // Output condensed dependency info to file.
+      // 
+
+      using (StreamWriter writer = new StreamWriter (tlogFullPath, false, Encoding.Unicode))
+      {
+        foreach (KeyValuePair<string, List<string>> tableEntry in condensedDependencyTable)
+        {
+          writer.WriteLine (tableEntry.Key.ToUpperInvariant ());
 
           foreach (string source in tableEntry.Value)
           {
-            sourceFileList.Append ("|" + source.ToUpperInvariant ());
-          }
-
-          sourceFileList.Replace ('|', '^', 0, 1);
-
-          string key = sourceFileList.ToString ();
-
-          List<string> condensedDependencyEntryList = null;
-
-          if (condensedDependencyTable.TryGetValue (key, out condensedDependencyEntryList))
-          {
-            condensedDependencyEntryList.Add (tableEntry.Key);
-
-            condensedDependencyTable [key] = condensedDependencyEntryList;
-          }
-          else
-          {
-            condensedDependencyEntryList = new List<string> ();
-
-            condensedDependencyEntryList.Add (tableEntry.Key);
-
-            condensedDependencyTable.Add (key, condensedDependencyEntryList);
+            writer.WriteLine (source.ToUpperInvariant ());
           }
         }
 
-        // 
-        // Output condensed dependency info to file.
-        // 
-
-        using (StreamWriter writer = new StreamWriter (tlogFullPath, false, Encoding.Unicode))
-        {
-          foreach (KeyValuePair<string, List<string>> tableEntry in condensedDependencyTable)
-          {
-            writer.WriteLine (tableEntry.Key.ToUpperInvariant ());
-
-            foreach (string source in tableEntry.Value)
-            {
-              writer.WriteLine (source.ToUpperInvariant ());
-            }
-          }
-
-          writer.Close ();
-        }
+        writer.Close ();
+      }
 #endif
-      }
-      catch (Exception)
-      {
-        throw;
-      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

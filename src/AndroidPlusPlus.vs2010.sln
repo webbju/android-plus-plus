@@ -1,13 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.Common.vs2010", "AndroidPlusPlus.Common\AndroidPlusPlus.Common.vs2010.csproj", "{6D575221-37D1-4C3D-82A5-5FEB632069AA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.Common", "AndroidPlusPlus.Common\AndroidPlusPlus.Common.csproj", "{6D575221-37D1-4C3D-82A5-5FEB632069AA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsDebugEngine.vs2010", "AndroidPlusPlus.VsDebugEngine\AndroidPlusPlus.VsDebugEngine.vs2010.csproj", "{52DDF087-9B2C-49AF-BD1C-EC2B9C1DD0F5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsDebugCommon", "AndroidPlusPlus.VsDebugCommon\AndroidPlusPlus.VsDebugCommon.csproj", "{72DEB30B-76E5-4B4A-9075-5ABC3412B8DB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsDebugLauncher.vs2010", "AndroidPlusPlus.VsDebugLauncher\AndroidPlusPlus.VsDebugLauncher.vs2010.csproj", "{7C701BB4-BAD8-40DA-AFDC-B9820A04F005}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsDebugEngine", "AndroidPlusPlus.VsDebugEngine\AndroidPlusPlus.VsDebugEngine.csproj", "{52DDF087-9B2C-49AF-BD1C-EC2B9C1DD0F5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsIntegratedPackage.vs2010", "AndroidPlusPlus.VsIntegratedPackage\AndroidPlusPlus.VsIntegratedPackage.vs2010.csproj", "{14DF8540-798D-46E9-9EC0-1648D3792660}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsDebugLauncher", "AndroidPlusPlus.VsDebugLauncher\AndroidPlusPlus.VsDebugLauncher.csproj", "{7C701BB4-BAD8-40DA-AFDC-B9820A04F005}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsIntegratedPackage", "AndroidPlusPlus.VsIntegratedPackage\AndroidPlusPlus.VsIntegratedPackage.csproj", "{14DF8540-798D-46E9-9EC0-1648D3792660}"
 	ProjectSection(ProjectDependencies) = postProject
 		{7C701BB4-BAD8-40DA-AFDC-B9820A04F005} = {7C701BB4-BAD8-40DA-AFDC-B9820A04F005}
 	EndProjectSection
@@ -22,6 +24,10 @@ Global
 		{6D575221-37D1-4C3D-82A5-5FEB632069AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6D575221-37D1-4C3D-82A5-5FEB632069AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6D575221-37D1-4C3D-82A5-5FEB632069AA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72DEB30B-76E5-4B4A-9075-5ABC3412B8DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72DEB30B-76E5-4B4A-9075-5ABC3412B8DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72DEB30B-76E5-4B4A-9075-5ABC3412B8DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72DEB30B-76E5-4B4A-9075-5ABC3412B8DB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{52DDF087-9B2C-49AF-BD1C-EC2B9C1DD0F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{52DDF087-9B2C-49AF-BD1C-EC2B9C1DD0F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{52DDF087-9B2C-49AF-BD1C-EC2B9C1DD0F5}.Release|Any CPU.ActiveCfg = Release|Any CPU

@@ -54,34 +54,42 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
 
     protected override int TrackedExecuteTool (string pathToTool, string responseFileCommands, string commandLineCommands)
     {
-      int retCode = base.TrackedExecuteTool (pathToTool, responseFileCommands, commandLineCommands);
+      int retCode = -1;
 
-      if (retCode == 0)
+      try
       {
-        OutputFiles = new ITaskItem [] { AlignedZip };
+        retCode = base.TrackedExecuteTool (pathToTool, responseFileCommands, commandLineCommands);
 
-        // 
-        // Construct a simple dependency file for tracking purposes.
-        // 
-
-        try
+        if (retCode == 0)
         {
-          using (StreamWriter writer = new StreamWriter (AlignedZip.GetMetadata ("FullPath") + ".d", false, Encoding.Unicode))
+          OutputFiles = new ITaskItem [] { AlignedZip };
+
+          // 
+          // Construct a simple dependency file for tracking purposes.
+          // 
+
+          string alignedZipPath = AlignedZip.GetMetadata ("FullPath");
+
+          using (StreamWriter writer = new StreamWriter (alignedZipPath + ".d", false, Encoding.Unicode))
           {
-            writer.WriteLine (string.Format ("{0}: \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (AlignedZip.GetMetadata ("FullPath"))));
+            writer.WriteLine (string.Format ("{0}: \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (alignedZipPath)));
 
             foreach (ITaskItem source in Sources)
             {
-              writer.WriteLine (string.Format ("  {0} \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (source.GetMetadata ("FullPath"))));
+              string sourcePath = source.GetMetadata ("FullPath");
+
+              writer.WriteLine (string.Format ("  {0} \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (sourcePath)));
             }
+
+            writer.Close ();
           }
         }
-        catch (Exception e)
-        {
-          Log.LogErrorFromException (e, true);
+      }
+      catch (Exception e)
+      {
+        Log.LogErrorFromException (e, true);
 
-          retCode = -1;
-        }
+        retCode = -1;
       }
 
       return retCode;

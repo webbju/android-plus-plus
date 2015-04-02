@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.IO;
 using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -99,7 +100,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           {
             int handle = m_boundBreakpoints [i].Delete ();
 
-            if (handle != DebugEngineConstants.E_BP_DELETED)
+            if (handle != Constants.E_BP_DELETED)
             {
               LoggingUtils.RequireOk (handle);
             }
@@ -270,19 +271,19 @@ namespace AndroidPlusPlus.VsDebugEngine
           }
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (NotImplementedException e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -328,13 +329,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         m_breakpointManager.Engine.Broadcast (new DebugEngineEvent.BreakpointError (errorBreakpoint), debugProgramsArray [0], null);
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -386,20 +387,20 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (m_breakpointDeleted)
         {
-          return DebugEngineConstants.E_BP_DELETED;
+          return Constants.E_BP_DELETED;
         }
 
         LoggingUtils.RequireOk (EvaluateBreakpointLocation (out documentContext, out codeContext, out bindLocation));
 
         LoggingUtils.RequireOk (CreateBoundBreakpoint (bindLocation, documentContext, codeContext));
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -421,23 +422,23 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (m_breakpointDeleted)
         {
-          return DebugEngineConstants.E_BP_DELETED;
+          return Constants.E_BP_DELETED;
         }
 
         if (m_errorBreakpoints.Count > 0)
         {
           LoggingUtils.RequireOk (EnumErrorBreakpoints (enum_BP_ERROR_TYPE.BPET_ALL, out ppErrorEnum));
 
-          return DebugEngineConstants.S_FALSE;
+          return Constants.S_FALSE;
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -457,7 +458,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (m_breakpointDeleted)
         {
-          return DebugEngineConstants.E_BP_DELETED;
+          return Constants.E_BP_DELETED;
         }
 
         ClearBoundBreakpoints ();
@@ -466,13 +467,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         m_breakpointDeleted = true;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -492,18 +493,18 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (m_breakpointDeleted)
         {
-          return DebugEngineConstants.E_BP_DELETED;
+          return Constants.E_BP_DELETED;
         }
 
         m_breakpointEnabled = (fEnable != 0);
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -523,7 +524,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         ppEnum = new DebuggeeBreakpointBound.Enumerator (m_boundBreakpoints.ToArray ());
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -531,7 +532,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         ppEnum = null;
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -553,10 +554,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (m_breakpointDeleted)
         {
-          return DebugEngineConstants.E_BP_DELETED;
+          return Constants.E_BP_DELETED;
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -564,7 +565,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         ppEnum = null;
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -586,7 +587,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (m_breakpointDeleted)
         {
-          return DebugEngineConstants.E_BP_DELETED;
+          return Constants.E_BP_DELETED;
         }
 
         if (ppBPRequest == null)
@@ -594,7 +595,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -602,7 +603,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         ppBPRequest = null;
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -631,13 +632,13 @@ namespace AndroidPlusPlus.VsDebugEngine
           pState [0].state = (m_breakpointEnabled) ? enum_PENDING_BP_STATE.PBPS_ENABLED : enum_PENDING_BP_STATE.PBPS_DISABLED;
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -660,13 +661,13 @@ namespace AndroidPlusPlus.VsDebugEngine
           LoggingUtils.RequireOk (boundBreakpoint.SetCondition (bpCondition));
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -686,7 +687,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (m_breakpointDeleted)
         {
-          return DebugEngineConstants.E_BP_DELETED;
+          return Constants.E_BP_DELETED;
         }
 
         foreach (DebuggeeBreakpointBound boundBreakpoint in m_boundBreakpoints.ToArray ())
@@ -694,13 +695,13 @@ namespace AndroidPlusPlus.VsDebugEngine
           LoggingUtils.RequireOk (boundBreakpoint.SetPassCount (bpPassCount));
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -718,10 +719,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (m_breakpointDeleted)
       {
-        return DebugEngineConstants.E_BP_DELETED;
+        return Constants.E_BP_DELETED;
       }
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

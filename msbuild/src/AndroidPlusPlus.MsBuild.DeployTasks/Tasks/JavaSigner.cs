@@ -66,14 +66,20 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
           // Construct a simple dependency file for tracking purposes.
           // 
 
-          using (StreamWriter writer = new StreamWriter (SignedOutputFile.GetMetadata ("FullPath") + ".d", false, Encoding.Unicode))
+          string signedOutputPath = SignedOutputFile.GetMetadata ("FullPath");
+
+          using (StreamWriter writer = new StreamWriter (signedOutputPath + ".d", false, Encoding.Unicode))
           {
-            writer.WriteLine (string.Format ("{0}: \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (SignedOutputFile.GetMetadata ("FullPath"))));
+            writer.WriteLine (string.Format ("{0}: \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (signedOutputPath)));
 
             foreach (ITaskItem source in Sources)
             {
-              writer.WriteLine (string.Format ("  {0} \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (source.GetMetadata ("FullPath"))));
+              string sourcePath = source.GetMetadata ("FullPath");
+
+              writer.WriteLine (string.Format ("  {0} \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (sourcePath)));
             }
+
+            writer.Close ();
           }
         }
       }

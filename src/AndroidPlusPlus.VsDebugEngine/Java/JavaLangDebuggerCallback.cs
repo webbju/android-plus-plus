@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using Microsoft.VisualStudio.Debugger.Interop;
 
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -110,19 +111,19 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (!m_debuggerCallback.TryGetValue (riidEvent, out eventCallback))
         {
-          return DebugEngineConstants.E_NOTIMPL;
+          return Constants.E_NOTIMPL;
         }
 
         LoggingUtils.RequireOk (eventCallback (m_debugEngine.JavaDebugger));
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
 
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -138,7 +139,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         debugger.JdbClient.Attach ();
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -160,7 +161,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         debugger.JdbClient.Detach ();
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -182,7 +183,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         debugger.JdbClient.Stop ();
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -204,7 +205,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         debugger.JdbClient.Continue ();
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -226,7 +227,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         debugger.JdbClient.Terminate ();
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {

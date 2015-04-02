@@ -7,8 +7,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.Debugger.Interop;
+
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
+
+using Microsoft.VisualStudio.Debugger.Interop;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -35,7 +38,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       pdwAttrib = (uint)enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
   }
 
@@ -51,7 +54,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       pdwAttrib = (uint)enum_EVENTATTRIBUTES.EVENT_ASYNCHRONOUS;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
   }
 
@@ -67,7 +70,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       pdwAttrib = (uint)enum_EVENTATTRIBUTES.EVENT_STOPPING | (uint)enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
   }
 
@@ -83,7 +86,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       pdwAttrib = (uint)enum_EVENTATTRIBUTES.EVENT_STOPPING | (uint)enum_EVENTATTRIBUTES.EVENT_ASYNCHRONOUS;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
   }
 
@@ -99,7 +102,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       pdwAttrib = (uint) enum_EVENTATTRIBUTES.EVENT_IMMEDIATE;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
   }
 
@@ -115,7 +118,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       pdwAttrib = (uint)enum_EVENTATTRIBUTES.EVENT_EXPRESSION_EVALUATION;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
   }
 
@@ -174,7 +177,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         engine = m_engine;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
     }
 
@@ -231,7 +234,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         pdwExit = m_exitCode;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
     }
 
@@ -266,7 +269,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         exitCode = m_exitCode;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
     }
 
@@ -335,28 +338,28 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         m_canStop = (fCanStop != 0);
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
 
       int IDebugCanStopEvent2.GetCodeContext (out IDebugCodeContext2 ppCodeContext)
       {
         ppCodeContext = m_codeContext;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
 
       int IDebugCanStopEvent2.GetDocumentContext (out IDebugDocumentContext2 ppDocCxt)
       {
         ppDocCxt = m_documentContext;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
 
       int IDebugCanStopEvent2.GetReason (enum_CANSTOP_REASON [] pcr)
       {
         pcr [0] = m_canStopReason;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
     }
 
@@ -391,7 +394,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         ppEnum = m_boundBreakpoints;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
     }
 
@@ -429,7 +432,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugExceptionEvent2.CanPassToDebuggee ()
       {
-        return DebugEngineConstants.S_FALSE;
+        return Constants.S_FALSE;
       }
 
       int IDebugExceptionEvent2.GetException (EXCEPTION_INFO [] pExceptionInfo)
@@ -455,13 +458,13 @@ namespace AndroidPlusPlus.VsDebugEngine
             pExceptionInfo [0].dwState |= enum_EXCEPTION_STATE.EXCEPTION_CANNOT_BE_CONTINUED;
           }
 
-          return DebugEngineConstants.S_OK;
+          return Constants.S_OK;
         }
         catch (System.Exception e)
         {
           LoggingUtils.HandleException (e);
 
-          return DebugEngineConstants.E_FAIL;
+          return Constants.E_FAIL;
         }
       }
 
@@ -469,12 +472,12 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         pbstrDescription = m_exceptionDescription;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
 
       int IDebugExceptionEvent2.PassToDebuggee (int fPass)
       {
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
     }
 
@@ -498,7 +501,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         pbstrString = m_outputString;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
     }
 
@@ -536,13 +539,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           fIsLoad = (m_loadModule) ? 1 : 0;
 
-          return DebugEngineConstants.S_OK;
+          return Constants.S_OK;
         }
         catch (System.Exception e)
         {
           LoggingUtils.HandleException (e);
 
-          return DebugEngineConstants.E_FAIL; 
+          return Constants.E_FAIL; 
         }
       }
     }
@@ -577,7 +580,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         pdwModuleInfoFlags [0] = enum_MODULE_INFO_FLAGS.MIF_SYMBOLS_LOADED;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
     }
 
@@ -607,7 +610,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           pbstrModuleName = moduleInfo [0].m_bstrName;
 
-          return DebugEngineConstants.S_OK;
+          return Constants.S_OK;
         }
         catch (System.Exception e)
         {
@@ -615,7 +618,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           pbstrModuleName = string.Empty;
 
-          return DebugEngineConstants.E_FAIL;
+          return Constants.E_FAIL;
         }
       }
     }
@@ -640,7 +643,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         ppProperty = m_debugProperty;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
     }
 
@@ -664,7 +667,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         ppProperty = m_debugProperty;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
     }
 
@@ -696,14 +699,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         ppEnum = new DebuggeeBreakpointBound.Enumerator (boundBreakpoints);
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
 
       int IDebugBreakpointBoundEvent2.GetPendingBreakpoint (out IDebugPendingBreakpoint2 ppPendingBP)
       {
         ppPendingBP = m_pendingBreakpoint;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
     }
 
@@ -727,14 +730,14 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         ppBP = m_boundBreakpoint;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
 
       int IDebugBreakpointUnboundEvent2.GetReason (enum_BP_UNBOUND_REASON [] pdwUnboundReason)
       {
         pdwUnboundReason [0] = enum_BP_UNBOUND_REASON.BPUR_UNKNOWN;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
     }
 
@@ -758,7 +761,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         ppErrorBP = m_errorBreakpoint;
 
-        return DebugEngineConstants.S_OK; 
+        return Constants.S_OK; 
       }
     }
 
@@ -786,14 +789,14 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         ppExpr = m_debugExpression;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
 
       int IDebugExpressionEvaluationCompleteEvent2.GetResult (out IDebugProperty2 ppResult)
       {
         ppResult = m_debugProperty;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
     }
 
@@ -817,7 +820,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         ppReturnValue = m_debugProperty;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
     }
 
@@ -888,14 +891,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         pdwHelpId = 0;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
 
       int IDebugMessageEvent2.SetResponse (uint dwResponse)
       {
         m_userResponse = dwResponse;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
     }
 
@@ -933,7 +936,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         pdwHelpId = 0;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
     }
 
@@ -961,14 +964,14 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         ppDoc = m_document;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
 
       int IDebugActivateDocumentEvent2.GetDocumentContext (out IDebugDocumentContext2 ppDocContext)
       {
         ppDocContext = m_documentContext;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
     }
 
@@ -992,7 +995,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         pqwCookie = m_interceptCookie;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
     }
 
@@ -1031,14 +1034,14 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         pResult [0] = m_abortResult;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
 
       int IDebugFuncEvalAbortedEvent2.GetFunctionName (out string pbstrFunctionName)
       {
         pbstrFunctionName = m_functionName;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
     }
 
