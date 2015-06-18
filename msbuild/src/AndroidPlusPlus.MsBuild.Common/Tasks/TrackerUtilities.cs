@@ -35,7 +35,7 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public static Dictionary<string, List <string>> GetDependencyTableFromTLog (ITaskItem tLogItem)
+    public static Dictionary<string, HashSet <string>> GetDependencyTableFromTLog (ITaskItem tlog)
     {
       // 
       // Parse and collate a TLog. It's best to achieve this by associating dependency graph 'entries' with associated sources.
@@ -49,55 +49,64 @@ namespace AndroidPlusPlus.MsBuild.Common
       //    FILE3.OBJ
       // 
 
-      if (tLogItem == null)
+      if (tlog == null)
       {
-        throw new ArgumentNullException ();
+        throw new ArgumentNullException ("tlog");
       }
 
-      Dictionary<string, List<string>> trackedDependencyTable = new Dictionary<string, List<string>> ();
+      string tlogFullPath = (!string.IsNullOrEmpty (tlog.GetMetadata ("FullPath")) ? tlog.GetMetadata ("FullPath") : Path.GetFullPath (tlog.ItemSpec));
 
-      using (StreamReader reader = new StreamReader (tLogItem.GetMetadata ("FullPath"), Encoding.Unicode))
+      if (string.IsNullOrEmpty (tlogFullPath))
       {
-        if (reader != null)
+        throw new ArgumentException ("Could not evaluate full path for TLog: " + tlog);
+      }
+
+      Dictionary<string, HashSet<string>> trackedDependencyTable = new Dictionary<string, HashSet<string>> ();
+
+      if (!File.Exists (tlogFullPath))
+      {
+        return trackedDependencyTable; // Don't error as sometimes this is expected; full rebuilds for example.
+      }
+
+      using (StreamReader reader = new StreamReader (tlogFullPath, Encoding.Unicode))
+      {
+        string trackedSourceLineData = reader.ReadLine ();
+
+        while (!string.IsNullOrWhiteSpace (trackedSourceLineData))
         {
-          string trackedSourceLineData = reader.ReadLine ();
-
-          while (!string.IsNullOrWhiteSpace (trackedSourceLineData))
+          if (trackedSourceLineData.StartsWith ("^"))
           {
-            if (trackedSourceLineData.StartsWith ("^"))
+            HashSet<string> trackedSources = new HashSet<string> (trackedSourceLineData.Substring (1).Split ('|'));
+
+            string trackedDependencyEntriesLineData = reader.ReadLine ();
+
+            while (!string.IsNullOrWhiteSpace (trackedDependencyEntriesLineData))
             {
-              List<string> trackedSources = new List<string> (trackedSourceLineData.Substring (1).Split ('|'));
+              HashSet<string> dependentSources;
 
-              string trackedDependencyEntriesLineData = reader.ReadLine ();
-
-              while (!string.IsNullOrWhiteSpace (trackedDependencyEntriesLineData))
+              if (trackedDependencyTable.TryGetValue (trackedDependencyEntriesLineData, out dependentSources))
               {
-                List<string> dependentSources;
-
-                if (trackedDependencyTable.TryGetValue (trackedDependencyEntriesLineData, out dependentSources))
+                foreach (string source in trackedSources)
                 {
-                  foreach (string source in trackedSources)
+                  if (!dependentSources.Contains (source))
                   {
-                    if (!dependentSources.Contains (source))
-                    {
-                      dependentSources.Add (source);
-                    }
+                    dependentSources.Add (source);
                   }
                 }
-                else
-                {
-                  trackedDependencyTable.Add (trackedDependencyEntriesLineData, new List<string> (trackedSources));
-                }
-
-                trackedDependencyEntriesLineData = reader.ReadLine ();
               }
-            }
+              else
+              {
+                trackedDependencyTable.Add (trackedDependencyEntriesLineData, new HashSet<string> (trackedSources));
+              }
 
-            trackedSourceLineData = reader.ReadLine ();
+              trackedDependencyEntriesLineData = reader.ReadLine ();
+            }
           }
 
-          reader.Close ();
+          trackedSourceLineData = reader.ReadLine ();
         }
+
+        reader.Close ();
       }
 
       return trackedDependencyTable;

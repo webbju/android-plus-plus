@@ -10,6 +10,7 @@ using System.Text;
 using System.IO;
 using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -213,59 +214,60 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           string command = string.Format ("-stack-list-variables --thread {0} --frame {1} --no-values", threadId, StackLevel);
 
-          MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
-
-          MiResultRecord.RequireOk (resultRecord, command);
-
-          if (resultRecord.HasField ("variables"))
+          m_debugger.GdbClient.SendCommand (command, delegate (MiResultRecord resultRecord)
           {
-            MiResultValue localVariables = resultRecord ["variables"] [0];
+            MiResultRecord.RequireOk (resultRecord, command);
 
-            for (int i = 0; i < localVariables.Values.Count; ++i)
+            if (resultRecord.HasField ("variables"))
             {
-              string variableName = localVariables [i] ["name"] [0].GetString ();
+              MiResultValue localVariables = resultRecord ["variables"] [0];
 
-              MiVariable variable = m_debugger.VariableManager.CreateVariableFromExpression (this, variableName);
-
-              if (variable == null)
+              for (int i = 0; i < localVariables.Values.Count; ++i)
               {
-                continue;
+                string variableName = localVariables [i] ["name"] [0].GetString ();
+
+                MiVariable variable = m_debugger.VariableManager.CreateVariableFromExpression (this, variableName);
+
+                if (variable == null)
+                {
+                  continue;
+                }
+
+                CLangDebuggeeProperty property = m_debugger.VariableManager.CreatePropertyFromVariable (this, variable);
+
+                if (property == null)
+                {
+                  throw new InvalidOperationException ();
+                }
+
+                if (localVariables [i].HasField ("arg"))
+                {
+                  m_stackArguments.TryAdd (variableName, property);
+
+                  LoggingUtils.RequireOk (m_property.AddChildren (new DebuggeeProperty [] { property }));
+                }
+                else
+                {
+                  m_stackLocals.TryAdd (variableName, property);
+
+                  LoggingUtils.RequireOk (m_property.AddChildren (new DebuggeeProperty [] { property }));
+                }
+
+                //LoggingUtils.RequireOk (m_property.AddChildren (new DebuggeeProperty [] { property }));
               }
 
-              CLangDebuggeeProperty property = m_debugger.VariableManager.CreatePropertyFromVariable (this, variable);
-
-              if (property == null)
-              {
-                throw new InvalidOperationException ();
-              }
-
-              if (localVariables [i].HasField ("arg"))
-              {
-                m_stackArguments.TryAdd (variableName, property);
-
-                LoggingUtils.RequireOk (m_property.AddChildren (new DebuggeeProperty [] { property }));
-              }
-              else
-              {
-                m_stackLocals.TryAdd (variableName, property);
-
-                LoggingUtils.RequireOk (m_property.AddChildren (new DebuggeeProperty [] { property }));
-              }
-
-              //LoggingUtils.RequireOk (m_property.AddChildren (new DebuggeeProperty [] { property }));
+              m_queriedArgumentsAndLocals = true;
             }
-          }
-
-          m_queriedArgumentsAndLocals = true;
+          });
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -291,48 +293,49 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           string command = string.Format ("-data-list-register-values --thread {0} --frame {1} r", threadId, StackLevel);
 
-          MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
-
-          MiResultRecord.RequireOk (resultRecord, command);
-
-          if (!resultRecord.HasField ("register-values"))
+          m_debugger.GdbClient.SendCommand (command, delegate (MiResultRecord resultRecord)
           {
-            throw new InvalidOperationException ("Failed to retrieve list of register values");
-          }
+            MiResultRecord.RequireOk (resultRecord, command);
 
-          MiResultValue registerValues = resultRecord ["register-values"] [0];
+            if (!resultRecord.HasField ("register-values"))
+            {
+              throw new InvalidOperationException ("Failed to retrieve list of register values");
+            }
 
-          int registerValuesCount = registerValues.Values.Count;
+            MiResultValue registerValues = resultRecord ["register-values"] [0];
 
-          Dictionary<uint, string> registerIdMapping = m_debugger.GdbClient.GetRegisterIdMapping ();
+            int registerValuesCount = registerValues.Values.Count;
 
-          for (int i = 0; i < registerValuesCount; ++i)
-          {
-            uint registerId = registerValues [i] ["number"] [0].GetUnsignedInt ();
+            Dictionary<uint, string> registerIdMapping = m_debugger.GdbClient.GetRegisterIdMapping ();
 
-            string registerValue = registerValues [i] ["value"] [0].GetString ();
+            for (int i = 0; i < registerValuesCount; ++i)
+            {
+              uint registerId = registerValues [i] ["number"] [0].GetUnsignedInt ();
 
-            string registerName = registerIdMapping [registerId];
+              string registerValue = registerValues [i] ["value"] [0].GetString ();
 
-            string registerNamePrettified = "$" + registerName;
+              string registerName = registerIdMapping [registerId];
 
-            CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, registerNamePrettified, registerValue);
+              string registerNamePrettified = "$" + registerName;
 
-            m_stackRegisters.TryAdd (registerNamePrettified, property);
+              CLangDebuggeeProperty property = new CLangDebuggeeProperty (m_debugger, this, registerNamePrettified, registerValue);
 
-            LoggingUtils.RequireOk (m_property.AddChildren (new DebuggeeProperty [] { property }));
-          }
+              m_stackRegisters.TryAdd (registerNamePrettified, property);
 
-          m_queriedRegisters = true;
+              LoggingUtils.RequireOk (m_property.AddChildren (new DebuggeeProperty [] { property }));
+            }
+
+            m_queriedRegisters = true;
+          });
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -543,13 +546,13 @@ namespace AndroidPlusPlus.VsDebugEngine
           }
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -577,7 +580,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         LoggingUtils.RequireOk (base.EnumProperties (requestedFields, radix, ref guidFilter, timeout, out elementsReturned, out enumDebugProperty));
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -587,7 +590,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         enumDebugProperty = null;
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -618,13 +621,13 @@ namespace AndroidPlusPlus.VsDebugEngine
           LoggingUtils.RequireOk (documentContext.GetLanguageInfo (ref languageName, ref languageGuid));
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 

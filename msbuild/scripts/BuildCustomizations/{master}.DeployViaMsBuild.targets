@@ -7,17 +7,17 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidManifest.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidManifest.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidJava.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidJava.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidProguard.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidProguard.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidDalvik.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidDalvik.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidApk.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidApk.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidApkSign.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidApkSign.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
   
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -29,7 +29,7 @@
     Register a additional post-compile, post-link and deployment targets.
   -->
 
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'">
 
     <PrepareForBuildDependsOn>$(PrepareForBuildDependsOn);PrepareForBuild_DeployViaMsBuild</PrepareForBuildDependsOn>
 
@@ -53,11 +53,27 @@
 
   <Target Name="PrepareForBuild_DeployViaMsBuild" DependsOnTargets="$(PlatformPrepareForBuildDependsOn)">
 
-    <!-- Validate existence of Java JDK -->
+    <!-- 
+      Validate existence of Java JDK
+    -->
+
     <Error Condition="'$(JavaHomeDir)' == ''" Text="Could not locate the Java JDK. Please consult $(ANDROID_PLUS_PLUS)\docs\getting_started.txt" />
+
     <Error Condition="!Exists('$(JavaHomeDir)')" Text="Could not locate the Java JDK. Path does not exist. Expected: $(JavaHomeDir)." />
 
   </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <PropertyGroup>
+
+    <__DeployViaMsBuildTargetsImported>true</__DeployViaMsBuildTargetsImported>
+
+  </PropertyGroup>
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

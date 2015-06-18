@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -60,14 +61,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         ppEnum = new DebuggeeBreakpointBound.Enumerator (breakpoints);
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
 
       int IDebugBreakpointBoundEvent2.GetPendingBreakpoint (out IDebugPendingBreakpoint2 ppPendingBP)
       {
         ppPendingBP = m_pendingBreakpoint;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
     }
 
@@ -147,7 +148,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (m_breakpointDeleted)
         {
-          return DebugEngineConstants.E_BP_DELETED;
+          return Constants.E_BP_DELETED;
         }
 
         IDebugBreakpointRequest2 breakpointRequest;
@@ -158,13 +159,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         m_breakpointDeleted = true;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -184,10 +185,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (m_breakpointDeleted)
       {
-        return DebugEngineConstants.E_BP_DELETED;
+        return Constants.E_BP_DELETED;
       }
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -206,10 +207,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (m_breakpointDeleted)
       {
-        return DebugEngineConstants.E_BP_DELETED;
+        return Constants.E_BP_DELETED;
       }
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -228,10 +229,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (m_breakpointDeleted)
       {
-        return DebugEngineConstants.E_BP_DELETED;
+        return Constants.E_BP_DELETED;
       }
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -250,10 +251,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (m_breakpointDeleted)
       {
-        return DebugEngineConstants.E_BP_DELETED;
+        return Constants.E_BP_DELETED;
       }
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -281,13 +282,13 @@ namespace AndroidPlusPlus.VsDebugEngine
           pState [0] = (m_breakpointEnabled) ? enum_BP_STATE.BPS_ENABLED : enum_BP_STATE.BPS_DISABLED;
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -305,10 +306,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (m_breakpointDeleted)
       {
-        return DebugEngineConstants.E_BP_DELETED;
+        return Constants.E_BP_DELETED;
       }
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -327,10 +328,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (m_breakpointDeleted)
       {
-        return DebugEngineConstants.E_BP_DELETED;
+        return Constants.E_BP_DELETED;
       }
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -347,10 +348,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (m_breakpointDeleted)
       {
-        return DebugEngineConstants.E_BP_DELETED;
+        return Constants.E_BP_DELETED;
       }
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -381,7 +382,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
     }
 

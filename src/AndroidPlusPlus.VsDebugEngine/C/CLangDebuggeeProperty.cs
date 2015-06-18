@@ -5,9 +5,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
-using System.Text.RegularExpressions;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -137,7 +138,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         LoggingUtils.RequireOk (base.EnumChildren (dwFields, dwRadix, ref guidFilter, dwAttribFilter, pszNameFilter, dwTimeout, out ppEnum));
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -145,7 +146,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         ppEnum = null;
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -210,16 +211,16 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (memoryContext == null)
         {
-          return DebugEngineConstants.S_GETMEMORYCONTEXT_NO_MEMORY_CONTEXT;
+          return Constants.S_GETMEMORYCONTEXT_NO_MEMORY_CONTEXT;
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -352,13 +353,13 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -388,7 +389,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         string command = string.Format ("-data-evaluate-expression --thread {0} --frame {1} --language c \"sizeof({2})\"", stackThreadId, (m_stackFrame as CLangDebuggeeStackFrame).StackLevel, m_expression);
 
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendSyncCommand (command);
 
         MiResultRecord.RequireOk (resultRecord, command);
 
@@ -396,16 +397,16 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           size = resultRecord ["value"] [0].GetUnsignedInt ();
 
-          return DebugEngineConstants.S_GETSIZE_NO_SIZE;
+          return Constants.S_GETSIZE_NO_SIZE;
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -425,7 +426,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         string command = string.Format ("-var-assign \"{0}\" \"{1}\"", m_gdbVariable.Name, value);
 
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendSyncCommand (command);
 
         MiResultRecord.RequireOk (resultRecord, command);
 
@@ -435,16 +436,16 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           m_debugger.VariableManager.UpdateVariable (m_gdbVariable);
 
-          return DebugEngineConstants.S_OK;
+          return Constants.S_OK;
         }
 
-        return DebugEngineConstants.S_FALSE;
+        return Constants.S_FALSE;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 

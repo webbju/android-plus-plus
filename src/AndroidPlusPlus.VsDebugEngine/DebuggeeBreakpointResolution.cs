@@ -6,10 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-
 using Microsoft.VisualStudio.Debugger.Interop;
-
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -96,7 +95,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       GetBreakpointType (out pBPType [0]);
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -148,19 +147,19 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (NotImplementedException e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -239,19 +238,19 @@ namespace AndroidPlusPlus.VsDebugEngine
           resolutionInfo [0].dwFields |= enum_BPERESI_FIELDS.BPERESI_TYPE;
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (NotImplementedException e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 

@@ -62,6 +62,7 @@
     <Compile Include="Tasks\AndroidProguard.cs" />
     <Compile Include="Tasks\AndroidZipAlign.cs" />
     <Compile Include="Tasks\JavaArchive.cs" />
+    <Compile Include="Tasks\JavaBuilder.cs" />
     <Compile Include="Tasks\JavaCompile.cs" />
     <Compile Include="Tasks\JavaSigner.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -11,8 +11,8 @@ using System.Runtime.InteropServices;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Debugger.Interop;
 using Microsoft.VisualStudio.Shell.Interop;
-
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 using AndroidPlusPlus.VsDebugEngine;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -199,7 +199,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
         LoggingUtils.Print ("[DebuggerEventListener] Event: " + riidEvent.ToString ());
 
-        int handle = DebugEngineConstants.E_NOTIMPL;
+        int handle = VsDebugCommon.Constants.E_NOTIMPL;
 
         if (!m_eventCallbacks.TryGetValue (riidEvent, out callback))
         {
@@ -208,7 +208,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
         handle = callback (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
 
-        if (handle != DebugEngineConstants.E_NOTIMPL)
+        if (handle != VsDebugCommon.Constants.E_NOTIMPL)
         {
           LoggingUtils.RequireOk (handle);
         }

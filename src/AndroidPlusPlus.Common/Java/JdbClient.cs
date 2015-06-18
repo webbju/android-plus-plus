@@ -159,6 +159,8 @@ namespace AndroidPlusPlus.Common
         {
           writer.WriteLine (command);
         }
+
+        writer.Close ();
       }
 
       // 

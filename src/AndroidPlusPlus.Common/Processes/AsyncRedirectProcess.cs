@@ -48,7 +48,7 @@ namespace AndroidPlusPlus.Common
 
     protected int m_startTicks = 0;
 
-    protected int m_exitCode = 0;
+    protected int m_exitCode = -1;
 
     protected ManualResetEvent m_exitMutex = null;
 
@@ -281,17 +281,18 @@ namespace AndroidPlusPlus.Common
     {
       try
       {
-        m_exitCode = m_process.ExitCode;
-      }
-      catch (InvalidOperationException)
-      {
-        // Ignore: 'No process is associated with this object'.
-      }
+        try
+        {
+          if ((m_process != null) && (m_exitCode == -1))
+          {
+            m_exitCode = m_process.ExitCode;
+          }
+        }
+        catch (InvalidOperationException)
+        {
+          // Ignore: 'No process is associated with this object'.
+        }
 
-      LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] {0} exited ({1}) in {2} ms", StartInfo.FileName, m_exitCode, Environment.TickCount - m_startTicks));
-
-      try
-      {
         m_exitMutex.Set ();
 
         if (m_listener != null)
@@ -302,6 +303,12 @@ namespace AndroidPlusPlus.Common
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
+      }
+      finally
+      {
+        LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] {0} exited ({1}) in {2} ms", StartInfo.FileName, m_exitCode, Environment.TickCount - m_startTicks));
+
+        Dispose ();
       }
     }
 

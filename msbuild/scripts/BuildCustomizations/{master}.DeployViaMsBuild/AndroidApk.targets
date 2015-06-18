@@ -99,7 +99,7 @@
       </_CopyNativeLibrariesAndTools>
       
       <!-- Copy appropriate target architecture 'gdbserver' instance. -->
-      <_CopyNativeLibrariesAndTools Condition="'$(Configuration)' != 'Release'" Include="$(PlatformToolsetGdbServer)">
+      <_CopyNativeLibrariesAndTools Condition="('$(UseDebugLibraries)' == 'true' or '%(AndroidManifest.DebugMode)' == 'true')" Include="$(PlatformToolsetGdbServer)">
         <IntermediateDirectory>$(IntDir)raw</IntermediateDirectory>
       </_CopyNativeLibrariesAndTools>
     </ItemGroup>

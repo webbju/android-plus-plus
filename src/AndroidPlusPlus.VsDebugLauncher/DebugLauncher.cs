@@ -8,10 +8,12 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Windows.Forms;
 
+using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.VCProjectEngine;
@@ -36,7 +38,7 @@ using Microsoft.VisualStudio.ProjectSystem.VS.Debuggers;
 #endif
 
 using AndroidPlusPlus.Common;
-using System.Threading;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

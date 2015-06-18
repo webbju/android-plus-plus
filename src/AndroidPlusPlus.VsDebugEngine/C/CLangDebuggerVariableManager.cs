@@ -130,7 +130,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         string command = string.Format ("-var-create --thread {0} --frame {1} - * \"{2}\"", stackThreadId, stackFrame.StackLevel, expression);
 
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendSyncCommand (command);
 
         MiResultRecord.RequireOk (resultRecord, command);
 
@@ -179,7 +179,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         string command = string.Format ("-var-list-children --all-values \"{0}\"", parentVariable.Name);
 
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendSyncCommand (command);
 
         MiResultRecord.RequireOk (resultRecord, command);
 
@@ -246,7 +246,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       string command = string.Format ("-var-update --all-values \"{0}\"", variable.Name);
 
-      MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+      MiResultRecord resultRecord = m_debugger.GdbClient.SendSyncCommand (command);
 
       MiResultRecord.RequireOk (resultRecord, command);
 
@@ -266,7 +266,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       string command = string.Format ("-var-delete \"{0}\"", gdbVariable.Name);
 
-      MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+      MiResultRecord resultRecord = m_debugger.GdbClient.SendSyncCommand (command);
 
       MiResultRecord.RequireOk (resultRecord, command);
     }

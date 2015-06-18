@@ -88,9 +88,9 @@
 
       <UnswitchLoops Condition="'%(ClCompile.UnswitchLoops)' == ''">true</UnswitchLoops>
 
-      <PositionIndependentCode Condition="'%(ClCompile.PositionIndependentCode)' == ''">PIC</PositionIndependentCode>
+      <PositionIndependentCode Condition="'%(ClCompile.PositionIndependentCode)' == ''">BigPic</PositionIndependentCode>
 
-      <PositionIndependentExecutable Condition="'%(ClCompile.PositionIndependentExecutable)' == '' and '$(AndroidNdkLevel)' >= '16'">PIE</PositionIndependentExecutable>
+      <PositionIndependentExecutable Condition="'%(ClCompile.PositionIndependentExecutable)' == '' and '$(AndroidNdkLevel)' >= '16'">BigPie</PositionIndependentExecutable>
 
     </ClCompile>
 

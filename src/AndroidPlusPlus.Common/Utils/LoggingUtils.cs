@@ -58,7 +58,7 @@ namespace AndroidPlusPlus.Common
 
     public static bool CheckOk (int handle)
     {
-      return (handle == DebugEngineConstants.S_OK);
+      return (handle == 0);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

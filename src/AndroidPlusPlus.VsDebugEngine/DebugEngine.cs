@@ -10,8 +10,11 @@ using System.Diagnostics;
 using System.Threading;
 using System.IO;
 using System.Windows.Forms;
-using Microsoft.VisualStudio.Debugger.Interop;
+
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
+
+using Microsoft.VisualStudio.Debugger.Interop;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -161,7 +164,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         int handle = callback.Event (this, null, program, thread, debugEvent, ref eventGuid, eventAttributes);
 
-        if (handle != DebugEngineConstants.E_NOTIMPL)
+        if (handle != Constants.E_NOTIMPL)
         {
           LoggingUtils.RequireOk (handle);
         }
@@ -210,17 +213,17 @@ namespace AndroidPlusPlus.VsDebugEngine
           program.AttachedEngine.JavaDebugger = null;
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
       finally
       {
-        if (program.AttachedEngine != null)
+        if ((program != null) && (program.AttachedEngine != null))
         {
           Broadcast (new DebugEngineEvent.ProgramDestroy (0), program, null);
 
@@ -371,7 +374,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           }
         });
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -381,7 +384,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         Detach (Program);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -403,13 +406,13 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.RequireOk (Program.DebugProcess.CauseBreak ());
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -430,13 +433,13 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         m_broadcastHandleLock.Set ();
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -457,7 +460,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.RequireOk (BreakpointManager.CreatePendingBreakpoint (pBPRequest, out ppPendingBP));
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -465,7 +468,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         ppPendingBP = null;
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -490,7 +493,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
     }
 
@@ -512,7 +515,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         ppEnum = new DebuggeeProgram.Enumerator (programs);
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -520,7 +523,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         ppEnum = null;
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -538,7 +541,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       guidEngine = DebugEngineGuids.guidDebugEngineID;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -561,7 +564,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
     }
 
@@ -585,7 +588,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
     }
 
@@ -609,7 +612,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
     }
 
@@ -633,7 +636,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
     }
 
@@ -684,13 +687,13 @@ namespace AndroidPlusPlus.VsDebugEngine
           });
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (NotImplementedException e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
     }
 
@@ -706,7 +709,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -721,7 +724,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -736,7 +739,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.S_OK; // Not localised.
+      return Constants.S_OK; // Not localised.
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -759,7 +762,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
     }
 
@@ -775,7 +778,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -810,18 +813,18 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           debugger.GdbClient.SetSetting ("debug-file-directory", string.Join (";", symbolSearchPaths.ToArray ()), true);
 
-          BreakpointManager.SetDirty ();
+          BreakpointManager.SetDirty (true);
 
           BreakpointManager.RefreshBreakpoints ();
         });
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -849,7 +852,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.S_FALSE;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1055,7 +1058,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         process = debugProcess;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -1074,7 +1077,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           LoggingUtils.HandleException (e);
         }
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -1107,13 +1110,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         LoggingUtils.RequireOk (debugPort.AddProgramNode (debugProcess.DebuggeeProgram));
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -1133,13 +1136,19 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        throw new NotImplementedException ();
+        DebuggeeProcess debugProcess = (process as DebuggeeProcess);
+
+        LoggingUtils.RequireOk (debugProcess.Terminate ());
+
+        Detach (debugProcess.DebuggeeProgram);
+
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -1177,7 +1186,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
     }
 
@@ -1201,7 +1210,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
     }
 
@@ -1225,7 +1234,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
     }
 
@@ -1269,7 +1278,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
     }
 

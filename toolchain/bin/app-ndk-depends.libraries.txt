@@ -1,3 +1,8 @@
+crtbegin_so.o
+crtend_so.o
+drm
+egl
+hw
 libAKM.so
 libAppDataSearch.so
 libC2D2.so
@@ -382,3 +387,5 @@ libwprintplugin_pcl.so
 libwprintplugin_pdf.so
 libxml.so
 libz.so
+soundfx
+ssl

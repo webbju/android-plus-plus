@@ -8,10 +8,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Runtime.InteropServices;
-
 using Microsoft.VisualStudio.Debugger.Interop;
-
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -72,7 +71,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         LoggingUtils.RequireOk (breakpointRequest.GetRequestInfo (enum_BPREQI_FIELDS.BPREQI_BPLOCATION, requestInfo));
 
-        if ((requestInfo [0].bpLocation.bpLocationType & (uint)enum_BP_LOCATION_TYPE.BPLT_FILE_LINE) != 0)
+        long locationType = requestInfo [0].bpLocation.bpLocationType & (long) enum_BP_LOCATION_TYPE.BPLT_LOCATION_TYPE_MASK;
+
+        if ((locationType & (long) enum_BP_LOCATION_TYPE.BPLT_FILE_LINE) != 0)
         {
           // 
           // Query the associated document extension, and create a respective pending breakpoint type.
@@ -113,10 +114,28 @@ namespace AndroidPlusPlus.VsDebugEngine
             }
           }
         }
-        else if (requestInfo [0].bpLocation.bpLocationType == (uint)enum_BP_TYPE.BPT_DATA)
+        else if ((locationType & (long) enum_BP_LOCATION_TYPE.BPLT_FUNC_OFFSET) != 0)
         {
-          pendingBreakpoint = null;
-
+          throw new NotImplementedException ();
+        }
+        else if ((locationType & (long) enum_BP_LOCATION_TYPE.BPLT_CONTEXT) != 0)
+        {
+          throw new NotImplementedException ();
+        }
+        else if ((locationType & (long) enum_BP_LOCATION_TYPE.BPLT_STRING) != 0)
+        {
+          throw new NotImplementedException ();
+        }
+        else if ((locationType & (long) enum_BP_LOCATION_TYPE.BPLT_ADDRESS) != 0)
+        {
+          throw new NotImplementedException ();
+        }
+        else if ((locationType & (long) enum_BP_LOCATION_TYPE.BPLT_RESOLUTION) != 0)
+        {
+          throw new NotImplementedException ();
+        }
+        else
+        {
           throw new NotImplementedException ();
         }
 
@@ -127,9 +146,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         pendingBreakpoint = (IDebugPendingBreakpoint2)breakpoint;
 
-        SetDirty ();
+        SetDirty (true);
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (NotImplementedException e)
       {
@@ -137,7 +156,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         pendingBreakpoint = null;
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
       catch (Exception e)
       {
@@ -145,7 +164,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         pendingBreakpoint = null;
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -169,7 +188,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           {
             int handle = m_pendingBreakpoints [i].Delete ();
 
-            if (handle != DebugEngineConstants.E_BP_DELETED)
+            if (handle != Constants.E_BP_DELETED)
             {
               LoggingUtils.RequireOk (handle);
             }
@@ -190,11 +209,22 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void SetDirty ()
+    public void SetDirty (bool dirty)
     {
       LoggingUtils.PrintFunction ();
 
-      m_requiresRefresh = true;
+      m_requiresRefresh = dirty;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public bool IsDirty ()
+    {
+      LoggingUtils.PrintFunction ();
+
+      return m_requiresRefresh;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -349,11 +379,18 @@ namespace AndroidPlusPlus.VsDebugEngine
           // Check for matching 'error' breakpoints.
           // 
 
-          uint numErrorBreakpoints;
-
           IEnumDebugErrorBreakpoints2 enumeratedErrorBreakpoints;
 
-          LoggingUtils.RequireOk (pending.EnumErrorBreakpoints (enum_BP_ERROR_TYPE.BPET_ALL, out enumeratedErrorBreakpoints));
+          int handle = pending.EnumErrorBreakpoints (enum_BP_ERROR_TYPE.BPET_ALL, out enumeratedErrorBreakpoints);
+
+          if (handle == Constants.E_BP_DELETED)
+          {
+            continue; // Skip any deleted breakpoints.
+          }
+
+          LoggingUtils.RequireOk (handle);
+
+          uint numErrorBreakpoints;
 
           LoggingUtils.RequireOk (enumeratedErrorBreakpoints.GetCount (out numErrorBreakpoints));
 

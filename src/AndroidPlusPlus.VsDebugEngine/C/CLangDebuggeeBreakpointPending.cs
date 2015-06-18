@@ -6,9 +6,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Threading;
 using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
-using System.Threading;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -79,7 +80,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           }
         }*/
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -91,7 +92,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         location = string.Empty;
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -109,7 +110,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        if ((m_breakpointRequestInfo.bpLocation.bpLocationType & (uint)enum_BP_TYPE.BPT_DATA) != 0)
+        if (m_breakpointRequestInfo.bpLocation.bpLocationType == (uint)enum_BP_TYPE.BPT_DATA)
         {
           throw new NotImplementedException ();
         }
@@ -118,39 +119,40 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           string command = string.Format ("-break-insert -f {0} {1}", ((m_breakpointEnabled) ? "" : "-d"), PathUtils.SantiseWindowsPath (location));
 
-          MiResultRecord resultRecord = debugger.GdbClient.SendCommand (command);
-
-          if (resultRecord != null)
+          debugger.GdbClient.SendCommand (command, delegate (MiResultRecord resultRecord)
           {
-            if (resultRecord.IsError ())
+            if (resultRecord != null)
             {
-              string errorReason = "<unknown error>";
-
-              if (resultRecord.HasField ("msg"))
+              if (resultRecord.IsError ())
               {
-                errorReason = resultRecord ["msg"] [0].GetString ();
+                string errorReason = "<unknown error>";
+
+                if (resultRecord.HasField ("msg"))
+                {
+                  errorReason = resultRecord ["msg"] [0].GetString ();
+                }
+
+                LoggingUtils.RequireOk (CreateErrorBreakpoint (errorReason, documentContext, codeContext));
               }
+              else
+              {
+                MiResultValue breakpointData = resultRecord ["bkpt"] [0];
 
-              LoggingUtils.RequireOk (CreateErrorBreakpoint (errorReason, documentContext, codeContext));
+                MiBreakpoint breakpoint = new MiBreakpoint (breakpointData.Values);
+
+                LoggingUtils.RequireOk (CreateBoundBreakpoint (breakpoint, documentContext, codeContext));
+              }
             }
-            else
-            {
-              MiResultValue breakpointData = resultRecord ["bkpt"] [0];
-
-              MiBreakpoint breakpoint = new MiBreakpoint (breakpointData.Values);
-
-              LoggingUtils.RequireOk (CreateBoundBreakpoint (breakpoint, documentContext, codeContext));
-            }
-          }
+          });
         });
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -189,13 +191,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         m_breakpointManager.Engine.Broadcast (new DebugEngineEvent.BreakpointError (errorBreakpoint), debugProgramsArray [0], null);
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -265,13 +267,13 @@ namespace AndroidPlusPlus.VsDebugEngine
           m_debugger.Engine.Broadcast (new DebugEngineEvent.BreakpointBound (this, boundBreakpoint), m_debugger.NativeProgram.DebugProgram, m_debugger.NativeProgram.GetThread (m_debugger.NativeProgram.CurrentThreadId));
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -348,7 +350,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         int handle = boundBreakpoint.GetBreakpointResolution (out boundBreakpointResolution);
 
-        if (handle == DebugEngineConstants.E_BP_DELETED)
+        if (handle == Constants.E_BP_DELETED)
         {
           return;
         }
@@ -367,7 +369,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         int handle = errorBreakpoint.GetBreakpointResolution (out errorBreakpointResolution);
 
-        if (handle == DebugEngineConstants.E_BP_DELETED)
+        if (handle == Constants.E_BP_DELETED)
         {
           return;
         }
@@ -388,46 +390,56 @@ namespace AndroidPlusPlus.VsDebugEngine
       // Query breakpoint info/status directly from GDB/MI.
       // 
 
-      MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (string.Format ("-break-info {0}", gdbBreakpoint.ID));
-
-      if (resultRecord == null)
+      try
       {
-        throw new InvalidOperationException ();
-      }
-      else if (resultRecord.IsError ())
-      {
-        // 
-        // GDB/MI breakpoint info request failed.
-        // 
+        string command = string.Format ("-break-info {0}", gdbBreakpoint.ID);
 
-        gdbBreakpoint.Address = MiBreakpoint.Pending;
-
-        (resolution as DebuggeeBreakpointResolution).CodeContext.Address = new DebuggeeAddress (gdbBreakpoint.Address);
-
-        errorBreakpoint = new CLangDebuggeeBreakpointError (m_debugger, m_breakpointManager, this, (resolution as DebuggeeBreakpointResolution).CodeContext, gdbBreakpoint, resultRecord.Records [1].Stream);
-
-        lock (m_errorBreakpoints)
+        m_debugger.GdbClient.SendCommand (command, delegate (MiResultRecord resultRecord)
         {
-          m_errorBreakpoints.Add (errorBreakpoint);
-        }
+          if (resultRecord == null)
+          {
+            throw new InvalidOperationException ();
+          }
+          else if (resultRecord.IsError ())
+          {
+            // 
+            // GDB/MI breakpoint info request failed.
+            // 
 
-        m_debugger.Engine.Broadcast (new DebugEngineEvent.BreakpointError (errorBreakpoint), m_debugger.NativeProgram.DebugProgram, m_debugger.NativeProgram.GetThread (m_debugger.NativeProgram.CurrentThreadId));
+            gdbBreakpoint.Address = MiBreakpoint.Pending;
+
+            (resolution as DebuggeeBreakpointResolution).CodeContext.Address = new DebuggeeAddress (gdbBreakpoint.Address);
+
+            errorBreakpoint = new CLangDebuggeeBreakpointError (m_debugger, m_breakpointManager, this, (resolution as DebuggeeBreakpointResolution).CodeContext, gdbBreakpoint, resultRecord.Records [1].Stream);
+
+            lock (m_errorBreakpoints)
+            {
+              m_errorBreakpoints.Add (errorBreakpoint);
+            }
+
+            m_debugger.Engine.Broadcast (new DebugEngineEvent.BreakpointError (errorBreakpoint), m_debugger.NativeProgram.DebugProgram, m_debugger.NativeProgram.GetThread (m_debugger.NativeProgram.CurrentThreadId));
+          }
+          else
+          {
+            // 
+            // We've probably got sane breakpoint information back. Update current breakpoint values and re-process.
+            // 
+
+            MiResultValue breakpointData = resultRecord ["BreakpointTable"] [0] ["body"] [0] ["bkpt"] [0];
+
+            MiBreakpoint currentGdbBreakpoint = new MiBreakpoint (breakpointData.Values);
+
+            DebuggeeCodeContext codeContext = (resolution as DebuggeeBreakpointResolution).CodeContext;
+
+            DebuggeeDocumentContext documentContext = codeContext.DocumentContext;
+
+            LoggingUtils.RequireOk (CreateBoundBreakpoint (currentGdbBreakpoint, documentContext, codeContext));
+          }
+        });
       }
-      else
+      catch (Exception e)
       {
-        // 
-        // We've probably got sane breakpoint information back. Update current breakpoint values and re-process.
-        // 
-
-        MiResultValue breakpointData = resultRecord ["BreakpointTable"] [0] ["body"] [0] ["bkpt"] [0];
-
-        MiBreakpoint currentGdbBreakpoint = new MiBreakpoint (breakpointData.Values);
-
-        DebuggeeCodeContext codeContext = (resolution as DebuggeeBreakpointResolution).CodeContext;
-
-        DebuggeeDocumentContext documentContext = codeContext.DocumentContext;
-
-        LoggingUtils.RequireOk (CreateBoundBreakpoint (currentGdbBreakpoint, documentContext, codeContext));
+        LoggingUtils.HandleException (e);
       }
     }
 
@@ -451,13 +463,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         LoggingUtils.RequireOk (SetCondition (m_breakpointRequestInfo.bpCondition));
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 

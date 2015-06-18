@@ -247,17 +247,17 @@ namespace AndroidPlusPlus.Common
       {
         deviceLibraries.AddRange (new string []
         {
-          //"/system/lib64/libandroid.so",
-          //"/system/lib64/libandroid_runtime.so",
+          "/system/lib64/libandroid.so",
+          "/system/lib64/libandroid_runtime.so",
           //"/system/lib64/libart.so",
-          //"/system/lib64/libbinder.so",
+          "/system/lib64/libbinder.so",
           "/system/lib64/libc.so",
           //"/system/lib64/libdvm.so",
-          //"/system/lib64/libEGL.so",
-          //"/system/lib64/libGLESv1_CM.so",
-          //"/system/lib64/libGLESv2.so",
-          //"/system/lib64/libGLESv3.so",
-          //"/system/lib64/libutils.so",
+          "/system/lib64/libEGL.so",
+          "/system/lib64/libGLESv1_CM.so",
+          "/system/lib64/libGLESv2.so",
+          "/system/lib64/libGLESv3.so",
+          "/system/lib64/libutils.so",
         });
       }
       else
@@ -423,6 +423,7 @@ namespace AndroidPlusPlus.Common
       // - It also define a special mode for controlling debugging behaviour on ART.
       // 
 
+#if false
       string androidPlusPlusRoot = Environment.GetEnvironmentVariable ("ANDROID_PLUS_PLUS");
 
       string dalkvikGdbScriptPath = Path.Combine (androidPlusPlusRoot, "contrib", "gdb", "scripts", "dalvik.gdb");
@@ -438,6 +439,7 @@ namespace AndroidPlusPlus.Common
           gdbExecutionCommands.Add ("handle SIGSEGV print stop");
         }
       }
+#endif
 
       return gdbExecutionCommands.ToArray ();
     }

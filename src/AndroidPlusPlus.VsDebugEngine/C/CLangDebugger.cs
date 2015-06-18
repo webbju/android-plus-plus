@@ -7,12 +7,15 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
+
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
+
 using Microsoft.VisualStudio.Debugger.Interop;
-using System.Text;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -511,7 +514,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             if (!GdbClient.GetClientFeatureSupported ("breakpoint-notifications"))
             {
-              Engine.BreakpointManager.SetDirty ();
+              Engine.BreakpointManager.SetDirty (true);
             }
 
             Engine.BreakpointManager.RefreshBreakpoints ();
@@ -763,219 +766,219 @@ namespace AndroidPlusPlus.VsDebugEngine
               NativeProgram.RefreshAllThreads ();
 #endif
 
-              Engine.BreakpointManager.RefreshBreakpoints ();
+              if (!GdbClient.GetClientFeatureSupported ("breakpoint-notifications"))
+              {
+                Engine.BreakpointManager.RefreshBreakpoints ();
+              }
 
-              if (true)
+              // 
+              // This behaviour seems at odds with the GDB/MI spec, but a *stopped event can contain
+              // multiple 'reason' fields. This seems to occur mainly when signals have been ignored prior 
+              // to a non-ignored triggering, i.e:
+              // 
+              //   Signal        Stop\tPrint\tPass to program\tDescription\n
+              //   SIGSEGV       No\tYes\tYes\t\tSegmentation fault\n
+              // 
+              // *stopped,reason="signal-received",signal-name="SIGSEGV",signal-meaning="Segmentation fault",reason="signal-received",signal-name="SIGSEGV",signal-meaning="Segmentation fault",reason="exited-signalled",signal-name="SIGSEGV",signal-meaning="Segmentation fault"
+              // 
+
+              if (asyncRecord.HasField ("reason"))
               {
                 // 
-                // This behaviour seems at odds with the GDB/MI spec, but a *stopped event can contain
-                // multiple 'reason' fields. This seems to occur mainly when signals have been ignored prior 
-                // to a non-ignored triggering, i.e:
-                // 
-                //   Signal        Stop\tPrint\tPass to program\tDescription\n
-                //   SIGSEGV       No\tYes\tYes\t\tSegmentation fault\n
-                // 
-                // *stopped,reason="signal-received",signal-name="SIGSEGV",signal-meaning="Segmentation fault",reason="signal-received",signal-name="SIGSEGV",signal-meaning="Segmentation fault",reason="exited-signalled",signal-name="SIGSEGV",signal-meaning="Segmentation fault"
+                // Here we pick the most recent (unhandled) signal.
                 // 
 
-                if (asyncRecord.HasField ("reason"))
+                int stoppedIndex = asyncRecord ["reason"].Count - 1;
+
+                MiResultValue stoppedReason = asyncRecord ["reason"] [stoppedIndex];
+
+                // 
+                // The reason field can have one of the following values:
+                // 
+
+                switch (stoppedReason.GetString ())
                 {
-                  // 
-                  // Here we pick the most recent (unhandled) signal.
-                  // 
-
-                  int stoppedIndex = asyncRecord ["reason"].Count - 1;
-
-                  MiResultValue stoppedReason = asyncRecord ["reason"] [stoppedIndex];
-
-                  // 
-                  // The reason field can have one of the following values:
-                  // 
-
-                  switch (stoppedReason.GetString ())
+                  case "breakpoint-hit":
+                  case "watchpoint-trigger":
                   {
-                    case "breakpoint-hit":
-                    case "watchpoint-trigger":
+                    bool canContinue = true;
+
+                    uint breakpointId = asyncRecord ["bkptno"] [0].GetUnsignedInt ();
+
+                    string breakpointMode = asyncRecord ["disp"] [0].GetString ();
+
+                    if (breakpointMode.Equals ("del"))
                     {
-                      bool canContinue = true;
+                      // 
+                      // For temporary breakpoints, we won't have a valid managed object - so will just enforce a break event.
+                      // 
 
-                      uint breakpointId = asyncRecord ["bkptno"] [0].GetUnsignedInt ();
+                      //Engine.Broadcast (new DebugEngineEvent.Break (), NativeProgram.DebugProgram, stoppedThread);
 
-                      string breakpointMode = asyncRecord ["disp"] [0].GetString ();
+                      Engine.Broadcast (new DebugEngineEvent.BreakpointHit (null), NativeProgram.DebugProgram, stoppedThread);
+                    }
+                    else
+                    {
+                      DebuggeeBreakpointBound boundBreakpoint = Engine.BreakpointManager.FindBoundBreakpoint (breakpointId);
 
-                      if (breakpointMode.Equals ("del"))
+                      if (boundBreakpoint == null)
                       {
                         // 
-                        // For temporary breakpoints, we won't have a valid managed object - so will just enforce a break event.
+                        // Could not find the breakpoint we're looking for. Refresh everything and try again.
                         // 
 
-                        //Engine.Broadcast (new DebugEngineEvent.Break (), NativeProgram.DebugProgram, stoppedThread);
+                        Engine.BreakpointManager.SetDirty (true);
 
-                        Engine.Broadcast (new DebugEngineEvent.BreakpointHit (null), NativeProgram.DebugProgram, stoppedThread);
+                        Engine.BreakpointManager.RefreshBreakpoints ();
+
+                        boundBreakpoint = Engine.BreakpointManager.FindBoundBreakpoint (breakpointId);
+                      }
+
+                      if (boundBreakpoint == null)
+                      {
+                        // 
+                        // Could not locate a registered breakpoint with matching id.
+                        // 
+
+                        DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, "Breakpoint #" + breakpointId, stoppedReason.GetString (), 0x00000000, canContinue);
+
+                        Engine.Broadcast (exception, NativeProgram.DebugProgram, stoppedThread);
                       }
                       else
                       {
-                        DebuggeeBreakpointBound boundBreakpoint = Engine.BreakpointManager.FindBoundBreakpoint (breakpointId);
+                        enum_BP_STATE [] breakpointState = new enum_BP_STATE [1];
 
-                        if (boundBreakpoint == null)
+                        LoggingUtils.RequireOk (boundBreakpoint.GetState (breakpointState));
+
+                        if (breakpointState [0] == enum_BP_STATE.BPS_DELETED)
                         {
                           // 
-                          // Could not find the breakpoint we're looking for. Refresh everything and try again.
+                          // Hit a breakpoint which internally is flagged as deleted. Oh noes!
                           // 
 
-                          Engine.BreakpointManager.SetDirty ();
-
-                          Engine.BreakpointManager.RefreshBreakpoints ();
-
-                          boundBreakpoint = Engine.BreakpointManager.FindBoundBreakpoint (breakpointId);
-                        }
-
-                        if (boundBreakpoint == null)
-                        {
-                          // 
-                          // Could not locate a registered breakpoint with matching id.
-                          // 
-
-                          DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, "Breakpoint #" + breakpointId, stoppedReason.GetString (), 0x00000000, canContinue);
+                          DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, "Breakpoint #" + breakpointId + " [deleted]", stoppedReason.GetString (), 0x00000000, canContinue);
 
                           Engine.Broadcast (exception, NativeProgram.DebugProgram, stoppedThread);
                         }
                         else
                         {
-                          enum_BP_STATE [] breakpointState = new enum_BP_STATE [1];
+                          // 
+                          // Hit a breakpoint which is known about. Issue break event.
+                          // 
 
-                          LoggingUtils.RequireOk (boundBreakpoint.GetState (breakpointState));
+                          IDebugBoundBreakpoint2 [] boundBreakpoints = new IDebugBoundBreakpoint2 [] { boundBreakpoint };
 
-                          if (breakpointState [0] == enum_BP_STATE.BPS_DELETED)
-                          {
-                            // 
-                            // Hit a breakpoint which internally is flagged as deleted. Oh noes!
-                            // 
+                          IEnumDebugBoundBreakpoints2 enumeratedBoundBreakpoint = new DebuggeeBreakpointBound.Enumerator (boundBreakpoints);
 
-                            DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, "Breakpoint #" + breakpointId + " [deleted]", stoppedReason.GetString (), 0x00000000, canContinue);
-
-                            Engine.Broadcast (exception, NativeProgram.DebugProgram, stoppedThread);
-                          }
-                          else
-                          {
-                            // 
-                            // Hit a breakpoint which is known about. Issue break event.
-                            // 
-
-                            IDebugBoundBreakpoint2 [] boundBreakpoints = new IDebugBoundBreakpoint2 [] { boundBreakpoint };
-
-                            IEnumDebugBoundBreakpoints2 enumeratedBoundBreakpoint = new DebuggeeBreakpointBound.Enumerator (boundBreakpoints);
-
-                            Engine.Broadcast (new DebugEngineEvent.BreakpointHit (enumeratedBoundBreakpoint), NativeProgram.DebugProgram, stoppedThread);
-                          }
+                          Engine.Broadcast (new DebugEngineEvent.BreakpointHit (enumeratedBoundBreakpoint), NativeProgram.DebugProgram, stoppedThread);
                         }
                       }
-
-                      break;
                     }
 
-                    case "end-stepping-range":
-                    case "function-finished":
+                    break;
+                  }
+
+                  case "end-stepping-range":
+                  case "function-finished":
+                  {
+                    Engine.Broadcast (new DebugEngineEvent.StepComplete (), NativeProgram.DebugProgram, stoppedThread);
+
+                    break;
+                  }
+
+                  case "signal-received":
+                  {
+                    string signalName = asyncRecord ["signal-name"] [stoppedIndex].GetString ();
+
+                    string signalMeaning = asyncRecord ["signal-meaning"] [stoppedIndex].GetString ();
+
+                    switch (signalName)
                     {
-                      Engine.Broadcast (new DebugEngineEvent.StepComplete (), NativeProgram.DebugProgram, stoppedThread);
-
-                      break;
-                    }
-
-                    case "signal-received":
-                    {
-                      string signalName = asyncRecord ["signal-name"] [stoppedIndex].GetString ();
-
-                      string signalMeaning = asyncRecord ["signal-meaning"] [stoppedIndex].GetString ();
-
-                      switch (signalName)
+                      case null:
+                      case "SIGINT":
                       {
-                        case null:
-                        case "SIGINT":
+                        if (!ignoreInterruptSignal)
                         {
-                          if (!ignoreInterruptSignal)
-                          {
-                            Engine.Broadcast (new DebugEngineEvent.Break (), NativeProgram.DebugProgram, stoppedThread);
-                          }
-
-                          break;
+                          Engine.Broadcast (new DebugEngineEvent.Break (), NativeProgram.DebugProgram, stoppedThread);
                         }
 
-                        default:
-                        {
-                          StringBuilder signalDescription = new StringBuilder ();
-
-                          signalDescription.AppendFormat ("{0} ({1})", signalName, signalMeaning);
-
-                          if (asyncRecord.HasField ("frame"))
-                          {
-                            MiResultValueTuple frameTuple = asyncRecord ["frame"] [0] as MiResultValueTuple;
-
-                            if (frameTuple.HasField ("addr"))
-                            {
-                              string address = frameTuple ["addr"] [0].GetString ();
-
-                              signalDescription.AppendFormat (" at {0}", address);
-                            }
-
-                            if (frameTuple.HasField ("func"))
-                            {
-                              string function = frameTuple ["func"] [0].GetString ();
-
-                              signalDescription.AppendFormat (" ({0})", function);
-                            }
-                          }
-
-                          bool canContinue = true;
-
-                          DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, signalName, signalDescription.ToString (), 0x80000000, canContinue);
-
-                          Engine.Broadcast (exception, NativeProgram.DebugProgram, stoppedThread);
-
-                          break;
-                        }
+                        break;
                       }
 
-                      break;
-                    }
-
-                    case "read-watchpoint-trigger":
-                    case "access-watchpoint-trigger":
-                    case "location-reached":
-                    case "watchpoint-scope":
-                    case "solib-event":
-                    case "fork":
-                    case "vfork":
-                    case "syscall-entry":
-                    case "exec":
-                    {
-                      Engine.Broadcast (new DebugEngineEvent.Break (), NativeProgram.DebugProgram, stoppedThread);
-
-                      break;
-                    }
-
-                    case "exited":
-                    case "exited-normally":
-                    case "exited-signalled":
-                    {
-                      // 
-                      // React to program termination, but defer this so it doesn't consume the async output thread.
-                      // 
-
-                      ThreadPool.QueueUserWorkItem (delegate (object state)
+                      default:
                       {
-                        try
-                        {
-                          LoggingUtils.RequireOk (Engine.Detach (NativeProgram.DebugProgram));
-                        }
-                        catch (Exception e)
-                        {
-                          LoggingUtils.HandleException (e);
-                        }
-                      });
+                        StringBuilder signalDescription = new StringBuilder ();
 
-                      break;
+                        signalDescription.AppendFormat ("{0} ({1})", signalName, signalMeaning);
+
+                        if (asyncRecord.HasField ("frame"))
+                        {
+                          MiResultValueTuple frameTuple = asyncRecord ["frame"] [0] as MiResultValueTuple;
+
+                          if (frameTuple.HasField ("addr"))
+                          {
+                            string address = frameTuple ["addr"] [0].GetString ();
+
+                            signalDescription.AppendFormat (" at {0}", address);
+                          }
+
+                          if (frameTuple.HasField ("func"))
+                          {
+                            string function = frameTuple ["func"] [0].GetString ();
+
+                            signalDescription.AppendFormat (" ({0})", function);
+                          }
+                        }
+
+                        bool canContinue = true;
+
+                        DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, signalName, signalDescription.ToString (), 0x80000000, canContinue);
+
+                        Engine.Broadcast (exception, NativeProgram.DebugProgram, stoppedThread);
+
+                        break;
+                      }
                     }
+
+                    break;
+                  }
+
+                  case "read-watchpoint-trigger":
+                  case "access-watchpoint-trigger":
+                  case "location-reached":
+                  case "watchpoint-scope":
+                  case "solib-event":
+                  case "fork":
+                  case "vfork":
+                  case "syscall-entry":
+                  case "exec":
+                  {
+                    Engine.Broadcast (new DebugEngineEvent.Break (), NativeProgram.DebugProgram, stoppedThread);
+
+                    break;
+                  }
+
+                  case "exited":
+                  case "exited-normally":
+                  case "exited-signalled":
+                  {
+                    // 
+                    // React to program termination, but defer this so it doesn't consume the async output thread.
+                    // 
+
+                    ThreadPool.QueueUserWorkItem (delegate (object state)
+                    {
+                      try
+                      {
+                        LoggingUtils.RequireOk (Engine.Detach (NativeProgram.DebugProgram));
+                      }
+                      catch (Exception e)
+                      {
+                        LoggingUtils.HandleException (e);
+                      }
+                    });
+
+                    break;
                   }
                 }
               }
@@ -1140,7 +1143,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                 if (!GdbClient.GetClientFeatureSupported ("breakpoint-notifications"))
                 {
-                  Engine.BreakpointManager.SetDirty ();
+                  Engine.BreakpointManager.SetDirty (true);
                 }
               }
               catch (Exception e)
@@ -1165,7 +1168,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                 if (!GdbClient.GetClientFeatureSupported ("breakpoint-notifications"))
                 {
-                  Engine.BreakpointManager.SetDirty ();
+                  Engine.BreakpointManager.SetDirty (true);
                 }
               }
               catch (Exception e)
@@ -1177,28 +1180,52 @@ namespace AndroidPlusPlus.VsDebugEngine
             }
 
             case "breakpoint-created":
-            case "breakpoint-deleted":
-            {
-              break;
-            }
-
             case "breakpoint-modified":
+            case "breakpoint-deleted":
             {
               try
               {
-                uint number = asyncRecord ["bkpt"] [0] ["number"] [0].GetUnsignedInt ();
+                IDebugPendingBreakpoint2 pendingBreakpoint = null;
 
-                DebuggeeBreakpointPending pendingBreakpoint = Engine.BreakpointManager.FindPendingBreakpoint (number);
+                if (asyncRecord.HasField ("bkpt"))
+                {
+                  MiResultValue breakpointData = asyncRecord ["bkpt"] [0];
+
+                  MiBreakpoint currentGdbBreakpoint = new MiBreakpoint (breakpointData.Values);
+
+                  pendingBreakpoint = Engine.BreakpointManager.FindPendingBreakpoint (currentGdbBreakpoint.ID);
+
+                  // If the breakpoint is unknown, this usually means it was bound externally to the IDE.
+                  /*if (pendingBreakpoint == null)
+                  {
+                    // 
+                    // CreatePendingBreakpoint always sets the dirty flag, so we need to reset this if it's handled immediately.
+                    // 
+
+                    DebugBreakpointRequest breakpointRequest = new DebugBreakpointRequest (currentGdbBreakpoint.Address);
+
+                    LoggingUtils.RequireOk (Engine.BreakpointManager.CreatePendingBreakpoint (breakpointRequest, out pendingBreakpoint));
+                  }*/
+                }
+                else if (asyncRecord.HasField ("id"))
+                {
+                  pendingBreakpoint = Engine.BreakpointManager.FindPendingBreakpoint (asyncRecord ["id"] [0].GetUnsignedInt ());
+                }
+
+                bool wasDirty = Engine.BreakpointManager.IsDirty ();
 
                 if (pendingBreakpoint != null)
                 {
-                  pendingBreakpoint.RefreshBoundBreakpoints ();
+                  DebuggeeBreakpointPending thisBreakpoint = pendingBreakpoint as DebuggeeBreakpointPending;
 
-                  pendingBreakpoint.RefreshErrorBreakpoints ();
+                  thisBreakpoint.RefreshBoundBreakpoints ();
+
+                  thisBreakpoint.RefreshErrorBreakpoints ();
                 }
-                else
+
+                if (wasDirty)
                 {
-                  Engine.BreakpointManager.SetDirty ();
+                  Engine.BreakpointManager.SetDirty (true);
                 }
               }
               catch (Exception e)
@@ -1232,40 +1259,41 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         string command = string.Format ("-interpreter-exec console \"info sharedlibrary\"");
 
-        MiResultRecord resultRecord = GdbClient.SendCommand (command);
-
-        MiResultRecord.RequireOk (resultRecord, command);
-
-        string pattern = "(?<from>0x[0-9a-fA-F]+)[ ]+(?<to>0x[0-9a-fA-F]+)[ ]+(?<syms>Yes|No)[ ]+(?<lib>[^ $]+)";
-
-        Regex regExMatcher = new Regex (pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-        for (int i = 0; i < resultRecord.Records.Count; ++i)
+        GdbClient.SendCommand (command, delegate (MiResultRecord resultRecord)
         {
-          MiStreamRecord record = resultRecord.Records [i];
+          MiResultRecord.RequireOk (resultRecord, command);
 
-          if (!record.Stream.StartsWith ("0x"))
+          string pattern = "(?<from>0x[0-9a-fA-F]+)[ ]+(?<to>0x[0-9a-fA-F]+)[ ]+(?<syms>Yes|No)[ ]+(?<lib>[^ $]+)";
+
+          Regex regExMatcher = new Regex (pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+          for (int i = 0; i < resultRecord.Records.Count; ++i)
           {
-            continue; // early rejection.
+            MiStreamRecord record = resultRecord.Records [i];
+
+            if (!record.Stream.StartsWith ("0x"))
+            {
+              continue; // early rejection.
+            }
+
+            string unescapedStream = Regex.Unescape (record.Stream);
+
+            Match regExLineMatch = regExMatcher.Match (unescapedStream);
+
+            if (regExLineMatch.Success)
+            {
+              ulong from = ulong.Parse (regExLineMatch.Result ("${from}").Substring (2), NumberStyles.HexNumber);
+
+              ulong to = ulong.Parse (regExLineMatch.Result ("${to}").Substring (2), NumberStyles.HexNumber);
+
+              bool syms = regExLineMatch.Result ("${syms}") == "Yes";
+
+              string lib = regExLineMatch.Result ("${lib}").Replace ("\r", "").Replace ("\n", "");
+
+              m_mappedSharedLibraries [lib] = new Tuple<ulong, ulong, bool> (from, to, syms);
+            }
           }
-
-          string unescapedStream = Regex.Unescape (record.Stream);
-
-          Match regExLineMatch = regExMatcher.Match (unescapedStream);
-
-          if (regExLineMatch.Success)
-          {
-            ulong from = ulong.Parse (regExLineMatch.Result ("${from}").Substring (2), NumberStyles.HexNumber);
-
-            ulong to = ulong.Parse (regExLineMatch.Result ("${to}").Substring (2), NumberStyles.HexNumber);
-
-            bool syms = regExLineMatch.Result ("${syms}") == "Yes";
-
-            string lib = regExLineMatch.Result ("${lib}").Replace ("\r", "").Replace ("\n", "");
-
-            m_mappedSharedLibraries [lib] = new Tuple<ulong, ulong, bool> (from, to, syms);
-          }
-        }
+        });
       }
       catch (Exception e)
       {

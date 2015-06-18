@@ -318,13 +318,23 @@ namespace AndroidPlusPlus.MsBuild.Common
         // Load a specified dependency file and convert any invalid (windows) paths, to escaped-posix.
         // 
 
+        if (string.IsNullOrWhiteSpace (dependencyFile))
+        {
+          throw new ArgumentNullException ("dependencyFile");
+        }
+
+        if (!File.Exists (dependencyFile))
+        {
+          throw new FileNotFoundException ("Could not find dependency file: " + dependencyFile);
+        }
+
         string dependencyFileTemp = dependencyFile + ".tmp";
 
         using (StreamReader reader = new StreamReader (dependencyFile))
         {
-          using (StreamWriter writer = new StreamWriter (dependencyFileTemp))
+          using (StreamWriter writer = new StreamWriter (dependencyFileTemp, false, Encoding.Unicode))
           {
-            StringBuilder builder = new StringBuilder ();
+            StringBuilder builder = new StringBuilder (2048);
 
             string line = reader.ReadLine ();
 
@@ -355,7 +365,11 @@ namespace AndroidPlusPlus.MsBuild.Common
 
               line = reader.ReadLine ();
             }
+
+            writer.Close ();
           }
+
+          reader.Close ();
         }
 
         File.Copy (dependencyFileTemp, dependencyFile, true);

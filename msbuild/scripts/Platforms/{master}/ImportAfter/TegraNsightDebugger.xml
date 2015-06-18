@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Rule xmlns="http://schemas.microsoft.com/build/2009/properties"
+      PageTemplate="debugger"
+      Name="AndroidDebugger"
+      DisplayName="Nsight Tegra Debugger"
+      Description="Nsight Tegra Debugger options">
+
+  <Rule.DataSource>
+    <DataSource Persistence="UserFile" />
+  </Rule.DataSource>
+  
+  <BoolProperty Name="AndroidAttach" DisplayName="Attach"
+                Description="Specifies whether the debugger should attempt to attach to an existing process when debugging starts." />
+  <EnumProperty Name="AndroidDebugMode" DisplayName="Debug Mode"
+                Description="Sets the type of code that will be debugged for this project.">
+    <EnumValue Name="java" DisplayName="Java code" />
+    <EnumValue Name="native" DisplayName="Native code" />
+    <EnumValue Name="all" DisplayName="Java and Native code" />
+  </EnumProperty>
+  <BoolProperty Name="AndroidLaunchSuspended" DisplayName="Suspend on Launch"
+                Description="Specifies if the application should be started in suspended mode so that entry-level functions can be debugged on native side. To enable this the underlying GDB must support load library notifications."/>
+  <StringProperty Name="OverrideAPKPath" DisplayName="Override APK Path"
+                  Description="Specifies the location of the APK that will be debugged instead of using the value from build.xml"
+                  Subtype="file" >
+    <StringProperty.ValueEditors>
+      <ValueEditor EditorType="DefaultStringPropertyEditor" DisplayName="&lt;Edit...&gt;"/>
+      <ValueEditor EditorType="DefaultFilePropertyEditor" DisplayName="&lt;Browse...&gt;">
+        <ValueEditor.Metadata>
+          <NameValuePair Name="Filters" Value="Android Application Package (*.apk) | *.apk" />
+        </ValueEditor.Metadata>
+      </ValueEditor>
+    </StringProperty.ValueEditors>
+  </StringProperty>
+  <StringListProperty Name="AdditionalGdbDirectories" DisplayName="Additional GDB Directories"
+                    Description="Source code directories, that cannot be added automatically by the build system. Non ndk-build projects only."
+                    Subtype="folder" />
+  <StringListProperty Name="AdditionalLibraryDirectories" DisplayName="Additional Library Symbols Directories"
+                      Description="Specifies one or more directories to search for library debug symbols."
+                      Subtype="folder" />
+  <StringProperty Name="BuildXmlPath" DisplayName="GDB Working Directory"
+                  Description="Path to the GDB working directory."
+                  Subtype="folder" />
+  <StringProperty Name="GdbSetupPath" DisplayName="gdb.setup File Folder"
+                  Description="Path to the gdb.setup file folder. If not specified, the default path will be used."
+                  Subtype="folder" />
+  <StringProperty Name="JavaSourceDir" DisplayName="Java Source Directory"
+                  Description="Path to the Java source code root folder.  Can be relative to $(ProjectDir) or absolute.  If empty then it will use the path from the Ant Build page.  If that page is disabled then 'src' relative to build.xml path. "
+                  Subtype="folder" />
+  <StringProperty Name="JavaClassesDir" DisplayName="Java Classes Directory"
+                  Description="Path to the Java classes folder.  Can be relative to $(ProjectDir) or absolute.  If empty then 'bin\classes' relative to build.xml path."
+                  Subtype="folder" />
+</Rule>

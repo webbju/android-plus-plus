@@ -167,14 +167,16 @@ namespace AndroidPlusPlus.Common
 
       LoggingUtils.PrintFunction ();
 
-      using (SyncRedirectProcess checkGdbServer = AndroidAdb.AdbCommand (m_gdbSetup.Process.HostDevice, "shell", string.Format ("ls {0}/gdbserver", m_gdbSetup.Process.NativeLibraryPath)))
+      string expectedPath = string.Format ("ls {0}/gdbserver", m_gdbSetup.Process.NativeLibraryPath);
+
+      using (SyncRedirectProcess checkGdbServer = AndroidAdb.AdbCommand (m_gdbSetup.Process.HostDevice, "shell", expectedPath))
       {
         int exitCode = checkGdbServer.StartAndWaitForExit (1000);
 
         if ((exitCode != 0) || checkGdbServer.StandardOutput.ToLower ().Contains ("no such file"))
         {
           // TODO: Push the required gdbserver binary, so we can attach to any app.
-          throw new InvalidOperationException (string.Format ("Could not locate 'gdbserver' binary on device ({0}).", m_gdbSetup.Process.HostDevice.ID));
+          throw new InvalidOperationException (string.Format ("Failed to locate required 'gdbserver' binary on device ({0}). Expected location: {1}.", m_gdbSetup.Process.HostDevice.ID, expectedPath));
         }
       }
     }

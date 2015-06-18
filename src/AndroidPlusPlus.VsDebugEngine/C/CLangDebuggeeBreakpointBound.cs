@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -68,7 +69,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         int handle = base.Delete ();
 
-        if (handle == DebugEngineConstants.E_BP_DELETED)
+        if (handle == Constants.E_BP_DELETED)
         {
           return handle;
         }
@@ -79,18 +80,19 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           string command = "-break-delete " + GdbBreakpoint.ID;
 
-          MiResultRecord resultRecord = debugger.GdbClient.SendCommand (command);
-
-          MiResultRecord.RequireOk (resultRecord, command);
+          debugger.GdbClient.SendCommand (command, delegate (MiResultRecord resultRecord)
+          {
+            MiResultRecord.RequireOk (resultRecord, command);
+          });
         });
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -110,7 +112,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         int handle = base.Enable (fEnable);
 
-        if (handle == DebugEngineConstants.E_BP_DELETED)
+        if (handle == Constants.E_BP_DELETED)
         {
           return handle;
         }
@@ -121,18 +123,19 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           string command = (m_breakpointEnabled ? "-break-enable " : "-break-disable ") + GdbBreakpoint.ID;
 
-          MiResultRecord resultRecord = debugger.GdbClient.SendCommand (command);
-
-          MiResultRecord.RequireOk (resultRecord, command);
+          debugger.GdbClient.SendCommand (command, delegate (MiResultRecord resultRecord)
+          {
+            MiResultRecord.RequireOk (resultRecord, command);
+          });
         });
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -152,7 +155,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         int handle = base.SetCondition (bpCondition);
 
-        if (handle == DebugEngineConstants.E_BP_DELETED)
+        if (handle == Constants.E_BP_DELETED)
         {
           return handle;
         }
@@ -182,25 +185,26 @@ namespace AndroidPlusPlus.VsDebugEngine
           {
             string command = string.Format ("-break-condition {0} \"{1}\"", GdbBreakpoint.ID, condition);
 
-            MiResultRecord resultRecord = debugger.GdbClient.SendCommand (command);
-
-            MiResultRecord.RequireOk (resultRecord, command);
+            debugger.GdbClient.SendCommand (command, delegate (MiResultRecord resultRecord)
+            {
+              MiResultRecord.RequireOk (resultRecord, command);
+            });
           });
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (NotImplementedException e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -220,7 +224,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         int handle = base.SetPassCount (bpPassCount);
 
-        if (handle == DebugEngineConstants.E_BP_DELETED)
+        if (handle == Constants.E_BP_DELETED)
         {
           return handle;
         }
@@ -253,24 +257,25 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           string command = string.Format ("-break-after {0} {1}", GdbBreakpoint.ID, passCount);
 
-          MiResultRecord resultRecord = debugger.GdbClient.SendCommand (command);
-
-          MiResultRecord.RequireOk (resultRecord, command);
+          debugger.GdbClient.SendCommand (command, delegate (MiResultRecord resultRecord)
+          {
+            MiResultRecord.RequireOk (resultRecord, command);
+          });
         });
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (NotImplementedException e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 

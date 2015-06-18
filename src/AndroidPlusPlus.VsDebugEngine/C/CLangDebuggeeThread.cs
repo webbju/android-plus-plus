@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -137,7 +138,7 @@ namespace AndroidPlusPlus.VsDebugEngine
             {
               command = string.Format ("-stack-info-depth --thread {0}", threadId);
 
-              resultRecord = debugger.GdbClient.SendCommand (command);
+              resultRecord = debugger.GdbClient.SendSyncCommand (command);
 
               MiResultRecord.RequireOk (resultRecord, command);
 
@@ -152,7 +153,7 @@ namespace AndroidPlusPlus.VsDebugEngine
             {
               command = string.Format ("-stack-list-frames --thread {0} {1} {2}", threadId, m_threadStackFrames.Count, depth - 1);
 
-              resultRecord = debugger.GdbClient.SendCommand (command);
+              resultRecord = debugger.GdbClient.SendSyncCommand (command);
 
               MiResultRecord.RequireOk (resultRecord, command);
 
@@ -218,7 +219,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           string command = string.Format ("-break-insert -t \"{0}\"", location);
 
-          MiResultRecord resultRecord = debugger.GdbClient.SendCommand (command);
+          MiResultRecord resultRecord = debugger.GdbClient.SendSyncCommand (command);
 
           MiResultRecord.RequireOk (resultRecord, command);
 
@@ -228,18 +229,18 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           command = string.Format ("-exec-jump --thread {0} \"{1}\"", m_threadId, location);
 
-          resultRecord = debugger.GdbClient.SendCommand (command);
+          resultRecord = debugger.GdbClient.SendSyncCommand (command);
 
           MiResultRecord.RequireOk (resultRecord, command);
         });
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 

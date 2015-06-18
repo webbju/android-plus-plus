@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -78,23 +79,23 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      if (CanAddPort () == DebugEngineConstants.S_OK)
+      if (CanAddPort () == Constants.S_OK)
       {
         string requestPortName;
 
         IEnumDebugPorts2 portListEnum;
 
-        if ((pRequest.GetPortName (out requestPortName) == DebugEngineConstants.S_OK) && (EnumPorts (out portListEnum) == DebugEngineConstants.S_OK))
+        if ((pRequest.GetPortName (out requestPortName) == Constants.S_OK) && (EnumPorts (out portListEnum) == Constants.S_OK))
         {
           foreach (IDebugPort2 registeredPort in m_registeredPorts)
           {
             string portName;
 
-            if ((registeredPort.GetPortName (out portName) == DebugEngineConstants.S_OK) && (portName == requestPortName))
+            if ((registeredPort.GetPortName (out portName) == Constants.S_OK) && (portName == requestPortName))
             {
               ppPort = registeredPort;
 
-              return DebugEngineConstants.S_OK;
+              return Constants.S_OK;
             }
           }
         }
@@ -102,7 +103,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       ppPort = null;
 
-      return DebugEngineConstants.E_FAIL;
+      return Constants.E_FAIL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -117,7 +118,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -145,7 +146,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       ppEnum = new DebugPortEnumerator (m_registeredPorts);
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -174,7 +175,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           {
             ppPort = registeredPort;
 
-            return DebugEngineConstants.S_OK;
+            return Constants.S_OK;
           }
         }
       }
@@ -182,10 +183,10 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
 
-      return DebugEngineConstants.E_PORTSUPPLIER_NO_PORT;
+      return Constants.E_PORTSUPPLIER_NO_PORT;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -202,7 +203,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       pguidPortSupplier = DebugEngineGuids.guidDebugPortSupplierID;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -219,7 +220,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       pbstrName = "Android++";
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -243,13 +244,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         m_registeredPorts.Remove (pPort as DebuggeePort);
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -277,7 +278,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -302,7 +303,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
     }
 
@@ -342,10 +343,10 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

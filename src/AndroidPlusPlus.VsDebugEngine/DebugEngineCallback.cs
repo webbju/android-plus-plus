@@ -10,6 +10,7 @@ using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -151,7 +152,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       // Process any registered function handler before passing the event to AD7 callback.
       // 
 
-      int handle = DebugEngineConstants.E_NOTIMPL;
+      int handle = Constants.E_NOTIMPL;
 
       try
       {
@@ -162,7 +163,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           handle = eventCallback (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
         }
 
-        if (handle != DebugEngineConstants.E_NOTIMPL)
+        if (handle != Constants.E_NOTIMPL)
         {
           LoggingUtils.RequireOk (handle);
         }
@@ -179,7 +180,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           handle = m_ad7EventCallback.Event (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
 
-          if (handle != DebugEngineConstants.E_NOTIMPL)
+          if (handle != Constants.E_NOTIMPL)
           {
             LoggingUtils.RequireOk (handle);
           }
@@ -231,7 +232,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -242,7 +243,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -253,7 +254,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -264,7 +265,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -279,7 +280,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -290,7 +291,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -301,7 +302,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -312,7 +313,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -323,7 +324,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -334,7 +335,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -345,7 +346,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -356,7 +357,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -367,7 +368,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -378,7 +379,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -389,7 +390,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -72,7 +73,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       m_codeContext = codeContext;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -100,7 +101,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         throw new NotImplementedException ();
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (NotImplementedException e)
       {
@@ -108,7 +109,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         matchIndex = 0;
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
       catch (Exception e)
       {
@@ -116,7 +117,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         matchIndex = 0;
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -152,7 +153,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -160,7 +161,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         enumCodeContexts = null;
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -179,7 +180,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       document = null;
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -198,7 +199,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       languageName = DebugEngineGuids.GetLanguageName (languageGuid);
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -302,13 +303,13 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ();
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -334,7 +335,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
     }
 
@@ -361,13 +362,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         endPosition [0].dwColumn = m_endPosition.dwColumn;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -385,7 +386,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       ppDocContext = null;
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

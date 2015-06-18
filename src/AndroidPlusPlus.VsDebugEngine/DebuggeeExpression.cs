@@ -7,10 +7,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
-
 using Microsoft.VisualStudio.Debugger.Interop;
-
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -106,13 +105,13 @@ namespace AndroidPlusPlus.VsDebugEngine
           }
         });
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -136,10 +135,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (result == null)
         {
-          return DebugEngineConstants.E_FAIL;
+          return Constants.E_FAIL;
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -147,7 +146,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         result = null;
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -171,7 +170,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
     }
 

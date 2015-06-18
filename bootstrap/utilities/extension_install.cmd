@@ -4,6 +4,7 @@
 
 @set VS_VERSION=%1
 @set EXTENSION_PATH=%2
+@set QUIET=%3
 
 @if %VS_VERSION% == 2010 (
   @echo Installing VS2010 extension
@@ -26,7 +27,7 @@
 @goto exit
 
 :install
-%VSIX_PATH% /admin %EXTENSION_PATH%
+%VSIX_PATH% /admin %QUIET% %EXTENSION_PATH%
 @if %ERRORLEVEL% == 0 (
   @echo ** %VSIX_PATH% returned %ERRORLEVEL% [success]
   @goto refreshextensions

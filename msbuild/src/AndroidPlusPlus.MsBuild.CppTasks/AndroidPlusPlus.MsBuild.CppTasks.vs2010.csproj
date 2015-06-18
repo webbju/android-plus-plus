@@ -54,17 +54,17 @@
     <Compile Include="..\..\..\src\AndroidPlusPlus.Common\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Tasks\GccBuildId.cs" />
-    <Compile Include="Tasks\GccLink.cs" />
-    <Compile Include="Tasks\GccCompile.cs" />
-    <Compile Include="Tasks\GccLib.cs" />
+    <Compile Include="Tasks\NativeBuildId.cs" />
+    <Compile Include="Tasks\NativeLink.cs" />
+    <Compile Include="Tasks\NativeCompile.cs" />
+    <Compile Include="Tasks\NativeLib.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="Tasks\GccStrip.cs" />
+    <Compile Include="Tasks\NativeStrip.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\src\Key.snk">

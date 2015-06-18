@@ -8,6 +8,7 @@ using System.ComponentModel.Composition;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
+using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Project;
 using Microsoft.VisualStudio.Project.Utilities;
 using Microsoft.VisualStudio.Project.Properties;

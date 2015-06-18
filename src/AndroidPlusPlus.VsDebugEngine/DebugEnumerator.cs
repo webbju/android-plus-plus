@@ -5,8 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -64,7 +64,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       ppEnum = null;
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -79,7 +79,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       pcelt = (uint)m_data.Length;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -109,7 +109,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         m_position = 0;
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
     }
 
@@ -136,13 +136,13 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       lock (this)
       {
-        int hr = DebugEngineConstants.S_OK;
+        int hr = Constants.S_OK;
 
         celtFetched = (uint)m_data.Length - m_position;
 
         if (celt > celtFetched)
         {
-          hr = DebugEngineConstants.S_FALSE;
+          hr = Constants.S_FALSE;
         }
         else if (celt < celtFetched)
         {

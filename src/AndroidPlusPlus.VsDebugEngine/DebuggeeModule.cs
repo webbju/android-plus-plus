@@ -6,10 +6,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-
 using Microsoft.VisualStudio.Debugger.Interop;
-
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -203,13 +202,13 @@ namespace AndroidPlusPlus.VsDebugEngine
           infoArray [0].dwValidFields |= enum_MODULE_INFO_FIELDS.MIF_FLAGS;
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -224,7 +223,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       debugMessage = string.Empty;
 
-      return DebugEngineConstants.E_NOTIMPL;
+      return Constants.E_NOTIMPL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -263,13 +262,13 @@ namespace AndroidPlusPlus.VsDebugEngine
           }
         }
 
-        return DebugEngineConstants.S_OK;
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_FAIL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -294,7 +293,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        return DebugEngineConstants.E_NOTIMPL;
+        return Constants.E_NOTIMPL;
       }
     }
 
@@ -313,7 +312,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       isUserCode = (m_userCode) ? 1 : 0;
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -331,7 +330,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       m_userCode = (isUserCode == 1);
 
-      return DebugEngineConstants.S_OK;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
