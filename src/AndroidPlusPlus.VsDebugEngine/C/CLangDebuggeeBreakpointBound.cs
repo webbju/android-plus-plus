@@ -80,9 +80,10 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           string command = "-break-delete " + GdbBreakpoint.ID;
 
-          MiResultRecord resultRecord = debugger.GdbClient.SendCommand (command);
-
-          MiResultRecord.RequireOk (resultRecord, command);
+          debugger.GdbClient.SendCommand (command, delegate (MiResultRecord resultRecord)
+          {
+            MiResultRecord.RequireOk (resultRecord, command);
+          });
         });
 
         return Constants.S_OK;
@@ -122,9 +123,10 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           string command = (m_breakpointEnabled ? "-break-enable " : "-break-disable ") + GdbBreakpoint.ID;
 
-          MiResultRecord resultRecord = debugger.GdbClient.SendCommand (command);
-
-          MiResultRecord.RequireOk (resultRecord, command);
+          debugger.GdbClient.SendCommand (command, delegate (MiResultRecord resultRecord)
+          {
+            MiResultRecord.RequireOk (resultRecord, command);
+          });
         });
 
         return Constants.S_OK;
@@ -183,9 +185,10 @@ namespace AndroidPlusPlus.VsDebugEngine
           {
             string command = string.Format ("-break-condition {0} \"{1}\"", GdbBreakpoint.ID, condition);
 
-            MiResultRecord resultRecord = debugger.GdbClient.SendCommand (command);
-
-            MiResultRecord.RequireOk (resultRecord, command);
+            debugger.GdbClient.SendCommand (command, delegate (MiResultRecord resultRecord)
+            {
+              MiResultRecord.RequireOk (resultRecord, command);
+            });
           });
         }
 
@@ -254,9 +257,10 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           string command = string.Format ("-break-after {0} {1}", GdbBreakpoint.ID, passCount);
 
-          MiResultRecord resultRecord = debugger.GdbClient.SendCommand (command);
-
-          MiResultRecord.RequireOk (resultRecord, command);
+          debugger.GdbClient.SendCommand (command, delegate (MiResultRecord resultRecord)
+          {
+            MiResultRecord.RequireOk (resultRecord, command);
+          });
         });
 
         return Constants.S_OK;

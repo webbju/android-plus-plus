@@ -116,6 +116,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
+      Exception rethrowable = null;
+
       try
       {
         if (AttachedEngine == null)
@@ -133,7 +135,16 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
+        rethrowable = e;
+
         return Constants.E_FAIL;
+      }
+      finally
+      {
+        if (rethrowable != null)
+        {
+          throw rethrowable;
+        }
       }
     }
 
@@ -148,6 +159,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       // 
 
       LoggingUtils.PrintFunction ();
+
+      Exception rethrowable = null;
 
       try
       {
@@ -166,7 +179,16 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
+        rethrowable = e;
+
         return Constants.E_FAIL;
+      }
+      finally
+      {
+        if (rethrowable != null)
+        {
+          throw rethrowable;
+        }
       }
     }
 
@@ -181,6 +203,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       // 
 
       LoggingUtils.PrintFunction ();
+
+      Exception rethrowable = null;
 
       try
       {
@@ -199,7 +223,16 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
+        rethrowable = e;
+
         return Constants.E_FAIL;
+      }
+      finally
+      {
+        if (rethrowable != null)
+        {
+          throw rethrowable;
+        }
       }
     }
 
@@ -214,6 +247,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       // 
 
       LoggingUtils.PrintFunction ();
+
+      Exception rethrowable = null;
 
       try
       {
@@ -232,7 +267,16 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
+        rethrowable = e;
+
         return Constants.E_FAIL;
+      }
+      finally
+      {
+        if (rethrowable != null)
+        {
+          throw rethrowable;
+        }
       }
     }
 
@@ -247,6 +291,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       // 
 
       LoggingUtils.PrintFunction ();
+
+      Exception rethrowable = null;
 
       try
       {
@@ -263,7 +309,16 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
+        rethrowable = e;
+
         return Constants.E_FAIL;
+      }
+      finally
+      {
+        if (rethrowable != null)
+        {
+          throw rethrowable;
+        }
       }
     }
 

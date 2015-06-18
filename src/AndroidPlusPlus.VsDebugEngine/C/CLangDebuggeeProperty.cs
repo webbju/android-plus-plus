@@ -389,7 +389,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         string command = string.Format ("-data-evaluate-expression --thread {0} --frame {1} --language c \"sizeof({2})\"", stackThreadId, (m_stackFrame as CLangDebuggeeStackFrame).StackLevel, m_expression);
 
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendSyncCommand (command);
 
         MiResultRecord.RequireOk (resultRecord, command);
 
@@ -426,7 +426,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         string command = string.Format ("-var-assign \"{0}\" \"{1}\"", m_gdbVariable.Name, value);
 
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendSyncCommand (command);
 
         MiResultRecord.RequireOk (resultRecord, command);
 

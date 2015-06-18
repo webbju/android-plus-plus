@@ -91,6 +91,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
+      Exception rethrowable = null;
+
       try
       {
         m_debugger.Engine.Broadcast (new JavaLangDebuggerEvent.AttachClient (), DebugProgram, null);
@@ -101,7 +103,16 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
+        rethrowable = e;
+
         return Constants.E_FAIL;
+      }
+      finally
+      {
+        if (rethrowable != null)
+        {
+          throw rethrowable;
+        }
       }
     }
 
@@ -124,6 +135,8 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
+      Exception rethrowable = null;
+
       try
       {
         m_debugger.Engine.Broadcast (new JavaLangDebuggerEvent.StopClient (), DebugProgram, null);
@@ -134,7 +147,16 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
+        rethrowable = e;
+
         return Constants.E_FAIL;
+      }
+      finally
+      {
+        if (rethrowable != null)
+        {
+          throw rethrowable;
+        }
       }
     }
 
@@ -145,6 +167,8 @@ namespace AndroidPlusPlus.VsDebugEngine
     public int Continue (IDebugThread2 pThread)
     {
       LoggingUtils.PrintFunction ();
+
+      Exception rethrowable = null;
 
       try
       {
@@ -159,7 +183,16 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
+        rethrowable = e;
+
         return Constants.E_FAIL;
+      }
+      finally
+      {
+        if (rethrowable != null)
+        {
+          throw rethrowable;
+        }
       }
     }
 
@@ -171,6 +204,8 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
+      Exception rethrowable = null;
+
       try
       {
         m_debugger.Engine.Broadcast (new JavaLangDebuggerEvent.DetachClient (), DebugProgram, null);
@@ -181,7 +216,16 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
+        rethrowable = e;
+
         return Constants.E_FAIL;
+      }
+      finally
+      {
+        if (rethrowable != null)
+        {
+          throw rethrowable;
+        }
       }
     }
 

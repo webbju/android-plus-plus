@@ -60,6 +60,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     protected readonly DebugEngine m_engine;
 
+    protected DebuggeeDocumentContext m_documentContext;
+
+    protected DebuggeeAddress m_address;
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -78,22 +82,38 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       m_engine = engine;
 
-      DocumentContext = documentContext;
+      m_documentContext = documentContext;
 
-      Address = address;
+      m_address = address;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public DebuggeeDocumentContext DocumentContext { get; protected set; }
+    public DebuggeeDocumentContext DocumentContext 
+    {
+      get
+      {
+        return m_documentContext;
+      }
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public DebuggeeAddress Address { get; set; }
+    public DebuggeeAddress Address 
+    {
+      get
+      {
+        return m_address;
+      }
+      set
+      {
+        m_address = value;
+      }
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -105,55 +125,46 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-#if false
         if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_MODULEURL) != 0)
         {
-          infoArray [0].bstrModuleUrl = "file://";
+          infoArray [0].bstrModuleUrl = "<module>";
 
           infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_MODULEURL;
         }
 
         if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION) != 0)
         {
-          infoArray [0].bstrFunction = "<unknown function>";
+          infoArray [0].bstrFunction = "<function>";
 
           infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION;
         }
 
         if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_FUNCTIONOFFSET) != 0)
         {
-          if (DocumentContext != null)
-          {
-            TEXT_POSITION [] startOffset = new TEXT_POSITION [1];
+          infoArray [0].posFunctionOffset.dwLine = 0;
 
-            TEXT_POSITION [] endOffset = new TEXT_POSITION [1];
+          infoArray [0].posFunctionOffset.dwColumn = 0;
 
-            LoggingUtils.RequireOk (DocumentContext.GetStatementRange (startOffset, endOffset));
-
-            infoArray [0].posFunctionOffset = startOffset [0];
-
-            infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_FUNCTIONOFFSET;
-          }
+          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_FUNCTIONOFFSET;
         }
-#endif
 
         if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS) != 0)
         {
-          infoArray [0].bstrAddress = Address.ToString ();
+          infoArray [0].bstrAddress = m_address.ToString ();
 
           infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESS;
         }
 
         if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSOFFSET) != 0)
         {
-          infoArray [0].bstrAddressOffset = Address.ToString ();
+          infoArray [0].bstrAddressOffset = "0x0";
 
           infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSOFFSET;
         }
 
         if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSABSOLUTE) != 0)
         {
-          infoArray [0].bstrAddressAbsolute = Address.ToString ();
+          infoArray [0].bstrAddressAbsolute = m_address.ToString ();
 
           infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSABSOLUTE;
         }
@@ -188,7 +199,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        DebuggeeAddress offsetAddress = Address.Add (count);
+        DebuggeeAddress offsetAddress = m_address.Add (count);
 
         offsetAddressContext = new DebuggeeCodeContext (m_engine, DocumentContext, offsetAddress);
 
@@ -218,7 +229,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        DebuggeeAddress offsetAddress = Address.Subtract (count);
+        DebuggeeAddress offsetAddress = m_address.Subtract (count);
 
         offsetAddressContext = new DebuggeeCodeContext (m_engine, DocumentContext, offsetAddress);
 
@@ -254,6 +265,14 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new ArgumentException ("Comparing contexts of different sizes.");
         }
 
+        // 
+        // Get the context info for the current object.
+        // 
+
+        CONTEXT_INFO [] currentContextInfo = new CONTEXT_INFO [1];
+
+        LoggingUtils.RequireOk (GetInfo (enum_CONTEXT_INFO_FIELDS.CIF_ALLFIELDS, currentContextInfo));
+
         for (uint i = 0; i < compareToLength; ++i)
         {
           DebuggeeCodeContext compareTo = compareToItems [i] as DebuggeeCodeContext;
@@ -262,6 +281,10 @@ namespace AndroidPlusPlus.VsDebugEngine
           {
             continue;
           }
+
+          CONTEXT_INFO [] compareToInfo = new CONTEXT_INFO [1];
+
+          LoggingUtils.RequireOk (compareTo.GetInfo (enum_CONTEXT_INFO_FIELDS.CIF_ALLFIELDS, compareToInfo));
 
           if (!DebugEngine.ReferenceEquals (m_engine, compareTo.m_engine))
           {
@@ -274,35 +297,35 @@ namespace AndroidPlusPlus.VsDebugEngine
           {
             case enum_CONTEXT_COMPARE.CONTEXT_EQUAL:
             {
-              comparisonResult = (Address.CompareTo (compareTo.Address) == 0);
+              comparisonResult = (currentContextInfo [0].bstrAddressAbsolute.CompareTo (compareToInfo [0].bstrAddressAbsolute) == 0);
 
               break;
             }
 
             case enum_CONTEXT_COMPARE.CONTEXT_LESS_THAN:
             {
-              comparisonResult = (Address.CompareTo (compareTo.Address) < 0);
+              comparisonResult = (currentContextInfo [0].bstrAddressAbsolute.CompareTo (compareToInfo [0].bstrAddressAbsolute) < 0);
 
               break;
             }
 
             case enum_CONTEXT_COMPARE.CONTEXT_GREATER_THAN:
             {
-              comparisonResult = (Address.CompareTo (compareTo.Address) > 0);
+              comparisonResult = (currentContextInfo [0].bstrAddressAbsolute.CompareTo (compareToInfo [0].bstrAddressAbsolute) > 0);
 
               break;
             }
 
             case enum_CONTEXT_COMPARE.CONTEXT_LESS_THAN_OR_EQUAL:
             {
-              comparisonResult = (Address.CompareTo (compareTo.Address) <= 0);
+              comparisonResult = (currentContextInfo [0].bstrAddressAbsolute.CompareTo (compareToInfo [0].bstrAddressAbsolute) <= 0);
 
               break;
             }
 
             case enum_CONTEXT_COMPARE.CONTEXT_GREATER_THAN_OR_EQUAL:
             {
-              comparisonResult = (Address.CompareTo (compareTo.Address) >= 0);
+              comparisonResult = (currentContextInfo [0].bstrAddressAbsolute.CompareTo (compareToInfo [0].bstrAddressAbsolute) >= 0);
 
               break;
             }
@@ -314,11 +337,21 @@ namespace AndroidPlusPlus.VsDebugEngine
               break;
             }
 
-            case enum_CONTEXT_COMPARE.CONTEXT_SAME_SCOPE:
-              // Fallthrough.
             case enum_CONTEXT_COMPARE.CONTEXT_SAME_FUNCTION:
-              // Fallthrough.
+            {
+              comparisonResult = (currentContextInfo [0].bstrFunction.CompareTo (compareToInfo [0].bstrFunction) == 0);
+
+              break;
+            }
+
             case enum_CONTEXT_COMPARE.CONTEXT_SAME_MODULE:
+            {
+              comparisonResult = (currentContextInfo [0].bstrModuleUrl.CompareTo (compareToInfo [0].bstrModuleUrl) == 0);
+
+              break;
+            }
+
+            case enum_CONTEXT_COMPARE.CONTEXT_SAME_SCOPE:
               // Fallthrough.
             default:
             {
@@ -368,9 +401,24 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      contextName = Address.ToString ();
+      try
+      {
+        CONTEXT_INFO [] contextInfoArray = new CONTEXT_INFO [1];
 
-      return Constants.S_OK;
+        LoggingUtils.RequireOk (GetInfo (enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSABSOLUTE, contextInfoArray));
+
+        contextName = contextInfoArray [0].bstrAddressAbsolute;
+
+        return Constants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        contextName = string.Empty;
+
+        return Constants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

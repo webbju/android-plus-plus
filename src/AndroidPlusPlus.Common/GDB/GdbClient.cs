@@ -108,11 +108,12 @@ namespace AndroidPlusPlus.Common
         {
           string command = string.Format ("-interpreter-exec console \"handle {0} {1}\"", Name, shouldStop ? "stop" : "nostop");
 
-          MiResultRecord resultRecord = m_gdbClient.SendCommand (command);
+          m_gdbClient.SendCommand (command, delegate (MiResultRecord resultRecord)
+          {
+            MiResultRecord.RequireOk (resultRecord, command);
 
-          MiResultRecord.RequireOk (resultRecord, command);
-
-          ShouldStop = shouldStop;
+            ShouldStop = shouldStop;
+          });
         }
       }
 
@@ -122,11 +123,12 @@ namespace AndroidPlusPlus.Common
         {
           string command = string.Format ("-interpreter-exec console \"handle {0} {1}\"", Name, shouldPassToProgram ? "pass" : "nopass");
 
-          MiResultRecord resultRecord = m_gdbClient.SendCommand (command);
+          m_gdbClient.SendCommand (command, delegate (MiResultRecord resultRecord)
+          {
+            MiResultRecord.RequireOk (resultRecord, command);
 
-          MiResultRecord.RequireOk (resultRecord, command);
-
-          ShouldPassToProgram = shouldPassToProgram;
+            ShouldPassToProgram = shouldPassToProgram;
+          });
         }
       }
 
@@ -292,17 +294,18 @@ namespace AndroidPlusPlus.Common
 
       try
       {
-        MiResultRecord resultRecord = SendCommand ("-list-features");
-
-        MiResultRecord.RequireOk (resultRecord, "-list-features");
-
-        if (resultRecord.HasField ("features"))
+        SendCommand ("-list-features", delegate (MiResultRecord resultRecord)
         {
-          foreach (MiResultValue feature in resultRecord ["features"] [0].Values)
+          MiResultRecord.RequireOk (resultRecord, "-list-features");
+
+          if (resultRecord.HasField ("features"))
           {
-            m_gdbSupportedClientMiFeatures.Add (feature.GetString ());
+            foreach (MiResultValue feature in resultRecord ["features"] [0].Values)
+            {
+              m_gdbSupportedClientMiFeatures.Add (feature.GetString ());
+            }
           }
-        }
+        });
       }
       catch (Exception e)
       {
@@ -319,37 +322,41 @@ namespace AndroidPlusPlus.Common
       {
         string command = string.Format ("-interpreter-exec console \"info signals\"");
 
-        MiResultRecord resultRecord = SendCommand (command);
-
-        MiResultRecord.RequireOk (resultRecord, command);
-
-        string pattern = @"(?<sig>[^ ]+)[ ]+(?<stop>[^\\t]+)\\t(?<print>[^\\t]+)\\t(?<pass>[^\\t]+)\\t\\t(?<desc>[^\\]+)";
-
-        Regex regExMatcher = new Regex (pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-        for (int i = 2; i < resultRecord.Records.Count; ++i) // Skip the first rows (2) of headers
+        SendCommand (command, delegate (MiResultRecord resultRecord)
         {
-          MiStreamRecord record = resultRecord.Records [i];
+          MiResultRecord.RequireOk (resultRecord, command);
 
-          Match regExLineMatch = regExMatcher.Match (record.Stream);
+          string pattern = @"(?<sig>[^ ]+)[ ]+(?<stop>[^\\t]+)\\t(?<print>[^\\t]+)\\t(?<pass>[^\\t]+)\\t\\t(?<desc>[^\\]+)";
 
-          if (regExLineMatch.Success)
+          Regex regExMatcher = new Regex (pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+          for (int i = 2; i < resultRecord.Records.Count; ++i) // Skip the first rows (2) of headers
           {
-            string sig = regExLineMatch.Result ("${sig}");
+            MiStreamRecord record = resultRecord.Records [i];
 
-            bool stop = regExLineMatch.Result ("${stop}").Equals ("Yes");
+            Match regExLineMatch = regExMatcher.Match (record.Stream);
 
-            bool print = regExLineMatch.Result ("${print}").Equals ("Yes");
+            if (regExLineMatch.Success)
+            {
+              string sig = regExLineMatch.Result ("${sig}");
 
-            bool passToProgram = regExLineMatch.Result ("${pass}").Equals ("Yes");
+              bool stop = regExLineMatch.Result ("${stop}").Equals ("Yes");
 
-            string desc = regExLineMatch.Result ("${desc}");
+              bool print = regExLineMatch.Result ("${print}").Equals ("Yes");
 
-            Signal signal = new Signal (this, sig, desc, stop, passToProgram);
+              bool passToProgram = regExLineMatch.Result ("${pass}").Equals ("Yes");
 
-            m_gdbSupportedClientSignals.Add (sig, signal);
+              string desc = regExLineMatch.Result ("${desc}");
+
+              Signal signal = new Signal (this, sig, desc, stop, passToProgram);
+
+              lock (m_gdbSupportedClientSignals)
+              {
+                m_gdbSupportedClientSignals.Add (sig, signal);
+              }
+            }
           }
-        }
+        });
       }
       catch (Exception e)
       {
@@ -371,9 +378,10 @@ namespace AndroidPlusPlus.Common
       {
         string command = "-gdb-exit";
 
-        MiResultRecord resultRecord = SendCommand (command);
-
-        MiResultRecord.RequireOk (resultRecord, command);
+        SendCommand (command, delegate (MiResultRecord resultRecord)
+        {
+          MiResultRecord.RequireOk (resultRecord, command);
+        });
       }
       catch (Exception e)
       {
@@ -511,7 +519,7 @@ namespace AndroidPlusPlus.Common
       {
         string command = "-file-exec-and-symbols " + PathUtils.SantiseWindowsPath (cachedAppProcess);
 
-        MiResultRecord resultRecord = SendCommand (command);
+        MiResultRecord resultRecord = SendSyncCommand (command);
 
         MiResultRecord.RequireOk (resultRecord, command);
       }
@@ -528,9 +536,11 @@ namespace AndroidPlusPlus.Common
 
       try
       {
+        int timeout = 60000; // 60 seconds
+
         string command = string.Format ("-target-select remote {0}:{1}", m_gdbSetup.Host, m_gdbSetup.Port);
 
-        MiResultRecord resultRecord = SendCommand (command, 60000);
+        MiResultRecord resultRecord = SendSyncCommand (command, timeout);
 
         MiResultRecord.RequireOk (resultRecord, command);
 
@@ -551,7 +561,7 @@ namespace AndroidPlusPlus.Common
       {
         string command = "-list-target-features";
 
-        MiResultRecord resultRecord = SendCommand (command);
+        MiResultRecord resultRecord = SendSyncCommand (command);
 
         MiResultRecord.RequireOk (resultRecord, command);
 
@@ -560,6 +570,37 @@ namespace AndroidPlusPlus.Common
           foreach (MiResultValue feature in resultRecord ["features"] [0].Values)
           {
             m_gdbSupportedTargetMiFeatures.Add (feature.GetString ());
+          }
+        }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        throw;
+      }
+
+      // 
+      // Evaluate target's registers (and their names).
+      // 
+
+      try
+      {
+        string command = "-data-list-register-names";
+
+        MiResultRecord resultRecord = SendSyncCommand (command);
+
+        MiResultRecord.RequireOk (resultRecord, command);
+
+        if (resultRecord.HasField ("register-names"))
+        {
+          MiResultValue registerNames = resultRecord ["register-names"] [0];
+
+          for (int i = 0; i < registerNames.Values.Count; ++i)
+          {
+            string register = registerNames [i].GetString ();
+
+            m_registerIdMapping.Add ((uint) i, register);
           }
         }
       }
@@ -583,9 +624,10 @@ namespace AndroidPlusPlus.Common
       {
         string command = "-target-detach";
 
-        MiResultRecord resultRecord = SendCommand (command);
-
-        MiResultRecord.RequireOk (resultRecord, command);
+        SendCommand (command, delegate (MiResultRecord resultRecord)
+        {
+          MiResultRecord.RequireOk (resultRecord, command);
+        });
       }
       catch (Exception e)
       {
@@ -611,11 +653,21 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      string command = "-exec-interrupt";
+      try
+      {
+        string command = "-exec-interrupt";
 
-      MiResultRecord resultRecord = SendCommand (command);
+        SendCommand (command, delegate (MiResultRecord resultRecord)
+        {
+          MiResultRecord.RequireOk (resultRecord, command);
+        });
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
 
-      MiResultRecord.RequireOk (resultRecord, command);
+        throw;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -626,11 +678,21 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      string command = "-exec-continue";
+      try
+      {
+        string command = "-exec-continue";
 
-      MiResultRecord resultRecord = SendCommand (command);
+        SendCommand (command, delegate (MiResultRecord resultRecord)
+        {
+          MiResultRecord.RequireOk (resultRecord, command);
+        });
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
 
-      MiResultRecord.RequireOk (resultRecord, command);
+        throw;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -649,18 +711,16 @@ namespace AndroidPlusPlus.Common
       {
         string command = "-interpreter-exec console \"kill\"";
 
-        MiResultRecord resultRecord = SendCommand (command);
-
-        MiResultRecord.RequireOk (resultRecord, command);
+        SendCommand (command, delegate (MiResultRecord resultRecord)
+        {
+          MiResultRecord.RequireOk (resultRecord, command);
+        });
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        if (!e.Message.Contains ("The program is not being run"))
-        {
-          throw;
-        }
+        throw;
       }
     }
 
@@ -685,9 +745,10 @@ namespace AndroidPlusPlus.Common
 
           string command = string.Format ("-exec-step --thread {0} {1}", threadId, ((reverse) ? "--reverse" : ""));
 
-          MiResultRecord resultRecord = SendCommand (command);
-
-          MiResultRecord.RequireOk (resultRecord, command);
+          SendCommand (command, delegate (MiResultRecord resultRecord)
+          {
+            MiResultRecord.RequireOk (resultRecord, command);
+          });
 
           break;
         }
@@ -701,9 +762,10 @@ namespace AndroidPlusPlus.Common
 
           string command = string.Format ("-exec-step-instruction --thread {0} {1}", threadId, ((reverse) ? "--reverse" : ""));
 
-          MiResultRecord resultRecord = SendCommand (command);
-
-          MiResultRecord.RequireOk (resultRecord, command);
+          SendCommand (command, delegate (MiResultRecord resultRecord)
+          {
+            MiResultRecord.RequireOk (resultRecord, command);
+          });
 
           break;
         }
@@ -726,9 +788,10 @@ namespace AndroidPlusPlus.Common
         {
           string command = string.Format ("-exec-finish --thread {0} {1}", threadId, ((reverse) ? "--reverse" : ""));
 
-          MiResultRecord resultRecord = SendCommand (command);
-
-          MiResultRecord.RequireOk (resultRecord, command);
+          SendCommand (command, delegate (MiResultRecord resultRecord)
+          {
+            MiResultRecord.RequireOk (resultRecord, command);
+          });
 
           break;
         }
@@ -755,9 +818,10 @@ namespace AndroidPlusPlus.Common
 
           string command = string.Format ("-exec-next --thread {0} {1}", threadId, ((reverse) ? "--reverse" : ""));
 
-          MiResultRecord resultRecord = SendCommand (command);
-
-          MiResultRecord.RequireOk (resultRecord, command);
+          SendCommand (command, delegate (MiResultRecord resultRecord)
+          {
+            MiResultRecord.RequireOk (resultRecord, command);
+          });
 
           break;
         }
@@ -771,9 +835,10 @@ namespace AndroidPlusPlus.Common
 
           string command = string.Format ("-exec-next-instruction --thread {0} {1}", threadId, ((reverse) ? "--reverse" : ""));
 
-          MiResultRecord resultRecord = SendCommand (command);
-
-          MiResultRecord.RequireOk (resultRecord, command);
+          SendCommand (command, delegate (MiResultRecord resultRecord)
+          {
+            MiResultRecord.RequireOk (resultRecord, command);
+          });
 
           break;
         }
@@ -787,27 +852,6 @@ namespace AndroidPlusPlus.Common
     public Dictionary <uint, string> GetRegisterIdMapping ()
     {
       LoggingUtils.Print (string.Format ("[GdbClient] GetRegisterNameFromId"));
-
-      if (m_registerIdMapping.Count == 0)
-      {
-        string command = "-data-list-register-names";
-
-        MiResultRecord resultRecord = SendCommand (command);
-
-        MiResultRecord.RequireOk (resultRecord, command);
-
-        if (resultRecord.HasField ("register-names"))
-        {
-          MiResultValue registerNames = resultRecord ["register-names"] [0];
-
-          for (int i = 0; i < registerNames.Values.Count; ++i)
-          {
-            string register = registerNames [i].GetString ();
-
-            m_registerIdMapping.Add ((uint)i, register);
-          }
-        }
-      }
 
       return m_registerIdMapping;
     }
@@ -858,7 +902,7 @@ namespace AndroidPlusPlus.Common
 
       string command = string.Format ("-gdb-show {0}", setting);
 
-      MiResultRecord resultRecord = SendCommand (command);
+      MiResultRecord resultRecord = SendSyncCommand (command);
 
       MiResultRecord.RequireOk (resultRecord, command);
 
@@ -915,7 +959,7 @@ namespace AndroidPlusPlus.Common
 
       string command = string.Format ("-gdb-set {0} {1}", setting, value);
 
-      MiResultRecord resultRecord = SendCommand (command);
+      MiResultRecord resultRecord = SendSyncCommand (command);
 
       MiResultRecord.RequireOk (resultRecord, command);
     }
@@ -924,7 +968,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public MiResultRecord SendCommand (string command, int timeout = 30000)
+    public MiResultRecord SendSyncCommand (string command, int timeout = 30000)
     {
       // 
       // Perform a synchronous command request; issue a standard async command and keep alive whilst still receiving output.
@@ -955,7 +999,7 @@ namespace AndroidPlusPlus.Common
 
       m_syncCommandLocks [command] = syncCommandLock;
 
-      SendAsyncCommand (command, delegate (MiResultRecord record) 
+      SendCommand (command, timeout, delegate (MiResultRecord record) 
       {
         syncResultRecord = record;
 
@@ -992,7 +1036,16 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void SendAsyncCommand (string command, OnResultRecordDelegate asyncDelegate = null)
+    public uint SendCommand (string command, OnResultRecordDelegate asyncDelegate)
+    {
+      return SendCommand (command, 30000, asyncDelegate);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public uint SendCommand (string command, int timeout, OnResultRecordDelegate asyncDelegate = null)
     {
       // 
       // Keep track of this command, and associated token-id, so results can be tracked asynchronously.
@@ -1034,6 +1087,8 @@ namespace AndroidPlusPlus.Common
       m_gdbClientInstance.SendCommand (command);
 
       m_timeSinceLastOperation.Restart ();
+
+      return m_sessionCommandToken;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

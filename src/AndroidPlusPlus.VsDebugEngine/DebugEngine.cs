@@ -223,7 +223,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       }
       finally
       {
-        if (program.AttachedEngine != null)
+        if ((program != null) && (program.AttachedEngine != null))
         {
           Broadcast (new DebugEngineEvent.ProgramDestroy (0), program, null);
 
@@ -813,7 +813,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           debugger.GdbClient.SetSetting ("debug-file-directory", string.Join (";", symbolSearchPaths.ToArray ()), true);
 
-          BreakpointManager.SetDirty ();
+          BreakpointManager.SetDirty (true);
 
           BreakpointManager.RefreshBreakpoints ();
         });
@@ -852,7 +852,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      return Constants.S_FALSE;
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1136,13 +1136,19 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        throw new NotImplementedException ();
+        DebuggeeProcess debugProcess = (process as DebuggeeProcess);
+
+        LoggingUtils.RequireOk (debugProcess.Terminate ());
+
+        Detach (debugProcess.DebuggeeProgram);
+
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return Constants.E_NOTIMPL;
+        return Constants.E_FAIL;
       }
     }
 

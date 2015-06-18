@@ -423,6 +423,7 @@ namespace AndroidPlusPlus.Common
       // - It also define a special mode for controlling debugging behaviour on ART.
       // 
 
+#if false
       string androidPlusPlusRoot = Environment.GetEnvironmentVariable ("ANDROID_PLUS_PLUS");
 
       string dalkvikGdbScriptPath = Path.Combine (androidPlusPlusRoot, "contrib", "gdb", "scripts", "dalvik.gdb");
@@ -438,6 +439,7 @@ namespace AndroidPlusPlus.Common
           gdbExecutionCommands.Add ("handle SIGSEGV print stop");
         }
       }
+#endif
 
       return gdbExecutionCommands.ToArray ();
     }

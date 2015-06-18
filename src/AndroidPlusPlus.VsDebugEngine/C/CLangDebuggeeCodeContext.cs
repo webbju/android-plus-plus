@@ -32,13 +32,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     protected readonly CLangDebugger m_debugger;
 
-    protected readonly string m_symbolName;
+    protected string m_symbolName;
 
-    protected readonly ulong m_symbolOffset;
+    protected string m_symbolOffset;
 
-    protected readonly string m_symbolSection;
-
-    protected readonly string m_symbolModule;
+    protected string m_symbolModule;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -49,50 +47,109 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       m_debugger = debugger;
 
-      string command = string.Format ("-interpreter-exec console \"info symbol {0}\"", address.ToString ());
-
-      MiResultRecord resultRecord = debugger.GdbClient.SendCommand (command);
-
-      MiResultRecord.RequireOk (resultRecord, command);
-
-      string pattern = "(?<symbol>.+)( [\\+] (?<offset>[0-9]+))? (in section (?<section>[^ ]+) of) (?<module>.+)";
-
-      Regex regExMatcher = new Regex (pattern, RegexOptions.IgnoreCase);
-
-      foreach (MiStreamRecord record in resultRecord.Records)
+      try
       {
-        if (!record.Stream.StartsWith ("No symbol"))
+        string command = string.Format ("-interpreter-exec console \"info symbol {0}\"", m_address.ToString ());
+
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendSyncCommand (command);
+
+        MiResultRecord.RequireOk (resultRecord, command);
+
+        string pattern = "(?<symbol>.+)( [\\+] (?<offset>[0-9]+))? (in section (?<section>[^ ]+) of) (?<module>.+)";
+
+        Regex regExMatcher = new Regex (pattern, RegexOptions.IgnoreCase);
+
+        foreach (MiStreamRecord record in resultRecord.Records)
         {
-          continue; // early rejection.
-        }
-
-        StringBuilder sanitisedStream = new StringBuilder (record.Stream);
-
-        sanitisedStream.Length -= 2; // Strip trailing "\\n"
-
-        Match regExLineMatch = regExMatcher.Match (sanitisedStream.ToString ());
-
-        if (regExLineMatch.Success)
-        {
-          string symbol = regExLineMatch.Result ("${symbol}");
-
-          string offset = regExLineMatch.Result ("${offset}");
-
-          string section = regExLineMatch.Result ("${section}");
-
-          string module = regExLineMatch.Result ("${module}");
-
-          m_symbolName = symbol;
-
-          if (!ulong.TryParse (offset, out m_symbolOffset))
+          if (!record.Stream.StartsWith ("No symbol"))
           {
-            m_symbolOffset = 0ul;
+            continue; // early rejection.
           }
 
-          m_symbolSection = section;
+          StringBuilder sanitisedStream = new StringBuilder (record.Stream);
 
-          m_symbolModule = PathUtils.ConvertPathMingwToWindows (module);
+          sanitisedStream.Length -= 2; // Strip trailing "\\n"
+
+          Match regExLineMatch = regExMatcher.Match (sanitisedStream.ToString ());
+
+          if (regExLineMatch.Success)
+          {
+            string symbol = regExLineMatch.Result ("${symbol}");
+
+            string offset = regExLineMatch.Result ("${offset}");
+
+            string section = regExLineMatch.Result ("${section}");
+
+            string module = regExLineMatch.Result ("${module}");
+
+            ulong addressOffset = 0ul;
+
+            ulong.TryParse (offset, out addressOffset);
+
+            m_symbolName = symbol;
+
+            m_symbolOffset = addressOffset.ToString ();
+
+            //string moduleFile = Path.GetFileName (module);
+
+            //CLangDebuggeeModule module = m_debugger.NativeProgram.GetModule (moduleFile);
+
+            //MODULE_INFO [] moduleArray = new MODULE_INFO [1];
+
+            //LoggingUtils.RequireOk (module.GetInfo (enum_MODULE_INFO_FIELDS.MIF_URL, moduleArray));
+
+            //infoArray [0].bstrModuleUrl = moduleArray [0].m_bstrUrl;
+
+            m_symbolModule = PathUtils.ConvertPathMingwToWindows (module);
+          }
         }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override int SetInfo (enum_CONTEXT_INFO_FIELDS requestedFields, CONTEXT_INFO [] infoArray)
+    {
+      LoggingUtils.PrintFunction ();
+
+      try
+      {
+        LoggingUtils.RequireOk (base.SetInfo (requestedFields, infoArray));
+
+        if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_MODULEURL) != 0)
+        {
+          infoArray [0].bstrModuleUrl = m_symbolModule;
+
+          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_MODULEURL;
+        }
+
+        if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION) != 0)
+        {
+          infoArray [0].bstrFunction = m_symbolName;
+
+          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION;
+        }
+
+        if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSOFFSET) != 0)
+        {
+          infoArray [0].bstrAddressOffset = m_symbolOffset;
+
+          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSOFFSET;
+        }
+
+        return Constants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        return Constants.E_FAIL;
       }
     }
 
@@ -124,7 +181,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         string command = string.Format ("-interpreter-exec console \"info line {0}\"", location);
 
-        MiResultRecord resultRecord = debugger.GdbClient.SendCommand (command);
+        MiResultRecord resultRecord = debugger.GdbClient.SendSyncCommand (command);
 
         MiResultRecord.RequireOk (resultRecord, command);
 
@@ -212,57 +269,6 @@ namespace AndroidPlusPlus.VsDebugEngine
       string location = string.Format ("\"{0}:{1}\"", fileName, startOffset [0].dwLine + 1);
 
       return GetCodeContextForLocation (debugger, location);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override int SetInfo (enum_CONTEXT_INFO_FIELDS requestedFields, CONTEXT_INFO [] infoArray)
-    {
-      // 
-      // Gets information that describes this context.
-      // 
-
-      LoggingUtils.PrintFunction ();
-
-      try
-      {
-        LoggingUtils.RequireOk (base.SetInfo (requestedFields, infoArray));
-
-        if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_MODULEURL) != 0)
-        {
-          if (!string.IsNullOrWhiteSpace (m_symbolModule))
-          {
-            string moduleFile = Path.GetFileName (m_symbolModule);
-
-            CLangDebuggeeModule module = m_debugger.NativeProgram.GetModule (moduleFile);
-
-            MODULE_INFO [] moduleArray = new MODULE_INFO [1];
-
-            LoggingUtils.RequireOk (module.GetInfo (enum_MODULE_INFO_FIELDS.MIF_URL, moduleArray));
-
-            infoArray [0].bstrModuleUrl = moduleArray [0].m_bstrUrl;
-
-            infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_MODULEURL;
-          }
-        }
-
-        if ((requestedFields & enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION) != 0)
-        {
-          infoArray [0].bstrFunction = m_symbolName;
-
-          infoArray [0].dwFields |= enum_CONTEXT_INFO_FIELDS.CIF_FUNCTION;
-        }
-
-        return Constants.S_OK;
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-
-        return Constants.E_FAIL;
-      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

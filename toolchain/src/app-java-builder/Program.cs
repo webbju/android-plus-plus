@@ -37,8 +37,6 @@ namespace app_java_builder
 
     private static string s_archiverManifestPath = string.Empty;
 
-    private static bool s_useJackAndJill = false;
-
     private static List<string> s_compilerArguments = new List<string> ();
 
     private static List<string> s_archiverArguments = new List<string> ();
@@ -632,13 +630,6 @@ namespace app_java_builder
             }
 
             s_archiverManifestPath = args [++i];
-
-            break;
-          }
-
-          case "--use-jack-jill":
-          {
-            s_useJackAndJill = true;
 
             break;
           }

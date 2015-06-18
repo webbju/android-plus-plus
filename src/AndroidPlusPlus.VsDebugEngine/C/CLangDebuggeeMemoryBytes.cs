@@ -72,11 +72,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        DebuggeeCodeContext codeContext = pStartContext as DebuggeeCodeContext;
+        CONTEXT_INFO [] contextInfoArray = new CONTEXT_INFO [1];
 
-        string command = string.Format ("-data-read-memory-bytes {0} {1}", codeContext.Address.ToString (), dwCount);
+        LoggingUtils.RequireOk (pStartContext.GetInfo (enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSABSOLUTE, contextInfoArray));
 
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+        string command = string.Format ("-data-read-memory-bytes {0} {1}", contextInfoArray [0].bstrAddressAbsolute, dwCount);
+
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendSyncCommand (command);
 
         MiResultRecord.RequireOk (resultRecord, command);
 
@@ -134,7 +136,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        DebuggeeCodeContext codeContext = pStartContext as DebuggeeCodeContext;
+        CONTEXT_INFO [] contextInfoArray = new CONTEXT_INFO [1];
+
+        LoggingUtils.RequireOk (pStartContext.GetInfo (enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSABSOLUTE, contextInfoArray));
 
         StringBuilder stringBuilder = new StringBuilder ((int)dwCount * 2);
 
@@ -143,9 +147,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           stringBuilder.Append (rgbMemory [i].ToString ("x"));
         }
 
-        string command = string.Format ("-data-write-memory-bytes {0} {1} {2}", codeContext.Address.ToString (), stringBuilder.ToString (), dwCount);
+        string command = string.Format ("-data-write-memory-bytes {0} {1} {2}", contextInfoArray [0].bstrAddressAbsolute, stringBuilder.ToString (), dwCount);
 
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendSyncCommand (command);
 
         MiResultRecord.RequireOk (resultRecord, command);
 

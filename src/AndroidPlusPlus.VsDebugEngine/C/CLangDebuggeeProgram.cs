@@ -93,7 +93,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           string command = string.Format ("-thread-info {0}", (tid == 0) ? "" : tid.ToString ());
 
-          MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+          MiResultRecord resultRecord = m_debugger.GdbClient.SendSyncCommand (command);
 
           MiResultRecord.RequireOk (resultRecord, command);
 
@@ -354,6 +354,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
+      Exception rethrowable = null;
+
       try
       {
         m_debugger.Engine.Broadcast (new CLangDebuggerEvent.StartServer (), DebugProgram, null);
@@ -366,7 +368,16 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
+        rethrowable = e; // Allow exceptions to persist, despite returning failure.
+
         return Constants.E_FAIL;
+      }
+      finally
+      {
+        if (rethrowable != null)
+        {
+          throw rethrowable;
+        }
       }
     }
 
@@ -389,6 +400,8 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
+      Exception rethrowable = null;
+
       try
       {
         m_debugger.Engine.Broadcast (new CLangDebuggerEvent.StopClient (), DebugProgram, null);
@@ -399,7 +412,16 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
+        rethrowable = e;
+
         return Constants.E_FAIL;
+      }
+      finally
+      {
+        if (rethrowable != null)
+        {
+          throw rethrowable;
+        }
       }
     }
 
@@ -410,6 +432,8 @@ namespace AndroidPlusPlus.VsDebugEngine
     public int Continue (IDebugThread2 pThread)
     {
       LoggingUtils.PrintFunction ();
+
+      Exception rethrowable = null;
 
       try
       {
@@ -424,7 +448,16 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
+        rethrowable = e;
+
         return Constants.E_FAIL;
+      }
+      finally
+      {
+        if (rethrowable != null)
+        {
+          throw rethrowable;
+        }
       }
     }
 
@@ -435,6 +468,8 @@ namespace AndroidPlusPlus.VsDebugEngine
     public int Detach ()
     {
       LoggingUtils.PrintFunction ();
+
+      Exception rethrowable = null;
 
       try
       {
@@ -448,7 +483,16 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
+        rethrowable = e;
+
         return Constants.E_FAIL;
+      }
+      finally
+      {
+        if (rethrowable != null)
+        {
+          throw rethrowable;
+        }
       }
     }
 
@@ -975,7 +1019,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         string command = "-thread-select " + threadId;
 
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (command);
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendSyncCommand (command);
 
         MiResultRecord.RequireOk (resultRecord, command);
 

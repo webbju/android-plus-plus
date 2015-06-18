@@ -10,6 +10,7 @@ using System.Text;
 using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugCommon;
+using System.Globalization;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -95,9 +96,31 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      puCodeLocationId = (pCodeContext as DebuggeeCodeContext).Address.MemoryAddress;
+      try
+      {
+        CONTEXT_INFO [] contextInfoArray = new CONTEXT_INFO [1];
 
-      return Constants.S_OK;
+        LoggingUtils.RequireOk (pCodeContext.GetInfo (enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSABSOLUTE, contextInfoArray));
+
+        if (contextInfoArray [0].bstrAddressAbsolute.StartsWith ("0x"))
+        {
+          puCodeLocationId = ulong.Parse (contextInfoArray [0].bstrAddressAbsolute.Substring (2), NumberStyles.HexNumber);
+        }
+        else
+        {
+          puCodeLocationId = ulong.Parse (contextInfoArray [0].bstrAddressAbsolute, NumberStyles.HexNumber);
+        }
+
+        return Constants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        puCodeLocationId = 0ul;
+
+        return Constants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -112,9 +135,20 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      puCodeLocationId = m_codeContext.Address.MemoryAddress;
+      try
+      {
+        LoggingUtils.RequireOk (GetCodeLocationId (m_codeContext, out puCodeLocationId));
 
-      return Constants.S_OK;
+        return Constants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        puCodeLocationId = 0ul;
+
+        return Constants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -197,7 +231,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         string disassemblyCommand = string.Format ("-data-disassemble -s 0x{0:X8} -e 0x{1:X8} -- 1", startAddress, endAddress);
 
-        MiResultRecord resultRecord = m_debugger.GdbClient.SendCommand (disassemblyCommand);
+        MiResultRecord resultRecord = m_debugger.GdbClient.SendSyncCommand (disassemblyCommand);
 
         MiResultRecord.RequireOk (resultRecord, disassemblyCommand);
 

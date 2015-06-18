@@ -1,4 +1,14 @@
 
+Version 0.6.0
+
+New functionality:
+
+Fixes/Improvements:
+ - (Debugger) Reworked asynchronous handling of breakpoints and other data request in async handlers.
+ - (Debugger) Fixed an issue causing 'Set Next Statement' to incorrectly evaluate code-context function.
+
+--------------------------------------------------------------------------------------------------------------------------------
+
 Version 0.5.0
 
 New functionality:

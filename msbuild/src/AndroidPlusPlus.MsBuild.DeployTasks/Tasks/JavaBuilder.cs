@@ -148,7 +148,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks.Tasks
         //  [wrote AndroidMT\Debug\bin\classes\com\example\nativemedia\MyRenderer.class]
         // 
 
-        if (!string.IsNullOrWhiteSpace (singleLine))
+        if (string.IsNullOrWhiteSpace (singleLine))
         {
           return;
         }
