@@ -30,7 +30,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\sdl2-library\AndroidManifest.xml" />
     <None Include="proguard-project.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidBuild Include="..\sdl2-library\AndroidManifest.xml" />
   </ItemGroup>
 </Project>

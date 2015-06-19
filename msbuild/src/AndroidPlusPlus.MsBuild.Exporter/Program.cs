@@ -517,6 +517,7 @@ namespace AndroidPlusPlus.MsBuild.Exporter
             }
 
             case ".xml":
+            case ".xaml":
             case ".props":
             case ".targets":
             {

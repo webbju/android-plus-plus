@@ -5,9 +5,25 @@
       <Configuration>Debug</Configuration>
       <Platform>Android++</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Android++.armv7-a">
+      <Configuration>Debug</Configuration>
+      <Platform>Android++.armv7-a</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Android++_armv7-a">
+      <Configuration>Debug</Configuration>
+      <Platform>Android++_armv7-a</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Android++">
       <Configuration>Release</Configuration>
       <Platform>Android++</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Android++.armv7-a">
+      <Configuration>Release</Configuration>
+      <Platform>Android++.armv7-a</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Android++_armv7-a">
+      <Configuration>Release</Configuration>
+      <Platform>Android++_armv7-a</Platform>
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -24,7 +40,37 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++_armv7-a'" Label="Configuration">
+    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\</IntDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\debug\</OutDir>
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.armv7-a'" Label="Configuration">
+    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\</IntDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\debug\</OutDir>
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++'" Label="Configuration">
+    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\</IntDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\release\</OutDir>
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++_armv7-a'" Label="Configuration">
+    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\</IntDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\release\</OutDir>
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.armv7-a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\</IntDir>
     <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\release\</OutDir>
     <ConfigurationType>Application</ConfigurationType>
@@ -42,7 +88,7 @@
     <ClCompile Include="jni\hello-jni.c" />
   </ItemGroup>
   <ItemGroup>
-    <AndroidJava Include="src\com\example\hellojni\HelloJni.java"/>
+    <AndroidJava Include="src\com\example\hellojni\HelloJni.java" />
   </ItemGroup>
   <ItemGroup>
     <AndroidManifest Include="AndroidManifest.xml" />
