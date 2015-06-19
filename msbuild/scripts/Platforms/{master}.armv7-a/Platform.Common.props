@@ -1,17 +1,85 @@
-<!--
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+﻿<!--
+***********************************************************************************************
+Platform.Common.props
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+Copyright (C) Microsoft Corporation. All rights reserved.
+***********************************************************************************************
 -->
 
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <Import Project="$(VCTargetsPath)\Platforms\{master}.armv7-a\Microsoft.Cpp.{master}.armv7-a.Common.props" />
+  <!--
+    Ensure VS doesn't try compilation/linker steps which are unsuitable for Android.
+  -->
+
+  <PropertyGroup>
+
+    <IgnoreImportLibrary>true</IgnoreImportLibrary>
+
+    <GenerateManifest>false</GenerateManifest>
+
+  </PropertyGroup>
+
+  <!-- 
+    Register Android-specific extensions which need to be removed on clean.
+  -->
+
+  <PropertyGroup>
+
+    <ExtensionsToDeleteOnClean>*.o;*.d;*.a;*.so;$(ExtensionsToDeleteOnClean);</ExtensionsToDeleteOnClean>
+
+  </PropertyGroup>
+
+  <!--
+    Configuration output defaults.
+  -->
+
+  <PropertyGroup Condition="'$(ConfigurationType)' == 'Application'">
+
+    <LinkCompiled>true</LinkCompiled>
+
+    <TargetName Condition="'$(ProjectName.Substring(0,3)' != 'lib'">lib$(ProjectName)</TargetName>
+
+    <TargetName Condition="'$(TargetName)' == ''">$(ProjectName)</TargetName>
+
+    <TargetExt>.so</TargetExt>
+
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(ConfigurationType)' == 'DynamicLibrary'">
+
+    <LinkCompiled>true</LinkCompiled>
+
+    <TargetName Condition="'$(ProjectName.Substring(0,3)' != 'lib'">lib$(ProjectName)</TargetName>
+
+    <TargetName Condition="'$(TargetName)' == ''">$(ProjectName)</TargetName>
+
+    <TargetExt>.so</TargetExt>
+
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(ConfigurationType)' == 'StaticLibrary'">
+
+    <LibCompiled>true</LibCompiled>
+
+    <TargetName Condition="'$(ProjectName.Substring(0,3)' != 'lib'">lib$(ProjectName)</TargetName>
+
+    <TargetName Condition="'$(TargetName)' == ''">$(ProjectName)</TargetName>
+
+    <TargetExt>.a</TargetExt>
+
+  </PropertyGroup>
+
+  <!--
+    Resolve target platform, environment variables, and toolset default properties.
+  -->
+
+  <Import Project="$(VCTargetsPath)\Platforms\{master}\{master}.StlSupport.default.props" />
+
+  <Import Project="$(VCTargetsPath)\Platforms\{master}\{master}.Toolset.default.props" />
 
 </Project>
-
-<!--
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
--->

@@ -26,7 +26,7 @@
 
     <UseDefaultPropertyPageSchemas>false</UseDefaultPropertyPageSchemas>
 
-    <UseDefaultGeneralPropertyPageSchema>false</UseDefaultGeneralPropertyPageSchema>
+    <UseDefaultGeneralPropertyPageSchema>true</UseDefaultGeneralPropertyPageSchema>
 
   </PropertyGroup>
 
@@ -80,7 +80,7 @@
       Condition="'$(ConfigurationType)' != 'Utility'" 
       Include="
         $(VCTargetsPath)\Platforms\{master}\PlatformProps\native_compile.xml;
-        $(VCTargetsPath)PlatformProps\custom_build_step.xml;
+        $(VCTargetsPath)$(LangID)\custom_build_step.xml;
     "/>
     
     <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}\PlatformProps\native_link.xml" Condition="('$(ConfigurationType)' == 'Application' or '$(ConfigurationType)' == 'DynamicLibrary')" />
@@ -89,10 +89,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}\PlatformProps\custom_general.xml">
+    <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}.armv7-a\PlatformProps\custom_general.xml">
       <Context>Project</Context>
     </PropertyPageSchema>
-    <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}\PlatformProps\custom_general_ps.xml">
+    <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}.armv7-a\PlatformProps\custom_general_ps.xml">
       <Context>PropertySheet</Context>
     </PropertyPageSchema>
   </ItemGroup>
