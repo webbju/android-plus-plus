@@ -20,13 +20,13 @@
 
   <PropertyGroup>
 
-    <PlatformShortName Condition="'$(PlatformShortName)' == ''">{master}.arm64-v8a</PlatformShortName>
+    <PlatformShortName Condition="'$(PlatformShortName)' == ''">{master}.armv7-a-hard</PlatformShortName>
 
-    <PlatformArchitecture Condition="'$(PlatformArchitecture)' == ''">64</PlatformArchitecture>
+    <PlatformArchitecture Condition="'$(PlatformArchitecture)' == ''">32</PlatformArchitecture>
 
     <PlatformToolset Condition="'$(PlatformToolset)' == ''">clang3.5</PlatformToolset>
 
-    <PlatformTarget>{master}.arm64-v8a</PlatformTarget>
+    <PlatformTarget>{master}.armv7-a-hard</PlatformTarget>
 
     <DefaultPlatformToolset Condition="'$(DefaultPlatformToolset)' == ''">$(PlatformToolset)</DefaultPlatformToolset>
 
@@ -40,17 +40,17 @@
 
   <PropertyGroup>
 
-    <TargetPlatformArchitecture>arm64</TargetPlatformArchitecture>
+    <TargetPlatformArchitecture>arm</TargetPlatformArchitecture>
 
-    <TargetPlatformArchitectureEabi>arm64-v8a</TargetPlatformArchitectureEabi>
+    <TargetPlatformArchitectureEabi>armeabi-v7a</TargetPlatformArchitectureEabi>
 
-    <TargetPlatformArchitectureInstructionSet>aarch-64</TargetPlatformArchitectureInstructionSet>
+    <TargetPlatformArchitectureInstructionSet>armv7-a</TargetPlatformArchitectureInstructionSet>
 
-    <TargetPlatformArchitectureToolchainPrefix>aarch64-linux-android</TargetPlatformArchitectureToolchainPrefix>
+    <TargetPlatformArchitectureToolchainPrefix>arm-linux-androideabi</TargetPlatformArchitectureToolchainPrefix>
 
-    <TargetPlatformArchitectureToolchainToolPrefix>aarch64-linux-android</TargetPlatformArchitectureToolchainToolPrefix>
+    <TargetPlatformArchitectureToolchainToolPrefix>arm-linux-androideabi</TargetPlatformArchitectureToolchainToolPrefix>
 
-    <TargetPlatformArchitectureLlvmPlatformTriple>aarch64-none-linux-android</TargetPlatformArchitectureLlvmPlatformTriple>
+    <TargetPlatformArchitectureLlvmPlatformTriple>armv7-none-linux-androideabi</TargetPlatformArchitectureLlvmPlatformTriple>
 
   </PropertyGroup>
 

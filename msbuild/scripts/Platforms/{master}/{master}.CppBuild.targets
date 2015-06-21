@@ -20,22 +20,6 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <PropertyGroup>
-
-    <UseDefaultProjectTools>false</UseDefaultProjectTools>
-
-    <UseDefaultPropertyPageSchemas>false</UseDefaultPropertyPageSchemas>
-
-    <UseDefaultGeneralPropertyPageSchema>true</UseDefaultGeneralPropertyPageSchema>
-
-  </PropertyGroup>
-
-  <!--
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  -->
-
   <!-- 
     Property pages 
   -->
@@ -89,10 +73,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}.armv7-a\PlatformProps\custom_general.xml">
+    <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}\PlatformProps\custom_general.xml">
       <Context>Project</Context>
     </PropertyPageSchema>
-    <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}.armv7-a\PlatformProps\custom_general_ps.xml">
+    <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}\PlatformProps\custom_general_ps.xml">
       <Context>PropertySheet</Context>
     </PropertyPageSchema>
   </ItemGroup>

@@ -18,41 +18,19 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(UseDebugLibraries)' == 'true'">
 
-    <PlatformShortName Condition="'$(PlatformShortName)' == ''">{master}.arm64-v8a</PlatformShortName>
+    <ClCompile>
 
-    <PlatformArchitecture Condition="'$(PlatformArchitecture)' == ''">64</PlatformArchitecture>
+      <OmitFramePointers Condition="'%(ClCompile.OmitFramePointers)' == ''">false</OmitFramePointers>
 
-    <PlatformToolset Condition="'$(PlatformToolset)' == ''">clang3.5</PlatformToolset>
+      <StrictAliasing Condition="'%(ClCompile.StrictAliasing)' == ''">false</StrictAliasing>
 
-    <PlatformTarget>{master}.arm64-v8a</PlatformTarget>
+      <UnswitchLoops Condition="'%(ClCompile.UnswitchLoops)' == ''">false</UnswitchLoops>
 
-    <DefaultPlatformToolset Condition="'$(DefaultPlatformToolset)' == ''">$(PlatformToolset)</DefaultPlatformToolset>
+    </ClCompile>
 
-  </PropertyGroup>
-
-  <!--
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  -->
-
-  <PropertyGroup>
-
-    <TargetPlatformArchitecture>arm64</TargetPlatformArchitecture>
-
-    <TargetPlatformArchitectureEabi>arm64-v8a</TargetPlatformArchitectureEabi>
-
-    <TargetPlatformArchitectureInstructionSet>aarch-64</TargetPlatformArchitectureInstructionSet>
-
-    <TargetPlatformArchitectureToolchainPrefix>aarch64-linux-android</TargetPlatformArchitectureToolchainPrefix>
-
-    <TargetPlatformArchitectureToolchainToolPrefix>aarch64-linux-android</TargetPlatformArchitectureToolchainToolPrefix>
-
-    <TargetPlatformArchitectureLlvmPlatformTriple>aarch64-none-linux-android</TargetPlatformArchitectureLlvmPlatformTriple>
-
-  </PropertyGroup>
+  </ItemDefinitionGroup>
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -60,13 +38,51 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <PropertyGroup>
+  <ItemDefinitionGroup>
 
-    <_PlatformFolder>$(VCTargetsPath)\Platforms\{master}\PlatformRules\</_PlatformFolder>
+    <ClCompile>
 
-  </PropertyGroup>
+      <PreprocessorDefinitions>__x86__;%(ClCompile.PreprocessorDefinitions)</PreprocessorDefinitions>
 
-  <Import Project="$(_PlatformFolder)\Platform.Default.props" />
+      <AdditionalOptions>%(ClCompile.AdditionalOptions)</AdditionalOptions>
+
+      <SysRoot Condition="'%(ClCompile.SysRoot)' == ''">$(PlatformToolsetSysRoot)</SysRoot>
+
+      <FunctionSections Condition="'%(ClCompile.FunctionSections)' == ''">true</FunctionSections>
+
+      <UnwindTables Condition="'%(ClCompile.UnwindTables)' == ''">true</UnwindTables>
+
+      <StackProtection Condition="'%(ClCompile.StackProtection)' == ''">StringProtection</StackProtection>
+
+      <OmitFramePointers Condition="'%(ClCompile.OmitFramePointers)' == ''">true</OmitFramePointers>
+
+      <StrictAliasing Condition="'%(ClCompile.StrictAliasing)' == ''">true</StrictAliasing>
+
+      <UnswitchLoops Condition="'%(ClCompile.UnswitchLoops)' == ''">true</UnswitchLoops>
+
+      <InlineLimitSize Condition="'%(ClCompile.InlineLimitSize)' == ''">300</InlineLimitSize>
+
+    </ClCompile>
+
+  </ItemDefinitionGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <ItemDefinitionGroup>
+
+    <Link>
+
+      <AdditionalOptions>%(Link.AdditionalOptions)</AdditionalOptions>
+
+      <SysRoot Condition="'%(Link.SysRoot)' == ''">$(PlatformToolsetSysRoot)</SysRoot>
+
+    </Link>
+
+  </ItemDefinitionGroup>
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

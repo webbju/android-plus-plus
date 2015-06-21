@@ -18,19 +18,15 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(UseDebugLibraries)' == 'true'">
 
-    <PlatformShortName Condition="'$(PlatformShortName)' == ''">{master}.arm64-v8a</PlatformShortName>
+      <OmitFramePointers Condition="'%(ClCompile.OmitFramePointers)' == ''">false</OmitFramePointers>
 
-    <PlatformArchitecture Condition="'$(PlatformArchitecture)' == ''">64</PlatformArchitecture>
+      <StrictAliasing Condition="'%(ClCompile.StrictAliasing)' == ''">false</StrictAliasing>
 
-    <PlatformToolset Condition="'$(PlatformToolset)' == ''">clang3.5</PlatformToolset>
+      <UnswitchLoops Condition="'%(ClCompile.UnswitchLoops)' == ''">false</UnswitchLoops>
 
-    <PlatformTarget>{master}.arm64-v8a</PlatformTarget>
-
-    <DefaultPlatformToolset Condition="'$(DefaultPlatformToolset)' == ''">$(PlatformToolset)</DefaultPlatformToolset>
-
-  </PropertyGroup>
+  </ItemDefinitionGroup>
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -38,21 +34,39 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <PropertyGroup>
+  <ItemDefinitionGroup>
 
-    <TargetPlatformArchitecture>arm64</TargetPlatformArchitecture>
+    <ClCompile>
 
-    <TargetPlatformArchitectureEabi>arm64-v8a</TargetPlatformArchitectureEabi>
+      <PreprocessorDefinitions>__arm__;__ARM_ARCH_5__;__ARM_ARCH_5T__;__ARM_ARCH_5E__;__ARM_ARCH_5TE__;__ARM_EABI__;%(ClCompile.PreprocessorDefinitions)</PreprocessorDefinitions>
 
-    <TargetPlatformArchitectureInstructionSet>aarch-64</TargetPlatformArchitectureInstructionSet>
+      <AdditionalOptions>-marm -march=armv5te -mtune=xscale %(ClCompile.AdditionalOptions)</AdditionalOptions>
 
-    <TargetPlatformArchitectureToolchainPrefix>aarch64-linux-android</TargetPlatformArchitectureToolchainPrefix>
+      <ArmFloatingPointAbi Condition="'%(ClCompile.ArmFloatingPointAbi)' == ''">Soft</ArmFloatingPointAbi>
 
-    <TargetPlatformArchitectureToolchainToolPrefix>aarch64-linux-android</TargetPlatformArchitectureToolchainToolPrefix>
+      <ArmFloatingPointHardware Condition="'%(ClCompile.ArmFloatingPointHardware)' == ''"></ArmFloatingPointHardware>
 
-    <TargetPlatformArchitectureLlvmPlatformTriple>aarch64-none-linux-android</TargetPlatformArchitectureLlvmPlatformTriple>
+      <SysRoot Condition="'%(ClCompile.SysRoot)' == ''">$(PlatformToolsetSysRoot)</SysRoot>
 
-  </PropertyGroup>
+      <FunctionSections Condition="'%(ClCompile.FunctionSections)' == ''">true</FunctionSections>
+
+      <UnwindTables Condition="'%(ClCompile.UnwindTables)' == ''">true</UnwindTables>
+
+      <StackProtection Condition="'%(ClCompile.StackProtection)' == ''">StringProtection</StackProtection>
+
+      <StrictAliasing Condition="'%(ClCompile.StrictAliasing)' == ''">true</StrictAliasing>
+
+      <InlineLimitSize Condition="'%(ClCompile.InlineLimitSize)' == ''">300</InlineLimitSize>
+
+      <UnswitchLoops Condition="'%(ClCompile.UnswitchLoops)' == ''">true</UnswitchLoops>
+
+      <PositionIndependentCode Condition="'%(ClCompile.PositionIndependentCode)' == ''">BigPic</PositionIndependentCode>
+
+      <PositionIndependentExecutable Condition="'%(ClCompile.PositionIndependentExecutable)' == '' and '$(AndroidNdkLevel)' >= '16'">BigPie</PositionIndependentExecutable>
+
+    </ClCompile>
+
+  </ItemDefinitionGroup>
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -60,13 +74,19 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <PropertyGroup>
+  <ItemDefinitionGroup>
 
-    <_PlatformFolder>$(VCTargetsPath)\Platforms\{master}\PlatformRules\</_PlatformFolder>
+    <Link>
 
-  </PropertyGroup>
+      <AdditionalOptions>%(Link.AdditionalOptions)</AdditionalOptions>
 
-  <Import Project="$(_PlatformFolder)\Platform.Default.props" />
+      <SysRoot Condition="'%(Link.SysRoot)' == ''">$(PlatformToolsetSysRoot)</SysRoot>
+
+      <PositionIndependentExecutable Condition="'%(ClCompile.PositionIndependentExecutable)' == '' and '$(AndroidNdkLevel)' >= '16'">Both</PositionIndependentExecutable>
+
+    </Link>
+
+  </ItemDefinitionGroup>
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

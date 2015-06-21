@@ -20,13 +20,13 @@
 
   <PropertyGroup>
 
-    <PlatformShortName Condition="'$(PlatformShortName)' == ''">{master}.arm64-v8a</PlatformShortName>
+    <PlatformShortName Condition="'$(PlatformShortName)' == ''">{master}.x86-64</PlatformShortName>
 
     <PlatformArchitecture Condition="'$(PlatformArchitecture)' == ''">64</PlatformArchitecture>
 
-    <PlatformToolset Condition="'$(PlatformToolset)' == ''">clang3.5</PlatformToolset>
+    <PlatformToolset Condition="'$(PlatformToolset)' == ''">clang3.4</PlatformToolset>
 
-    <PlatformTarget>{master}.arm64-v8a</PlatformTarget>
+    <PlatformTarget>{master}.x86-64</PlatformTarget>
 
     <DefaultPlatformToolset Condition="'$(DefaultPlatformToolset)' == ''">$(PlatformToolset)</DefaultPlatformToolset>
 
@@ -40,17 +40,17 @@
 
   <PropertyGroup>
 
-    <TargetPlatformArchitecture>arm64</TargetPlatformArchitecture>
+    <TargetPlatformArchitecture>x86_64</TargetPlatformArchitecture>
 
-    <TargetPlatformArchitectureEabi>arm64-v8a</TargetPlatformArchitectureEabi>
+    <TargetPlatformArchitectureEabi>x86_64</TargetPlatformArchitectureEabi>
 
-    <TargetPlatformArchitectureInstructionSet>aarch-64</TargetPlatformArchitectureInstructionSet>
+    <TargetPlatformArchitectureInstructionSet>x86_64</TargetPlatformArchitectureInstructionSet>
 
-    <TargetPlatformArchitectureToolchainPrefix>aarch64-linux-android</TargetPlatformArchitectureToolchainPrefix>
+    <TargetPlatformArchitectureToolchainPrefix>x86_64</TargetPlatformArchitectureToolchainPrefix>
 
-    <TargetPlatformArchitectureToolchainToolPrefix>aarch64-linux-android</TargetPlatformArchitectureToolchainToolPrefix>
+    <TargetPlatformArchitectureToolchainToolPrefix>x86_64-linux-android</TargetPlatformArchitectureToolchainToolPrefix>
 
-    <TargetPlatformArchitectureLlvmPlatformTriple>aarch64-none-linux-android</TargetPlatformArchitectureLlvmPlatformTriple>
+    <TargetPlatformArchitectureLlvmPlatformTriple>x86_64-none-linux-android</TargetPlatformArchitectureLlvmPlatformTriple>
 
   </PropertyGroup>
 
