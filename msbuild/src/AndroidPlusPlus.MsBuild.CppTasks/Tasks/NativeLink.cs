@@ -396,7 +396,7 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
 
           if (!absoluteLibraryPath)
           {
-            Log.LogError ("Could not evaluate absolute path for library: " + libraryPath);
+            throw new FileNotFoundException ("Could not evaluate absolute path for library: " + libraryPath);
           }
 
           if (wholeLibrary)
