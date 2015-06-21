@@ -26,13 +26,7 @@
 
     <PlatformToolsetVersion>clang3.5</PlatformToolsetVersion>
 
-    <GccToolchainVersion>4.8</GccToolchainVersion>
-
-    <GccToolchainVersion Condition="'$(TargetPlatformArchitecture)' == 'arm64'">4.9</GccToolchainVersion>
-
-    <GccToolchainVersion Condition="'$(TargetPlatformArchitecture)' == 'x86-64'">4.9</GccToolchainVersion>
-
-    <GccToolchainVersion Condition="'$(TargetPlatformArchitecture)' == 'mips64'">4.9</GccToolchainVersion>
+    <GccToolchainVersion>4.9</GccToolchainVersion>
 
     <LlvmVersion>3.5</LlvmVersion>
 
