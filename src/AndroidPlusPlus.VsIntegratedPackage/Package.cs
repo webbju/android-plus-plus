@@ -53,7 +53,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
   [ProvideAutoLoad(VSConstants.UICONTEXT.NoSolution_string)]
 
-  [ProvideProjectFactory (typeof (VsIntegratedPackage.ProjectFactory), null, "#114", "", "", ".\\NullPath", LanguageVsTemplate = "Android++")]
+  [ProvideProjectFactory (typeof (VsIntegratedPackage.ProjectFactory), 
+    "Android++ Project",
+    "Android++ Project Files (*.androidpp);*.androidpp",
+    "androidpp", 
+    "androidpp", 
+    @"..\..\Templates\Projects", 
+    LanguageVsTemplate = "Android++")]
 
   [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)]
 
@@ -268,6 +274,8 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     protected override void Initialize () 
     {
       LoggingUtils.PrintFunction ();
+
+      RegisterProjectFactory (new ProjectFactory (this));
 
       base.Initialize ();
 
