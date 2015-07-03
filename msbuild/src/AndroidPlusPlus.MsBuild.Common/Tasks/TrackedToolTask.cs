@@ -361,9 +361,13 @@ namespace AndroidPlusPlus.MsBuild.Common
                 {
                   string responseFile = Path.Combine (TrackerLogDirectory, string.Format ("{0}_{1}.rcf", ToolName, Guid.NewGuid ().ToString ()));
 
+                  responseFile = Path.GetFullPath (responseFile);
+
                   using (StreamWriter writer = new StreamWriter (responseFile, false, Encoding.ASCII))
                   {
                     writer.WriteLine (responseFileCommands);
+
+                    writer.Flush ();
 
                     writer.Close ();
                   }
