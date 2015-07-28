@@ -65,10 +65,14 @@
 
     <ItemGroup Condition="'$(ConfigurationType)' == 'Application'">
       <!-- First-party (linker output) and third-party provided libraries. -->
-      <_TargetElfFiles Include="
+      <_TargetElfFilesUnprocessed Include="
+        @(Link->Metadata('OutputFile'));
         @(LinkOutputFiles->Metadata('FullPath'));
         $(ProjectDir)lib\$(TargetPlatformArchitectureEabi)\*.so;
         $(ProjectDir)libs\$(TargetPlatformArchitectureEabi)\*.so">
+      </_TargetElfFilesUnprocessed>
+      <!-- Remove any duplicate entries. -->
+      <_TargetElfFiles Include="@(_TargetElfFilesUnprocessed->Distinct())">
       </_TargetElfFiles>
     </ItemGroup>
 

@@ -44,10 +44,10 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected override string GenerateResponseFileCommands ()
+    protected override string GenerateCommandLineCommands ()
     {
       // 
-      // Build a command-line based on parsing switches from the registered property sheet, and any additional flags.
+      // Build a command-based on modes and generic modifiers.
       // 
 
       StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
@@ -57,7 +57,30 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
         builder.Append ("rcsD ");
 
         builder.Append (PathUtils.SantiseWindowsPath (Sources [0].GetMetadata ("OutputFile")) + " ");
+      }
+      catch (Exception e)
+      {
+        Log.LogErrorFromException (e, true);
+      }
 
+      return builder.ToString ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override string GenerateResponseFileCommands ()
+    {
+      // 
+      // Build reponse-file commands based on additional source files.
+      // Seemingly the AR tool doesn't like '@' to be the only argument, so this has been split between GenerateCommandLineCommands and this function.
+      // 
+
+      StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
+
+      try
+      {
         foreach (ITaskItem source in Sources)
         {
           builder.Append (PathUtils.SantiseWindowsPath (source.GetMetadata ("FullPath")) + " ");
