@@ -20,11 +20,15 @@
 
   <ItemDefinitionGroup Condition="'$(UseDebugLibraries)' == 'true'">
 
+    <ClCompile>
+
       <OmitFramePointers Condition="'%(ClCompile.OmitFramePointers)' == ''">false</OmitFramePointers>
 
       <StrictAliasing Condition="'%(ClCompile.StrictAliasing)' == ''">false</StrictAliasing>
 
       <UnswitchLoops Condition="'%(ClCompile.UnswitchLoops)' == ''">false</UnswitchLoops>
+
+    </ClCompile>
 
   </ItemDefinitionGroup>
 

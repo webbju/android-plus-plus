@@ -30,7 +30,7 @@
 
     <GccToolchainVersion Condition="'$(TargetPlatformArchitecture)' == 'arm64'">4.9</GccToolchainVersion>
 
-    <GccToolchainVersion Condition="'$(TargetPlatformArchitecture)' == 'x86-64'">4.9</GccToolchainVersion>
+    <GccToolchainVersion Condition="'$(TargetPlatformArchitecture)' == 'x86_64'">4.9</GccToolchainVersion>
 
     <GccToolchainVersion Condition="'$(TargetPlatformArchitecture)' == 'mips64'">4.9</GccToolchainVersion>
 
