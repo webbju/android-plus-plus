@@ -16,6 +16,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <StartArguments>--template-dir ".\msbuild\scripts" --kill-msbuild --vs-version all</StartArguments>
-    <StartWorkingDirectory>C:\nm\Android++_trunk\</StartWorkingDirectory>
+    <StartWorkingDirectory>C:\webbju\android-plus-plus</StartWorkingDirectory>
   </PropertyGroup>
 </Project>
