@@ -1,4 +1,21 @@
 
+Version 0.7.0
+
+Upgrade notes:
+ - Removed support for Visual Studio 2010 and 2012.
+ - Reworked entire MSBuild platform organisation to support 64-bit. Please change any projects using a 'Android++' target to 'Android++.armv7-a'.
+
+New functionality:
+ - Added support for Visual Studio 2015.
+ - Added support for clang3.5, clang3.6 and GCC 4.9 toolchains.
+ - Added redistributed GDB 7.7 binaries.
+
+Fixes/Improvements:
+ - (MSBuild) Made failure to find an imported static/shared library a fatal condition.
+ - (MSBuild) Added test projects for building native sources on all available platforms (armv7-a, armv7-a-hard, arm64-v8a, x86, x86_64).
+
+--------------------------------------------------------------------------------------------------------------------------------
+
 Version 0.6.0
 
 New functionality:

@@ -16,10 +16,6 @@ call build_snapshot_toolchain.cmd
 
 @cd %BUILD_SCRIPTS_ROOT%
 
-call build_snapshot_vs2010.cmd
-
-call build_snapshot_vs2012.cmd
-
 call build_snapshot_vs2013.cmd
 
 pause
