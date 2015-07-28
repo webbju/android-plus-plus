@@ -11,9 +11,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectName>native-stl</ProjectName>
-    <ProjectGuid>{A191482B-B082-4913-80AB-1E06AD1E93C1}</ProjectGuid>
-    <RootNamespace>nativestl</RootNamespace>
+    <ProjectName>native-compile-armv7-a</ProjectName>
+    <ProjectGuid>{AAC7B46C-E755-4D13-9467-BE1941B47E39}</ProjectGuid>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -66,10 +65,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\stl-abs.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.armv7-a'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="src\stl-vector.cpp" />
+    <ClCompile Include="..\native-compile\src\native-compile.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
