@@ -58,6 +58,12 @@
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="VSLangProj, Version=7.0.3300.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="VSLangProj100, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup Condition="'$(VisualStudioVersion)' == '12.0'">
@@ -142,6 +148,9 @@
     <Compile Include="..\AndroidPlusPlus.Common\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="AndroidProjectAutomation.cs" />
+    <Compile Include="AndroidProjectFileNode.cs" />
+    <Compile Include="AndroidProjectNode.cs" />
     <Compile Include="Attributes\ProvideDebugBaseAttribute.cs" />
     <Compile Include="Attributes\ProvideDebugExtensionAttribute.cs" />
     <Compile Include="CommandTable.cs" />
@@ -154,7 +163,7 @@
     </Compile>
     <Compile Include="Package.cs" />
     <Compile Include="PackageConstants.cs" />
-    <Compile Include="ProjectFactory.cs" />
+    <Compile Include="AndroidProjectFactory.cs" />
     <Compile Include="Interface\GdbConsoleWindow.cs" />
     <Compile Include="Interface\UiCommandEventListener.cs" />
     <Compile Include="Listeners\AssemblyResolveListener.cs" />
@@ -228,6 +237,10 @@
     <ProjectReference Include="..\AndroidPlusPlus.VsDebugLauncher\AndroidPlusPlus.VsDebugLauncher.csproj">
       <Project>{7C701BB4-BAD8-40DA-AFDC-B9820A04F005}</Project>
       <Name>AndroidPlusPlus.VsDebugLauncher</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Microsoft.VisualStudio.Project\Microsoft.VisualStudio.Project.csproj">
+      <Project>{cacb60a9-1e76-4f92-8831-b134a658c695}</Project>
+      <Name>Microsoft.VisualStudio.Project</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

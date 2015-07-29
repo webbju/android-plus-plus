@@ -1,25 +1,29 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug|Android++">
+    <ProjectConfiguration Include="Debug|Android++.armv7-a">
       <Configuration>Debug</Configuration>
-      <Platform>Android++</Platform>
+      <Platform>Android++.armv7-a</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Android++">
+    <ProjectConfiguration Include="Release|Android++.armv7-a">
       <Configuration>Release</Configuration>
-      <Platform>Android++</Platform>
+      <Platform>Android++.armv7-a</Platform>
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectName>ProjectContainer</ProjectName>
+    <ProjectVersion>1.0</ProjectVersion>
     <ProjectGuid>{C3709176-276E-4441-9A57-BB401F200777}</ProjectGuid>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+    <UseGradle>false</UseGradle>
   </PropertyGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <!--<Import Project="$(AndroidTargetsPath)\Android.Default.props" />-->
+  <ImportGroup Label="ExtensionSettings" />
+  <ImportGroup Label="Shared" />
+  <PropertyGroup Label="UserMacros" />
   <ItemGroup>
-    <ClCompile Include="src\native-library-a.cpp" />
+    <AndroidManifest Include="AndroidManifest.xml" />
   </ItemGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-  </ImportGroup>
+  <!--<Import Project="$(AndroidTargetsPath)\Android.Default.targets" />-->
+  <ImportGroup Label="ExtensionTargets" />
 </Project>

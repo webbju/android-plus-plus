@@ -18,10 +18,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsIntegrate
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Project", "Microsoft.VisualStudio.Project\Microsoft.VisualStudio.Project.csproj", "{CACB60A9-1E76-4F92-8831-B134A658C695}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Project.IntegrationTests", "Microsoft.VisualStudio.Project.IntegrationTests\Microsoft.VisualStudio.Project.IntegrationTests.csproj", "{0A29E2CA-F59D-4467-8FBC-6CA686CAAA3B}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Project.UnitTests", "Microsoft.VisualStudio.Project.UnitTests\Microsoft.VisualStudio.Project.UnitTests.csproj", "{7301F66C-FF21-4DC6-8EEE-2BA88186DC16}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -52,14 +48,6 @@ Global
 		{CACB60A9-1E76-4F92-8831-B134A658C695}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CACB60A9-1E76-4F92-8831-B134A658C695}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CACB60A9-1E76-4F92-8831-B134A658C695}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0A29E2CA-F59D-4467-8FBC-6CA686CAAA3B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0A29E2CA-F59D-4467-8FBC-6CA686CAAA3B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0A29E2CA-F59D-4467-8FBC-6CA686CAAA3B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0A29E2CA-F59D-4467-8FBC-6CA686CAAA3B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7301F66C-FF21-4DC6-8EEE-2BA88186DC16}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7301F66C-FF21-4DC6-8EEE-2BA88186DC16}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7301F66C-FF21-4DC6-8EEE-2BA88186DC16}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7301F66C-FF21-4DC6-8EEE-2BA88186DC16}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
