@@ -12,10 +12,11 @@
     <VerifyUploadedFiles>false</VerifyUploadedFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
-    <StartArguments>--template-dir "$(ANDROID_PLUS_PLUS)\msbuild\scripts" --kill-msbuild --vs-version all</StartArguments>
+    <StartArguments>--template-dir "..\..\..\..\..\scripts" --export-dir "..\..\scripts" --version-file "..\..\..\..\..\..\version.txt" --kill-msbuild --vs-version all</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <StartArguments>--template-dir ".\msbuild\scripts" --kill-msbuild --vs-version all</StartArguments>
-    <StartWorkingDirectory>C:\webbju\android-plus-plus</StartWorkingDirectory>
+    <StartArguments>--template-dir "..\..\..\..\..\scripts" --export-dir "..\..\scripts" --version-file "..\..\..\..\..\..\version.txt" --kill-msbuild --vs-version all</StartArguments>
+    <StartWorkingDirectory>
+    </StartWorkingDirectory>
   </PropertyGroup>
 </Project>

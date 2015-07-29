@@ -1,13 +1,13 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.MsBuild.Common.vs2010", "AndroidPlusPlus.MsBuild.Common\AndroidPlusPlus.MsBuild.Common.vs2010.csproj", "{E3A93421-987E-4704-B0D8-21415453B5C9}"
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.MsBuild.Common", "AndroidPlusPlus.MsBuild.Common\AndroidPlusPlus.MsBuild.Common.csproj", "{E3A93421-987E-4704-B0D8-21415453B5C9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.MsBuild.CppTasks.vs2010", "AndroidPlusPlus.MsBuild.CppTasks\AndroidPlusPlus.MsBuild.CppTasks.vs2010.csproj", "{37497EC6-D3C1-4507-9262-35D7A23E9CEF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.MsBuild.CppTasks", "AndroidPlusPlus.MsBuild.CppTasks\AndroidPlusPlus.MsBuild.CppTasks.csproj", "{37497EC6-D3C1-4507-9262-35D7A23E9CEF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.MsBuild.DeployTasks.vs2010", "AndroidPlusPlus.MsBuild.DeployTasks\AndroidPlusPlus.MsBuild.DeployTasks.vs2010.csproj", "{00671E09-F4AD-4EE4-804A-65F40FEDAB17}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.MsBuild.DeployTasks", "AndroidPlusPlus.MsBuild.DeployTasks\AndroidPlusPlus.MsBuild.DeployTasks.csproj", "{00671E09-F4AD-4EE4-804A-65F40FEDAB17}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.MsBuild.Exporter.vs2010", "AndroidPlusPlus.MsBuild.Exporter\AndroidPlusPlus.MsBuild.Exporter.vs2010.csproj", "{3B52636E-6536-4DA7-B5DD-CD8353049CB9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.MsBuild.Exporter", "AndroidPlusPlus.MsBuild.Exporter\AndroidPlusPlus.MsBuild.Exporter.csproj", "{3B52636E-6536-4DA7-B5DD-CD8353049CB9}"
 	ProjectSection(ProjectDependencies) = postProject
 		{00671E09-F4AD-4EE4-804A-65F40FEDAB17} = {00671E09-F4AD-4EE4-804A-65F40FEDAB17}
 		{E3A93421-987E-4704-B0D8-21415453B5C9} = {E3A93421-987E-4704-B0D8-21415453B5C9}

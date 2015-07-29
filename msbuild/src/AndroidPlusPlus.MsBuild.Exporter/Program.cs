@@ -69,19 +69,14 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
         if (s_vsVersions.Contains ("all"))
         {
-          if (!s_vsVersions.Contains ("2010"))
-          {
-            s_vsVersions.Add ("2010");
-          }
-
-          if (!s_vsVersions.Contains ("2012"))
-          {
-            s_vsVersions.Add ("2012");
-          }
-
           if (!s_vsVersions.Contains ("2013"))
           {
             s_vsVersions.Add ("2013");
+          }
+
+          if (!s_vsVersions.Contains ("2015"))
+          {
+            s_vsVersions.Add ("2015");
           }
 
           validateMsBuildInstallations = false;
@@ -95,54 +90,6 @@ namespace AndroidPlusPlus.MsBuild.Exporter
         {
           switch (version)
           {
-            case "2010":
-            {
-              string msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\";
-
-              if (!Directory.Exists (msBuildInstallationDir))
-              {
-                msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\";
-              }
-
-              if (Directory.Exists (msBuildInstallationDir))
-              {
-                if (!s_exportDirectories.Contains (msBuildInstallationDir))
-                {
-                  s_exportDirectories.Add (msBuildInstallationDir);
-                }
-              }
-              else if (validateMsBuildInstallations)
-              {
-                throw new DirectoryNotFoundException ("Could not locate required MSBuild platforms directory. This should have been installed with VS2010. Tried: " + msBuildInstallationDir);
-              }
-
-              break;
-            }
-
-            case "2012":
-            {
-              string msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\V110\";
-
-              if (!Directory.Exists (msBuildInstallationDir))
-              {
-                msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\V110\";
-              }
-
-              if (Directory.Exists (msBuildInstallationDir))
-              {
-                if (!s_exportDirectories.Contains (msBuildInstallationDir))
-                {
-                  s_exportDirectories.Add (msBuildInstallationDir);
-                }
-              }
-              else if (validateMsBuildInstallations)
-              {
-                throw new DirectoryNotFoundException ("Could not locate required MSBuild platforms directory. This should have been installed with VS2012. Tried: " + msBuildInstallationDir);
-              }
-
-              break;
-            }
-
             case "2013":
             {
               string msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\V120\";
@@ -162,6 +109,30 @@ namespace AndroidPlusPlus.MsBuild.Exporter
               else if (validateMsBuildInstallations)
               {
                 throw new DirectoryNotFoundException ("Could not locate required MSBuild platforms directory. This should have been installed with VS2013. Tried: " + msBuildInstallationDir);
+              }
+
+              break;
+            }
+
+            case "2015":
+            {
+              string msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\V140\";
+
+              if (!Directory.Exists (msBuildInstallationDir))
+              {
+                msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\V140\";
+              }
+
+              if (Directory.Exists (msBuildInstallationDir))
+              {
+                if (!s_exportDirectories.Contains (msBuildInstallationDir))
+                {
+                  s_exportDirectories.Add (msBuildInstallationDir);
+                }
+              }
+              else if (validateMsBuildInstallations)
+              {
+                throw new DirectoryNotFoundException ("Could not locate required MSBuild platforms directory. This should have been installed with VS2015. Tried: " + msBuildInstallationDir);
               }
 
               break;
@@ -286,9 +257,8 @@ namespace AndroidPlusPlus.MsBuild.Exporter
               switch (version)
               {
                 case "all":
-                case "2010":
-                case "2012":
                 case "2013":
+                case "2015":
                 {
                   if (!s_vsVersions.Contains (version))
                   {
@@ -329,7 +299,7 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
       if (s_vsVersions.Count () == 0)
       {
-        throw new ArgumentException ("--vs-version not defined correctly. Expected: 'all', '2010', '2012' or '2013'.");
+        throw new ArgumentException ("--vs-version not defined correctly. Expected: 'all', '2013' or '2015'.");
       }
     }
 

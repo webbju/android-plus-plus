@@ -5,11 +5,12 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{37497EC6-D3C1-4507-9262-35D7A23E9CEF}</ProjectGuid>
+    <ProjectGuid>{E3A93421-987E-4704-B0D8-21415453B5C9}</ProjectGuid>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>AndroidPlusPlus.MsBuild.CppTasks</RootNamespace>
-    <AssemblyName>AndroidPlusPlus.MsBuild.CppTasks</AssemblyName>
+    <RootNamespace>AndroidPlusPlus.MsBuild.Common</RootNamespace>
+    <AssemblyName>AndroidPlusPlus.MsBuild.Common</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <SignAssembly>true</SignAssembly>
@@ -19,8 +20,8 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\build\bin\win32\vs10.0\debug</OutputPath>
-    <BaseIntermediateOutputPath>..\..\build\obj\win32\vs10.0\debug\$(AssemblyName)</BaseIntermediateOutputPath>
+    <OutputPath>..\..\build\bin\win32\vs$(VisualStudioVersion)\debug</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\obj\win32\vs$(VisualStudioVersion)\debug\$(AssemblyName)</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -30,8 +31,8 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\build\bin\win32\vs10.0\release</OutputPath>
-    <BaseIntermediateOutputPath>..\..\build\obj\win32\vs10.0\release\$(AssemblyName)</BaseIntermediateOutputPath>
+    <OutputPath>..\..\build\bin\win32\vs$(VisualStudioVersion)\release</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\obj\win32\vs$(VisualStudioVersion)\release\$(AssemblyName)</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -46,25 +47,31 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xaml" />
+    <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\..\src\AndroidPlusPlus.Common\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Tasks\NativeBuildId.cs" />
-    <Compile Include="Tasks\NativeLink.cs" />
-    <Compile Include="Tasks\NativeCompile.cs" />
-    <Compile Include="Tasks\NativeLib.cs" />
+    <Compile Include="Misc\AndroidManifestDocument.cs" />
+    <Compile Include="Misc\PathUtils.cs" />
+    <Compile Include="Tasks\GccUtilities.cs" />
+    <Compile Include="Tasks\JavaUtilities.cs" />
+    <Compile Include="Tasks\TrackedOutOfDateToolTask.cs" />
+    <Compile Include="Tasks\TrackedFileManager.cs" />
+    <Compile Include="Tasks\TrackedToolTask.cs" />
+    <Compile Include="Tasks\TrackerUtilities.cs" />
+    <Compile Include="Tasks\XamlParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="Tasks\NativeStrip.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\src\Key.snk">
@@ -76,12 +83,6 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\AndroidPlusPlus.MsBuild.Common\AndroidPlusPlus.MsBuild.Common.vs2010.csproj">
-      <Project>{E3A93421-987E-4704-B0D8-21415453B5C9}</Project>
-      <Name>AndroidPlusPlus.MsBuild.Common</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

@@ -6,6 +6,7 @@
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{3B52636E-6536-4DA7-B5DD-CD8353049CB9}</ProjectGuid>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>AndroidPlusPlus.MsBuild.Exporter</RootNamespace>
@@ -34,8 +35,8 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\build\bin\win32\vs10.0\debug</OutputPath>
-    <BaseIntermediateOutputPath>..\..\build\obj\win32\vs10.0\debug\$(AssemblyName)</BaseIntermediateOutputPath>
+    <OutputPath>..\..\build\bin\win32\vs$(VisualStudioVersion)\debug</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\obj\win32\vs$(VisualStudioVersion)\debug\$(AssemblyName)</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -45,8 +46,8 @@
     <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\build\bin\win32\vs10.0\release</OutputPath>
-    <BaseIntermediateOutputPath>..\..\build\obj\win32\vs10.0\release\$(AssemblyName)</BaseIntermediateOutputPath>
+    <OutputPath>..\..\build\bin\win32\vs$(VisualStudioVersion)\release</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\obj\win32\vs$(VisualStudioVersion)\release\$(AssemblyName)</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -87,11 +88,6 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Windows.Installer.3.1">
-      <Visible>False</Visible>
-      <ProductName>Windows Installer 3.1</ProductName>
-      <Install>true</Install>
-    </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.manifest">
@@ -109,8 +105,7 @@
 xcopy /f /y "$(TargetDir)$(TargetName).pdb" "$(ProjectDir)..\..\bin\*"
 
 rmdir "$(ProjectDir)$(OutDir)..\..\scripts\" /s /q
-
-"$(TargetPath)" --template-dir "$(ProjectDir)..\..\scripts" --export-dir "$(ProjectDir)$(OutDir)..\..\scripts" --version-file "$(ProjectDir)..\..\..\version.txt" --kill-msbuild --vs-version all</PostBuildEvent>
+</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
