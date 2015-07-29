@@ -121,6 +121,44 @@
     </Link>
 
   </ItemDefinitionGroup>
+  
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+  
+  <ItemDefinitionGroup Condition="'$(ConfigurationType)' == 'Application'">
+
+    <Link>
+
+      <OutputFile>$([System.IO.Path]::GetDirectoryName('$(TargetDir)$(TargetPlatformArchitectureEabi)'))\$(TargetName)$(TargetExt)</OutputFile>
+
+      <OutputSharedLibrary Condition="'%(Link.OutputSharedLibrary)' == ''">true</OutputSharedLibrary>
+
+      <OutputSharedLibraryName Condition="'%(Link.OutputSharedLibraryName)' == ''">$(TargetName).so</OutputSharedLibraryName>
+
+    </Link>
+
+  </ItemDefinitionGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+  
+  <ItemDefinitionGroup Condition="'$(ConfigurationType)' == 'Executable'">
+
+    <Link>
+
+      <OutputFile>$([System.IO.Path]::GetDirectoryName('$(TargetDir)$(TargetPlatformArchitectureEabi)'))\$(TargetName)</OutputFile>
+
+      <OutputSharedLibrary Condition="'%(Link.OutputSharedLibrary)' == ''">false</OutputSharedLibrary>
+
+    </Link>
+
+  </ItemDefinitionGroup>
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -131,12 +169,6 @@
   <ItemDefinitionGroup>
 
     <Link>
-
-      <OutputFile>$([System.IO.Path]::GetDirectoryName('$(TargetDir)$(TargetPlatformArchitectureEabi)'))\$(TargetName).so</OutputFile>
-
-      <OutputSharedLibrary Condition="'%(Link.OutputSharedLibrary)' == ''">true</OutputSharedLibrary>
-
-      <OutputSharedLibraryName Condition="'%(Link.OutputSharedLibraryName)' == ''">$(TargetName).so</OutputSharedLibraryName>
 
       <OutputCommandLine Condition="'%(Link.OutputCommandLine)' == ''">false</OutputCommandLine>
 

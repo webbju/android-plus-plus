@@ -133,9 +133,18 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
 
         string [] responseFileArguments = derivedSourceProperties.Split (new char [] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
-        foreach (string arg in responseFileArguments)
+        for (int i = 0; i < responseFileArguments.Length; ++i)
         {
-          if (arg.StartsWith ("-l"))
+          string arg = responseFileArguments [i];
+
+          if (arg.StartsWith ("-o") && ((i + 1) < responseFileArguments.Length))
+          {
+            // -o is preceded by the linker output filename, we don't want this being identified as a library.
+            string filename = responseFileArguments [++i];
+
+            responseFileCommands.Append (string.Format ("{0} {1} ", arg, filename));
+          }
+          else if (arg.StartsWith ("-l"))
           {
             sourceLibraryDependencies.Append (arg + " ");
           }
@@ -279,7 +288,11 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
         {
           string arg = responseFileArguments [i];
 
-          if (arg.StartsWith ("-L"))
+          if (arg.StartsWith ("-o") && ((i + 1) < responseFileArguments.Length))
+          {
+            ++i; // -o is preceded by the linker output filename, we don't want this being identified as a library.
+          }
+          else if (arg.StartsWith ("-L"))
           {
             libraryDirectories.Add (arg.Substring (2));
           }

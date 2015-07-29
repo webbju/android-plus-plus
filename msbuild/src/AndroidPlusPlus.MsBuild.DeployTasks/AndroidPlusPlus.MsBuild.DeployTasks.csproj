@@ -96,6 +96,12 @@
 xcopy /f /y "$(TargetDir)$(TargetName).pdb" "$(ProjectDir)..\..\bin\*"
 </PostBuildEvent>
   </PropertyGroup>
+  <PropertyGroup>
+    <PreBuildEvent>ren "$(ProjectDir)..\..\bin\$(TargetName).dll" "$(ProjectDir)..\..\bin\tmp" 2&gt;nul
+del "$(ProjectDir)..\..\bin\tmp"
+ren "$(ProjectDir)..\..\bin\$(TargetName).pdb" "$(ProjectDir)..\..\bin\tmp" 2&gt;nul
+del "$(ProjectDir)..\..\bin\tmp"</PreBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

@@ -878,9 +878,19 @@ namespace AndroidPlusPlus.MsBuild.Common
 
               if (!string.IsNullOrWhiteSpace (outputFileFullPath))
               {
-                outputDependencyFilePermutations.Add (Path.ChangeExtension (outputFileFullPath, ".d"), outputFileFullPath);
+                string [] permutations = new string [] 
+                {
+                  Path.ChangeExtension (outputFileFullPath, ".d"),
+                  outputFileFullPath + ".d"
+                };
 
-                outputDependencyFilePermutations.Add (outputFileFullPath + ".d", outputFileFullPath);
+                for (int i = 0; i < permutations.Length; ++i)
+                {
+                  if (!outputDependencyFilePermutations.ContainsKey (permutations [i]))
+                  {
+                    outputDependencyFilePermutations.Add (permutations [i], outputFileFullPath);
+                  }
+                }
               }
             }
 
@@ -1003,16 +1013,36 @@ namespace AndroidPlusPlus.MsBuild.Common
 
               if (!string.IsNullOrWhiteSpace (dependentOutputFile))
               {
-                alternateDependencyFilePermutations.Add (Path.ChangeExtension (dependentOutputFile, ".d"), dependentOutputFile);
+                string [] permutations = new string [] 
+                {
+                  Path.ChangeExtension (dependentOutputFile, ".d"),
+                  dependentOutputFile + ".d"
+                };
 
-                alternateDependencyFilePermutations.Add (dependentOutputFile + ".d", dependentOutputFile);
+                for (int i = 0; i < permutations.Length; ++i)
+                {
+                  if (!alternateDependencyFilePermutations.ContainsKey (permutations [i]))
+                  {
+                    alternateDependencyFilePermutations.Add (permutations [i], dependentOutputFile);
+                  }
+                }
               }
 
               if (!string.IsNullOrWhiteSpace (dependentObjectFileName))
               {
-                alternateDependencyFilePermutations.Add (Path.ChangeExtension (dependentObjectFileName, ".d"), dependentObjectFileName);
+                string [] permutations = new string [] 
+                {
+                  Path.ChangeExtension (dependentObjectFileName, ".d"),
+                  dependentObjectFileName + ".d"
+                };
 
-                alternateDependencyFilePermutations.Add (dependentObjectFileName + ".d", dependentObjectFileName);
+                for (int i = 0; i < permutations.Length; ++i)
+                {
+                  if (!alternateDependencyFilePermutations.ContainsKey (permutations [i]))
+                  {
+                    alternateDependencyFilePermutations.Add (permutations [i], dependentObjectFileName);
+                  }
+                }
               }
 
               // 

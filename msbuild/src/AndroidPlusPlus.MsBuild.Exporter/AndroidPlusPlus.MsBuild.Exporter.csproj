@@ -96,16 +96,15 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PreBuildEvent>
-    </PreBuildEvent>
+    <PreBuildEvent>ren "$(ProjectDir)..\..\bin\$(TargetName).exe" "$(ProjectDir)..\..\bin\tmp" 2&gt;nul
+del "$(ProjectDir)..\..\bin\tmp"
+ren "$(ProjectDir)..\..\bin\$(TargetName).pdb" "$(ProjectDir)..\..\bin\tmp" 2&gt;nul
+del "$(ProjectDir)..\..\bin\tmp"</PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <PostBuildEvent>xcopy /f /y "$(TargetDir)$(TargetName).exe" "$(ProjectDir)..\..\bin\*"
-
 xcopy /f /y "$(TargetDir)$(TargetName).pdb" "$(ProjectDir)..\..\bin\*"
-
-rmdir "$(ProjectDir)$(OutDir)..\..\scripts\" /s /q
-</PostBuildEvent>
+if exist "$(ProjectDir)$(OutDir)..\..\scripts\" rmdir "$(ProjectDir)$(OutDir)..\..\scripts\" /s /q</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
