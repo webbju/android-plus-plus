@@ -390,9 +390,9 @@ namespace AndroidPlusPlus.Common
       // Wait for asynchronous record response (or exit), reset timeout each time new activity occurs.
       // 
 
-      bool responseSignaled = false;
+      /*bool responseSignaled = false;
 
-      /*while ((!responseSignaled) && (m_timeSinceLastOperation.ElapsedMilliseconds < timeout))
+      while ((!responseSignaled) && (m_timeSinceLastOperation.ElapsedMilliseconds < timeout))
       {
         responseSignaled = syncCommandLock.WaitOne (0);
 
