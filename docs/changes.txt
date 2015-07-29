@@ -9,6 +9,7 @@ New functionality:
  - Added support for Visual Studio 2015.
  - Added support for clang3.5, clang3.6 and GCC 4.9 toolchains.
  - Added redistributed GDB 7.7 binaries.
+ - (MSBuild) Added ability to target native 'Executable' configurations.
 
 Fixes/Improvements:
  - (MSBuild) Made failure to find an imported static/shared library a fatal condition.
