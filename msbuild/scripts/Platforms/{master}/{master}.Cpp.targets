@@ -205,8 +205,8 @@
 
     <ItemGroup>
       <Link>
-        <!-- Enforce dead-code stripping on exported application shared libraries. -->
-        <StripUnusedSymbols Condition="'$(ConfigurationType)' == 'Application'">true</StripUnusedSymbols>
+        <!-- Enforce dead-code stripping on exported application shared libraries and exectuables. -->
+        <StripUnusedSymbols Condition="'$(ConfigurationType)' == 'Application' or '$(ConfigurationType)' == 'Executable'">true</StripUnusedSymbols>
       </Link>
     </ItemGroup>
 

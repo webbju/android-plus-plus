@@ -55,6 +55,7 @@
     Description="Specifies the target API level for SDK dependencies."
     Category="PlatformDefaults">
 
+    <EnumValue Name="22" DisplayName="Android 5.1 (android-22)" />
     <EnumValue Name="21" DisplayName="Android 5.0 (android-21)" />
     <EnumValue Name="20" DisplayName="Android 4.4W (android-20)" />
     <EnumValue Name="19" DisplayName="Android 4.4 (android-19)" />
@@ -85,6 +86,8 @@
     Description="Specifies which version of 'build-tools' should be used."
     Category="PlatformDefaults">
 
+    <EnumValue Name="22.0.1" DisplayName="22.0.1" />
+    <EnumValue Name="22.0.0" DisplayName="22.0.0" />
     <EnumValue Name="21.1.2" DisplayName="21.1.2" />
     <EnumValue Name="21.1.1" DisplayName="21.1.1" />
     <EnumValue Name="21.1.0" DisplayName="21.1" />
@@ -284,6 +287,7 @@
 
     <EnumValue Name="Makefile" DisplayName="Makefile" Description="Makefile" />
     <EnumValue Name="Application" DisplayName="Application (.so)" Description="Application (.so)" />
+    <EnumValue Name="Executable" DisplayName="Executable" Description="Executable" />
     <EnumValue Name="DynamicLibrary" DisplayName="Dynamic Library (.so)" Description="Dynamic Library (.so)" />
     <EnumValue Name="StaticLibrary" DisplayName="Static library (.a)" Description="Static Library (.a)" />
 

@@ -76,6 +76,16 @@
 
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(ConfigurationType)' == 'Executable'">
+
+    <LinkCompiled>true</LinkCompiled>
+
+    <TargetName Condition="'$(TargetName)' == ''">$(ProjectName)</TargetName>
+
+    <TargetExt></TargetExt>
+
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(ConfigurationType)' == 'DynamicLibrary'">
 
     <LinkCompiled>true</LinkCompiled>
