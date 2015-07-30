@@ -42,9 +42,9 @@ namespace AndroidPlusPlus.Common
         Socket = "debug-socket";
       }
 
-      string deviceDir = Process.HostDevice.ID.Replace (':', '-');
+      string sanitisedDeviceId = Process.HostDevice.ID.Replace (':', '-');
 
-      CacheDirectory = string.Format (@"{0}\Android++\Cache\{1}\{2}", Environment.GetFolderPath (Environment.SpecialFolder.LocalApplicationData), deviceDir, Process.Name);
+      CacheDirectory = string.Format (@"{0}\Android++\Cache\{1}\{2}", Environment.GetFolderPath (Environment.SpecialFolder.LocalApplicationData), sanitisedDeviceId, Process.Name);
 
       Directory.CreateDirectory (CacheDirectory);
 
@@ -61,6 +61,45 @@ namespace AndroidPlusPlus.Common
       if (!File.Exists (gdbToolPath))
       {
         throw new FileNotFoundException ("Could not find requested GDB instance. Expected: " + gdbToolPath);
+      }
+
+      // 
+      // Spawn an initial GDB instance to evaluate the client version.
+      // 
+
+      GdbToolVersionMajor = 1;
+
+      GdbToolVersionMinor = 0;
+
+      using (SyncRedirectProcess gdbProcess = new SyncRedirectProcess (GdbToolPath, "--version"))
+      {
+        gdbProcess.StartAndWaitForExit ();
+
+        string [] versionDetails = gdbProcess.StandardOutput.Replace ("\r", "").Split (new char [] { '\n' });
+
+        string versionPrefix = "GNU gdb (GDB) ";
+
+        for (int i = 0; i < versionDetails.Length; ++i)
+        {
+          if (versionDetails [i].StartsWith (versionPrefix))
+          {
+            string gdbVersion = versionDetails [i].Substring (versionPrefix.Length); ;
+
+            string [] gdbVersionComponents = gdbVersion.Split ('.');
+
+            if (gdbVersionComponents.Length > 0)
+            {
+              GdbToolVersionMajor = int.Parse (gdbVersionComponents [0]);
+            }
+
+            if (gdbVersionComponents.Length > 1)
+            {
+              GdbToolVersionMinor = int.Parse (gdbVersionComponents [1]);
+            }
+
+            break;
+          }
+        }
       }
     }
 
@@ -94,6 +133,25 @@ namespace AndroidPlusPlus.Common
     public string GdbToolPath { get; set; }
 
     public string GdbToolArguments { get; set; }
+
+    public int GdbToolVersionMajor { get; set; }
+
+    public int GdbToolVersionMinor { get; set; }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public bool IsVersionEqualOrAbove (int major, int minor)
+    {
+      if ((major < GdbToolVersionMajor)
+        || ((major == GdbToolVersionMajor) && (minor < GdbToolVersionMinor)))
+      {
+        return false;
+      }
+
+      return true;
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -346,7 +404,8 @@ namespace AndroidPlusPlus.Common
 
         Directory.CreateDirectory (libraryCachePath);
 
-#if true
+        bool pulledLibraries = false;
+
         if (Process.HostDevice.SdkVersion >= AndroidSettings.VersionCode.LOLLIPOP)
         {
           // 
@@ -361,20 +420,40 @@ namespace AndroidPlusPlus.Common
 
             string temporaryStorage = "/data/local/tmp/" + lib;
 
-            Process.HostDevice.Shell ("cp", string.Format ("-fH {0} {1}", remoteLib, temporaryStorage));
+            try
+            {
+              Process.HostDevice.Shell ("cp", string.Format ("-fH {0} {1}", remoteLib, temporaryStorage));
 
-            Process.HostDevice.Pull (temporaryStorage, libraryCachePath);
+              Process.HostDevice.Pull (temporaryStorage, libraryCachePath);
 
-            Process.HostDevice.Shell ("rm", temporaryStorage);
+              Process.HostDevice.Shell ("rm", temporaryStorage);
+
+              LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", remoteLib));
+
+              pulledLibraries = true;
+            }
+            catch (Exception e)
+            {
+              LoggingUtils.HandleException (string.Format ("[GdbSetup] Failed pulling {0} from device/emulator.", remoteLib), e);
+            }
           }
         }
-        else
-#endif
-        {
-          Process.HostDevice.Pull (Process.NativeLibraryPath, libraryCachePath);
-        }
 
-        LoggingUtils.Print (string.Format ("[GdbSetup] Pulled application libraries from device/emulator."));
+        try
+        {
+          if (!pulledLibraries)
+          {
+            Process.HostDevice.Pull (Process.NativeLibraryPath, libraryCachePath);
+
+            LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", Process.NativeLibraryPath));
+
+            pulledLibraries = true;
+          }
+        }
+        catch (Exception e)
+        {
+          LoggingUtils.HandleException (string.Format ("[GdbSetup] Failed pulling {0} from device/emulator.", Process.NativeLibraryPath), e);
+        }
 
         string [] additionalLibraries = Directory.GetFiles (libraryCachePath, "lib*.so", SearchOption.AllDirectories);
 
@@ -400,7 +479,10 @@ namespace AndroidPlusPlus.Common
 
       gdbExecutionCommands.Add ("set target-async on");
 
-      //gdbExecutionCommands.Add ("set mi-async on"); // as above, from GDB 7.7
+      if (IsVersionEqualOrAbove (7, 7))
+      {
+        gdbExecutionCommands.Add ("set mi-async on"); // as above, from GDB 7.7
+      }
 
       gdbExecutionCommands.Add ("set breakpoint pending on");
 

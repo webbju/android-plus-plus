@@ -9,6 +9,10 @@
       <Configuration>Debug</Configuration>
       <Platform>Android++.armv7-a</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Android++.x86">
+      <Configuration>Debug</Configuration>
+      <Platform>Android++.x86</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Android++.arm64-v8a">
       <Configuration>Release</Configuration>
       <Platform>Android++.arm64-v8a</Platform>
@@ -16,6 +20,10 @@
     <ProjectConfiguration Include="Release|Android++.armv7-a">
       <Configuration>Release</Configuration>
       <Platform>Android++.armv7-a</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Android++.x86">
+      <Configuration>Release</Configuration>
+      <Platform>Android++.x86</Platform>
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -32,6 +40,11 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.x86'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.arm64-v8a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</IntDir>
     <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
@@ -42,6 +55,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.armv7-a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</IntDir>
     <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.x86'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -62,6 +81,16 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.armv7-a'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SystemLibraryDependencies>OpenSLES;%(SystemLibraryDependencies)</SystemLibraryDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.x86'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
@@ -95,6 +124,20 @@
       <SystemLibraryDependencies>OpenSLES;%(SystemLibraryDependencies)</SystemLibraryDependencies>
     </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.x86'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <SystemLibraryDependencies>OpenSLES;%(SystemLibraryDependencies)</SystemLibraryDependencies>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.arm64-v8a'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -113,6 +156,7 @@
     <AndroidManifest Include="AndroidManifest.xml">
       <IncludeRawAssetsDirectory Condition="'$(Configuration)|$(Platform)'=='Debug|Android++_armv7-a'">%(RelativeDir)assets</IncludeRawAssetsDirectory>
       <IncludeRawAssetsDirectory Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.armv7-a'">%(RelativeDir)assets</IncludeRawAssetsDirectory>
+      <IncludeRawAssetsDirectory Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.x86'">%(RelativeDir)assets</IncludeRawAssetsDirectory>
       <IncludeRawAssetsDirectory Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.arm64-v8a'">%(RelativeDir)assets</IncludeRawAssetsDirectory>
     </AndroidManifest>
     <AndroidJava Include="src\com\example\nativeaudio\NativeAudio.java" />

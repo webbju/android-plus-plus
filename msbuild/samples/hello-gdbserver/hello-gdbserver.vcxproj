@@ -9,6 +9,10 @@
       <Configuration>Debug</Configuration>
       <Platform>Android++.armv7-a</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Android++.x86">
+      <Configuration>Debug</Configuration>
+      <Platform>Android++.x86</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Android++.arm64-v8a">
       <Configuration>Release</Configuration>
       <Platform>Android++.arm64-v8a</Platform>
@@ -16,6 +20,10 @@
     <ProjectConfiguration Include="Release|Android++.armv7-a">
       <Configuration>Release</Configuration>
       <Platform>Android++.armv7-a</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Android++.x86">
+      <Configuration>Release</Configuration>
+      <Platform>Android++.x86</Platform>
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -32,6 +40,11 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.x86'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.arm64-v8a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</IntDir>
     <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
@@ -42,6 +55,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.armv7-a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</IntDir>
     <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.x86'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>

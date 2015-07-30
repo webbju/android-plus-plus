@@ -146,7 +146,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (/*archIs64Bit && */Environment.Is64BitOperatingSystem)
       {
-        string clientIdentifier = (forceNdkR9dClient) ? "7.3.1" : "7.6.0";
+        string clientIdentifier = (forceNdkR9dClient) ? "7.3.1" : "7.7.0";
 
         contribGdbCommandPath = Path.Combine (androidPlusPlusRoot, "contrib", "gdb", "bin", "x86_64", clientIdentifier);
 
@@ -154,7 +154,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       }
       else
       {
-        string clientIdentifier = (forceNdkR9dClient) ? "7.3.1" : "7.6.0";
+        string clientIdentifier = (forceNdkR9dClient) ? "7.3.1" : "7.7.0";
 
         contribGdbCommandPath = Path.Combine (androidPlusPlusRoot, "contrib", "gdb", "bin", "x86", clientIdentifier);
 
@@ -220,7 +220,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (m_gdbSetup == null)
       {
-        throw new InvalidOperationException ("Could not evaluate a suitable GDB instance. Ensure you have the correct NDK delpoyment for your system's architecture.");
+        throw new InvalidOperationException ("Could not evaluate a suitable GDB instance. Ensure you have the correct NDK deployment for your system's architecture.");
       }
 
       if (m_launchConfiguration != null)

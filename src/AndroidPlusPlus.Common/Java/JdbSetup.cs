@@ -37,7 +37,9 @@ namespace AndroidPlusPlus.Common
 
       Port = 65534;
 
-      CacheDirectory = string.Format (@"{0}\Android++\Cache\{1}\{2}", Environment.GetFolderPath (Environment.SpecialFolder.LocalApplicationData), Process.HostDevice.ID, Process.Name);
+      string sanitisedDeviceId = Process.HostDevice.ID.Replace (':', '-');
+
+      CacheDirectory = string.Format (@"{0}\Android++\Cache\{1}\{2}", Environment.GetFolderPath (Environment.SpecialFolder.LocalApplicationData), sanitisedDeviceId, Process.Name);
 
       Directory.CreateDirectory (CacheDirectory);
     }
