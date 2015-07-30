@@ -20,26 +20,6 @@
 
   <PropertyGroup>
 
-    <PlatformShortName Condition="'$(PlatformShortName)' == ''">{master}.arm64-v8a</PlatformShortName>
-
-    <PlatformArchitecture Condition="'$(PlatformArchitecture)' == ''">64</PlatformArchitecture>
-
-    <PlatformToolset Condition="'$(PlatformToolset)' == ''">clang3.5</PlatformToolset>
-
-    <PlatformTarget>{master}.arm64-v8a</PlatformTarget>
-
-    <DefaultPlatformToolset Condition="'$(DefaultPlatformToolset)' == ''">$(PlatformToolset)</DefaultPlatformToolset>
-
-  </PropertyGroup>
-
-  <!--
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  -->
-
-  <PropertyGroup>
-
     <TargetPlatformArchitecture>arm64</TargetPlatformArchitecture>
 
     <TargetPlatformArchitectureEabi>arm64-v8a</TargetPlatformArchitectureEabi>
@@ -51,6 +31,22 @@
     <TargetPlatformArchitectureToolchainToolPrefix>aarch64-linux-android</TargetPlatformArchitectureToolchainToolPrefix>
 
     <TargetPlatformArchitectureLlvmPlatformTriple>aarch64-none-linux-android</TargetPlatformArchitectureLlvmPlatformTriple>
+
+  </PropertyGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <PropertyGroup>
+
+    <PlatformShortName Condition="'$(PlatformShortName)' == ''">{master}.arm64-v8a</PlatformShortName>
+
+    <PlatformTarget>{master}.arm64-v8a</PlatformTarget>
+
+    <PlatformArchitecture Condition="'$(PlatformArchitecture)' == ''">64</PlatformArchitecture>
 
   </PropertyGroup>
 

@@ -20,26 +20,6 @@
 
   <PropertyGroup>
 
-    <PlatformShortName Condition="'$(PlatformShortName)' == ''">{master}.armv7-a-hard</PlatformShortName>
-
-    <PlatformArchitecture Condition="'$(PlatformArchitecture)' == ''">32</PlatformArchitecture>
-
-    <PlatformToolset Condition="'$(PlatformToolset)' == ''">clang3.4</PlatformToolset>
-
-    <PlatformTarget>{master}.armv7-a-hard</PlatformTarget>
-
-    <DefaultPlatformToolset Condition="'$(DefaultPlatformToolset)' == ''">$(PlatformToolset)</DefaultPlatformToolset>
-
-  </PropertyGroup>
-
-  <!--
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  -->
-
-  <PropertyGroup>
-
     <TargetPlatformArchitecture>arm</TargetPlatformArchitecture>
 
     <TargetPlatformArchitectureEabi>armeabi-v7a</TargetPlatformArchitectureEabi>
@@ -51,6 +31,22 @@
     <TargetPlatformArchitectureToolchainToolPrefix>arm-linux-androideabi</TargetPlatformArchitectureToolchainToolPrefix>
 
     <TargetPlatformArchitectureLlvmPlatformTriple>armv7-none-linux-androideabi</TargetPlatformArchitectureLlvmPlatformTriple>
+
+  </PropertyGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <PropertyGroup>
+
+    <PlatformShortName Condition="'$(PlatformShortName)' == ''">{master}.armv7-a-hard</PlatformShortName>
+
+    <PlatformTarget>{master}.armv7-a-hard</PlatformTarget>
+
+    <PlatformArchitecture Condition="'$(PlatformArchitecture)' == ''">32</PlatformArchitecture>
 
   </PropertyGroup>
 

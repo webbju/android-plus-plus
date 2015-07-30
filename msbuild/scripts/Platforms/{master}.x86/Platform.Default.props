@@ -20,26 +20,6 @@
 
   <PropertyGroup>
 
-    <PlatformShortName Condition="'$(PlatformShortName)' == ''">{master}.x86</PlatformShortName>
-
-    <PlatformArchitecture Condition="'$(PlatformArchitecture)' == ''">32</PlatformArchitecture>
-
-    <PlatformToolset Condition="'$(PlatformToolset)' == ''">clang3.4</PlatformToolset>
-
-    <PlatformTarget>{master}.x86</PlatformTarget>
-
-    <DefaultPlatformToolset Condition="'$(DefaultPlatformToolset)' == ''">$(PlatformToolset)</DefaultPlatformToolset>
-
-  </PropertyGroup>
-
-  <!--
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  -->
-
-  <PropertyGroup>
-
     <TargetPlatformArchitecture>x86</TargetPlatformArchitecture>
 
     <TargetPlatformArchitectureEabi>x86</TargetPlatformArchitectureEabi>
@@ -51,6 +31,22 @@
     <TargetPlatformArchitectureToolchainToolPrefix>i686-linux-android</TargetPlatformArchitectureToolchainToolPrefix>
 
     <TargetPlatformArchitectureLlvmPlatformTriple>i686-none-linux-android</TargetPlatformArchitectureLlvmPlatformTriple>
+
+  </PropertyGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <PropertyGroup>
+
+    <PlatformShortName Condition="'$(PlatformShortName)' == ''">{master}.x86</PlatformShortName>
+
+    <PlatformTarget>{master}.x86</PlatformTarget>
+
+    <PlatformArchitecture Condition="'$(PlatformArchitecture)' == ''">32</PlatformArchitecture>
 
   </PropertyGroup>
 
