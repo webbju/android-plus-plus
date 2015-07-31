@@ -403,6 +403,18 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    private sealed class ConnectionEnumerator : DebugConnectionEnumerator<System.Runtime.InteropServices.ComTypes.CONNECTDATA, IEnumConnections>, IEnumConnections
+    {
+      public ConnectionEnumerator (List<System.Runtime.InteropServices.ComTypes.CONNECTDATA> connections)
+        : base (connections)
+      {
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public void Advise (object pUnkSink, out int pdwCookie)
     {
       // 
@@ -439,15 +451,26 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      ppEnum = null;
-
       try
       {
-        throw new NotImplementedException ();
+        List<System.Runtime.InteropServices.ComTypes.CONNECTDATA> connections = new List<System.Runtime.InteropServices.ComTypes.CONNECTDATA> ();
+
+        foreach (KeyValuePair <int, IDebugPortEvents2> keyPair in m_eventConnectionPoints)
+        {
+          connections.Add (new System.Runtime.InteropServices.ComTypes.CONNECTDATA ()
+          {
+            dwCookie = keyPair.Key,
+            pUnk = (object) keyPair.Value
+          });
+        }
+
+        ppEnum = new ConnectionEnumerator (connections);
       }
-      catch (NotImplementedException e)
+      catch (Exception e)
       {
         LoggingUtils.HandleException (e);
+
+        ppEnum = null;
       }
     }
 
@@ -519,6 +542,18 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    private sealed class ConnectionPointEnumerator : DebugConnectionEnumerator<IConnectionPoint, IEnumConnectionPoints>, IEnumConnectionPoints
+    {
+      public ConnectionPointEnumerator (List<IConnectionPoint> points)
+        : base (points)
+      {
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public void EnumConnectionPoints (out IEnumConnectionPoints ppEnum)
     {
       // 
@@ -531,11 +566,17 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        throw new NotImplementedException ();
+        List<IConnectionPoint> connectionPoints = new List<IConnectionPoint> ();
+
+        connectionPoints.Add (this); // one connection point per IID.
+
+        ppEnum = new ConnectionPointEnumerator (connectionPoints);
       }
-      catch (NotImplementedException e)
+      catch (Exception e)
       {
         LoggingUtils.HandleException (e);
+
+        ppEnum = null;
       }
     }
 
