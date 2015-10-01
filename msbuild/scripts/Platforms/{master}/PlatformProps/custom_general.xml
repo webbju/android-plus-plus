@@ -22,9 +22,9 @@
   xmlns="http://schemas.microsoft.com/build/2009/properties">
 
   <Rule.Categories>
-    <Category Name="General" DisplayName="General"/>
-    <Category Name="ProjectDefaults" DisplayName="Project Defaults" />
-    <Category Name="PlatformDefaults" DisplayName="Platform Defaults" />
+    <Category Name="General" DisplayName="General" Description="General"/>
+    <Category Name="ProjectDefaults" DisplayName="Project Defaults" Description="Project Defaults" />
+    <Category Name="PlatformDefaults" DisplayName="Platform Defaults" Description="Project Defaults" />
   </Rule.Categories>
 
   <Rule.DataSource>

@@ -156,7 +156,7 @@ namespace AndroidPlusPlus.MsBuild.Exporter
       }
       catch (Exception e)
       {
-        string exception = string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Exception: {0} ({1})\nStack trace:\n{2}", e.Message, e.GetType ().Name, e.StackTrace);
+        string exception = string.Format ("[AndroidPlusPlus.MsBuild.Exporter] {0}: {1}\nStack trace:\n{2}", e.GetType ().Name, e.Message, e.StackTrace);
 
         Console.WriteLine (exception);
 
@@ -370,6 +370,29 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
         Console.WriteLine (string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Uninstalling scripts from {0}", exportDir));
 
+        if (Directory.Exists (Path.Combine (exportDir, "Application Type")))
+        {
+          string [] installedCustomisationFiles = Directory.GetFiles (Path.Combine (exportDir, "Application Type"));
+
+          string [] installedCustomisationDirectories = Directory.GetDirectories (Path.Combine (exportDir, "Application Type"));
+
+          foreach (string file in installedCustomisationFiles)
+          {
+            if (file.Contains (textSubstitution ["{master}"]))
+            {
+              File.Delete (file);
+            }
+          }
+
+          foreach (string directory in installedCustomisationDirectories)
+          {
+            if (directory.Contains (textSubstitution ["{master}"]))
+            {
+              Directory.Delete (directory, true);
+            }
+          }
+        }
+
         if (Directory.Exists (Path.Combine (exportDir, "BuildCustomizations")))
         {
           string [] installedCustomisationFiles = Directory.GetFiles (Path.Combine (exportDir, "BuildCustomizations"));
@@ -447,7 +470,7 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
         if (!string.IsNullOrEmpty (s_versionDescriptorFile))
         {
-          string destinationVersionFile = Path.Combine (exportDir, "Platforms", textSubstitution ["{master}"], Path.GetFileName (s_versionDescriptorFile));
+          string destinationVersionFile = Path.Combine (exportDir, "Application Type", textSubstitution ["{master}"], Path.GetFileName (s_versionDescriptorFile));
 
           File.Copy (s_versionDescriptorFile, destinationVersionFile, true);
         }
