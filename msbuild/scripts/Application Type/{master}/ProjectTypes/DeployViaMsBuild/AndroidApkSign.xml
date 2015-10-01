@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ProjectSchemaDefinitions xmlns="http://schemas.microsoft.com/build/2009/properties" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Rule
+    Name="AndroidApkSign"
+    PageTemplate="tool"
+    DisplayName="Android Apk Signing Tool"
+    Order="200">
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+    <Rule.DataSource>
+      <DataSource Persistence="ProjectFile" ItemType="AndroidApkSign" />
+    </Rule.DataSource>
+
+    <!--
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    -->
+
+    <Rule.Categories>
+      <Category Name="General" DisplayName="General" />
+    </Rule.Categories>
+
+    <!--
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    -->
+
+    <!--
+      SignedOutputFile
+    -->
+
+    <StringProperty
+      Subtype="file"
+      Name="SignedOutputFile"
+      DisplayName="Signed Output File"
+      Description="Specify where to output a signed (unaligned) APK."
+      Category="General"
+      IncludeInCommandLine="false"
+    />
+
+    <!--
+      SignedAlignedOutputFile
+    -->
+
+    <StringProperty
+      Subtype="file"
+      Name="SignedAlignedOutputFile"
+      DisplayName="Signed &amp; Aligned Output File"
+      Description="Specify where to output a signed (aligned) APK."
+      Category="General"
+      IncludeInCommandLine="false"
+    />
+
+    <!--
+      Keystore
+    -->
+
+    <StringProperty 
+      Subtype="file" 
+      Name="Keystore" 
+      DisplayName="Keystore" 
+      Description="Keystore location"
+      Category="Jarsigner" 
+      Switch="-keystore" 
+      Separator=" "
+    />
+
+    <!--
+      KeystorePass
+    -->
+
+    <StringProperty 
+      Name="KeystorePass" 
+      DisplayName="Keystore Password" 
+      Description="Password for keystore integrity"
+      Category="Jarsigner" 
+      Switch="-storepass" 
+      Separator=" "
+    />
+
+    <!--
+      KeystoreType
+    -->
+
+    <StringProperty 
+      Name="KeystoreType" 
+      DisplayName="Keystore Type" 
+      Category="Jarsigner" 
+      Switch="-storetype" 
+      Separator=" "
+    />
+
+    <!--
+      PrivateKeyPassword
+    -->
+
+    <StringProperty 
+      Name="PrivateKeyPassword" 
+      DisplayName="Private Key Password"
+      Description="Password for private key (if different)"
+      Category="Jarsigner" 
+      Switch="-keypass" 
+      Separator=" "
+    />
+
+    <!--
+      SignatureFile
+    -->
+
+    <StringProperty 
+      Subtype="file" 
+      Name="SignatureFile" 
+      DisplayName="Signature File" 
+      Description="Name of .SF/.DSA file"
+      Category="Jarsigner" 
+      Switch="-sigfile"
+      Separator=" "
+    />
+
+    <!--
+      DigestAlgorithm
+    -->
+
+    <StringProperty
+      Subtype="file"
+      Name="DigestAlgorithm"
+      DisplayName="Digest Algorithm"
+      Description="Name of digest algorithm"
+      Category="Jarsigner"
+      Switch="-digestalg"
+      Separator=" "
+    />
+
+    <!--
+      SignatureAlgorithm
+    -->
+
+    <StringProperty
+      Subtype="file"
+      Name="SignatureAlgorithm"
+      DisplayName="Signature Algorithm"
+      Description="Name of signature algorithm"
+      Category="Jarsigner"
+      Switch="-sigalg"
+      Separator=" "
+    />
+
+    <!--
+      Verbose
+    -->
+
+    <BoolProperty 
+      Name="Verbose" 
+      DisplayName="Verbose" 
+      Description="Verbose output when signing/verifying"
+      Category="Jarsigner" 
+      Switch="-verbose"
+    />
+
+    <!--
+      DisplayCertificates
+    -->
+
+    <BoolProperty 
+      Name="DisplayCertificates" 
+      DisplayName="Display Certificates" 
+      Description="Display certificates when verbose and verifying"
+      Category="Jarsigner" 
+      Switch="-certs"
+    />
+
+    <!--
+      Protected
+    -->
+
+    <BoolProperty 
+      Name="Protected" 
+      DisplayName="Protected"
+      Description="Keystore has protected authentication path."
+      Category="Jarsigner" 
+      Switch="-protected"
+    />
+
+    <!--
+      CommandLineUnsignedJar
+    -->
+
+    <StringProperty 
+      Subtype="file" 
+      Name="CommandLineUnsignedJar" 
+      DisplayName="Command Line Unsigned Jar" 
+      Category="Jarsigner" 
+      Switch="" 
+      SwitchPrefix=" " 
+      Visible="false"
+    />
+    
+    <!--
+      KeystoreAlias
+    -->
+
+    <StringProperty 
+      Name="KeystoreAlias" 
+      DisplayName="Keystore Alias" 
+      Category="Jarsigner" 
+      Switch=""
+      SwitchPrefix=" "
+    />
+    
+    <!--
+    OutputCommandLine
+    -->
+
+    <BoolProperty
+      Name="OutputCommandLine"
+      DisplayName="Output Command Line"
+      Category="General"
+    />
+
+    <!--
+    TrackerLogDirectory
+    -->
+
+    <StringProperty
+      Subtype="folder"
+      Name="TrackerLogDirectory"
+      DisplayName="Tracker Log Directory"
+      Description="Tracker Log Directory."
+      Category="General"
+      IncludeInCommandLine="false"
+      Visible="false"
+    />
+
+    <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    -->
+
+    <DynamicEnumProperty
+     Name="AndroidApkSignBeforeTargets"
+     Category="General"
+     EnumProvider="Targets"
+     IncludeInCommandLine="False">
+      <DynamicEnumProperty.DisplayName>
+        <sys:String>Execute Before</sys:String>
+      </DynamicEnumProperty.DisplayName>
+      <DynamicEnumProperty.Description>
+        <sys:String>Specifies the targets for the build customization to run before.</sys:String>
+      </DynamicEnumProperty.Description>
+      <DynamicEnumProperty.ProviderSettings>
+        <NameValuePair
+          Name="Exclude"
+          Value="^AndroidApkSignBeforeTargets|^Compute" />
+      </DynamicEnumProperty.ProviderSettings>
+      <DynamicEnumProperty.DataSource>
+        <DataSource
+          Persistence="ProjectFile"
+          ItemType=""
+          HasConfigurationCondition="true" />
+      </DynamicEnumProperty.DataSource>
+    </DynamicEnumProperty>
+
+    <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    -->
+
+    <DynamicEnumProperty
+      Name="AndroidApkSignAfterTargets"
+      Category="General"
+      EnumProvider="Targets"
+      IncludeInCommandLine="False">
+      <DynamicEnumProperty.DisplayName>
+        <sys:String>Execute After</sys:String>
+      </DynamicEnumProperty.DisplayName>
+      <DynamicEnumProperty.Description>
+        <sys:String>Specifies the targets for the build customization to run after.</sys:String>
+      </DynamicEnumProperty.Description>
+      <DynamicEnumProperty.ProviderSettings>
+        <NameValuePair
+          Name="Exclude"
+          Value="^AndroidApkSignAfterTargets|^Compute" />
+      </DynamicEnumProperty.ProviderSettings>
+      <DynamicEnumProperty.DataSource>
+        <DataSource
+          Persistence="ProjectFile"
+          ItemType=""
+          HasConfigurationCondition="true" />
+      </DynamicEnumProperty.DataSource>
+    </DynamicEnumProperty>
+
+    <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    -->
+
+  </Rule>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <ItemType Name="AndroidApkSign" DisplayName="Android Apk Tool" />
+
+  <!-- <FileExtension Name="*.apk" ContentType="AndroidApkSign" /> -->
+
+  <ContentType Name="AndroidApkSign" DisplayName="Android Apk Signing Tool" ItemType="AndroidApkSign" />
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+</ProjectSchemaDefinitions>

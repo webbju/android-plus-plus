@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Import Project="$(MSBuildThisFileDirectory)ProjectTypes\DeployViaMsBuild\AndroidManifest.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
+
+  <Import Project="$(MSBuildThisFileDirectory)ProjectTypes\DeployViaMsBuild\AndroidJava.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
+
+  <Import Project="$(MSBuildThisFileDirectory)ProjectTypes\DeployViaMsBuild\AndroidProguard.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
+
+  <Import Project="$(MSBuildThisFileDirectory)ProjectTypes\DeployViaMsBuild\AndroidDalvik.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
+
+  <Import Project="$(MSBuildThisFileDirectory)ProjectTypes\DeployViaMsBuild\AndroidApk.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
+
+  <Import Project="$(MSBuildThisFileDirectory)ProjectTypes\DeployViaMsBuild\AndroidApkSign.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
+  
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <!-- 
+    Register a additional post-compile, post-link and deployment targets.
+  -->
+
+  <PropertyGroup Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'">
+
+    <PrepareForBuildDependsOn>$(PrepareForBuildDependsOn);PrepareForBuild_DeployViaMsBuild</PrepareForBuildDependsOn>
+
+    <BuildLibTargets Condition="'$(ConfigurationType)'!='Utility'">$(BuildLibTargets);AndroidJava;</BuildLibTargets>
+
+    <BuildLinkTargets Condition="'$(ConfigurationType)'!='Utility'">$(BuildLinkTargets);AndroidApk;AndroidApkSign;</BuildLinkTargets>
+
+    <AfterBuildCompileTargets Condition="'$(ConfigurationType)'!='Utility'">$(AfterBuildCompileTargets)</AfterBuildCompileTargets>
+
+    <BuildCompileAction>$(CommonBuildOnlyTargets);$(BeforeBuildCompileTargets);$(BuildCompileTargets);$(AfterBuildCompileTargets)</BuildCompileAction>
+
+    <BuildLinkAction>$(CommonBuildOnlyTargets);$(BeforeBuildLinkTargets);$(BuildLinkTargets);$(AfterBuildLinkTargets)</BuildLinkAction>
+
+  </PropertyGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target Name="PrepareForBuild_DeployViaMsBuild" DependsOnTargets="$(PlatformPrepareForBuildDependsOn)">
+
+    <!-- 
+      Validate existence of Java JDK
+    -->
+
+    <Error Condition="'$(JavaHomeDir)' == ''" Text="Could not locate the Java JDK. Please consult $(ANDROID_PLUS_PLUS)\docs\getting_started.txt" />
+
+    <Error Condition="!Exists('$(JavaHomeDir)')" Text="Could not locate the Java JDK. Path does not exist. Expected: $(JavaHomeDir)." />
+
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <PropertyGroup>
+
+    <__DeployViaMsBuildTargetsImported>true</__DeployViaMsBuildTargetsImported>
+
+  </PropertyGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+</Project>
