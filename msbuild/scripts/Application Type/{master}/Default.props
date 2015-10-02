@@ -6,7 +6,7 @@
 
     <TargetPlatformIdentifier>{master}</TargetPlatformIdentifier>
 
-    <Platform Condition="'$(Platform)' == ''">armv7-a</Platform>
+    <Platform Condition="'$(Platform)' == ''">{master}.armv7-a</Platform>
 
   </PropertyGroup>
 

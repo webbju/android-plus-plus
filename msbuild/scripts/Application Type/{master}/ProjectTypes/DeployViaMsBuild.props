@@ -48,17 +48,17 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <Import Project="$(MSBuildThisFileDirectory)ProjectTypes\DeployViaMsBuild\AndroidManifest.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidManifest.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)ProjectTypes\DeployViaMsBuild\AndroidJava.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidJava.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)ProjectTypes\DeployViaMsBuild\AndroidProguard.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidProguard.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)ProjectTypes\DeployViaMsBuild\AndroidDalvik.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidDalvik.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)ProjectTypes\DeployViaMsBuild\AndroidApk.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidApk.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)ProjectTypes\DeployViaMsBuild\AndroidApkSign.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidApkSign.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -7,17 +7,17 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <Import Project="$(MSBuildThisFileDirectory)ProjectTypes\DeployViaMsBuild\AndroidManifest.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidManifest.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)ProjectTypes\DeployViaMsBuild\AndroidJava.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidJava.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)ProjectTypes\DeployViaMsBuild\AndroidProguard.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidProguard.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)ProjectTypes\DeployViaMsBuild\AndroidDalvik.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidDalvik.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)ProjectTypes\DeployViaMsBuild\AndroidApk.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidApk.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)ProjectTypes\DeployViaMsBuild\AndroidApkSign.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidApkSign.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
   
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
