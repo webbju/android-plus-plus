@@ -333,7 +333,7 @@ namespace AndroidPlusPlus.Common
       {
         string [] processesOutputLines = deviceProcessList.Replace ("\r", "").Split (new char [] { '\n' });
 
-        string processesRegExPattern = @"(?<user>[^ ]+)[ ]*(?<pid>[0-9]+)[ ]*(?<ppid>[0-9]+)[ ]*(?<vsize>[0-9]+)[ ]*(?<rss>[0-9]+)[ ]*(?<wchan>[A-Za-z0-9]+)[ ]*(?<pc>[A-Za-z0-9]+)[ ]*(?<s>[^ ]+)[ ]*(?<name>[^\r\n]+)";
+        string processesRegExPattern = @"(?<user>[^ ]+)[ ]*(?<pid>[0-9]+)[ ]*(?<ppid>[0-9]+)[ ]*(?<vsize>[0-9]+)[ ]*(?<rss>[0-9]+)[ ]*(?<wchan>[^ ]+)[ ]*(?<pc>[A-Za-z0-9]+)[ ]*(?<s>[^ ]+)[ ]*(?<name>[^\r\n]+)";
 
         Regex regExMatcher = new Regex (processesRegExPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
@@ -359,9 +359,9 @@ namespace AndroidPlusPlus.Common
 
             uint processRss = uint.Parse (regExLineMatches.Result ("${rss}"));
 
-            uint processWchan = Convert.ToUInt32 (regExLineMatches.Result ("${wchan}"), 16);
+            string processWchan = regExLineMatches.Result ("${wchan}");
 
-            uint processPc = Convert.ToUInt32 (regExLineMatches.Result ("${pc}"), 16);
+            string processPc = regExLineMatches.Result ("${pc}");
 
             string processPcS = regExLineMatches.Result ("${s}");
 
