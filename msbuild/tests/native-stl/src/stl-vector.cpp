@@ -5,7 +5,7 @@
 // used here for convenience, use judiciously in real programs. 
 using namespace std;
  
-int main()
+int stl_vector()
 {
   int arr[4] = {1, 2, 3, 4};
   // initialize a vector from an array
