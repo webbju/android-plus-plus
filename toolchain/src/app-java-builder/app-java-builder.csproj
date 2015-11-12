@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
@@ -13,14 +13,15 @@
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <PlatformTarget>x86</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\build\bin\win32\vs10.0\debug</OutputPath>
-    <BaseIntermediateOutputPath>..\..\build\obj\win32\vs10.0\debug\$(AssemblyName)</BaseIntermediateOutputPath>
+    <OutputPath>..\..\build\bin\win32\vs$(VisualStudioVersion)\debug</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\obj\win32\vs$(VisualStudioVersion)\debug\$(AssemblyName)</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -30,8 +31,8 @@
     <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\build\bin\win32\vs10.0\release</OutputPath>
-    <BaseIntermediateOutputPath>..\..\build\obj\win32\vs10.0\release\$(AssemblyName)</BaseIntermediateOutputPath>
+    <OutputPath>..\..\build\bin\win32\vs$(VisualStudioVersion)\release</OutputPath>
+    <BaseIntermediateOutputPath>..\..\build\obj\win32\vs$(VisualStudioVersion)\release\$(AssemblyName)</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>

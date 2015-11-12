@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Android++">
       <Configuration>Debug</Configuration>
@@ -18,14 +18,14 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++'" Label="Configuration">
-    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\</IntDir>
+    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\debug\$(ProjectName)</IntDir>
     <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\debug\</OutDir>
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++'" Label="Configuration">
-    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\</IntDir>
+    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\release\$(ProjectName)</IntDir>
     <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\release\</OutDir>
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
