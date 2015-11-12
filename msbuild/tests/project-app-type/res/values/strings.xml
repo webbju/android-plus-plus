@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="induceCrash">Induce Crash</string>
+    <string name="hello">Hello World, HelloGdbServer!</string>
+    <string name="app_name">HelloGdbServer</string>
+</resources>

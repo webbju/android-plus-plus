@@ -76,7 +76,9 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.props" />
+    <Import Condition="'$(VisualStudioVersion)' == '14.0' and exists('$(VCTargetsPath)\V140\BuildCustomizations\Android++.DeployViaMsBuild.props') and '$(__DeployViaMsBuildImported_Props)' != 'true'" Project="$(VCTargetsPath)\V140\BuildCustomizations\Android++.DeployViaMsBuild.props" />
+    <Import Condition="'$(VisualStudioVersion)' == '12.0' and exists('$(VCTargetsPath)\V120\BuildCustomizations\Android++.DeployViaMsBuild.props') and '$(__DeployViaMsBuildImported_Props)' != 'true'" Project="$(VCTargetsPath)\V120\BuildCustomizations\Android++.DeployViaMsBuild.props" />
+    <Import Condition="exists('$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.props') and '$(__DeployViaMsBuildImported_Props)' != 'true'" Project="$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
@@ -170,6 +172,7 @@
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.targets" />
-  </ImportGroup>
+    <Import Condition="'$(VisualStudioVersion)' == '14.0' and exists('$(VCTargetsPath)\V140\BuildCustomizations\Android++.DeployViaMsBuild.targets') and '$(__DeployViaMsBuildImported_Targets)' != 'true'" Project="$(VCTargetsPath)\V140\BuildCustomizations\Android++.DeployViaMsBuild.targets" />
+    <Import Condition="'$(VisualStudioVersion)' == '12.0' and exists('$(VCTargetsPath)\V120\BuildCustomizations\Android++.DeployViaMsBuild.targets') and '$(__DeployViaMsBuildImported_Targets)' != 'true'" Project="$(VCTargetsPath)\V120\BuildCustomizations\Android++.DeployViaMsBuild.targets" />
+    <Import Condition="exists('$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.targets') and '$(__DeployViaMsBuildImported_Targets)' != 'true'" Project="$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.targets" />  </ImportGroup>
 </Project>

@@ -76,8 +76,14 @@
     <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}\PlatformProps\custom_general.xml">
       <Context>Project</Context>
     </PropertyPageSchema>
+    <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}\PlatformProps\custom_general_appcontainerapplication.xml" Condition="'$(AppContainerApplication)' == 'true'">
+       <Context>Project</Context>
+    </PropertyPageSchema>
     <PropertyPageSchema Include="$(VCTargetsPath)\Platforms\{master}\PlatformProps\custom_general_ps.xml">
       <Context>PropertySheet</Context>
+    </PropertyPageSchema>
+    <PropertyPageSchema Include="$(VCTargetsPath)$(LangID)\folder.xml">
+      <Context>File;BrowseObject</Context>
     </PropertyPageSchema>
   </ItemGroup>
 

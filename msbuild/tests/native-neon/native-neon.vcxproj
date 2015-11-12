@@ -14,6 +14,9 @@
     <ProjectName>native-neon</ProjectName>
     <ProjectGuid>{34677C05-0918-4CA2-BC38-3BC93358CF6E}</ProjectGuid>
     <RootNamespace>nativeneon</RootNamespace>
+    <AppContainerApplication>true</AppContainerApplication>
+    <ApplicationType>Android++</ApplicationType>
+    <ApplicationTypeRevision>1.0</ApplicationTypeRevision>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -33,10 +36,6 @@
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.props" />
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.props" />
-  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.armv7-a'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
@@ -89,7 +88,4 @@
     <AndroidManifest Include="AndroidManifest.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.targets" />
-  </ImportGroup>
 </Project>

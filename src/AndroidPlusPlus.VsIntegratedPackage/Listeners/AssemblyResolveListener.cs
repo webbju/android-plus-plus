@@ -40,7 +40,14 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     {
       string packagePath = Path.GetDirectoryName (Assembly.GetExecutingAssembly ().Location);
 
-      string assemblyFilename = args.Name.Substring(0, args.Name.IndexOf (','));
+      string assemblyFilename = args.Name;
+
+      int i = assemblyFilename.IndexOf (',');
+
+      if (i != -1)
+      {
+        assemblyFilename = assemblyFilename.Substring (0, i);
+      }
 
       string assemblyPath = Path.Combine (packagePath, assemblyFilename + ".dll");
 
