@@ -86,6 +86,9 @@
     Description="Specifies which version of 'build-tools' should be used."
     Category="PlatformDefaults">
 
+    <EnumValue Name="23.0.2" DisplayName="23.0.2" />
+    <EnumValue Name="23.0.1" DisplayName="23.0.1" />
+    <EnumValue Name="23.0.0" DisplayName="23.0" />
     <EnumValue Name="22.0.1" DisplayName="22.0.1" />
     <EnumValue Name="22.0.0" DisplayName="22.0.0" />
     <EnumValue Name="21.1.2" DisplayName="21.1.2" />
