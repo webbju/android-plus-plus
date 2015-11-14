@@ -122,9 +122,18 @@ namespace AndroidPlusPlus.Common
 
     public void Dispose ()
     {
-      LoggingUtils.PrintFunction ();
+      Dispose (true);
 
-      try
+      GC.SuppressFinalize (this);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected virtual void Dispose (bool disposing)
+    {
+      if (disposing)
       {
         if (m_jdbClientInstance != null)
         {
@@ -132,10 +141,13 @@ namespace AndroidPlusPlus.Common
 
           m_jdbClientInstance = null;
         }
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
+
+        if (m_sessionStarted != null)
+        {
+          m_sessionStarted.Dispose ();
+
+          m_sessionStarted = null;
+        }
       }
     }
 
@@ -159,8 +171,6 @@ namespace AndroidPlusPlus.Common
         {
           writer.WriteLine (command);
         }
-
-        writer.Close ();
       }
 
       // 

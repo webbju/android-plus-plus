@@ -43,7 +43,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    int IDebugProgramProvider2.GetProviderProcessData (enum_PROVIDER_FLAGS Flags, IDebugDefaultPort2 port, AD_PROCESS_ID ProcessId, CONST_GUID_ARRAY EngineFilter, PROVIDER_PROCESS_DATA [] processArray)
+    public int GetProviderProcessData (enum_PROVIDER_FLAGS Flags, IDebugDefaultPort2 port, AD_PROCESS_ID ProcessId, CONST_GUID_ARRAY EngineFilter, PROVIDER_PROCESS_DATA [] processArray)
     {
       // 
       // Retrieves a list of running programs from a specified process.

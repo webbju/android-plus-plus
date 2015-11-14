@@ -34,7 +34,7 @@ namespace AndroidPlusPlus.VsDebugEngine
   [ClassInterface (ClassInterfaceType.None)]
   public class SynchronousDebugEvent : IDebugEvent2
   {
-    int IDebugEvent2.GetAttributes (out uint pdwAttrib)
+    public int GetAttributes (out uint pdwAttrib)
     {
       pdwAttrib = (uint)enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS;
 
@@ -50,7 +50,7 @@ namespace AndroidPlusPlus.VsDebugEngine
   [ClassInterface (ClassInterfaceType.None)]
   public class AsynchronousDebugEvent : IDebugEvent2
   {
-    int IDebugEvent2.GetAttributes (out uint pdwAttrib)
+    public int GetAttributes (out uint pdwAttrib)
     {
       pdwAttrib = (uint)enum_EVENTATTRIBUTES.EVENT_ASYNCHRONOUS;
 
@@ -66,7 +66,7 @@ namespace AndroidPlusPlus.VsDebugEngine
   [ClassInterface (ClassInterfaceType.None)]
   public class SynchronousStopDebugEvent : IDebugEvent2
   {
-    int IDebugEvent2.GetAttributes (out uint pdwAttrib)
+    public int GetAttributes (out uint pdwAttrib)
     {
       pdwAttrib = (uint)enum_EVENTATTRIBUTES.EVENT_STOPPING | (uint)enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS;
 
@@ -82,7 +82,7 @@ namespace AndroidPlusPlus.VsDebugEngine
   [ClassInterface (ClassInterfaceType.None)]
   public class AsynchronousStopDebugEvent : IDebugEvent2
   {
-    int IDebugEvent2.GetAttributes (out uint pdwAttrib)
+    public int GetAttributes (out uint pdwAttrib)
     {
       pdwAttrib = (uint)enum_EVENTATTRIBUTES.EVENT_STOPPING | (uint)enum_EVENTATTRIBUTES.EVENT_ASYNCHRONOUS;
 
@@ -98,7 +98,7 @@ namespace AndroidPlusPlus.VsDebugEngine
   [ClassInterface (ClassInterfaceType.None)]
   public class ImmediateDebugEvent : IDebugEvent2
   {
-    int IDebugEvent2.GetAttributes (out uint pdwAttrib)
+    public int GetAttributes (out uint pdwAttrib)
     {
       pdwAttrib = (uint) enum_EVENTATTRIBUTES.EVENT_IMMEDIATE;
 
@@ -114,7 +114,7 @@ namespace AndroidPlusPlus.VsDebugEngine
   [ClassInterface (ClassInterfaceType.None)]
   public class ExpressionEvaluationDebugEvent : IDebugEvent2
   {
-    int IDebugEvent2.GetAttributes (out uint pdwAttrib)
+    public int GetAttributes (out uint pdwAttrib)
     {
       pdwAttrib = (uint)enum_EVENTATTRIBUTES.EVENT_EXPRESSION_EVALUATION;
 

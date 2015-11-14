@@ -95,7 +95,10 @@ namespace AndroidPlusPlus.Common
 
       builder.AppendFormat ("[{0}]: {1}\n", e.GetType (), e.Message);
 
-      builder.AppendFormat ("  {0}\n", description);
+      if (!string.IsNullOrWhiteSpace (description))
+      {
+        builder.AppendFormat ("  {0}\n", description);
+      }
 
       builder.AppendFormat ("  Stack trace:\n{0}", e.StackTrace);
 

@@ -294,27 +294,46 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void Dispose ()
     {
-      LoggingUtils.PrintFunction ();
+      Dispose (true);
 
-      if (GdbClient != null)
+      GC.SuppressFinalize (this);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected virtual void Dispose (bool disposing)
+    {
+      if (disposing)
       {
-        GdbClient.Dispose ();
+        if (GdbClient != null)
+        {
+          GdbClient.Dispose ();
 
-        GdbClient = null;
-      }
+          GdbClient = null;
+        }
 
-      if (GdbServer != null)
-      {
-        GdbServer.Dispose ();
+        if (GdbServer != null)
+        {
+          GdbServer.Dispose ();
 
-        GdbServer = null;
-      }
+          GdbServer = null;
+        }
 
-      if (m_gdbSetup != null)
-      {
-        m_gdbSetup.Dispose ();
+        if (m_gdbSetup != null)
+        {
+          m_gdbSetup.Dispose ();
 
-        m_gdbSetup = null;
+          m_gdbSetup = null;
+        }
+
+        if (m_interruptOperationCompleted != null)
+        {
+          m_interruptOperationCompleted.Dispose ();
+
+          m_interruptOperationCompleted = null;
+        }
       }
     }
 
@@ -863,7 +882,7 @@ namespace AndroidPlusPlus.VsDebugEngine
                         // Could not locate a registered breakpoint with matching id.
                         // 
 
-                        DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, "Breakpoint #" + breakpointId, stoppedReason.GetString (), 0x00000000, canContinue);
+                        DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, stoppedReason.GetString (), "Breakpoint #" + breakpointId + "hit", 0x00000000, canContinue);
 
                         Engine.Broadcast (exception, NativeProgram.DebugProgram, stoppedThread);
                       }
@@ -879,7 +898,7 @@ namespace AndroidPlusPlus.VsDebugEngine
                           // Hit a breakpoint which internally is flagged as deleted. Oh noes!
                           // 
 
-                          DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, "Breakpoint #" + breakpointId + " [deleted]", stoppedReason.GetString (), 0x00000000, canContinue);
+                          DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, stoppedReason.GetString (), "Breakpoint #" + breakpointId + " hit [deleted]", 0x00000000, canContinue);
 
                           Engine.Broadcast (exception, NativeProgram.DebugProgram, stoppedThread);
                         }

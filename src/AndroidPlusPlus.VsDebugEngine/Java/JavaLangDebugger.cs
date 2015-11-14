@@ -86,20 +86,32 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void Dispose ()
     {
-      LoggingUtils.PrintFunction ();
+      Dispose (true);
 
-      if (JdbClient != null)
+      GC.SuppressFinalize (this);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected virtual void Dispose (bool disposing)
+    {
+      if (disposing)
       {
-        JdbClient.Dispose ();
+        if (JdbClient != null)
+        {
+          JdbClient.Dispose ();
 
-        JdbClient = null;
-      }
+          JdbClient = null;
+        }
 
-      if (m_jdbSetup != null)
-      {
-        m_jdbSetup.Dispose ();
+        if (m_jdbSetup != null)
+        {
+          m_jdbSetup.Dispose ();
 
-        m_jdbSetup = null;
+          m_jdbSetup = null;
+        }
       }
     }
 

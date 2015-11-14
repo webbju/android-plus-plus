@@ -85,9 +85,18 @@ namespace AndroidPlusPlus.Common
 
     public void Dispose ()
     {
-      LoggingUtils.PrintFunction ();
+      Dispose (true);
 
-      try
+      GC.SuppressFinalize (this);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected virtual void Dispose (bool disposing)
+    {
+      if (disposing)
       {
         if (m_process != null)
         {
@@ -95,10 +104,13 @@ namespace AndroidPlusPlus.Common
 
           m_process = null;
         }
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
+
+        if (m_exitMutex != null)
+        {
+          m_exitMutex.Dispose ();
+
+          m_exitMutex = null;
+        }
       }
     }
 

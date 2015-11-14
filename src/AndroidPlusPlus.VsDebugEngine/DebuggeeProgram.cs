@@ -966,7 +966,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     [Obsolete ("These methods are not called by the Visual Studio debugger.")]
-    int IDebugProgramNode2.Attach_V7 (IDebugProgram2 pMDMProgram, IDebugEventCallback2 pCallback, uint dwReason)
+    public int Attach_V7 (IDebugProgram2 pMDMProgram, IDebugEventCallback2 pCallback, uint dwReason)
     {
       LoggingUtils.PrintFunction ();
 
@@ -978,7 +978,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     [Obsolete ("These methods are not called by the Visual Studio debugger.")]
-    int IDebugProgramNode2.DetachDebugger_V7 ()
+    public int DetachDebugger_V7 ()
     {
       LoggingUtils.PrintFunction ();
 
@@ -990,7 +990,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     [Obsolete ("These methods are not called by the Visual Studio debugger.")]
-    int IDebugProgramNode2.GetHostMachineName_V7 (out string pbstrHostMachineName)
+    public int GetHostMachineName_V7 (out string pbstrHostMachineName)
     {
       LoggingUtils.PrintFunction ();
 
@@ -1003,7 +1003,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    int IDebugProgramNode2.GetHostName (enum_GETHOSTNAME_TYPE dwHostNameType, out string pbstrHostName)
+    public int GetHostName (enum_GETHOSTNAME_TYPE dwHostNameType, out string pbstrHostName)
     {
       // 
       // Gets the name of the process hosting the program.
@@ -1042,7 +1042,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    int IDebugProgramNode2.GetHostPid (AD_PROCESS_ID [] pHostProcessId)
+    public int GetHostPid (AD_PROCESS_ID [] pHostProcessId)
     {
       //
       // Gets the system process identifier for the process hosting the program.
@@ -1068,7 +1068,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    int IDebugProgramNode2.GetProgramName (out string pbstrProgramName)
+    public int GetProgramName (out string pbstrProgramName)
     {
       // 
       // Gets the name of the program.

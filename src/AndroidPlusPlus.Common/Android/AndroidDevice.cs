@@ -251,8 +251,7 @@ namespace AndroidPlusPlus.Common
             throw new InvalidOperationException (string.Format ("[pull] returned error code: {0}", exitCode));
           }
 
-          return process.StandardOutput; 
-
+          return process.StandardOutput;
         }
       }
       catch (Exception e)
