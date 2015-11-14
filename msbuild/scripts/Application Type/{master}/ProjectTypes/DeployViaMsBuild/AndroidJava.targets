@@ -76,6 +76,11 @@
       <_DexClassPathJars Include="@(AndroidJava)" Condition="('%(Extension)' =='.jar' AND '%(DisableDexExport)' == 'false')" />
       <AndroidJava Remove="@(_ClassPathJars)" />
       <AndroidJava>
+        <!-- Promote any property specified class path data so it may be DEX processed -->
+        <DexClassPaths>%(AndroidJava.ClassPaths);%(AndroidJava.DexClassPaths)</DexClassPaths>
+      </AndroidJava>
+      <AndroidJava>
+        <!-- Add any .jar files which have been added to the project to their respective class path category -->
         <ClassPaths>@(_ClassPathJars->Metadata('FullPath')->Distinct());%(AndroidJava.ClassPaths);</ClassPaths>
         <DexClassPaths>@(_DexClassPathJars->Metadata('FullPath')->Distinct());%(AndroidJava.DexClassPaths);</DexClassPaths>
       </AndroidJava>

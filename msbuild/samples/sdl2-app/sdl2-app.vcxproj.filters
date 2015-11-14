@@ -23,6 +23,9 @@
     <ClCompile Include="src\fireworks.c">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\sdl2-library\src\main\android\SDL_android_main.c">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\common.h">

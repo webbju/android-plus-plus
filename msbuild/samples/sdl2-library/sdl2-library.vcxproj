@@ -35,41 +35,45 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.armv7-a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</IntDir>
-    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.x86'" Label="Configuration">
+    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</IntDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.arm64-v8a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</IntDir>
-    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.armv7-a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</IntDir>
-    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
-    <ConfigurationType>Application</ConfigurationType>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.x86'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</IntDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.arm64-v8a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</IntDir>
-    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
-    <ConfigurationType>Application</ConfigurationType>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
@@ -445,5 +449,6 @@
   <ImportGroup Label="ExtensionTargets">
     <Import Condition="'$(VisualStudioVersion)' == '14.0' and exists('$(VCTargetsPath)\V140\BuildCustomizations\Android++.DeployViaMsBuild.targets') and '$(__DeployViaMsBuildImported_Targets)' != 'true'" Project="$(VCTargetsPath)\V140\BuildCustomizations\Android++.DeployViaMsBuild.targets" />
     <Import Condition="'$(VisualStudioVersion)' == '12.0' and exists('$(VCTargetsPath)\V120\BuildCustomizations\Android++.DeployViaMsBuild.targets') and '$(__DeployViaMsBuildImported_Targets)' != 'true'" Project="$(VCTargetsPath)\V120\BuildCustomizations\Android++.DeployViaMsBuild.targets" />
-    <Import Condition="exists('$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.targets') and '$(__DeployViaMsBuildImported_Targets)' != 'true'" Project="$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.targets" />  </ImportGroup>
+    <Import Condition="exists('$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.targets') and '$(__DeployViaMsBuildImported_Targets)' != 'true'" Project="$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.targets" />
+  </ImportGroup>
 </Project>

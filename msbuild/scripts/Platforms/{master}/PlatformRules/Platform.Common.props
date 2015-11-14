@@ -68,7 +68,7 @@
 
     <LinkCompiled>true</LinkCompiled>
 
-    <TargetName Condition="'$(ProjectName.Substring(0,3)' != 'lib'">lib$(ProjectName)</TargetName>
+    <TargetName Condition="'$(TargetName)' == '' and '$(ProjectName.Substring(0,3)' != 'lib'">lib$(ProjectName)</TargetName>
 
     <TargetName Condition="'$(TargetName)' == ''">$(ProjectName)</TargetName>
 
@@ -90,7 +90,7 @@
 
     <LinkCompiled>true</LinkCompiled>
 
-    <TargetName Condition="'$(ProjectName.Substring(0,3)' != 'lib'">lib$(ProjectName)</TargetName>
+    <TargetName Condition="'$(TargetName)' == '' and '$(ProjectName.Substring(0,3)' != 'lib'">lib$(ProjectName)</TargetName>
 
     <TargetName Condition="'$(TargetName)' == ''">$(ProjectName)</TargetName>
 
@@ -102,7 +102,7 @@
 
     <LibCompiled>true</LibCompiled>
 
-    <TargetName Condition="'$(ProjectName.Substring(0,3)' != 'lib'">lib$(ProjectName)</TargetName>
+    <TargetName Condition="'$(TargetName)' == '' and '$(ProjectName.Substring(0,3)' != 'lib'">lib$(ProjectName)</TargetName>
 
     <TargetName Condition="'$(TargetName)' == ''">$(ProjectName)</TargetName>
 
@@ -114,6 +114,7 @@
     Adjust target path to incorporate target architecture. GetDirectoryName evaluates out the relative paths - mimicking $(TargetDir).
   -->
 
+  <!--
   <PropertyGroup>
 
     <TargetPath Condition="'$(TargetExt)' == ''">$([System.IO.Path]::GetDirectoryName('$([System.IO.Path]::Combine($(ProjectDir),$(OutDir)$(TargetPlatformArchitectureEabi)))'))\$(TargetName)</TargetPath>
@@ -121,6 +122,7 @@
     <TargetPath Condition="'$(TargetExt)' != ''">$([System.IO.Path]::GetDirectoryName('$([System.IO.Path]::Combine($(ProjectDir),$(OutDir)$(TargetPlatformArchitectureEabi)))'))\$(TargetName)$(TargetExt)</TargetPath>
 
   </PropertyGroup>
+  -->
 
   <Import Project="$(VCTargetsPath)\Platforms\$(PlatformTarget)\Platform.Common.props"/>
 

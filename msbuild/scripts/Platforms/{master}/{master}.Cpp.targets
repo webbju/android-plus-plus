@@ -315,7 +315,7 @@
     --> 
 
     <Exec
-      Condition="('@(LinkOutputFiles)' != '' and '$(_LinkStripSymbolsRequired)' == 'true')"
+      Condition="('@(LinkOutputFiles)' != '' and '$(_LinkStripSymbolsRequired)' == 'true' and Exists('$(_DebugLinkBuildIdPath)\$(_DebugLinkBuildIdFilename)'))"
       Command="del /q &quot;$(_DebugLinkBuildIdPath)\$(_DebugLinkBuildIdFilename)&quot;"
       IgnoreExitCode="true"
     />

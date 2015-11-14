@@ -35,32 +35,36 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.armv7-a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</IntDir>
-    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.x86'" Label="Configuration">
+    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</IntDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.arm64-v8a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</IntDir>
-    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.armv7-a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</IntDir>
-    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.x86'" Label="Configuration">
+    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</IntDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -68,7 +72,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.arm64-v8a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</IntDir>
-    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>

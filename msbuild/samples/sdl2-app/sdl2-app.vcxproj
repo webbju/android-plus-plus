@@ -35,32 +35,36 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.armv7-a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</IntDir>
-    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.x86'" Label="Configuration">
+    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</IntDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.arm64-v8a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</IntDir>
-    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.armv7-a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</IntDir>
-    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.x86'" Label="Configuration">
+    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</IntDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -68,7 +72,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.arm64-v8a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</IntDir>
-    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
+    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -81,7 +85,29 @@
     <Import Condition="exists('$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.props') and '$(__DeployViaMsBuildImported_Props)' != 'true'" Project="$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.x86'">
+    <TargetName>libmain</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+    <Link>
+      <AdditionalLibraryDirectories>$(OutDir)\..\..\..\sdl2-library\debug\$(TargetPlatformArchitectureEabi)\</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL2;%(AdditionalDependencies)</AdditionalDependencies>
+      <SystemLibraryDependencies>dl;GLESv1_CM;GLESv2;log;android;%(SystemLibraryDependencies)</SystemLibraryDependencies>
+    </Link>
+    <AndroidJava>
+      <ClassPaths>$(OutDir)\..\..\..\sdl2-library\debug\$(TargetPlatformArchitectureEabi)\libSDL2.jar;%(ClassPaths)</ClassPaths>
+    </AndroidJava>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <Link>
+      <AdditionalLibraryDirectories>$(OutDir)\..\..\..\sdl2-library\release\$(TargetPlatformArchitectureEabi)\</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL2;%(AdditionalDependencies)</AdditionalDependencies>
+      <SystemLibraryDependencies>dl;GLESv1_CM;GLESv2;log;android;%(SystemLibraryDependencies)</SystemLibraryDependencies>
+    </Link>
+    <AndroidJava>
+      <ClassPaths>$(OutDir)\..\..\..\sdl2-library\debug\$(TargetPlatformArchitectureEabi)\libSDL2.jar;%(ClassPaths)</ClassPaths>
+    </AndroidJava>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.armv7-a'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -90,16 +116,10 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL2;%(AdditionalDependencies)</AdditionalDependencies>
-      <SystemLibraryDependencies>dl;GLESv1_CM;GLESv2;log;android;%(SystemLibraryDependencies)</SystemLibraryDependencies>
     </Link>
     <AndroidManifest>
       <IncludeRawAssetsDirectory>$(ProjectDir)assets</IncludeRawAssetsDirectory>
     </AndroidManifest>
-    <AndroidJava>
-      <ClassPaths>$(OutDir)libSDL2.jar;%(ClassPaths)</ClassPaths>
-    </AndroidJava>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.x86'">
     <ClCompile>
@@ -109,16 +129,10 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL2;%(AdditionalDependencies)</AdditionalDependencies>
-      <SystemLibraryDependencies>dl;GLESv1_CM;GLESv2;log;android;%(SystemLibraryDependencies)</SystemLibraryDependencies>
     </Link>
     <AndroidManifest>
       <IncludeRawAssetsDirectory>$(ProjectDir)assets</IncludeRawAssetsDirectory>
     </AndroidManifest>
-    <AndroidJava>
-      <ClassPaths>$(OutDir)libSDL2.jar;%(ClassPaths)</ClassPaths>
-    </AndroidJava>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.arm64-v8a'">
     <ClCompile>
@@ -128,16 +142,10 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL2;%(AdditionalDependencies)</AdditionalDependencies>
-      <SystemLibraryDependencies>dl;GLESv1_CM;GLESv2;log;android;%(SystemLibraryDependencies)</SystemLibraryDependencies>
     </Link>
     <AndroidManifest>
       <IncludeRawAssetsDirectory>$(ProjectDir)assets</IncludeRawAssetsDirectory>
     </AndroidManifest>
-    <AndroidJava>
-      <ClassPaths>$(OutDir)libSDL2.jar;%(ClassPaths)</ClassPaths>
-    </AndroidJava>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.armv7-a'">
     <ClCompile>
@@ -149,18 +157,10 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL2;%(AdditionalDependencies)</AdditionalDependencies>
-      <SystemLibraryDependencies>dl;GLESv1_CM;GLESv2;log;android;%(SystemLibraryDependencies)</SystemLibraryDependencies>
     </Link>
     <AndroidManifest>
       <IncludeRawAssetsDirectory>$(ProjectDir)assets</IncludeRawAssetsDirectory>
     </AndroidManifest>
-    <AndroidJava>
-      <ClassPaths>$(OutDir)libSDL2.jar %(ClassPaths)</ClassPaths>
-    </AndroidJava>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.x86'">
     <ClCompile>
@@ -172,18 +172,10 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL2;%(AdditionalDependencies)</AdditionalDependencies>
-      <SystemLibraryDependencies>dl;GLESv1_CM;GLESv2;log;android;%(SystemLibraryDependencies)</SystemLibraryDependencies>
     </Link>
     <AndroidManifest>
       <IncludeRawAssetsDirectory>$(ProjectDir)assets</IncludeRawAssetsDirectory>
     </AndroidManifest>
-    <AndroidJava>
-      <ClassPaths>$(OutDir)libSDL2.jar %(ClassPaths)</ClassPaths>
-    </AndroidJava>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.arm64-v8a'">
     <ClCompile>
@@ -195,18 +187,10 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL2;%(AdditionalDependencies)</AdditionalDependencies>
-      <SystemLibraryDependencies>dl;GLESv1_CM;GLESv2;log;android;%(SystemLibraryDependencies)</SystemLibraryDependencies>
     </Link>
     <AndroidManifest>
       <IncludeRawAssetsDirectory>$(ProjectDir)assets</IncludeRawAssetsDirectory>
     </AndroidManifest>
-    <AndroidJava>
-      <ClassPaths>$(OutDir)libSDL2.jar %(ClassPaths)</ClassPaths>
-    </AndroidJava>
   </ItemDefinitionGroup>
   <ItemGroup>
     <AndroidManifest Include="AndroidManifest.xml" />
@@ -215,6 +199,7 @@
     <AndroidJava Include="src\java\DemoActivity.java" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\sdl2-library\src\main\android\SDL_android_main.c" />
     <ClCompile Include="src\common.c" />
     <ClCompile Include="src\fireworks.c" />
   </ItemGroup>
@@ -229,5 +214,6 @@
   <ImportGroup Label="ExtensionTargets">
     <Import Condition="'$(VisualStudioVersion)' == '14.0' and exists('$(VCTargetsPath)\V140\BuildCustomizations\Android++.DeployViaMsBuild.targets') and '$(__DeployViaMsBuildImported_Targets)' != 'true'" Project="$(VCTargetsPath)\V140\BuildCustomizations\Android++.DeployViaMsBuild.targets" />
     <Import Condition="'$(VisualStudioVersion)' == '12.0' and exists('$(VCTargetsPath)\V120\BuildCustomizations\Android++.DeployViaMsBuild.targets') and '$(__DeployViaMsBuildImported_Targets)' != 'true'" Project="$(VCTargetsPath)\V120\BuildCustomizations\Android++.DeployViaMsBuild.targets" />
-    <Import Condition="exists('$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.targets') and '$(__DeployViaMsBuildImported_Targets)' != 'true'" Project="$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.targets" />  </ImportGroup>
+    <Import Condition="exists('$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.targets') and '$(__DeployViaMsBuildImported_Targets)' != 'true'" Project="$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.targets" />
+  </ImportGroup>
 </Project>

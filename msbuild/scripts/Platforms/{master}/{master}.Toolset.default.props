@@ -128,11 +128,9 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
   
-  <ItemDefinitionGroup Condition="'$(ConfigurationType)' == 'Application'">
+  <ItemDefinitionGroup Condition="'$(ConfigurationType)' == 'Application' or '$(ConfigurationType)' == 'DynamicLibrary'">
 
     <Link>
-
-      <OutputFile>$([System.IO.Path]::GetDirectoryName('$(TargetDir)$(TargetPlatformArchitectureEabi)'))\$(TargetName)$(TargetExt)</OutputFile>
 
       <OutputSharedLibrary Condition="'%(Link.OutputSharedLibrary)' == ''">true</OutputSharedLibrary>
 
@@ -151,8 +149,6 @@
   <ItemDefinitionGroup Condition="'$(ConfigurationType)' == 'Executable'">
 
     <Link>
-
-      <OutputFile>$([System.IO.Path]::GetDirectoryName('$(TargetDir)$(TargetPlatformArchitectureEabi)'))\$(TargetName)</OutputFile>
 
       <OutputSharedLibrary Condition="'%(Link.OutputSharedLibrary)' == ''">false</OutputSharedLibrary>
 
@@ -213,8 +209,6 @@
   <ItemDefinitionGroup>
 
     <Lib>
-
-      <OutputFile>$([System.IO.Path]::GetDirectoryName('$(TargetDir)$(TargetPlatformArchitectureEabi)'))\$(TargetName).a</OutputFile>
 
       <OutputCommandLine Condition="'%(Lib.OutputCommandLine)' == ''">false</OutputCommandLine>
 
