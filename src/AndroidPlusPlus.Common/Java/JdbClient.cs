@@ -169,7 +169,11 @@ namespace AndroidPlusPlus.Common
 
       StringBuilder argumentBuilder = new StringBuilder ();
 
-      argumentBuilder.Append (string.Format (" -dbgtrace -connect com.sun.jdi.SocketAttach:hostname={0},port={1} ", m_jdbSetup.Host, m_jdbSetup.Port));
+    #if DEBUG && false
+      argumentBuilder.Append (string.Format ("-dbgtrace "));
+    #endif
+
+      argumentBuilder.Append (string.Format ("-connect com.sun.jdi.SocketAttach:hostname={0},port={1} ", m_jdbSetup.Host, m_jdbSetup.Port));
 
       m_jdbClientInstance = new AsyncRedirectProcess (Path.Combine (JavaSettings.JdkRoot, @"bin\jdb.exe"), argumentBuilder.ToString ());
     }

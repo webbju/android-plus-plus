@@ -75,6 +75,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       string preferedGdbAbiToolPrefix = string.Empty;
 
+      bool allow64BitAbis = true;
+
       switch (debugProgram.DebugProcess.NativeProcess.PrimaryCpuAbi)
       {
         case "armeabi":
@@ -87,7 +89,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         case "arm64-v8a":
         {
-          preferedGdbAbiToolPrefix = "aarch64-linux-android";
+          if (allow64BitAbis)
+          {
+            preferedGdbAbiToolPrefix = "aarch64-linux-android";
+          }
+          else
+          {
+            preferedGdbAbiToolPrefix = "arm-linux-androideabi";
+          }
 
           break;
         }
@@ -101,7 +110,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         case "x86_64":
         {
-          preferedGdbAbiToolPrefix = "x86_64-linux-android";
+          if (allow64BitAbis)
+          {
+            preferedGdbAbiToolPrefix = "x86_64-linux-android";
+          }
+          else
+          {
+            preferedGdbAbiToolPrefix = "i686-linux-android";
+          }
 
           break;
         }
@@ -115,7 +131,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         case "mips64":
         {
-          preferedGdbAbiToolPrefix = "mips64el-linux-android";
+          if (allow64BitAbis)
+          {
+            preferedGdbAbiToolPrefix = "mips64el-linux-android";
+          }
+          else
+          {
+            preferedGdbAbiToolPrefix = "mipsel-linux-android";
+          }
 
           break;
         }

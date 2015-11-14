@@ -469,11 +469,11 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
           string installReport = debuggingDevice.Shell ("pm", "install " + installArgsBuilder.ToString (), int.MaxValue);
 
-          if (installReport.Contains ("Failure ["))
+          if (!installReport.Contains ("Success"))
           {
-            int failureIndex = installReport.IndexOf ("Failure [");
+            string sanitisedFailure = installReport;
 
-            throw new InvalidOperationException (string.Format ("Failed to install: {0}", installReport.Substring (failureIndex)));
+            throw new InvalidOperationException (string.Format ("[adb:shell:pm] install failed: {0}", sanitisedFailure));
           }
 
           m_debugConnectionService.LaunchDialogUpdate (string.Format ("[adb:shell:rm] {0}", targetRemoteTemporaryFile), false);

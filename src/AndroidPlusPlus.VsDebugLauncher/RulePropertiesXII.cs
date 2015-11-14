@@ -104,13 +104,20 @@ namespace AndroidPlusPlus.VsDebugLauncher.Rules
         {
           IRule schemaRules = catalog.Value.BindToContext (schema, File, ItemType, ItemName);
 
-          foreach (IProperty properties in schemaRules.Properties)
+          foreach (IProperty property in schemaRules.Properties)
           {
             try
             {
-              IEvaluatedProperty evaluatedProperty = (IEvaluatedProperty) properties;
+              if (property.DataSource.Persistence.Equals ("ProjectInstance"))
+              {
+                // Exceptions are thrown when trying to query the values of properties with 'ProjectInstance' persistence.
 
-              string schemaGroupedKey = schema + "." + properties.Name;
+                continue;
+              }
+
+              IEvaluatedProperty evaluatedProperty = (IEvaluatedProperty) property;
+
+              string schemaGroupedKey = schema + "." + evaluatedProperty.Name;
 
               evaluatedProperties [schemaGroupedKey] = await evaluatedProperty.GetEvaluatedValueAsync ();
             }

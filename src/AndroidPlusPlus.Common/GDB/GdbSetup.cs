@@ -314,7 +314,6 @@ namespace AndroidPlusPlus.Common
           "/system/lib64/libEGL.so",
           "/system/lib64/libGLESv1_CM.so",
           "/system/lib64/libGLESv2.so",
-          "/system/lib64/libGLESv3.so",
           "/system/lib64/libutils.so",
         });
       }
@@ -331,7 +330,6 @@ namespace AndroidPlusPlus.Common
           "/system/lib/libEGL.so",
           "/system/lib/libGLESv1_CM.so",
           "/system/lib/libGLESv2.so",
-          "/system/lib/libGLESv3.so",
           "/system/lib/libutils.so",
         });
       }
@@ -400,25 +398,29 @@ namespace AndroidPlusPlus.Common
 
       try
       {
-        string libraryCachePath = Path.Combine (CacheSysRoot, Process.NativeLibraryPath.Substring (1));
+        string nativeLibraryPath = Process.NativeLibraryPath;
 
-        Directory.CreateDirectory (libraryCachePath);
+        string nativeOatLibraryPath = Process.NativeLibraryPath.Replace ("/lib", "/oat");
+
+        // 
+        // On Android L, Google have broken pull permissions to 'app-lib' (and '/data/app/XXX/lib/') content so we use cp to avoid this.
+        // 
 
         bool pulledLibraries = false;
 
+        string libraryCachePath = Path.Combine (CacheSysRoot, nativeLibraryPath.Substring (1));
+
+        Directory.CreateDirectory (libraryCachePath);
+
         if (Process.HostDevice.SdkVersion >= AndroidSettings.VersionCode.LOLLIPOP)
         {
-          // 
-          // On Android L, Google have broken pull permissions to 'app-lib' (and '/data/app/XXX/lib/') content so we use cp to avoid this.
-          // 
+          string [] libraries = Process.HostDevice.Shell ("ls", nativeLibraryPath).Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
-          string [] libraries = Process.HostDevice.Shell ("ls", Process.NativeLibraryPath).Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-
-          foreach (string lib in libraries)
+          foreach (string file in libraries)
           {
-            string remoteLib = Process.NativeLibraryPath + "/" + lib;
+            string remoteLib = nativeLibraryPath + "/" + file;
 
-            string temporaryStorage = "/data/local/tmp/" + lib;
+            string temporaryStorage = "/data/local/tmp/" + file;
 
             try
             {
@@ -439,15 +441,67 @@ namespace AndroidPlusPlus.Common
           }
         }
 
+        // 
+        // Also on Android L, Google's new oat format is an ELF which is readable by GDB. We want to include this in the sysroot.
+        // 
+
+        bool pulledOatLibraries = false;
+
+        string libraryOatCachePath = Path.Combine (CacheSysRoot, nativeOatLibraryPath.Substring (1));
+
+        Directory.CreateDirectory (libraryOatCachePath);
+
+        if (Process.HostDevice.SdkVersion >= AndroidSettings.VersionCode.LOLLIPOP)
+        {
+          string [] oatLibraries = new string []
+          {
+            // Due to permissions these have to be directly referenced; ls won't work.
+            "base.odex"
+          };
+
+          foreach (string file in oatLibraries)
+          {
+            string remoteLib = nativeOatLibraryPath + "/" + file;
+
+            string temporaryStorage = "/data/local/tmp/" + file;
+
+            try
+            {
+              Process.HostDevice.Shell ("cp", string.Format ("-fH {0} {1}", remoteLib, temporaryStorage));
+
+              Process.HostDevice.Pull (temporaryStorage, libraryCachePath);
+
+              Process.HostDevice.Shell ("rm", temporaryStorage);
+
+              LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", remoteLib));
+
+              pulledOatLibraries = true;
+            }
+            catch (Exception e)
+            {
+              LoggingUtils.HandleException (string.Format ("[GdbSetup] Failed pulling {0} from device/emulator.", remoteLib), e);
+            }
+          }
+        }
+
         try
         {
           if (!pulledLibraries)
           {
-            Process.HostDevice.Pull (Process.NativeLibraryPath, libraryCachePath);
+            Process.HostDevice.Pull (nativeLibraryPath, libraryCachePath);
 
-            LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", Process.NativeLibraryPath));
+            LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", nativeLibraryPath));
 
             pulledLibraries = true;
+          }
+
+          if (!pulledOatLibraries)
+          {
+            Process.HostDevice.Pull (nativeOatLibraryPath, libraryOatCachePath);
+
+            LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", nativeOatLibraryPath));
+
+            pulledOatLibraries = true;
           }
         }
         catch (Exception e)
@@ -455,9 +509,13 @@ namespace AndroidPlusPlus.Common
           LoggingUtils.HandleException (string.Format ("[GdbSetup] Failed pulling {0} from device/emulator.", Process.NativeLibraryPath), e);
         }
 
-        string [] additionalLibraries = Directory.GetFiles (libraryCachePath, "lib*.so", SearchOption.AllDirectories);
+        List<string> additionalLibraries = new List<string> ();
 
-        return additionalLibraries;
+        additionalLibraries.AddRange (Directory.GetFiles (libraryCachePath, "lib*.so", SearchOption.AllDirectories));
+
+        additionalLibraries.AddRange (Directory.GetFiles (libraryOatCachePath, "*.odex", SearchOption.AllDirectories));
+
+        return additionalLibraries.ToArray ();
       }
       catch (Exception e)
       {
@@ -479,11 +537,6 @@ namespace AndroidPlusPlus.Common
 
       gdbExecutionCommands.Add ("set target-async on");
 
-      if (IsVersionEqualOrAbove (7, 7))
-      {
-        gdbExecutionCommands.Add ("set mi-async on"); // as above, from GDB 7.7
-      }
-
       gdbExecutionCommands.Add ("set breakpoint pending on");
 
       gdbExecutionCommands.Add ("set logging file " + PathUtils.SantiseWindowsPath (Path.Combine (CacheDirectory, "gdb.log")));
@@ -492,20 +545,27 @@ namespace AndroidPlusPlus.Common
 
       gdbExecutionCommands.Add ("set logging on");
 
-#if DEBUG && false
+    #if false
+      if (IsVersionEqualOrAbove (7, 7))
+      {
+        gdbExecutionCommands.Add ("set mi-async on"); // as above, from GDB 7.7
+      }
+    #endif
+
+    #if DEBUG && false
       gdbExecutionCommands.Add ("set debug remote 1");
 
       gdbExecutionCommands.Add ("set debug infrun 1");
 
       gdbExecutionCommands.Add ("set verbose on");
-#endif
+    #endif
 
       // 
       // Include a script copied from 'platform/development' (Android Git) which allows JVM stack traces on via Python.
       // - It also define a special mode for controlling debugging behaviour on ART.
       // 
 
-#if false
+    #if false
       string androidPlusPlusRoot = Environment.GetEnvironmentVariable ("ANDROID_PLUS_PLUS");
 
       string dalkvikGdbScriptPath = Path.Combine (androidPlusPlusRoot, "contrib", "gdb", "scripts", "dalvik.gdb");
@@ -521,7 +581,7 @@ namespace AndroidPlusPlus.Common
           gdbExecutionCommands.Add ("handle SIGSEGV print stop");
         }
       }
-#endif
+    #endif
 
       return gdbExecutionCommands.ToArray ();
     }

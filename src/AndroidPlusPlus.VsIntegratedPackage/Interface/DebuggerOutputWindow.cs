@@ -35,20 +35,23 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       //   i.e. VSConstants.OutputWindowPaneGuid.DebugPane_guid
       // 
 
-      IVsOutputWindowPane debugWindowPane;
+      IVsOutputWindowPane debugWindowPane = null;
 
       IVsOutputWindow outputWindow = Package.GetGlobalService (typeof (SVsOutputWindow)) as IVsOutputWindow;
 
-      if (outputWindow.GetPane (outputPaneGuid, out debugWindowPane) != VSConstants.S_OK)
+      if ((outputWindow != null) && (outputWindow.GetPane (outputPaneGuid, out debugWindowPane) != VSConstants.S_OK))
       {
         ErrorHandler.ThrowOnFailure (outputWindow.CreatePane (outputPaneGuid, "General", 1, 0));
 
         ErrorHandler.ThrowOnFailure (outputWindow.GetPane (outputPaneGuid, out debugWindowPane));
       }
 
-      ErrorHandler.ThrowOnFailure (debugWindowPane.Activate ());
+      if (debugWindowPane != null)
+      {
+        ErrorHandler.ThrowOnFailure (debugWindowPane.Activate ());
 
-      ErrorHandler.ThrowOnFailure (debugWindowPane.OutputString (line + Environment.NewLine));
+        ErrorHandler.ThrowOnFailure (debugWindowPane.OutputString (line + Environment.NewLine));
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -82,7 +82,9 @@ namespace AndroidPlusPlus.Common
 
       StringBuilder commandLineArgumentsBuilder = new StringBuilder ();
 
-      commandLineArgumentsBuilder.AppendFormat ("run-as {0} lib/gdbserver ", m_gdbSetup.Process.Name);
+      string gdbPath = string.Format ("{0}/gdbserver", m_gdbSetup.Process.NativeLibraryPath);
+
+      commandLineArgumentsBuilder.AppendFormat ("run-as {0} {1} ", m_gdbSetup.Process.Name, gdbPath);
 
       if (!string.IsNullOrWhiteSpace (m_gdbSetup.Socket))
       {
@@ -130,7 +132,7 @@ namespace AndroidPlusPlus.Common
 
       if (!responseSignaled)
       {
-        throw new TimeoutException ("Timed out waiting for GdbServer to execute");
+        throw new TimeoutException ("Timed out waiting for GdbServer to execute.");
       }
     }
 
