@@ -200,7 +200,7 @@ namespace AndroidPlusPlus.Common
 
     public static AndroidDevice [] GetConnectedDevices ()
     {
-      lock (m_connectedDevices)
+      lock (m_updateLockMutex)
       {
         AndroidDevice [] deviceArray = new AndroidDevice [m_connectedDevices.Count];
 
@@ -257,7 +257,7 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      lock (m_connectedDevices)
+      lock (m_updateLockMutex)
       {
         return m_connectedDevices.ContainsKey (queryDevice.ID);
       }
@@ -271,7 +271,7 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      lock (m_registeredDeviceStateListeners)
+      lock (m_updateLockMutex)
       {
         m_registeredDeviceStateListeners.Add (listner);
       }
