@@ -68,9 +68,9 @@
 
     <LinkCompiled>true</LinkCompiled>
 
-    <TargetName Condition="'$(TargetName)' != '' and '$(ProjectName.Substring(0,3)' != 'lib'">lib$(ProjectName)</TargetName>
-
     <TargetName Condition="'$(TargetName)' == ''">$(ProjectName)</TargetName>
+
+    <TargetName Condition="'$(TargetName)' != '' and $(TargetName.Substring(0,3)' != 'lib'">lib$(TargetName)</TargetName>
 
     <TargetExt>.so</TargetExt>
 
@@ -90,9 +90,9 @@
 
     <LinkCompiled>true</LinkCompiled>
 
-    <TargetName Condition="'$(TargetName)' != '' and '$(ProjectName.Substring(0,3)' != 'lib'">lib$(ProjectName)</TargetName>
-
     <TargetName Condition="'$(TargetName)' == ''">$(ProjectName)</TargetName>
+
+    <TargetName Condition="'$(TargetName)' != '' and $(TargetName.Substring(0,3)' != 'lib'">lib$(TargetName)</TargetName>
 
     <TargetExt>.so</TargetExt>
 
@@ -102,9 +102,9 @@
 
     <LibCompiled>true</LibCompiled>
 
-    <TargetName Condition="'$(TargetName)' != '' and '$(ProjectName.Substring(0,3)' != 'lib'">lib$(ProjectName)</TargetName>
-
     <TargetName Condition="'$(TargetName)' == ''">$(ProjectName)</TargetName>
+
+    <TargetName Condition="'$(TargetName)' != '' and $(TargetName.Substring(0,3)' != 'lib'">lib$(TargetName)</TargetName>
 
     <TargetExt>.a</TargetExt>
 
