@@ -989,19 +989,23 @@ namespace AndroidPlusPlus.VsDebugEngine
 
               LoggingUtils.RequireOk (debuggeePort.RefreshProcesses ());
 
+              // 
+              // Validate that the process is running and was spawned by one of the zygote processes.
+              // 
+
               uint [] zygotePids = debuggeePort.PortDevice.GetPidsFromName ("zygote");
+
+              uint [] zygote64Pids = debuggeePort.PortDevice.GetPidsFromName ("zygote64");
 
               uint [] packagePids = debuggeePort.PortDevice.GetPidsFromName (packageName);
 
-              foreach (uint pid in packagePids)
+              for (int i = packagePids.Length - 1; i >= 0; --i)
               {
-                // 
-                // Ensure the process was spawned via the 'Zygote', otherwise it could be a thread or service.
-                // 
+                uint pid = packagePids [i];
 
                 AndroidProcess packageProcess = debuggeePort.PortDevice.GetProcessFromPid (pid);
 
-                if (packageProcess.ParentPid == zygotePids [0])
+                if ((packageProcess.ParentPid == zygotePids [0]) || (packageProcess.ParentPid == zygote64Pids [0]))
                 {
                   debugProcess = debuggeePort.GetProcessForPid (pid);
 

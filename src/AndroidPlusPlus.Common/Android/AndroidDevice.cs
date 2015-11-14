@@ -29,11 +29,11 @@ namespace AndroidPlusPlus.Common
 
     private Dictionary<string, string> m_deviceProperties = new Dictionary<string, string> ();
 
-    private Dictionary<string, HashSet<uint>> m_deviceProcessesPidsByName = new Dictionary<string, HashSet<uint>> ();
-
     private Dictionary<uint, AndroidProcess> m_deviceProcessesByPid = new Dictionary<uint, AndroidProcess> ();
 
-    private Dictionary<uint, Dictionary<uint, AndroidProcess>> m_deviceProcessesByPpid = new Dictionary<uint, Dictionary<uint, AndroidProcess>> ();
+    private Dictionary<string, HashSet<uint>> m_devicePidsByName = new Dictionary<string, HashSet<uint>> ();
+
+    private Dictionary<uint, HashSet<uint>> m_devicePidsByPpid = new Dictionary<uint, HashSet<uint>> ();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -123,7 +123,7 @@ namespace AndroidPlusPlus.Common
 
       uint [] processesArray = new uint [] { };
 
-      if (m_deviceProcessesPidsByName.TryGetValue (processName, out processPidSet))
+      if (m_devicePidsByName.TryGetValue (processName, out processPidSet))
       {
         processesArray = new uint [processPidSet.Count];
 
@@ -139,15 +139,15 @@ namespace AndroidPlusPlus.Common
 
     public uint [] GetChildPidsFromPpid (uint parentProcessId)
     {
-      Dictionary<uint, AndroidProcess> processes;
+      HashSet<uint> processPpidSiblingSet;
 
       uint [] processesArray = new uint [] { };
 
-      if (m_deviceProcessesByPpid.TryGetValue (parentProcessId, out processes))
+      if (m_devicePidsByPpid.TryGetValue (parentProcessId, out processPpidSiblingSet))
       {
-        processesArray = new uint [processes.Count];
+        processesArray = new uint [processPpidSiblingSet.Count];
 
-        processes.Keys.CopyTo (processesArray, 0);
+        processPpidSiblingSet.CopyTo (processesArray, 0);
       }
 
       return processesArray;
@@ -194,7 +194,7 @@ namespace AndroidPlusPlus.Common
       {
         LoggingUtils.HandleException (e);
 
-        throw new InvalidOperationException ("Failed shell command", e);
+        throw new InvalidOperationException (string.Format ("[shell:{0}] failed", command), e);
       }
     }
 
@@ -216,7 +216,7 @@ namespace AndroidPlusPlus.Common
 
           if (exitCode != 0)
           {
-            throw new InvalidOperationException (string.Format ("push returned error code: {0}", exitCode));
+            throw new InvalidOperationException (string.Format ("[push] returned error code: {0}", exitCode));
           }
 
           return process.StandardOutput;
@@ -226,7 +226,7 @@ namespace AndroidPlusPlus.Common
       {
         LoggingUtils.HandleException (e);
 
-        throw new InvalidOperationException ("Failed push request", e);
+        throw new InvalidOperationException ("[push] failed", e);
       }
     }
 
@@ -248,7 +248,7 @@ namespace AndroidPlusPlus.Common
 
           if (exitCode != 0)
           {
-            throw new InvalidOperationException (string.Format ("pull returned error code: {0}", exitCode));
+            throw new InvalidOperationException (string.Format ("[pull] returned error code: {0}", exitCode));
           }
 
           return process.StandardOutput; 
@@ -259,7 +259,7 @@ namespace AndroidPlusPlus.Common
       {
         LoggingUtils.HandleException (e);
 
-        throw new InvalidOperationException ("Failed pull request", e);
+        throw new InvalidOperationException ("[pull] failed", e);
       }
     }
 
@@ -339,9 +339,9 @@ namespace AndroidPlusPlus.Common
 
         m_deviceProcessesByPid.Clear ();
 
-        m_deviceProcessesPidsByName.Clear ();
+        m_devicePidsByName.Clear ();
 
-        m_deviceProcessesByPpid.Clear ();
+        m_devicePidsByPpid.Clear ();
 
         for (uint i = 1; i < processesOutputLines.Length; ++i)
         {
@@ -375,42 +375,37 @@ namespace AndroidPlusPlus.Common
             // Add new process to a fast-lookup collection organised by process name.
             // 
 
+            HashSet<uint> processPidsList;
+
+            if (!m_devicePidsByName.TryGetValue (processName, out processPidsList))
             {
-              HashSet<uint> processPidsList;
-
-              if (!m_deviceProcessesPidsByName.TryGetValue (processName, out processPidsList))
-              {
-                processPidsList = new HashSet<uint> ();
-              }
-
-              if (!processPidsList.Contains (processPid))
-              {
-                processPidsList.Add (processPid);
-              }
-
-              m_deviceProcessesPidsByName [processName] = processPidsList;
+              processPidsList = new HashSet<uint> ();
             }
 
-            // 
-            // Check whether this process is the child of another; keep it organised if required.
-            // 
-
-            if (m_deviceProcessesByPid.ContainsKey (processPpid))
+            if (!processPidsList.Contains (processPid))
             {
-              Dictionary<uint, AndroidProcess> processThreadPidsList;
-
-              if (!m_deviceProcessesByPpid.TryGetValue (processPpid, out processThreadPidsList))
-              {
-                processThreadPidsList = new Dictionary<uint, AndroidProcess> ();
-              }
-
-              if (processThreadPidsList.ContainsKey (process.Pid))
-              {
-                processThreadPidsList.Add (process.Pid, process);
-              }
-
-              m_deviceProcessesByPpid [processPpid] = processThreadPidsList;
+              processPidsList.Add (processPid);
             }
+
+            m_devicePidsByName [processName] = processPidsList;
+
+            // 
+            // Check whether this process is sibling of another; keep ppids-pid relationships tracked.
+            // 
+
+            HashSet<uint> processPpidSiblingList;
+
+            if (!m_devicePidsByPpid.TryGetValue (processPpid, out processPpidSiblingList))
+            {
+              processPpidSiblingList = new HashSet<uint> ();
+            }
+
+            if (!processPpidSiblingList.Contains (process.Pid))
+            {
+              processPpidSiblingList.Add (process.Pid);
+            }
+
+            m_devicePidsByPpid [processPpid] = processPpidSiblingList;
           }
         }
       }

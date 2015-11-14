@@ -105,30 +105,49 @@ namespace AndroidPlusPlus.VsDebugEngine
       // 
       // Check which processes are currently running on the target device (port).
       // 
+
       LoggingUtils.PrintFunction ();
 
       try
       {
         m_portDevice.RefreshProcesses ();
 
-        uint [] activePids = m_portDevice.GetActivePids ();
-
-        uint [] zygotePids = m_portDevice.GetPidsFromName ("zygote");
-
         m_portProcesses.Clear ();
 
-        for (int i = 0; i < activePids.Length; ++i)
+        // 
+        // Register a new process with this port if it was spawned by 'zygote'.
+        // 
+
         {
-          // 
-          // Ensure the process was spawned via the 'Zygote', otherwise it could be a thread or service.
-          // 
+          uint [] zygotePids = m_portDevice.GetPidsFromName ("zygote");
 
-          uint pid = activePids [i];
+          uint [] activeZygoteSpawnedPids = m_portDevice.GetChildPidsFromPpid (zygotePids [0]);
 
-          AndroidProcess nativeProcess = m_portDevice.GetProcessFromPid (pid);
-
-          if (nativeProcess.ParentPid == zygotePids [0])
+          for (int i = 0; i < activeZygoteSpawnedPids.Length; ++i)
           {
+            uint pid = activeZygoteSpawnedPids [i];
+
+            AndroidProcess nativeProcess = m_portDevice.GetProcessFromPid (pid);
+
+            m_portProcesses.Add (pid, new DebuggeeProcess (this, nativeProcess));
+          }
+        }
+
+        // 
+        // Register a new process with this port if it was spawned by 'zygote64' (it's a 64-bit process).
+        // 
+
+        {
+          uint [] zygote64Pids = m_portDevice.GetPidsFromName ("zygote64");
+
+          uint [] activeZygote64SpawnedPids = m_portDevice.GetChildPidsFromPpid (zygote64Pids [0]);
+
+          for (int i = 0; i < activeZygote64SpawnedPids.Length; ++i)
+          {
+            uint pid = activeZygote64SpawnedPids [i];
+
+            AndroidProcess nativeProcess = m_portDevice.GetProcessFromPid (pid);
+
             m_portProcesses.Add (pid, new DebuggeeProcess (this, nativeProcess));
           }
         }
