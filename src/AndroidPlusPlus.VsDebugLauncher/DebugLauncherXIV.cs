@@ -120,13 +120,13 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       IDebugLauncher debugLauncher = null;
 
+      DebugLaunchSettings debugLaunchSettings = new DebugLaunchSettings (launchOptions);
+
       try
       {
         debugLauncher = GetDebugLauncher (ServiceProvider);
 
         debugLauncher.PrepareLaunch ();
-
-        DebugLaunchSettings debugLaunchSettings = null;
 
         Dictionary<string, string> projectProperties = await DebuggerProperties.ProjectPropertiesToDictionary ();
 
@@ -144,8 +144,6 @@ namespace AndroidPlusPlus.VsDebugLauncher
         {
           debugLaunchSettings = (DebugLaunchSettings) debugLauncher.StartWithDebugging ((int) launchOptions, launchConfig, launchProps, projectProperties);
         }
-
-        return new IDebugLaunchSettings [] { debugLaunchSettings };
       }
       catch (Exception e)
       {
@@ -165,7 +163,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
         VsShellUtilities.ShowMessageBox (ServiceProvider, description, "Android++ Debugger", OLEMSGICON.OLEMSGICON_CRITICAL, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
       }
 
-      return null;
+      return new IDebugLaunchSettings [] { debugLaunchSettings };
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

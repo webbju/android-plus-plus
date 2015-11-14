@@ -108,6 +108,13 @@ namespace AndroidPlusPlus.VsDebugLauncher.Rules
           {
             try
             {
+              if (property.DataSource.Persistence.Equals ("ProjectInstance"))
+              {
+                // Exceptions are thrown when trying to query the values of properties with 'ProjectInstance' persistence.
+
+                continue;
+              }
+
               IEvaluatedProperty evaluatedProperty = (IEvaluatedProperty) properties;
 
               string schemaGroupedKey = schema + "." + properties.Name;

@@ -1005,7 +1005,18 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                 AndroidProcess packageProcess = debuggeePort.PortDevice.GetProcessFromPid (pid);
 
-                if ((packageProcess.ParentPid == zygotePids [0]) || (packageProcess.ParentPid == zygote64Pids [0]))
+                bool spawnedByZygote = false;
+
+                if ((zygotePids.Length > 0) && (packageProcess.ParentPid == zygotePids [0]))
+                {
+                  spawnedByZygote = true;
+                }
+                else if ((zygote64Pids.Length > 0) && (packageProcess.ParentPid == zygote64Pids [0]))
+                {
+                  spawnedByZygote = true;
+                }
+
+                if (spawnedByZygote)
                 {
                   debugProcess = debuggeePort.GetProcessForPid (pid);
 

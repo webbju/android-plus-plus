@@ -91,7 +91,22 @@ namespace AndroidPlusPlus.Common
 
     public static void HandleException (string description, Exception e)
     {
-      Print (string.Format ("[Exception] {0}\n{1}: {2}\n{3}", description, e.GetType ().ToString (), e.Message, e.StackTrace));
+      StringBuilder builder = new StringBuilder ();
+
+      builder.AppendFormat ("[{0}]: {1}\n", e.GetType (), e.Message);
+
+      builder.AppendFormat ("  {0}\n", description);
+
+      builder.AppendFormat ("  Stack trace:\n{0}", e.StackTrace);
+
+      if (e.InnerException != null)
+      {
+        builder.AppendFormat ("  (Inner) [{0}]: {1}\n", e.InnerException.GetType (), e.InnerException.Message);
+
+        builder.AppendFormat ("  Stack trace:\n{0}", e.InnerException.StackTrace);
+      }
+
+      Print (builder.ToString ());
 
 #if DEBUG && false
       System.Diagnostics.Debugger.Break ();
@@ -104,11 +119,7 @@ namespace AndroidPlusPlus.Common
 
     public static void HandleException (Exception e)
     {
-      Print (string.Format ("[Exception] {0}: {1}\n{2}", e.GetType ().ToString (), e.Message, e.StackTrace));
-
-#if DEBUG && false
-      System.Diagnostics.Debugger.Break ();
-#endif
+      HandleException ("", e);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

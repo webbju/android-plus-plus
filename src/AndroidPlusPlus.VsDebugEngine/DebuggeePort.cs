@@ -118,9 +118,10 @@ namespace AndroidPlusPlus.VsDebugEngine
         // Register a new process with this port if it was spawned by 'zygote'.
         // 
 
-        {
-          uint [] zygotePids = m_portDevice.GetPidsFromName ("zygote");
+        uint [] zygotePids = m_portDevice.GetPidsFromName ("zygote");
 
+        if (zygotePids.Length > 0)
+        {
           uint [] activeZygoteSpawnedPids = m_portDevice.GetChildPidsFromPpid (zygotePids [0]);
 
           for (int i = 0; i < activeZygoteSpawnedPids.Length; ++i)
@@ -137,9 +138,10 @@ namespace AndroidPlusPlus.VsDebugEngine
         // Register a new process with this port if it was spawned by 'zygote64' (it's a 64-bit process).
         // 
 
-        {
-          uint [] zygote64Pids = m_portDevice.GetPidsFromName ("zygote64");
+        uint [] zygote64Pids = m_portDevice.GetPidsFromName ("zygote64");
 
+        if (zygote64Pids.Length > 0)
+        {
           uint [] activeZygote64SpawnedPids = m_portDevice.GetChildPidsFromPpid (zygote64Pids [0]);
 
           for (int i = 0; i < activeZygote64SpawnedPids.Length; ++i)

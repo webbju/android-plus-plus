@@ -1309,7 +1309,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
               ulong to = ulong.Parse (regExLineMatch.Result ("${to}").Substring (2), NumberStyles.HexNumber);
 
-              bool syms = regExLineMatch.Result ("${syms}") == "Yes";
+              bool syms = regExLineMatch.Result ("${syms}").Equals ("Yes");
 
               string lib = regExLineMatch.Result ("${lib}").Replace ("\r", "").Replace ("\n", "");
 

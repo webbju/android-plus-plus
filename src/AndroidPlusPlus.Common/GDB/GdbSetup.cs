@@ -301,38 +301,21 @@ namespace AndroidPlusPlus.Common
 
       List<string> deviceLibraries = new List<string> ();
 
-      if (only64bit && (Process.HostDevice.SdkVersion >= AndroidSettings.VersionCode.LOLLIPOP))
+      string libdir = (only64bit) ? "lib64" : "lib";
+
+      deviceLibraries.AddRange (new string []
       {
-        deviceLibraries.AddRange (new string []
-        {
-          "/system/lib64/libandroid.so",
-          "/system/lib64/libandroid_runtime.so",
-          //"/system/lib64/libart.so",
-          "/system/lib64/libbinder.so",
-          "/system/lib64/libc.so",
-          //"/system/lib64/libdvm.so",
-          "/system/lib64/libEGL.so",
-          "/system/lib64/libGLESv1_CM.so",
-          "/system/lib64/libGLESv2.so",
-          "/system/lib64/libutils.so",
-        });
-      }
-      else
-      {
-        deviceLibraries.AddRange (new string []
-        {
-          "/system/lib/libandroid.so",
-          "/system/lib/libandroid_runtime.so",
-          //"/system/lib/libart.so",
-          "/system/lib/libbinder.so",
-          "/system/lib/libc.so",
-          //"/system/lib/libdvm.so",
-          "/system/lib/libEGL.so",
-          "/system/lib/libGLESv1_CM.so",
-          "/system/lib/libGLESv2.so",
-          "/system/lib/libutils.so",
-        });
-      }
+        string.Format ("/system/{0}/libandroid.so", libdir),
+        string.Format ("/system/{0}/libandroid_runtime.so", libdir),
+      //string.Format ("/system/{0}/libart.so", libdir),
+        string.Format ("/system/{0}/libbinder.so", libdir),
+        string.Format ("/system/{0}/libc.so", libdir),
+      //string.Format ("/system/{0}/libdvm.so", libdir),
+        string.Format ("/system/{0}/libEGL.so", libdir),
+        string.Format ("/system/{0}/libGLESv1_CM.so", libdir),
+        string.Format ("/system/{0}/libGLESv2.so", libdir),
+        string.Format ("/system/{0}/libutils.so", libdir),
+      });
 
       // 
       // Pull the required libraries from the device.
