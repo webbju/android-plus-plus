@@ -1,0 +1,11 @@
+script import sys
+script import os
+script gala_available = os.environ.get('AS_GALA_PATH') is not None
+script exec("if gala_available: sys.path.append(os.environ['AS_GALA_PATH'])")
+script exec("if gala_available: import gdb")
+script exec("if gala_available: import gdb.printing")
+script libstdcxx_printers_available = gala_available and (os.environ.get('AS_LIBSTDCXX_PRINTER_PATH') is not None)
+script exec("if libstdcxx_printers_available: sys.path.append(os.environ['AS_LIBSTDCXX_PRINTER_PATH'])")
+script exec("if libstdcxx_printers_available: import printers")
+script exec("if libstdcxx_printers_available: printers.register_libstdcxx_printers(None)")
+script exec("if lldb.debugger.GetCategory('libstdc++-v6').IsValid(): lldb.debugger.GetCategory('gnu-libstdc++').SetEnabled(False)")

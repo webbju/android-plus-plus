@@ -1,0 +1,2 @@
+settings set plugin.jit-loader.gdb.enable-jit-breakpoint false
+settings set auto-confirm true
