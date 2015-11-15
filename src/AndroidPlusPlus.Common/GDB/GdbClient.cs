@@ -278,7 +278,7 @@ namespace AndroidPlusPlus.Common
 
         if (!responseSignaled)
         {
-          Thread.Yield ();
+          Thread.Sleep (100);
         }
       }
 
@@ -1028,7 +1028,7 @@ namespace AndroidPlusPlus.Common
 
         if (!responseSignaled)
         {
-          Thread.Yield ();
+          Thread.Sleep (100);
         }
       }
 

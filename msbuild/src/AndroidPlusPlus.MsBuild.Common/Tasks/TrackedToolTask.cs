@@ -294,7 +294,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
             if (!gotSemaphore)
             {
-              Thread.Yield ();
+              Thread.Sleep (10);
             }
           }
 
@@ -502,7 +502,7 @@ namespace AndroidPlusPlus.MsBuild.Common
               break;
             }
 
-            Thread.Yield ();
+            Thread.Sleep (10);
           }
         }
 

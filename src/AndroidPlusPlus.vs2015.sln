@@ -16,7 +16,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsIntegrate
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsDebugCommon", "AndroidPlusPlus.VsDebugCommon\AndroidPlusPlus.VsDebugCommon.csproj", "{72DEB30B-76E5-4B4A-9075-5ABC3412B8DB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.VisualStudio.Project", "Microsoft.VisualStudio.Project\Microsoft.VisualStudio.Project.csproj", "{CACB60A9-1E76-4F92-8831-B134A658C695}"
+EndProject
 Global
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Debug|Mixed Platforms = Debug|Mixed Platforms
@@ -78,6 +83,18 @@ Global
 		{72DEB30B-76E5-4B4A-9075-5ABC3412B8DB}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{72DEB30B-76E5-4B4A-9075-5ABC3412B8DB}.Release|x86.ActiveCfg = Release|Any CPU
 		{72DEB30B-76E5-4B4A-9075-5ABC3412B8DB}.Release|x86.Build.0 = Release|Any CPU
+		{CACB60A9-1E76-4F92-8831-B134A658C695}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CACB60A9-1E76-4F92-8831-B134A658C695}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CACB60A9-1E76-4F92-8831-B134A658C695}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{CACB60A9-1E76-4F92-8831-B134A658C695}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{CACB60A9-1E76-4F92-8831-B134A658C695}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{CACB60A9-1E76-4F92-8831-B134A658C695}.Debug|x86.Build.0 = Debug|Any CPU
+		{CACB60A9-1E76-4F92-8831-B134A658C695}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CACB60A9-1E76-4F92-8831-B134A658C695}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CACB60A9-1E76-4F92-8831-B134A658C695}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{CACB60A9-1E76-4F92-8831-B134A658C695}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{CACB60A9-1E76-4F92-8831-B134A658C695}.Release|x86.ActiveCfg = Release|Any CPU
+		{CACB60A9-1E76-4F92-8831-B134A658C695}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

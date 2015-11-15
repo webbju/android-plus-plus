@@ -93,11 +93,9 @@ namespace AndroidPlusPlus.VsDebugLauncher
       {
         LoggingUtils.HandleException (e);
 
-        string description = string.Format ("'CanLaunchAsync' failed:\n[Exception] {0}", e.Message);
+        string description = string.Format ("[{0}] {1}", e.GetType (), e.Message);
 
-#if DEBUG
-        description += "\n[Exception] Stack trace:\n" + e.StackTrace;
-#endif
+        description += "\nStack trace:\n" + e.StackTrace;
 
         if (debugLauncher != null)
         {
@@ -151,9 +149,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
         string description = string.Format ("[{0}] {1}", e.GetType (), e.Message);
 
-#if DEBUG
         description += "\nStack trace:\n" + e.StackTrace;
-#endif
 
         if (debugLauncher != null)
         {

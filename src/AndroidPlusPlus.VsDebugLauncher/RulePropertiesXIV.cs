@@ -104,7 +104,7 @@ namespace AndroidPlusPlus.VsDebugLauncher.Rules
         {
           IRule schemaRules = catalog.Value.BindToContext (schema, File, ItemType, ItemName);
 
-          foreach (IProperty properties in schemaRules.Properties)
+          foreach (IProperty property in schemaRules.Properties)
           {
             try
             {
@@ -115,9 +115,9 @@ namespace AndroidPlusPlus.VsDebugLauncher.Rules
                 continue;
               }
 
-              IEvaluatedProperty evaluatedProperty = (IEvaluatedProperty) properties;
+              IEvaluatedProperty evaluatedProperty = (IEvaluatedProperty)property;
 
-              string schemaGroupedKey = schema + "." + properties.Name;
+              string schemaGroupedKey = schema + "." + property.Name;
 
               evaluatedProperties [schemaGroupedKey] = await evaluatedProperty.GetEvaluatedValueAsync ();
             }

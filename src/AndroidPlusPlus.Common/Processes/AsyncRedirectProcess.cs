@@ -305,7 +305,10 @@ namespace AndroidPlusPlus.Common
           // Ignore: 'No process is associated with this object'.
         }
 
-        m_exitMutex.Set ();
+        if (m_exitMutex != null)
+        {
+          m_exitMutex.Set ();
+        }
 
         if (m_listener != null)
         {

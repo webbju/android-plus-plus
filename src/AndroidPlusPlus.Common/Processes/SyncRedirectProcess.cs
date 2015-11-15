@@ -231,13 +231,20 @@ namespace AndroidPlusPlus.Common
 
         while ((!responseSignaled) && (timeoutFromCurrentTick > 0))
         {
-          responseSignaled = m_exitMutex.WaitOne (0);
+          if (m_exitMutex != null)
+          {
+            responseSignaled = m_exitMutex.WaitOne (0);
+          }
+          else
+          {
+            responseSignaled = true;
+          }
 
           if (!responseSignaled)
           {
             timeoutFromCurrentTick = (idleTimeout + m_lastOutputTimestamp) - Environment.TickCount;
 
-            Thread.Yield ();
+            Thread.Sleep (100);
           }
         }
 
@@ -303,13 +310,16 @@ namespace AndroidPlusPlus.Common
           // Ignore: 'No process is associated with this object'.
         }
 
+        if (m_exitMutex != null)
+        {
+          m_exitMutex.Set ();
+        }
+
         m_lastOutputTimestamp = Environment.TickCount;
 
         StandardOutput = m_stdOutputBuilder.ToString ();
 
         StandardError = m_stdErrorBuilder.ToString ();
-
-        m_exitMutex.Set ();
       }
       catch (Exception e)
       {

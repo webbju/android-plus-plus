@@ -209,7 +209,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           while (!m_broadcastHandleLock.WaitOne (0))
           {
-            Thread.Yield ();
+            Thread.Sleep (100);
           }
         }
       }

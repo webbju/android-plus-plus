@@ -29,7 +29,7 @@ using Microsoft.VisualStudio.Project.Debuggers;
 using Microsoft.VisualStudio.Project.Utilities;
 using Microsoft.VisualStudio.Project.Utilities.DebuggerProviders;
 using Microsoft.VisualStudio.Project.VS.Debuggers;
-#elif VS2013
+#elif VS2013 || VS2015
 using Microsoft.VisualStudio.ProjectSystem;
 using Microsoft.VisualStudio.ProjectSystem.Debuggers;
 using Microsoft.VisualStudio.ProjectSystem.Utilities;

@@ -23,7 +23,6 @@
     <ConfigurationType>Executable</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>clang3.3</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.armv7-a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\</IntDir>

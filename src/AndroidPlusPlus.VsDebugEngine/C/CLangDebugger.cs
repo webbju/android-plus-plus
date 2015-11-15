@@ -442,7 +442,7 @@ namespace AndroidPlusPlus.VsDebugEngine
             {
               Application.DoEvents ();
 
-              Thread.Yield ();
+              Thread.Sleep (100);
             }
           }
 
