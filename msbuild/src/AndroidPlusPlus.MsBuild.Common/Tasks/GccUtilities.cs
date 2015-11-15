@@ -365,11 +365,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
               line = reader.ReadLine ();
             }
-
-            writer.Close ();
           }
-
-          reader.Close ();
         }
 
         File.Copy (dependencyFileTemp, dependencyFile, true);

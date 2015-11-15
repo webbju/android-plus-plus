@@ -78,8 +78,6 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
 
               writer.WriteLine (string.Format ("  {0} \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (sourcePath)));
             }
-
-            writer.Close ();
           }
         }
       }

@@ -89,8 +89,6 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
               {
                 writer.WriteLine (string.Format ("  {0} \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (source.GetMetadata ("FullPath"))));
               }
-
-              writer.Close ();
             }
           }
         }

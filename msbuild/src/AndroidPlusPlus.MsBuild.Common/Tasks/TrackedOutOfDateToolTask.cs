@@ -284,8 +284,6 @@ namespace AndroidPlusPlus.MsBuild.Common
             commandLineSourceDictionary [command] = sourceList;
           }
         }
-
-        reader.Close ();
       }
 
       return commandLineSourceDictionary;

@@ -148,8 +148,6 @@ namespace AndroidPlusPlus.MsBuild.Common
             }
           }
         }
-
-        reader.Close ();
       }
     }
 
@@ -292,8 +290,6 @@ namespace AndroidPlusPlus.MsBuild.Common
             writer.WriteLine (dependency);
           }
         }
-
-        writer.Close ();
       }
 #else
       // 

@@ -368,8 +368,6 @@ namespace AndroidPlusPlus.MsBuild.Common
                     writer.WriteLine (responseFileCommands);
 
                     writer.Flush ();
-
-                    writer.Close ();
                   }
 
                   string responseFileSwitch = GetResponseFileSwitch (responseFile);
@@ -798,8 +796,6 @@ namespace AndroidPlusPlus.MsBuild.Common
 
           writer.WriteLine (keyPair.Key);
         }
-
-        writer.Close ();
       }
     }
 

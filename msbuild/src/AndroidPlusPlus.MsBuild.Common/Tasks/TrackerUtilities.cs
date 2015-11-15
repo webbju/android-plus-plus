@@ -105,8 +105,6 @@ namespace AndroidPlusPlus.MsBuild.Common
 
           trackedSourceLineData = reader.ReadLine ();
         }
-
-        reader.Close ();
       }
 
       return trackedDependencyTable;
