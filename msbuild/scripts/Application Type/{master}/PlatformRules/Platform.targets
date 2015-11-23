@@ -20,7 +20,7 @@
 
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Platform.targets"/>
 
-  <Import Project="$(VCTargetsPath)\Platforms\{master}\{master}.Cpp.targets" />
+  <Import Project="$(VCTargetsPath)\Application Type\{master}\{master}.Cpp.targets" />
 
 </Project>
 

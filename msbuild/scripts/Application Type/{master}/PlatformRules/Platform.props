@@ -22,11 +22,11 @@
 
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Platform.props"/>
 
-  <Import Project="$(VCTargetsPath)\Platforms\{master}\{master}.Cpp.props" />
+  <Import Project="$(VCTargetsPath)\Application Type\{master}\{master}.Cpp.props" />
   
-  <Import Project="$(VCTargetsPath)\Platforms\{master}\{master}.Toolset.default.props" />
+  <Import Project="$(VCTargetsPath)\Application Type\{master}\{master}.Toolset.default.props" />
 
-  <Import Project="$(VCTargetsPath)\Platforms\{master}\{master}.StlSupport.default.props" />
+  <Import Project="$(VCTargetsPath)\Application Type\{master}\{master}.StlSupport.default.props" />
 
 </Project>
 

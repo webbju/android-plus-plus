@@ -7,9 +7,9 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <Import Project="$(VCTargetsPath)\Platforms\{master}\{master}.AndroidSdk.default.props"  Condition="'$(__AndroidSdkPropsImported)' != 'true'" />
+  <Import Project="$(VCTargetsPath)\Application Type\{master}\{master}.AndroidSdk.default.props"  Condition="'$(__AndroidSdkPropsImported)' != 'true'" />
 
-  <Import Project="$(VCTargetsPath)\Platforms\{master}\{master}.AndroidNdk.default.props"  Condition="'$(__AndroidNdkPropsImported)' != 'true'" />
+  <Import Project="$(VCTargetsPath)\Application Type\{master}\{master}.AndroidNdk.default.props"  Condition="'$(__AndroidNdkPropsImported)' != 'true'" />
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
