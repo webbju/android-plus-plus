@@ -55,6 +55,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       public int GetErrorBreakpoint(out IDebugErrorBreakpoint2 ppErrorBP)
       {
+        LoggingUtils.PrintFunction ();
+
         ppErrorBP = m_errorBreakpoint;
 
         return Constants.S_OK;

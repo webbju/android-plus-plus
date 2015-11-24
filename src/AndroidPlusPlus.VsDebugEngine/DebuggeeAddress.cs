@@ -2,6 +2,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+using AndroidPlusPlus.Common;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -60,6 +61,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int CompareTo (DebuggeeAddress compareTo)
     {
+      LoggingUtils.PrintFunction ();
+
       if (MemoryAddress == compareTo.MemoryAddress)
       {
         return 0;
@@ -68,6 +71,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         return -1;
       }
+
       return 1;
     }
 

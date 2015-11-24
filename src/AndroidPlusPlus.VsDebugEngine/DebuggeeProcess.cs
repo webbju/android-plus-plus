@@ -367,6 +367,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       // Retrieves the language currently set for this process.
       // 
 
+      LoggingUtils.PrintFunction ();
+
       throw new NotImplementedException ();
     }
 

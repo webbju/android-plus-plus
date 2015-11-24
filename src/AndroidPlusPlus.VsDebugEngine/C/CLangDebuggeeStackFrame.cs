@@ -562,6 +562,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public override int EnumProperties (enum_DEBUGPROP_INFO_FLAGS requestedFields, uint radix, ref Guid guidFilter, uint timeout, out uint elementsReturned, out IEnumDebugPropertyInfo2 enumDebugProperty)
     {
+      LoggingUtils.PrintFunction ();
+
       try
       {
         if ((guidFilter == DebuggeeProperty.Filters.guidFilterRegisters) || (guidFilter == DebuggeeProperty.Filters.guidFilterAutoRegisters))

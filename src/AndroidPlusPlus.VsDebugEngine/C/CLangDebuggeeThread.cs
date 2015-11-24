@@ -62,6 +62,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void Refresh (ref MiResultValue threadData)
     {
+      LoggingUtils.PrintFunction ();
+
       if (threadData.HasField ("name"))
       {
         m_threadDisplayName = threadData ["name"] [0].GetString (); // user-specified name

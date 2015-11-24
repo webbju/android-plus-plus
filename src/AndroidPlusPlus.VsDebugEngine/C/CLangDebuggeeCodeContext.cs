@@ -256,6 +256,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public static CLangDebuggeeCodeContext GetCodeContextForDocumentContext (CLangDebugger debugger, DebuggeeDocumentContext documentContext)
     {
+      LoggingUtils.PrintFunction ();
+
       string fileName;
 
       TEXT_POSITION [] startOffset = new TEXT_POSITION [1];

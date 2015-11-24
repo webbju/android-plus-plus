@@ -28,7 +28,13 @@ namespace AndroidPlusPlus.Common
     {
       DateTime now = DateTime.Now;
 
-      Trace.WriteLine (string.Format ("[{0}] {1}", now.ToString ("u"), format));
+      string text = string.Format ("[{0}] {1}", now.ToString ("u"), format);
+
+#if DEBUG && false
+      Debug.WriteLine (text);
+#endif
+
+      Trace.WriteLine (text);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

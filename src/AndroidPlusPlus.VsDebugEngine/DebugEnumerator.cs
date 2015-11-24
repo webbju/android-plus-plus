@@ -62,6 +62,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       // Creates an enumerator that contains the same enumeration state as the current enumerator.
       // 
 
+      LoggingUtils.PrintFunction ();
+
       ppEnum = new DebugConnectionEnumerator<T, I> (m_data, m_position) as I;
 
       return Constants.S_OK;
@@ -76,6 +78,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       // 
       // Gets the number of ports in an enumerator.
       // 
+
+      LoggingUtils.PrintFunction ();
 
       pcelt = (uint)m_data.Length;
 
@@ -92,6 +96,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       // Retrieves a specified number of ports in an enumeration sequence.
       // 
 
+      LoggingUtils.PrintFunction ();
+
       return Next ((uint)celt, rgelt, celtFetched);
     }
 
@@ -105,6 +111,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       // Retrieves a specified number of ports in an enumeration sequence.
       // 
 
+      LoggingUtils.PrintFunction ();
+
       return Move (celt, rgelt, out celtFetched);
     }
 
@@ -117,6 +125,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       // 
       // Resets an enumeration sequence to the beginning.
       // 
+
+      LoggingUtils.PrintFunction ();
 
       lock (this)
       {
@@ -136,6 +146,8 @@ namespace AndroidPlusPlus.VsDebugEngine
       // Skips a specified number of ports in an enumeration sequence.
       // 
 
+      LoggingUtils.PrintFunction ();
+
       uint celtFetched;
 
       return Move (celt, null, out celtFetched);
@@ -147,6 +159,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private int Move (uint celt, T[] rgelt, out uint celtFetched)
     {
+      LoggingUtils.PrintFunction ();
+
       lock (this)
       {
         int hr = Constants.S_OK;

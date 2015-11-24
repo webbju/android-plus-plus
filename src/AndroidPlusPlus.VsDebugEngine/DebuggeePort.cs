@@ -60,6 +60,16 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public DebuggeePort (IDebugPortSupplier2 portSupplier, AndroidDevice device)
     {
+      if (portSupplier == null)
+      {
+        throw new ArgumentNullException ("portSupplier");
+      }
+
+      if (device == null)
+      {
+        throw new ArgumentNullException ("device");
+      }
+
       m_portSupplier = portSupplier;
 
       m_portDevice = device;
@@ -89,6 +99,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public DebuggeeProcess GetProcessForPid (uint pid)
     {
+      LoggingUtils.PrintFunction ();
+
       DebuggeeProcess process = null;
 
       m_portProcesses.TryGetValue (pid, out process);
@@ -233,7 +245,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      pbstrName = "adb://" + m_portDevice.ID;
+      pbstrName = m_portDevice.ID;
 
       return Constants.S_OK;
     }

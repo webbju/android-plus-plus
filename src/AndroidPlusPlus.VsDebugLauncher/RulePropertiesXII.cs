@@ -92,6 +92,8 @@ namespace AndroidPlusPlus.VsDebugLauncher.Rules
 
     public async Task<Dictionary <string, string>> ProjectPropertiesToDictionary ()
     {
+      LoggingUtils.PrintFunction ();
+
       Dictionary<string, string> evaluatedProperties = new Dictionary<string, string> ();
 
       var catalogs = await GetNamedCatalogsAsync ();

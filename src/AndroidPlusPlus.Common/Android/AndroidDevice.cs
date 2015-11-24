@@ -87,6 +87,8 @@ namespace AndroidPlusPlus.Common
 
     public string GetProperty (string property)
     {
+      LoggingUtils.PrintFunction ();
+
       string prop;
 
       if (m_deviceProperties.TryGetValue (property, out prop))
@@ -103,6 +105,8 @@ namespace AndroidPlusPlus.Common
 
     public AndroidProcess GetProcessFromPid (uint processId)
     {
+      LoggingUtils.PrintFunction ();
+
       AndroidProcess process;
 
       if (m_deviceProcessesByPid.TryGetValue (processId, out process))
@@ -119,6 +123,8 @@ namespace AndroidPlusPlus.Common
 
     public uint [] GetPidsFromName (string processName)
     {
+      LoggingUtils.PrintFunction ();
+
       HashSet<uint> processPidSet;
 
       uint [] processesArray = new uint [] { };
@@ -139,6 +145,8 @@ namespace AndroidPlusPlus.Common
 
     public uint [] GetChildPidsFromPpid (uint parentProcessId)
     {
+      LoggingUtils.PrintFunction ();
+
       HashSet<uint> processPpidSiblingSet;
 
       uint [] processesArray = new uint [] { };
@@ -159,6 +167,8 @@ namespace AndroidPlusPlus.Common
 
     public uint [] GetActivePids ()
     {
+      LoggingUtils.PrintFunction ();
+
       uint [] activePids = new uint [m_deviceProcessesByPid.Count];
 
       m_deviceProcessesByPid.Keys.CopyTo (activePids, 0);

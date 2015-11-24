@@ -392,6 +392,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugBreakpointEvent2.EnumBreakpoints(out IEnumDebugBoundBreakpoints2 ppEnum)
       {
+        LoggingUtils.PrintFunction ();
+
         ppEnum = m_boundBreakpoints;
 
         return Constants.S_OK;
@@ -437,6 +439,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugExceptionEvent2.GetException (EXCEPTION_INFO [] pExceptionInfo)
       {
+        LoggingUtils.PrintFunction ();
+
         try
         {
           pExceptionInfo [0] = new EXCEPTION_INFO ();
@@ -527,6 +531,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugModuleLoadEvent2.GetModule (out IDebugModule2 module, ref string debugMessage, ref int fIsLoad)
       {
+        LoggingUtils.PrintFunction ();
+
         module = m_debugModule;
 
         try
@@ -574,6 +580,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugSymbolSearchEvent2.GetSymbolSearchInfo (out IDebugModule3 pModule, ref string pbstrDebugMessage, enum_MODULE_INFO_FLAGS [] pdwModuleInfoFlags)
       {
+        LoggingUtils.PrintFunction ();
+
         pModule = m_debugModule;
 
         pbstrDebugMessage = m_searchInfo;
@@ -602,6 +610,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugBeforeSymbolSearchEvent2.GetModuleName (out string pbstrModuleName)
       {
+        LoggingUtils.PrintFunction ();
+
         try
         {
           MODULE_INFO [] moduleInfo = new MODULE_INFO [1];
@@ -641,6 +651,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugPropertyCreateEvent2.GetDebugProperty (out IDebugProperty2 ppProperty)
       {
+        LoggingUtils.PrintFunction ();
+
         ppProperty = m_debugProperty;
 
         return Constants.S_OK;
@@ -665,6 +677,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugPropertyDestroyEvent2.GetDebugProperty (out IDebugProperty2 ppProperty)
       {
+        LoggingUtils.PrintFunction ();
+
         ppProperty = m_debugProperty;
 
         return Constants.S_OK;
@@ -693,6 +707,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugBreakpointBoundEvent2.EnumBoundBreakpoints (out IEnumDebugBoundBreakpoints2 ppEnum)
       {
+        LoggingUtils.PrintFunction ();
+
         List<IDebugBoundBreakpoint2> boundBreakpoints = new List<IDebugBoundBreakpoint2> (1);
 
         boundBreakpoints.Add (m_boundBreakpoint);
@@ -704,6 +720,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugBreakpointBoundEvent2.GetPendingBreakpoint (out IDebugPendingBreakpoint2 ppPendingBP)
       {
+        LoggingUtils.PrintFunction ();
+
         ppPendingBP = m_pendingBreakpoint;
 
         return Constants.S_OK;
@@ -728,6 +746,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugBreakpointUnboundEvent2.GetBreakpoint (out IDebugBoundBreakpoint2 ppBP)
       {
+        LoggingUtils.PrintFunction ();
+
         ppBP = m_boundBreakpoint;
 
         return Constants.S_OK;
@@ -735,6 +755,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugBreakpointUnboundEvent2.GetReason (enum_BP_UNBOUND_REASON [] pdwUnboundReason)
       {
+        LoggingUtils.PrintFunction ();
+
         pdwUnboundReason [0] = enum_BP_UNBOUND_REASON.BPUR_UNKNOWN;
 
         return Constants.S_OK;
@@ -759,6 +781,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugBreakpointErrorEvent2.GetErrorBreakpoint (out IDebugErrorBreakpoint2 ppErrorBP)
       {
+        LoggingUtils.PrintFunction ();
+
         ppErrorBP = m_errorBreakpoint;
 
         return Constants.S_OK; 
@@ -787,6 +811,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugExpressionEvaluationCompleteEvent2.GetExpression (out IDebugExpression2 ppExpr)
       {
+        LoggingUtils.PrintFunction ();
+
         ppExpr = m_debugExpression;
 
         return Constants.S_OK;
@@ -794,6 +820,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugExpressionEvaluationCompleteEvent2.GetResult (out IDebugProperty2 ppResult)
       {
+        LoggingUtils.PrintFunction ();
+
         ppResult = m_debugProperty;
 
         return Constants.S_OK;
@@ -818,6 +846,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugReturnValueEvent2.GetReturnValue (out IDebugProperty2 ppReturnValue)
       {
+        LoggingUtils.PrintFunction ();
+
         ppReturnValue = m_debugProperty;
 
         return Constants.S_OK;
@@ -924,6 +954,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       public int GetErrorMessage (enum_MESSAGETYPE [] pMessageType, out string pbstrErrorFormat, out int phrErrorReason, out uint pdwType, out string pbstrHelpFileName, out uint pdwHelpId)
       {
+        LoggingUtils.PrintFunction ();
+
         pMessageType [0] = ((m_errorIsCritical) ? enum_MESSAGETYPE.MT_MESSAGEBOX : enum_MESSAGETYPE.MT_OUTPUTSTRING) & enum_MESSAGETYPE.MT_TYPE_MASK;
 
         pbstrErrorFormat = m_errorMessage;
@@ -962,6 +994,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugActivateDocumentEvent2.GetDocument (out IDebugDocument2 ppDoc)
       {
+        LoggingUtils.PrintFunction ();
+
         ppDoc = m_document;
 
         return Constants.S_OK;
@@ -969,6 +1003,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugActivateDocumentEvent2.GetDocumentContext (out IDebugDocumentContext2 ppDocContext)
       {
+        LoggingUtils.PrintFunction ();
+
         ppDocContext = m_documentContext;
 
         return Constants.S_OK;
@@ -993,6 +1029,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugInterceptExceptionCompleteEvent2.GetInterceptCookie (out ulong pqwCookie)
       {
+        LoggingUtils.PrintFunction ();
+
         pqwCookie = m_interceptCookie;
 
         return Constants.S_OK;
@@ -1032,6 +1070,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugFuncEvalAbortedEvent2.GetAbortResult (FUNC_EVAL_ABORT_RESULT [] pResult)
       {
+        LoggingUtils.PrintFunction ();
+
         pResult [0] = m_abortResult;
 
         return Constants.S_OK;
@@ -1039,6 +1079,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugFuncEvalAbortedEvent2.GetFunctionName (out string pbstrFunctionName)
       {
+        LoggingUtils.PrintFunction ();
+
         pbstrFunctionName = m_functionName;
 
         return Constants.S_OK;

@@ -99,6 +99,8 @@ namespace AndroidPlusPlus.Common
 
     public void RefreshPackageInfo ()
     {
+      LoggingUtils.PrintFunction ();
+
       // 
       // Retrieves the install specific (coded) remote APK path.
       //   i.e: /data/app/com.example.hellogdbserver-2.apk

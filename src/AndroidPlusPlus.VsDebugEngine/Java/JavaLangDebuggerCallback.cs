@@ -88,6 +88,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public bool IsRegistered (ref Guid riidEvent)
     {
+      LoggingUtils.PrintFunction ();
+
       return m_debuggerCallback.ContainsKey (riidEvent);
     }
 
