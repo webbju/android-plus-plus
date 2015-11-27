@@ -159,86 +159,64 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       string androidPlusPlusRoot = Environment.GetEnvironmentVariable ("ANDROID_PLUS_PLUS");
 
-      string [] contribGdbMatches;
-
-      string contribGdbCommandPath;
-
-      string contribGdbCommandFilePattern = string.Format ("{0}-gdb.cmd", preferedGdbAbiToolPrefix);
-
-      bool forceNdkR9dClient = (debugProgram.DebugProcess.NativeProcess.HostDevice.SdkVersion <= AndroidSettings.VersionCode.JELLY_BEAN);
-
-      if (/*archIs64Bit && */Environment.Is64BitOperatingSystem)
-      {
-        string clientIdentifier = (forceNdkR9dClient) ? "7.3.1" : "7.7.0";
-
-        contribGdbCommandPath = Path.Combine (androidPlusPlusRoot, "contrib", "gdb", "bin", "x86_64", clientIdentifier);
-
-        contribGdbMatches = Directory.GetFiles (contribGdbCommandPath, contribGdbCommandFilePattern, SearchOption.TopDirectoryOnly);
-      }
-      else
-      {
-        string clientIdentifier = (forceNdkR9dClient) ? "7.3.1" : "7.7.0";
-
-        contribGdbCommandPath = Path.Combine (androidPlusPlusRoot, "contrib", "gdb", "bin", "x86", clientIdentifier);
-
-        contribGdbMatches = Directory.GetFiles (contribGdbCommandPath, contribGdbCommandFilePattern, SearchOption.TopDirectoryOnly);
-      }
-
-      if ((contribGdbMatches == null) || (contribGdbMatches.Length == 0))
-      {
-        throw new InvalidOperationException ("Could not locate required 32/64-bit GDB deployment. Tried: " + contribGdbCommandPath);
-      }
-      else if (contribGdbMatches.Length > 1)
-      {
-        throw new InvalidOperationException ("Found multiple files matching GDB search criteria.");
-      }
-      else
-      {
-        m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, contribGdbMatches [0]);
-      }
-
       // 
-      // Evaluate the most up-to-date deployment of GDB provided in the registered SDK. Look at the target device and determine architecture.
+      // Build GDB version permutations.
       // 
 
-      string androidNdkRoot = AndroidSettings.NdkRoot;
+      List<string> gdbToolPermutations = new List<string> ();
 
-      string androidNdkToolchains = Path.Combine (androidNdkRoot, "toolchains");
+      string [] availableHostArchitectures = new string [] { "x86_64", "x86" };
 
-      string gdbExecutablePattern = string.Format ("{0}-gdb.exe", preferedGdbAbiToolPrefix);
-
-      string [] gdbMatches = Directory.GetFiles (androidNdkToolchains, gdbExecutablePattern, SearchOption.AllDirectories);
-
-      if (gdbMatches.Length == 0)
+      foreach (string arch in availableHostArchitectures)
       {
-        throw new FileNotFoundException ("Could not find location for GDB: " + gdbExecutablePattern);
-      }
-
-      for (int i = gdbMatches.Length - 1; i >= 0; --i)
-      {
-        if (gdbMatches [i].Contains ("_x86_64") && !Environment.Is64BitOperatingSystem)
+        if (arch.Contains ("64") && !Environment.Is64BitOperatingSystem)
         {
           continue;
         }
 
+        string gdbToolFilePattern = string.Format ("{0}-gdb.cmd", preferedGdbAbiToolPrefix);
+
+        string [] availableVersionPaths = Directory.GetDirectories (Path.Combine (androidPlusPlusRoot, "contrib", "gdb", "bin", arch), "*.*.*", SearchOption.TopDirectoryOnly);
+
+        foreach (string versionPath in availableVersionPaths)
+        {
+          string [] gdbToolMatches = Directory.GetFiles (versionPath, gdbToolFilePattern, SearchOption.TopDirectoryOnly);
+
+          foreach (string tool in gdbToolMatches)
+          {
+            gdbToolPermutations.Add (tool);
+          }
+        }
+      }
+
+      if (gdbToolPermutations.Count == 0)
+      {
+        throw new InvalidOperationException ("Could not locate required 32/64-bit GDB deployments.");
+      }
+      else
+      {
         // 
-        // Found a matching (and appropriate) GDB executable. Register this if one wasn't found previously.
+        // Pick the oldest GDB version available if running 'Jelly Bean' or below.
         // 
 
-        if (m_gdbSetup == null)
+        bool forceNdkR9dClient = (debugProgram.DebugProcess.NativeProcess.HostDevice.SdkVersion <= AndroidSettings.VersionCode.JELLY_BEAN);
+
+        if (forceNdkR9dClient)
         {
-          m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, gdbMatches [i]);
+          m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, gdbToolPermutations [0]);
+        }
+        else
+        {
+          m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, gdbToolPermutations [gdbToolPermutations.Count - 1]);
         }
 
-#if false
-        string toolchainSysRoot = Path.GetFullPath (Path.Combine (Path.GetDirectoryName (gdbMatches [i]), ".."));
+        // 
+        // A symbolic link to 'share' is placed in the architecture directory, provide GDB with that location.
+        // 
 
-        string pythonGdbScriptsPath = Path.Combine (toolchainSysRoot, "share", "gdb");
+        string architecturePath = Path.GetDirectoryName (Path.GetDirectoryName (gdbToolPermutations [0]));
 
-        m_gdbSetup.GdbToolArguments += " --data-directory " + PathUtils.SantiseWindowsPath (pythonGdbScriptsPath);
-#endif
-
-        break;
+        m_gdbSetup.GdbToolArguments += " --data-directory " + PathUtils.SantiseWindowsPath (architecturePath);
       }
 
       if (m_gdbSetup == null)
