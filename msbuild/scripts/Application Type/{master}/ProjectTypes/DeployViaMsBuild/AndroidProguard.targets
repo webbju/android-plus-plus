@@ -140,6 +140,7 @@
       <!-- Custom command file options and flattened arguments -->
       <_ProGuardCommandFile>$(ProjectDir)$(IntDir)bin\proguard-commands.txt</_ProGuardCommandFile>
       <_ProGuardIncludeScripts>@(_CollatedProGuardProjectScripts->Distinct()->'-include &quot;%(FullPath)&quot;')</_ProGuardIncludeScripts>
+      <_ProGuardInJars>@(AndroidProguard->Distinct()->'-injars &quot;%(FullPath)&quot;(!META-INF/MANIFEST.MF)')</_ProGuardInJars>
     </PropertyGroup>
 
     <!-- Create an empty output jar. -->
@@ -156,6 +157,9 @@
 # 
 # 
 $(_ProGuardIncludeScripts);
+$(_ProGuardInJars);
+-outjars $(_ProGuardOutputJar);
+-libraryjars &quot;$(AndroidSdkRoot)\platforms\android-$(AndroidSdkLevel)\android.jar&quot;;
 # 
 # Output a collection of reports to help debugging.
 # 
@@ -201,9 +205,6 @@ $(_ProGuardIncludeScripts);
 
     <ItemGroup>
       <AndroidProguard>
-        <InJars>@(AndroidProguard->Distinct())</InJars>
-        <OutJars>$(_ProGuardOutputJar)</OutJars>
-        <LibraryJars>$(AndroidSdkRoot)\platforms\android-$(AndroidSdkLevel)\android.jar</LibraryJars>
         <IncludeScripts>$(_ProGuardCommandFile)</IncludeScripts>
       </AndroidProguard>
     </ItemGroup>
