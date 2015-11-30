@@ -140,7 +140,7 @@
       <!-- Custom command file options and flattened arguments -->
       <_ProGuardCommandFile>$(ProjectDir)$(IntDir)bin\proguard-commands.txt</_ProGuardCommandFile>
       <_ProGuardIncludeScripts>@(_CollatedProGuardProjectScripts->Distinct()->'-include &quot;%(FullPath)&quot;')</_ProGuardIncludeScripts>
-      <_ProGuardInJars>@(AndroidProguard->Distinct()->'-injars &quot;%(FullPath)&quot;(!META-INF/MANIFEST.MF)')</_ProGuardInJars>
+      <_ProGuardInJars>@(AndroidProguard->Distinct()->'-injars &quot;%(FullPath)&quot;(!META-INF/MANIFEST.MF,**.class,!**.class.d)')</_ProGuardInJars>
     </PropertyGroup>
 
     <!-- Create an empty output jar. -->
@@ -156,10 +156,9 @@
 # 
 # 
 # 
-$(_ProGuardIncludeScripts);
-$(_ProGuardInJars);
--outjars $(_ProGuardOutputJar);
--libraryjars &quot;$(AndroidSdkRoot)\platforms\android-$(AndroidSdkLevel)\android.jar&quot;;
+$(_ProGuardIncludeScripts)
+-libraryjars &quot;$(AndroidSdkRoot)\platforms\android-$(AndroidSdkLevel)\android.jar&quot;
+$(_ProGuardInJars)
 # 
 # Output a collection of reports to help debugging.
 # 
@@ -199,13 +198,16 @@ $(_ProGuardInJars);
 # 
 -keep public class android.annotation.** {
     public *$(Semicolon)
-}"
+}
+-dontnote android.annotation.**
+"
       Overwrite="true"
     />
 
     <ItemGroup>
       <AndroidProguard>
         <IncludeScripts>$(_ProGuardCommandFile)</IncludeScripts>
+        <OutJars>$(_ProGuardOutputJar)</OutJars>
       </AndroidProguard>
     </ItemGroup>
 

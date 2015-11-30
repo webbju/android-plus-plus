@@ -80,16 +80,16 @@
     />
 
     <!--
-      InJars
+      IncludeScripts
     -->
 
     <StringListProperty 
       Subtype="file" 
-      Name="InJars" 
-      DisplayName="Input Jars" 
-      Description="Specifies the input jars (or aars, wars, ears, zips, apks, or directories) of the application to be processed."
+      Name="IncludeScripts" 
+      DisplayName="Include Scripts" 
+      Description="Recursively reads configuration options from the given file."
       Category="General" 
-      Switch="-injars" 
+      Switch="-include" 
       Separator=" "
     />
 
@@ -104,34 +104,6 @@
       Description="Specifies the names of the output jars (or aars, wars, ears, zips, apks, or directories)."
       Category="General" 
       Switch="-outjars" 
-      Separator=" "
-    />
-
-    <!--
-      LibraryJars
-    -->
-
-    <StringListProperty 
-      Subtype="file" 
-      Name="LibraryJars" 
-      DisplayName="Library Jars" 
-      Description="Specifies the library jars (or aars, wars, ears, zips, apks, or directories) of the application to be processed."
-      Category="General" 
-      Switch="-libraryjars" 
-      Separator=" "
-    />
-
-    <!--
-      IncludeScripts
-    -->
-
-    <StringListProperty 
-      Subtype="file" 
-      Name="IncludeScripts" 
-      DisplayName="Include Scripts" 
-      Description="Recursively reads configuration options from the given file."
-      Category="General" 
-      Switch="-include" 
       Separator=" "
     />
 

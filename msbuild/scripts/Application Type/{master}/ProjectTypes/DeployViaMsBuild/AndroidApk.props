@@ -27,7 +27,7 @@
 
       <OutputCommandLine Condition="'%(AndroidApk.OutputCommandLine)' == ''">false</OutputCommandLine>
 
-      <TrackerLogDirectory Condition="'%(AndroidApk.TrackerLogDirectory)' == ''">$(IntDir)</TrackerLogDirectory>
+      <TrackerLogDirectory Condition="'%(AndroidApk.TrackerLogDirectory)' == ''">$(TLogLocation)</TrackerLogDirectory>
 
     </AndroidApk>
 

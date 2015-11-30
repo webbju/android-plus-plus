@@ -45,7 +45,7 @@
 
       <SourceOutputDirectory Condition="'%(AndroidJava.SourceOutputDirectory)' == ''">$(IntDir)gen</SourceOutputDirectory>
 
-      <ClassPaths Condition="'%(AndroidJava.ClassPaths)' == ''">$(AndroidSdkRoot)\tools\support\annotations.jar;$(AndroidSdkRoot)\tools\proguard\examples\annotations\lib\annotations.jar;%(ClassOutputDirectory);%(SourceOutputDirectory)</ClassPaths>
+      <ClassPaths Condition="'%(AndroidJava.ClassPaths)' == ''">$(AndroidSdkRoot)\tools\support\annotations.jar;%(ClassOutputDirectory)</ClassPaths>
 
       <BootClassPaths Condition="'%(AndroidJava.BootClassPaths)' == ''">$(AndroidSdkRoot)\platforms\android-$(AndroidSdkLevel)\android.jar</BootClassPaths>
 
@@ -85,7 +85,7 @@
 
       <ProcessorNumber Condition="'%(AndroidJava.ProcessorNumber)' == ''">$(NUMBER_OF_PROCESSORS)</ProcessorNumber>
 
-      <TrackerLogDirectory Condition="'%(AndroidJava.TrackerLogDirectory)' == ''">$(IntDir)</TrackerLogDirectory>
+      <TrackerLogDirectory Condition="'%(AndroidJava.TrackerLogDirectory)' == ''">$(TLogLocation)</TrackerLogDirectory>
 
       <OutputCommandLine Condition="'%(AndroidJava.OutputCommandLine)' == ''">false</OutputCommandLine>
 

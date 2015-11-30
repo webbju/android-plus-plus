@@ -85,7 +85,7 @@
         Default TrackedToolTask properties.
       -->
 
-      <TrackerLogDirectory Condition="'%(AndroidDalvik.TrackerLogDirectory)' == ''">$(IntDir)</TrackerLogDirectory>
+      <TrackerLogDirectory Condition="'%(AndroidDalvik.TrackerLogDirectory)' == ''">$(TLogLocation)</TrackerLogDirectory>
 
       <OutputCommandLine Condition="'%(AndroidDalvik.OutputCommandLine)' == ''">false</OutputCommandLine>
 

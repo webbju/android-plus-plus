@@ -127,7 +127,7 @@
 
       <OutputCommandLine Condition="'%(AndroidManifest.OutputCommandLine)' == ''">false</OutputCommandLine>
 
-      <TrackerLogDirectory Condition="'%(AndroidManifest.TrackerLogDirectory)' == ''">$(IntDir)</TrackerLogDirectory>
+      <TrackerLogDirectory Condition="'%(AndroidManifest.TrackerLogDirectory)' == ''">$(TLogLocation)</TrackerLogDirectory>
 
     </AndroidManifest>
 
