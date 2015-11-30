@@ -1157,7 +1157,7 @@ namespace AndroidPlusPlus.MsBuild.Common
           // Create dependency mappings between source and explicit output file (object-file type relationship).
           // 
 
-          List<ITaskItem> dependantFiles = new List<ITaskItem> (2);
+          Dictionary<string, ITaskItem> dependantFiles = new Dictionary<string, ITaskItem> (5);
 
           foreach (KeyValuePair<string, List<ITaskItem>> keyPair in commandDictionary)
           {
@@ -1165,14 +1165,28 @@ namespace AndroidPlusPlus.MsBuild.Common
             {
               dependantFiles.Clear ();
 
-              if (!string.IsNullOrWhiteSpace (source.GetMetadata ("OutputFile")))
+              string outputFile = source.GetMetadata ("OutputFile");
+
+              string objectFileName = source.GetMetadata ("ObjectFileName");
+
+              if (!string.IsNullOrWhiteSpace (outputFile))
               {
-                dependantFiles.Add (new TaskItem (Path.GetFullPath (source.GetMetadata ("OutputFile"))));
+                string key = Path.GetFullPath (outputFile);
+
+                if (!dependantFiles.ContainsKey (key))
+                {
+                  dependantFiles.Add (key, new TaskItem (key));
+                }
               }
 
-              if (!string.IsNullOrWhiteSpace (source.GetMetadata ("ObjectFileName")))
+              if (!string.IsNullOrWhiteSpace (objectFileName))
               {
-                dependantFiles.Add (new TaskItem (Path.GetFullPath (source.GetMetadata ("ObjectFileName"))));
+                string key = Path.GetFullPath (objectFileName);
+
+                if (!dependantFiles.ContainsKey (key))
+                {
+                  dependantFiles.Add (key, new TaskItem (key));
+                }
               }
 
               if (!string.IsNullOrWhiteSpace (source.GetMetadata ("OutputFiles")))
@@ -1181,11 +1195,20 @@ namespace AndroidPlusPlus.MsBuild.Common
 
                 foreach (string file in files)
                 {
-                  dependantFiles.Add (new TaskItem (Path.GetFullPath (file)));
+                  string key = Path.GetFullPath (objectFileName);
+
+                  if (!dependantFiles.ContainsKey (key))
+                  {
+                    dependantFiles.Add (key, new TaskItem (key));
+                  }
                 }
               }
 
-              trackedFileManager.AddDependencyForSources (dependantFiles.ToArray (), new ITaskItem [] { source });
+              ITaskItem [] dependencies = new ITaskItem [dependantFiles.Count];
+
+              dependantFiles.Values.CopyTo (dependencies, 0);
+
+              trackedFileManager.AddDependencyForSources (dependencies, new ITaskItem [] { source });
             }
           }
 

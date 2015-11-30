@@ -165,7 +165,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       List<string> gdbToolPermutations = new List<string> ();
 
-      string [] availableHostArchitectures = new string [] { "x86_64", "x86" };
+      string [] availableHostArchitectures = new string [] { "x86", "x86_64" };
 
       foreach (string arch in availableHostArchitectures)
       {
@@ -214,9 +214,11 @@ namespace AndroidPlusPlus.VsDebugEngine
         // A symbolic link to 'share' is placed in the architecture directory, provide GDB with that location.
         // 
 
-        string architecturePath = Path.GetDirectoryName (Path.GetDirectoryName (gdbToolPermutations [0]));
+        string architecturePath = Path.GetDirectoryName (Path.GetDirectoryName (m_gdbSetup.GdbToolPath));
 
-        m_gdbSetup.GdbToolArguments += " --data-directory " + PathUtils.SantiseWindowsPath (architecturePath);
+        string pythonGdbScriptsPath = Path.Combine (architecturePath, "share", "gdb");
+
+        m_gdbSetup.GdbToolArguments += " --data-directory " + PathUtils.SantiseWindowsPath (pythonGdbScriptsPath);
       }
 
       if (m_gdbSetup == null)

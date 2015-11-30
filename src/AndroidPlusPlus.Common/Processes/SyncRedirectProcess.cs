@@ -42,9 +42,9 @@ namespace AndroidPlusPlus.Common
 
     protected int m_lastOutputTimestamp = 0;
 
-    protected StringBuilder m_stdOutputBuilder = null;
+    protected StringBuilder m_stdOutputBuilder = new StringBuilder ();
 
-    protected StringBuilder m_stdErrorBuilder = null;
+    protected StringBuilder m_stdErrorBuilder = new StringBuilder ();
 
     protected SyncProcess m_process;
 
@@ -152,10 +152,6 @@ namespace AndroidPlusPlus.Common
       m_lastOutputTimestamp = m_startTicks;
 
       m_exitMutex = new ManualResetEvent (false);
-
-      m_stdOutputBuilder = new StringBuilder ();
-
-      m_stdErrorBuilder = new StringBuilder ();
 
       m_process = new SyncProcess ();
 
@@ -317,9 +313,15 @@ namespace AndroidPlusPlus.Common
 
         m_lastOutputTimestamp = Environment.TickCount;
 
-        StandardOutput = m_stdOutputBuilder.ToString ();
+        if ((m_stdOutputBuilder != null) && (m_stdOutputBuilder.Length > 0))
+        {
+          StandardOutput = m_stdOutputBuilder.ToString ();
+        }
 
-        StandardError = m_stdErrorBuilder.ToString ();
+        if ((m_stdErrorBuilder != null) && (m_stdErrorBuilder.Length > 0))
+        {
+          StandardError = m_stdErrorBuilder.ToString ();
+        }
       }
       catch (Exception e)
       {
