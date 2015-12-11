@@ -312,9 +312,13 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
                 DateTime thisMachineUtcTime = DateTime.UtcNow;
 
+                TimeSpan thisMachineUtcVersusDeviceUtc = debuggingDeviceUtcTime - thisMachineUtcTime;
+
                 LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("Current UTC time on '{0}': {1}", debuggingDevice.ID, debuggingDeviceUtcTime.ToString ()), false));
 
                 LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("Current UTC time on '{0}': {1}", System.Environment.MachineName, thisMachineUtcTime.ToString ()), false));
+
+                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("Difference in UTC time between '{0}' and '{1}': {2}", System.Environment.MachineName, debuggingDevice.ID, thisMachineUtcVersusDeviceUtc.ToString ()), false));
 
                 // 
                 // Check the last modified date; ls output currently uses this format:
@@ -360,7 +364,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
                 LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("'{0}' was last modified on '{1}' at: {2}.", Path.GetFileName (targetApkFileInfo.FullName), System.Environment.MachineName, targetApkFileInfo.LastWriteTime.ToString ()), false));
 
-                if (targetApkFileInfo.LastWriteTime > thisMachineUtcTimeAtLastModification)
+                if ((targetApkFileInfo.LastWriteTime + thisMachineUtcVersusDeviceUtc) > thisMachineUtcTimeAtLastModification)
                 {
                   LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("'{0}' was determined to be out-of-date. Reinstalling...", launchConfig ["PackageName"]), false));
                 }
