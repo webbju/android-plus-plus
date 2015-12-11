@@ -381,122 +381,123 @@ namespace AndroidPlusPlus.Common
 
       try
       {
-        string nativeLibraryPath = Process.NativeLibraryPath;
+        List<string> additionalLibraries = new List<string> ();
 
-        string nativeOatLibraryPath = Process.NativeLibraryPath.Replace ("/lib", "/oat");
-
-        // 
-        // On Android L, Google have broken pull permissions to 'app-lib' (and '/data/app/XXX/lib/') content so we use cp to avoid this.
-        // 
-
-        bool pulledLibraries = false;
-
-        string libraryCachePath = Path.Combine (CacheSysRoot, nativeLibraryPath.Substring (1));
-
-        Directory.CreateDirectory (libraryCachePath);
-
-        if (Process.HostDevice.SdkVersion >= AndroidSettings.VersionCode.LOLLIPOP)
+        foreach (string nativeLibraryAbiPath in Process.NativeLibraryAbiPaths)
         {
-          string [] libraries = Process.HostDevice.Shell ("ls", nativeLibraryPath).Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+          string nativeOatLibraryPath = nativeLibraryAbiPath.Replace ("/lib", "/oat");
 
-          foreach (string file in libraries)
+          // 
+          // On Android L, Google have broken pull permissions to 'app-lib' (and '/data/app/XXX/lib/') content so we use cp to avoid this.
+          // 
+
+          bool pulledLibraries = false;
+
+          string libraryCachePath = Path.Combine (CacheSysRoot, nativeLibraryAbiPath.Substring (1));
+
+          Directory.CreateDirectory (libraryCachePath);
+
+          if (Process.HostDevice.SdkVersion >= AndroidSettings.VersionCode.LOLLIPOP)
           {
-            string remoteLib = nativeLibraryPath + "/" + file;
+            string [] libraries = Process.HostDevice.Shell ("ls", nativeLibraryAbiPath).Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
-            string temporaryStorage = "/data/local/tmp/" + file;
-
-            try
+            foreach (string file in libraries)
             {
-              Process.HostDevice.Shell ("cp", string.Format ("-fH {0} {1}", remoteLib, temporaryStorage));
+              string remoteLib = nativeLibraryAbiPath + "/" + file;
 
-              Process.HostDevice.Pull (temporaryStorage, libraryCachePath);
+              string temporaryStorage = "/data/local/tmp/" + file;
 
-              Process.HostDevice.Shell ("rm", temporaryStorage);
+              try
+              {
+                Process.HostDevice.Shell ("cp", string.Format ("-fH {0} {1}", remoteLib, temporaryStorage));
 
-              LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", remoteLib));
+                Process.HostDevice.Pull (temporaryStorage, libraryCachePath);
+
+                Process.HostDevice.Shell ("rm", temporaryStorage);
+
+                LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", remoteLib));
+
+                pulledLibraries = true;
+              }
+              catch (Exception e)
+              {
+                LoggingUtils.HandleException (string.Format ("[GdbSetup] Failed pulling {0} from device/emulator.", remoteLib), e);
+              }
+            }
+          }
+
+          // 
+          // Also on Android L, Google's new oat format is an ELF which is readable by GDB. We want to include this in the sysroot.
+          // 
+
+          bool pulledOatLibraries = false;
+
+          string libraryOatCachePath = Path.Combine (CacheSysRoot, nativeOatLibraryPath.Substring (1));
+
+          Directory.CreateDirectory (libraryOatCachePath);
+
+          if (Process.HostDevice.SdkVersion >= AndroidSettings.VersionCode.LOLLIPOP)
+          {
+            string [] oatLibraries = new string []
+            {
+              // Due to permissions these have to be directly referenced; ls won't work.
+              "base.odex"
+            };
+
+            foreach (string file in oatLibraries)
+            {
+              string remoteLib = nativeOatLibraryPath + "/" + file;
+
+              string temporaryStorage = "/data/local/tmp/" + file;
+
+              try
+              {
+                Process.HostDevice.Shell ("cp", string.Format ("-fH {0} {1}", remoteLib, temporaryStorage));
+
+                Process.HostDevice.Pull (temporaryStorage, libraryCachePath);
+
+                Process.HostDevice.Shell ("rm", temporaryStorage);
+
+                LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", remoteLib));
+
+                pulledOatLibraries = true;
+              }
+              catch (Exception e)
+              {
+                LoggingUtils.HandleException (string.Format ("[GdbSetup] Failed pulling {0} from device/emulator.", remoteLib), e);
+              }
+            }
+          }
+
+          try
+          {
+            if (!pulledLibraries)
+            {
+              Process.HostDevice.Pull (nativeLibraryAbiPath, libraryCachePath);
+
+              LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", nativeLibraryAbiPath));
 
               pulledLibraries = true;
             }
-            catch (Exception e)
+
+            if (!pulledOatLibraries)
             {
-              LoggingUtils.HandleException (string.Format ("[GdbSetup] Failed pulling {0} from device/emulator.", remoteLib), e);
-            }
-          }
-        }
+              Process.HostDevice.Pull (nativeOatLibraryPath, libraryOatCachePath);
 
-        // 
-        // Also on Android L, Google's new oat format is an ELF which is readable by GDB. We want to include this in the sysroot.
-        // 
-
-        bool pulledOatLibraries = false;
-
-        string libraryOatCachePath = Path.Combine (CacheSysRoot, nativeOatLibraryPath.Substring (1));
-
-        Directory.CreateDirectory (libraryOatCachePath);
-
-        if (Process.HostDevice.SdkVersion >= AndroidSettings.VersionCode.LOLLIPOP)
-        {
-          string [] oatLibraries = new string []
-          {
-            // Due to permissions these have to be directly referenced; ls won't work.
-            "base.odex"
-          };
-
-          foreach (string file in oatLibraries)
-          {
-            string remoteLib = nativeOatLibraryPath + "/" + file;
-
-            string temporaryStorage = "/data/local/tmp/" + file;
-
-            try
-            {
-              Process.HostDevice.Shell ("cp", string.Format ("-fH {0} {1}", remoteLib, temporaryStorage));
-
-              Process.HostDevice.Pull (temporaryStorage, libraryCachePath);
-
-              Process.HostDevice.Shell ("rm", temporaryStorage);
-
-              LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", remoteLib));
+              LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", nativeOatLibraryPath));
 
               pulledOatLibraries = true;
             }
-            catch (Exception e)
-            {
-              LoggingUtils.HandleException (string.Format ("[GdbSetup] Failed pulling {0} from device/emulator.", remoteLib), e);
-            }
           }
-        }
-
-        try
-        {
-          if (!pulledLibraries)
+          catch (Exception e)
           {
-            Process.HostDevice.Pull (nativeLibraryPath, libraryCachePath);
-
-            LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", nativeLibraryPath));
-
-            pulledLibraries = true;
+            LoggingUtils.HandleException (string.Format ("[GdbSetup] Failed pulling {0} from device/emulator.", nativeLibraryAbiPath), e);
           }
 
-          if (!pulledOatLibraries)
-          {
-            Process.HostDevice.Pull (nativeOatLibraryPath, libraryOatCachePath);
+          additionalLibraries.AddRange (Directory.GetFiles (libraryCachePath, "lib*.so", SearchOption.AllDirectories));
 
-            LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", nativeOatLibraryPath));
-
-            pulledOatLibraries = true;
-          }
+          additionalLibraries.AddRange (Directory.GetFiles (libraryOatCachePath, "*.odex", SearchOption.AllDirectories));
         }
-        catch (Exception e)
-        {
-          LoggingUtils.HandleException (string.Format ("[GdbSetup] Failed pulling {0} from device/emulator.", Process.NativeLibraryPath), e);
-        }
-
-        List<string> additionalLibraries = new List<string> ();
-
-        additionalLibraries.AddRange (Directory.GetFiles (libraryCachePath, "lib*.so", SearchOption.AllDirectories));
-
-        additionalLibraries.AddRange (Directory.GetFiles (libraryOatCachePath, "*.odex", SearchOption.AllDirectories));
 
         return additionalLibraries.ToArray ();
       }

@@ -35,6 +35,8 @@ namespace AndroidPlusPlus.Common
 
     private string m_nativeLibraryPath;
 
+    private string [] m_nativeLibraryAbiPaths;
+
     private string m_legacyNativeLibraryDir;
 
     private string m_primaryCpuAbi;
@@ -275,24 +277,29 @@ namespace AndroidPlusPlus.Common
       if (string.IsNullOrWhiteSpace (m_nativeLibraryPath))
       {
         m_nativeLibraryPath = m_legacyNativeLibraryDir;
+      }
 
-        if (HostDevice.SdkVersion >= AndroidSettings.VersionCode.JELLY_BEAN_MR1)
+      if (HostDevice.SdkVersion >= AndroidSettings.VersionCode.JELLY_BEAN_MR1)
+      {
+        m_nativeLibraryAbiPaths = new string [HostDevice.SupportedCpuAbis.Length];
+
+        for (int i = 0; i < HostDevice.SupportedCpuAbis.Length; ++i)
         {
-          string cpuAbiSubdirectory = string.Empty;
+          string abi = HostDevice.SupportedCpuAbis [i];
 
-          switch (m_primaryCpuAbi)
+          switch (abi)
           {
             case "armeabi":
             case "armeabi-v7a":
             {
-              cpuAbiSubdirectory = "arm";
+              m_nativeLibraryAbiPaths [i] = string.Format ("{0}/{1}", m_nativeLibraryPath, "arm");
 
               break;
             }
 
             case "arm64-v8a":
             {
-              cpuAbiSubdirectory = "arm64";
+              m_nativeLibraryAbiPaths [i] = string.Format ("{0}/{1}", m_nativeLibraryPath, "arm64");
 
               break;
             }
@@ -303,13 +310,11 @@ namespace AndroidPlusPlus.Common
             case "mips64":
             default:
             {
-              cpuAbiSubdirectory = m_primaryCpuAbi;
+              m_nativeLibraryAbiPaths [i] = string.Format ("{0}/{1}", m_nativeLibraryPath, abi);
 
               break;
             }
           }
-
-          m_nativeLibraryPath = string.Format ("{0}/{1}", m_legacyNativeLibraryDir, cpuAbiSubdirectory);
         }
       }
     }
@@ -347,6 +352,18 @@ namespace AndroidPlusPlus.Common
       get
       {
         return m_nativeLibraryPath;
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public string [] NativeLibraryAbiPaths
+    {
+      get
+      {
+        return m_nativeLibraryAbiPaths;
       }
     }
 
