@@ -12,6 +12,10 @@
 
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <Import Project="$(VCTargetsPath)\Platforms\{master}.armv7-a\Platform.Default.props" />
+  <PropertyGroup>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">armv7-a</TargetArchitecture>
+  </PropertyGroup>
+  
+  <Import Project="$(VCTargetsPath)\Platforms\{master}.$(TargetArchitecture)\Platform.Default.props" />
 
 </Project>

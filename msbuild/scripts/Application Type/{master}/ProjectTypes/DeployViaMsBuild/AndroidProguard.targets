@@ -140,7 +140,7 @@
       <!-- Custom command file options and flattened arguments -->
       <_ProGuardCommandFile>$(ProjectDir)$(IntDir)bin\proguard-commands.txt</_ProGuardCommandFile>
       <_ProGuardIncludeScripts>@(_CollatedProGuardProjectScripts->Distinct()->'-include &quot;%(FullPath)&quot;')</_ProGuardIncludeScripts>
-      <_ProGuardInJars>@(AndroidProguard->Distinct()->'-injars &quot;%(FullPath)&quot;(!META-INF/MANIFEST.MF,**.class,!**.class.d)')</_ProGuardInJars>
+      <_ProGuardInJars>@(AndroidProguard->Distinct()->'-injars &quot;%(FullPath)&quot;(!META-INF/**.*,**.class,!**.class.d)')</_ProGuardInJars>
     </PropertyGroup>
 
     <!-- Create an empty output jar. -->

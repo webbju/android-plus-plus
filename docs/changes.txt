@@ -17,6 +17,7 @@ New functionality:
 Fixes/Improvements:
  - (MSBuild) Made failure to find an imported static/shared library a fatal condition.
  - (MSBuild) Added test projects for building native sources on all available platforms (armv7-a, armv7-a-hard, arm64-v8a, x86, x86_64).
+ - (MSBuild) Improved filtering on ProGuard imported JARs; resolving a number of potential duplicate file errors.
  - (Debugger) Fixed several issues where pulling application libraries from a device would fail silently.
 
 --------------------------------------------------------------------------------------------------------------------------------

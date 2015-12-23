@@ -31,8 +31,9 @@
 
     <Rule.Categories>
       <Category Name="General" DisplayName="General" />
+      <Category Name="Output Files" DisplayName="Output Files" />
       <Category Name="Advanced" DisplayName="Advanced" />
-      <Category Name="Jar" DisplayName="Jar" />
+      <Category Name="Command Line" DisplayName="Command Line" Subtype="CommandLine" />
     </Rule.Categories>
 
     <!--
@@ -328,7 +329,7 @@
       Name="JarOutputFile"
       DisplayName="Output File (.jar)"
       Description="Jar file to be created."
-      Category="Jar"
+      Category="Output Files"
       IncludeInCommandLine="false"
     />
 
@@ -341,8 +342,20 @@
       Name="JarManifestFile"
       DisplayName="Manifest File"
       Description="Pre-existing manifest file whose name: value pairs are to be included in MANIFEST.MF in the jar file."
-      Category="Jar"
+      Category="Output Files"
       IncludeInCommandLine="false"
+    />
+
+    <!--
+      AdditionalOptions
+    -->
+
+    <StringProperty
+      Name="AdditionalOptions"
+      DisplayName="Additional Options"
+      Description="Additional Options"
+      Category="Command Line"
+      F1Keyword="vc.project.AdditionalOptionsPage"
     />
 
     <!--

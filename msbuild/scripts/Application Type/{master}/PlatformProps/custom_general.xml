@@ -55,6 +55,7 @@
     Description="Specifies the target API level for SDK dependencies."
     Category="PlatformDefaults">
 
+    <EnumValue Name="23" DisplayName="Android 6.0 (android-23)" />
     <EnumValue Name="22" DisplayName="Android 5.1 (android-22)" />
     <EnumValue Name="21" DisplayName="Android 5.0 (android-21)" />
     <EnumValue Name="20" DisplayName="Android 4.4W (android-20)" />

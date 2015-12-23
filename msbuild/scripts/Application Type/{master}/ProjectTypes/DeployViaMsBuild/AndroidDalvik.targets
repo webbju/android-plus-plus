@@ -82,7 +82,7 @@
     <PropertyGroup>
       <_DexOutputPath>$(ProjectDir)$(IntDir)bin\dex\</_DexOutputPath>
       <!-- MultiDex script configuration -->
-      <_MainDexInputJars>@(AndroidDalvik->Distinct()->'-injars &quot;%(FullPath)&quot;(!META-INF/MANIFEST.MF,**.class,!**.class.d)')</_MainDexInputJars>
+      <_MainDexInputJars>@(AndroidDalvik->Distinct()->'-injars &quot;%(FullPath)&quot;(!META-INF/**.*,**.class,!**.class.d)')</_MainDexInputJars>
       <_MainDexScriptOutputJar>$(ProjectDir)$(IntDir)bin\mainDexClasses.tmp.jar</_MainDexScriptOutputJar>
       <_MainDexScriptOutputMainList>$(ProjectDir)$(IntDir)bin\mainDexClasses.keep</_MainDexScriptOutputMainList>
       <_MainDexClassPathArgument>@(AndroidDalvik->Distinct())</_MainDexClassPathArgument>
