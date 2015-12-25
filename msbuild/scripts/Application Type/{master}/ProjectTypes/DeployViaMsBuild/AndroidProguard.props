@@ -39,19 +39,15 @@
         Proguard configuration.
       -->
 
-      <InJars Condition="'%(AndroidDalvik.InJars)' == ''"></InJars>
+      <IncludeScripts Condition="'%(AndroidDalvik.IncludeScripts)' == ''"></IncludeScripts>
 
       <OutJars Condition="'%(AndroidDalvik.OutJars)' == ''"></OutJars>
-
-      <LibraryJars Condition="'%(AndroidDalvik.LibraryJars)' == ''"></LibraryJars>
-
-      <IncludeScripts Condition="'%(AndroidDalvik.IncludeScripts)' == ''"></IncludeScripts>
 
       <!--
         Default TrackedToolTask properties.
       -->
 
-      <TrackerLogDirectory Condition="'%(AndroidDalvik.TrackerLogDirectory)' == ''">$(IntDir)</TrackerLogDirectory>
+      <TrackerLogDirectory Condition="'%(AndroidDalvik.TrackerLogDirectory)' == ''">$(TLogLocation)</TrackerLogDirectory>
 
       <OutputCommandLine Condition="'%(AndroidDalvik.OutputCommandLine)' == ''">false</OutputCommandLine>
 

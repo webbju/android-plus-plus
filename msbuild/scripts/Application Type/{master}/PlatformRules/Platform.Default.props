@@ -52,11 +52,11 @@
     Resolve target platform, environment variables, and toolset default properties.
   -->
 
-  <Import Project="$(VCTargetsPath)\Platforms\{master}\{master}.Paths.default.props" />
+  <Import Project="$(VCTargetsPath)\Application Type\{master}\{master}.Paths.default.props" />
 
-  <Import Project="$(VCTargetsPath)\Platforms\{master}\{master}.AndroidNdk.default.props" />
+  <Import Project="$(VCTargetsPath)\Application Type\{master}\{master}.AndroidNdk.default.props" />
 
-  <Import Project="$(VCTargetsPath)\Platforms\{master}\{master}.AndroidSdk.default.props" />
+  <Import Project="$(VCTargetsPath)\Application Type\{master}\{master}.AndroidSdk.default.props" />
 
   <!--
     Correct the target toolchain based on what's installed in the active NDK.

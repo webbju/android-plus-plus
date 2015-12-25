@@ -82,7 +82,7 @@
     <PropertyGroup>
       <_DexOutputPath>$(ProjectDir)$(IntDir)bin\dex\</_DexOutputPath>
       <!-- MultiDex script configuration -->
-      <_MainDexInputJars>@(AndroidDalvik->Distinct()->'-injars &quot;%(FullPath)&quot;')</_MainDexInputJars>
+      <_MainDexInputJars>@(AndroidDalvik->Distinct()->'-injars &quot;%(FullPath)&quot;(!META-INF/**.*,**.class,!**.class.d)')</_MainDexInputJars>
       <_MainDexScriptOutputJar>$(ProjectDir)$(IntDir)bin\mainDexClasses.tmp.jar</_MainDexScriptOutputJar>
       <_MainDexScriptOutputMainList>$(ProjectDir)$(IntDir)bin\mainDexClasses.keep</_MainDexScriptOutputMainList>
       <_MainDexClassPathArgument>@(AndroidDalvik->Distinct())</_MainDexClassPathArgument>
@@ -108,15 +108,15 @@
 # 
 # Configuration options copied from $(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\multidex\mainDexClasses.bat
 # 
+-include &quot;$(_MainDexScriptRules)&quot;
 $(_MainDexInputJars)
+-libraryjars &quot;$(_MainDexShrunkAndroidJar)&quot;
+-outjars &quot;$(_MainDexScriptOutputJar)&quot;
 -dontwarn
 -forceprocessing
--outjars &quot;$(_MainDexScriptOutputJar)&quot;
--libraryjars &quot;$(_MainDexShrunkAndroidJar)&quot;
 -dontoptimize
 -dontobfuscate
 -dontpreverify
--include &quot;$(_MainDexScriptRules)&quot;
 # 
 # Retain all classes with native members (http://proguard.sourceforge.net/manual/examples.html#native)
 # TODO: This should have 'includedescriptorclasses', but this isn't supported in ProGuard 4.7.

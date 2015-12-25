@@ -44,13 +44,18 @@ namespace AndroidPlusPlus.VsDebugEngine
         : base (ports)
       {
       }
+
+      public DebugPortEnumerator (IDebugPort2 [] ports)
+        : base (ports)
+      {
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private Dictionary <string, IDebugPort2> m_registeredPorts;
+    private Dictionary<Guid, IDebugPort2> m_registeredPorts = new Dictionary<Guid, IDebugPort2> ();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -58,7 +63,23 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public DebugPortSupplier ()
     {
-      m_registeredPorts = new Dictionary<string, IDebugPort2> ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected DebuggeePort CreatePort (IDebugPortRequest2 portRequest)
+    {
+      AndroidAdb.Refresh ();
+
+      string requestPortName;
+
+      LoggingUtils.RequireOk (portRequest.GetPortName (out requestPortName));
+
+      AndroidDevice device = AndroidAdb.GetConnectedDeviceById (requestPortName);
+
+      return new DebuggeePort (this, device);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -81,38 +102,51 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        if (CanAddPort () == Constants.S_OK)
+        string requestPortName;
+
+        LoggingUtils.RequireOk (CanAddPort ());
+
+        LoggingUtils.RequireOk (pRequest.GetPortName (out requestPortName));
+
+        ppPort = null;
+
+        foreach (KeyValuePair<Guid, IDebugPort2> keyPair in m_registeredPorts)
         {
-          string requestPortName;
+          string portName;
 
-          IEnumDebugPorts2 portListEnum;
+          IDebugPort2 registeredPort = keyPair.Value;
 
-          if ((pRequest.GetPortName (out requestPortName) == Constants.S_OK) && (EnumPorts (out portListEnum) == Constants.S_OK))
+          LoggingUtils.RequireOk (registeredPort.GetPortName (out portName));
+
+          if (portName.Equals (requestPortName))
           {
-            foreach (KeyValuePair<string, IDebugPort2> keyPair in m_registeredPorts)
-            {
-              string portName;
+            ppPort = registeredPort;
 
-              IDebugPort2 registeredPort = keyPair.Value;
-
-              if ((registeredPort.GetPortName (out portName) == Constants.S_OK) && (portName.Equals (requestPortName)))
-              {
-                ppPort = registeredPort;
-
-                return Constants.S_OK;
-              }
-            }
+            break;
           }
         }
+
+        if (ppPort == null)
+        {
+          Guid portId;
+
+          ppPort = CreatePort (pRequest);
+
+          LoggingUtils.RequireOk (ppPort.GetPortId (out portId));
+
+          m_registeredPorts.Add (portId, ppPort);
+        }
+
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
+
+        ppPort = null;
+
+        return Constants.E_FAIL;
       }
-
-      ppPort = null;
-
-      return Constants.E_FAIL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -144,25 +178,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        AndroidAdb.Refresh ();
+        IDebugPort2 [] ports = new IDebugPort2 [m_registeredPorts.Count];
 
-        List<IDebugPort2> ports = new List<IDebugPort2> ();
-
-        AndroidDevice [] connectedDevices = AndroidAdb.GetConnectedDevices ();
-
-        foreach (AndroidDevice device in connectedDevices)
-        {
-          IDebugPort2 debugPort;
-
-          if (!m_registeredPorts.TryGetValue (device.ID, out debugPort))
-          {
-            debugPort = new DebuggeePort (this, device);
-
-            m_registeredPorts.Add (device.ID, debugPort);
-          }
-
-          ports.Add (debugPort);
-        }
+        m_registeredPorts.Values.CopyTo (ports, 0);
 
         ppEnum = new DebugPortEnumerator (ports);
 
@@ -194,21 +212,12 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        foreach (KeyValuePair<string, IDebugPort2> keyPair in m_registeredPorts)
+        if (!m_registeredPorts.TryGetValue (guidPort, out ppPort))
         {
-          Guid portGuid;
-
-          IDebugPort2 registeredPort = keyPair.Value;
-
-          LoggingUtils.RequireOk (registeredPort.GetPortId (out portGuid));
-
-          if (portGuid.Equals (guidPort))
-          {
-            ppPort = registeredPort;
-
-            return Constants.S_OK;
-          }
+          return Constants.E_PORTSUPPLIER_NO_PORT;
         }
+
+        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -216,8 +225,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         return Constants.E_FAIL;
       }
-
-      return Constants.E_PORTSUPPLIER_NO_PORT;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -232,7 +239,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      pguidPortSupplier = DebugEngineGuids.guidDebugPortSupplierID;
+      pguidPortSupplier = this.GetType ().GUID;
 
       return Constants.S_OK;
     }
@@ -268,14 +275,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        if (!(pPort is DebuggeePort))
-        {
-          throw new ArgumentException ("pPort");
-        }
+        Guid portId;
 
-        DebuggeePort port = (DebuggeePort) pPort;
+        LoggingUtils.RequireOk (pPort.GetPortId (out portId));
 
-        m_registeredPorts.Remove (port.PortDevice.ID);
+        m_registeredPorts.Remove (portId);
 
         return Constants.S_OK;
       }
@@ -311,7 +315,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      return Constants.S_OK;
+      return Constants.S_FALSE;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -364,20 +368,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      pbstrText = string.Empty;
-
-      try
-      {
-        pdwFlags [0] = 0;
-
-        pbstrText = "---";
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-
-        return Constants.E_FAIL;
-      }
+      pbstrText = "---";
 
       return Constants.S_OK;
     }

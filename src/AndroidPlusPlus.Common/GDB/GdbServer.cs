@@ -91,7 +91,41 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      CheckGdbServerTarget ();
+      // 
+      // Check the target 'gdbserver' binary exits on target device/emulator.
+      // 
+
+      string gdbServerPath = string.Empty;
+
+      List<string> potentialGdbServerPaths = new List<string> ();
+
+      foreach (string libraryPath in m_gdbSetup.Process.NativeLibraryAbiPaths)
+      {
+        potentialGdbServerPaths.Add (string.Format ("{0}/gdbserver", libraryPath));
+      }
+
+      potentialGdbServerPaths.Add (string.Format ("{0}/gdbserver", m_gdbSetup.Process.NativeLibraryPath));
+
+      foreach (string path in potentialGdbServerPaths)
+      {
+        using (SyncRedirectProcess checkGdbServer = AndroidAdb.AdbCommand (m_gdbSetup.Process.HostDevice, "shell", "ls " + path))
+        {
+          int exitCode = checkGdbServer.StartAndWaitForExit (1000);
+
+          if ((exitCode == 0) && !checkGdbServer.StandardOutput.ToLower ().Contains ("no such file"))
+          {
+            gdbServerPath = path;
+
+            break;
+          }
+        }
+      }
+
+      if (string.IsNullOrWhiteSpace (gdbServerPath))
+      {
+        // TODO: Push the required gdbserver binary, so we can attach to any app.
+        throw new InvalidOperationException (string.Format ("Failed to locate required 'gdbserver' binary on device ({0}).", m_gdbSetup.Process.HostDevice.ID));
+      }
 
       KillActiveGdbServerSessions ();
 
@@ -101,9 +135,7 @@ namespace AndroidPlusPlus.Common
 
       StringBuilder commandLineArgumentsBuilder = new StringBuilder ();
 
-      string gdbPath = string.Format ("{0}/gdbserver", m_gdbSetup.Process.NativeLibraryPath);
-
-      commandLineArgumentsBuilder.AppendFormat ("run-as {0} {1} ", m_gdbSetup.Process.Name, gdbPath);
+      commandLineArgumentsBuilder.AppendFormat ("run-as {0} {1} ", m_gdbSetup.Process.Name, gdbServerPath);
 
       if (!string.IsNullOrWhiteSpace (m_gdbSetup.Socket))
       {
@@ -173,32 +205,6 @@ namespace AndroidPlusPlus.Common
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    private void CheckGdbServerTarget ()
-    {
-      // 
-      // Check the target 'gdbserver' binary exits on target device/emulator.
-      // 
-
-      LoggingUtils.PrintFunction ();
-
-      string expectedPath = string.Format ("ls {0}/gdbserver", m_gdbSetup.Process.NativeLibraryPath);
-
-      using (SyncRedirectProcess checkGdbServer = AndroidAdb.AdbCommand (m_gdbSetup.Process.HostDevice, "shell", expectedPath))
-      {
-        int exitCode = checkGdbServer.StartAndWaitForExit (1000);
-
-        if ((exitCode != 0) || checkGdbServer.StandardOutput.ToLower ().Contains ("no such file"))
-        {
-          // TODO: Push the required gdbserver binary, so we can attach to any app.
-          throw new InvalidOperationException (string.Format ("Failed to locate required 'gdbserver' binary on device ({0}). Expected location: {1}.", m_gdbSetup.Process.HostDevice.ID, expectedPath));
-        }
       }
     }
 

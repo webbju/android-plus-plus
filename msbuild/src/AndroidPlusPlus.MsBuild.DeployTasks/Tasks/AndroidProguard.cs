@@ -75,6 +75,11 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
           }
         }
 
+        if (m_qualifiedOutputJars.Count == 0)
+        {
+          throw new ArgumentException ("No valid 'OutJars' evaluated.");
+        }
+
         OutputFiles = new ITaskItem [m_qualifiedOutputJars.Count];
 
         m_qualifiedOutputJars.Values.CopyTo (OutputFiles, 0);

@@ -221,6 +221,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int Detach (DebuggeeProgram program)
     {
+      LoggingUtils.PrintFunction ();
+
       try
       {
         if ((program.AttachedEngine != null) && (program.AttachedEngine.NativeDebugger != null))

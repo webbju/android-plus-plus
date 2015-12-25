@@ -84,6 +84,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public CLangDebuggeeProperty [] GetChildProperties (CLangDebuggeeStackFrame stackFrame, CLangDebuggeeProperty parentProperty)
     {
+      LoggingUtils.PrintFunction ();
+
       MiVariable parentVariable = parentProperty.GdbVariable;
 
       List<CLangDebuggeeProperty> childProperties = new List<CLangDebuggeeProperty> ();

@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -34,6 +35,8 @@ namespace AndroidPlusPlus.Common
 
     private string m_nativeLibraryPath;
 
+    private string [] m_nativeLibraryAbiPaths;
+
     private string m_legacyNativeLibraryDir;
 
     private string m_primaryCpuAbi;
@@ -52,6 +55,21 @@ namespace AndroidPlusPlus.Common
 
     public AndroidProcess (AndroidDevice device, string name, uint pid, uint ppid, string user)
     {
+      if (device == null)
+      {
+        throw new ArgumentNullException ("device");
+      }
+
+      if (string.IsNullOrEmpty (name))
+      {
+        throw new ArgumentNullException ("name");
+      }
+
+      if (string.IsNullOrEmpty (user))
+      {
+        throw new ArgumentNullException ("user");
+      }
+
       HostDevice = device;
 
       Name = name;
@@ -99,12 +117,24 @@ namespace AndroidPlusPlus.Common
 
     public void RefreshPackageInfo ()
     {
+      LoggingUtils.PrintFunction ();
+
+      StringBuilder builder = new StringBuilder (256);
+
       // 
       // Retrieves the install specific (coded) remote APK path.
       //   i.e: /data/app/com.example.hellogdbserver-2.apk
       // 
 
-      string remoteAppPath = HostDevice.Shell ("pm", string.Format ("path {0}", Name)).Replace ("\r", "").Replace ("\n", "");
+      builder.Length = 0;
+
+      builder.Append (HostDevice.Shell ("pm", string.Format ("path {0}", Name)));
+
+      builder.Replace ("\r", "");
+
+      builder.Replace ("\n", "");
+
+      string remoteAppPath = builder.ToString ();
 
       if (remoteAppPath.StartsWith ("package:"))
       {
@@ -116,7 +146,15 @@ namespace AndroidPlusPlus.Common
       //   i.e: /data/data/com.example.hellogdbserver/
       // 
 
-      string remoteDataDirectory = HostDevice.Shell ("run-as", string.Format ("{0} /system/bin/sh -c pwd", Name)).Replace ("\r", "").Replace ("\n", "");
+      builder.Length = 0;
+
+      builder.Append (HostDevice.Shell ("run-as", string.Format ("{0} /system/bin/sh -c pwd", Name)));
+
+      builder.Replace ("\r", "");
+
+      builder.Replace ("\n", "");
+
+      string remoteDataDirectory = builder.ToString ();
 
       if (remoteDataDirectory.StartsWith ("/data/"))
       {
@@ -131,7 +169,13 @@ namespace AndroidPlusPlus.Common
 
       if (HostDevice.SdkVersion >= AndroidSettings.VersionCode.JELLY_BEAN_MR1)
       {
-        string [] packageDumpReport = HostDevice.Shell ("pm", string.Format ("dump {0}", Name)).Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        builder.Length = 0;
+
+        builder.Append (HostDevice.Shell ("pm", string.Format ("dump {0}", Name)));
+
+        builder.Replace ("\r", "");
+
+        string [] packageDumpReport = builder.ToString ().Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
         for (int i = 0; i < packageDumpReport.Length; ++i)
         {
@@ -233,24 +277,29 @@ namespace AndroidPlusPlus.Common
       if (string.IsNullOrWhiteSpace (m_nativeLibraryPath))
       {
         m_nativeLibraryPath = m_legacyNativeLibraryDir;
+      }
 
-        if (HostDevice.SdkVersion >= AndroidSettings.VersionCode.JELLY_BEAN_MR1)
+      if (HostDevice.SdkVersion >= AndroidSettings.VersionCode.JELLY_BEAN_MR1)
+      {
+        m_nativeLibraryAbiPaths = new string [HostDevice.SupportedCpuAbis.Length];
+
+        for (int i = 0; i < HostDevice.SupportedCpuAbis.Length; ++i)
         {
-          string cpuAbiSubdirectory = string.Empty;
+          string abi = HostDevice.SupportedCpuAbis [i];
 
-          switch (m_primaryCpuAbi)
+          switch (abi)
           {
             case "armeabi":
             case "armeabi-v7a":
             {
-              cpuAbiSubdirectory = "arm";
+              m_nativeLibraryAbiPaths [i] = string.Format ("{0}/{1}", m_nativeLibraryPath, "arm");
 
               break;
             }
 
             case "arm64-v8a":
             {
-              cpuAbiSubdirectory = "arm64";
+              m_nativeLibraryAbiPaths [i] = string.Format ("{0}/{1}", m_nativeLibraryPath, "arm64");
 
               break;
             }
@@ -261,13 +310,11 @@ namespace AndroidPlusPlus.Common
             case "mips64":
             default:
             {
-              cpuAbiSubdirectory = m_primaryCpuAbi;
+              m_nativeLibraryAbiPaths [i] = string.Format ("{0}/{1}", m_nativeLibraryPath, abi);
 
               break;
             }
           }
-
-          m_nativeLibraryPath = string.Format ("{0}/{1}", m_legacyNativeLibraryDir, cpuAbiSubdirectory);
         }
       }
     }
@@ -305,6 +352,18 @@ namespace AndroidPlusPlus.Common
       get
       {
         return m_nativeLibraryPath;
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public string [] NativeLibraryAbiPaths
+    {
+      get
+      {
+        return m_nativeLibraryAbiPaths;
       }
     }
 

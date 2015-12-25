@@ -265,6 +265,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public DebuggeeBreakpointPending FindPendingBreakpoint (uint id)
     {
+      LoggingUtils.PrintFunction ();
+
       try
       {
         DebuggeeBreakpointBound boundBreakpoint = FindBoundBreakpoint (id);

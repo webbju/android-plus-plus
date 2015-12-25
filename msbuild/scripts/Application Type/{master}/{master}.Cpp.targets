@@ -18,9 +18,9 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <Import Project="$(VCTargetsPath)\Platforms\{master}\{master}.CppBuild.targets" />
+  <Import Project="$(VCTargetsPath)\Application Type\{master}\{master}.CppBuild.targets" />
 
-  <Import Project="$(VCTargetsPath)\Platforms\{master}\{master}.CppStubs.targets" />
+  <Import Project="$(VCTargetsPath)\Application Type\{master}\{master}.CppStubs.targets" />
   
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -146,7 +146,7 @@
       OutputCommandLine="%(ClCompile.OutputCommandLine)"
       ToolPath="$(PlatformToolsetCompileToolPath)"
       ToolExe="$(PlatformToolsetCompileTool)"
-      PropertiesFile="$(VCTargetsPath)\Platforms\{master}\PlatformProps\native_compile.xml">
+      PropertiesFile="$(VCTargetsPath)\Application Type\{master}\PlatformProps\native_compile.xml">
 
     </NativeCompile>
 
@@ -171,7 +171,7 @@
       OutputCommandLine="%(ClCompile.OutputCommandLine)"
       ToolPath="$(PlatformToolsetCompileToolPath)"
       ToolExe="$(PlatformToolsetCompileTool)"
-      PropertiesFile="$(VCTargetsPath)\Platforms\{master}\PlatformProps\native_compile.xml">
+      PropertiesFile="$(VCTargetsPath)\Application Type\{master}\PlatformProps\native_compile.xml">
 
     </NativeCompile>
 
@@ -217,7 +217,7 @@
       OutputCommandLine="%(Link.OutputCommandLine)"
       ToolPath="$(PlatformToolsetLinkToolPath)"
       ToolExe="$(PlatformToolsetLinkTool)"
-      PropertiesFile="$(VCTargetsPath)\Platforms\{master}\PlatformProps\native_link.xml">
+      PropertiesFile="$(VCTargetsPath)\Application Type\{master}\PlatformProps\native_link.xml">
 
       <Output TaskParameter="OutputFiles" ItemName="LinkOutputFiles" />
 
@@ -278,7 +278,7 @@
       OutputCommandLine="%(LinkOutputFiles.OutputCommandLine)"
       ToolPath="$(PlatformToolsetStripToolPath)"
       ToolExe="$(PlatformToolsetStripTool)"
-      PropertiesFile="$(VCTargetsPath)\Platforms\{master}\PlatformProps\native_strip.xml"
+      PropertiesFile="$(VCTargetsPath)\Application Type\{master}\PlatformProps\native_strip.xml"
     />
 
     <Exec 
@@ -408,7 +408,7 @@
       OutputCommandLine="%(Lib.OutputCommandLine)"
       ToolPath="$(PlatformToolsetLibToolPath)"
       ToolExe="$(PlatformToolsetLibTool)"
-      PropertiesFile="$(VCTargetsPath)\Platforms\{master}\PlatformProps\native_lib.xml">
+      PropertiesFile="$(VCTargetsPath)\Application Type\{master}\PlatformProps\native_lib.xml">
 
       <Output TaskParameter="OutputFiles" ItemName="LibOutputFiles" />
 
@@ -451,7 +451,7 @@
       OutputCommandLine="%(LibOutputFiles.OutputCommandLine)"
       ToolPath="$(PlatformToolsetStripToolPath)"
       ToolExe="$(PlatformToolsetStripTool)"
-      PropertiesFile="$(VCTargetsPath)\Platforms\{master}\PlatformProps\native_strip.xml"
+      PropertiesFile="$(VCTargetsPath)\Application Type\{master}\PlatformProps\native_strip.xml"
     />
 
   </Target> 

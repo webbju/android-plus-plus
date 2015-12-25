@@ -103,10 +103,12 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
     public void PrepareLaunch ()
     {
-      DateTime logTime = DateTime.Now;
+      LoggingUtils.PrintFunction ();
 
       try
       {
+        DateTime logTime = DateTime.Now;
+
         LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogShow ());
 
         LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("Session started: {0}", logTime.ToString ("F")), false));
@@ -129,15 +131,38 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       try
       {
-        DebugLaunchSettings nonDebuglaunchSettings = (DebugLaunchSettings) StartWithDebugging (launchOptionsFlags, launchConfig, launchProps, projectProperties);
+        // 
+        // Refresh ADB service and evaluate a list of connected devices or emulators.
+        // 
 
-        nonDebuglaunchSettings.LaunchOptions |= DebugLaunchOptions.NoDebug;
+        AndroidAdb.Refresh ();
 
-        launchConfig.FromString (nonDebuglaunchSettings.Options);
+        AndroidDevice debuggingDevice = GetPriortisedConnectedDevice ();
 
-        launchConfig ["DebugMode"] = "false"; // launch without waiting for a JDB instance.
+        if (debuggingDevice == null)
+        {
+          throw new InvalidOperationException ("No device/emulator found or connected. Check status via 'adb devices'.");
+        }
+
+        // 
+        // Construct VS launch settings to debug or attach to the specified target application.
+        // 
+
+        launchOptionsFlags |= (int) DebugLaunchOptions.Silent;
+
+        DebugLaunchSettings nonDebuglaunchSettings = new DebugLaunchSettings ((DebugLaunchOptions) launchOptionsFlags);
+
+        nonDebuglaunchSettings.LaunchDebugEngineGuid = new Guid ("8310DAF9-1043-4C8E-85A0-FF68896E1922");
+
+        nonDebuglaunchSettings.PortSupplierGuid = new Guid ("3AEE417F-E5F9-4B89-BC31-20534C99B7F5");
+
+        nonDebuglaunchSettings.PortName = debuggingDevice.ID;
 
         nonDebuglaunchSettings.Options = launchConfig.ToString ();
+
+        nonDebuglaunchSettings.Executable = launchConfig ["TargetApk"];
+
+        nonDebuglaunchSettings.LaunchOperation = DebugLaunchOperation.Custom;
 
         return nonDebuglaunchSettings;
       }
@@ -162,30 +187,10 @@ namespace AndroidPlusPlus.VsDebugLauncher
         // 
         // Refresh ADB service and evaluate a list of connected devices or emulators.
         // 
-        // We want to prioritise devices over emulators here, which makes the logic a little dodgy.
-        // 
 
         AndroidAdb.Refresh ();
 
-        AndroidDevice debuggingDevice = null;
-
-        AndroidDevice [] connectedDevices = AndroidAdb.GetConnectedDevices ();
-
-        if (connectedDevices.Length > 0)
-        {
-          for (int i = 0; i < connectedDevices.Length; ++i)
-          {
-            if (!connectedDevices [i].IsEmulator)
-            {
-              debuggingDevice = connectedDevices [i];
-            }
-          }
-
-          if (debuggingDevice == null)
-          {
-            debuggingDevice = connectedDevices [0];
-          }
-        }
+        AndroidDevice debuggingDevice = GetPriortisedConnectedDevice ();
 
         if (debuggingDevice == null)
         {
@@ -221,15 +226,15 @@ namespace AndroidPlusPlus.VsDebugLauncher
         }
 #endif
 
+        launchOptionsFlags |= (int) DebugLaunchOptions.Silent;
+
         DebugLaunchSettings debugLaunchSettings = new DebugLaunchSettings ((DebugLaunchOptions) launchOptionsFlags);
 
         debugLaunchSettings.LaunchDebugEngineGuid = new Guid ("8310DAF9-1043-4C8E-85A0-FF68896E1922");
 
         debugLaunchSettings.PortSupplierGuid = new Guid ("3AEE417F-E5F9-4B89-BC31-20534C99B7F5");
 
-        debugLaunchSettings.PortName = "adb://" + debuggingDevice.ID;
-
-        debugLaunchSettings.LaunchOptions = ((DebugLaunchOptions) launchOptionsFlags) | DebugLaunchOptions.Silent;
+        debugLaunchSettings.PortName = debuggingDevice.ID;
 
         debugLaunchSettings.Options = launchConfig.ToString ();
 
@@ -307,9 +312,13 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
                 DateTime thisMachineUtcTime = DateTime.UtcNow;
 
+                TimeSpan thisMachineUtcVersusDeviceUtc = debuggingDeviceUtcTime - thisMachineUtcTime;
+
                 LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("Current UTC time on '{0}': {1}", debuggingDevice.ID, debuggingDeviceUtcTime.ToString ()), false));
 
                 LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("Current UTC time on '{0}': {1}", System.Environment.MachineName, thisMachineUtcTime.ToString ()), false));
+
+                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("Difference in UTC time between '{0}' and '{1}': {2}", System.Environment.MachineName, debuggingDevice.ID, thisMachineUtcVersusDeviceUtc.ToString ()), false));
 
                 // 
                 // Check the last modified date; ls output currently uses this format:
@@ -355,7 +364,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
                 LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("'{0}' was last modified on '{1}' at: {2}.", Path.GetFileName (targetApkFileInfo.FullName), System.Environment.MachineName, targetApkFileInfo.LastWriteTime.ToString ()), false));
 
-                if (targetApkFileInfo.LastWriteTime > thisMachineUtcTimeAtLastModification)
+                if ((targetApkFileInfo.LastWriteTime + thisMachineUtcVersusDeviceUtc) > thisMachineUtcTimeAtLastModification)
                 {
                   LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("'{0}' was determined to be out-of-date. Reinstalling...", launchConfig ["PackageName"]), false));
                 }
@@ -405,11 +414,50 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    private AndroidDevice GetPriortisedConnectedDevice ()
+    {
+      // 
+      // Refresh ADB service and evaluate a list of connected devices or emulators.
+      // 
+      // We want to prioritise devices over emulators here, which makes the logic a little dodgy.
+      // 
+
+      LoggingUtils.PrintFunction ();
+
+      AndroidDevice debuggingDevice = null;
+
+      AndroidDevice [] connectedDevices = AndroidAdb.GetConnectedDevices ();
+
+      if (connectedDevices.Length > 0)
+      {
+        for (int i = 0; i < connectedDevices.Length; ++i)
+        {
+          if (!connectedDevices [i].IsEmulator)
+          {
+            debuggingDevice = connectedDevices [i];
+          }
+        }
+
+        if (debuggingDevice == null)
+        {
+          debuggingDevice = connectedDevices [0];
+        }
+      }
+
+      return debuggingDevice;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     private void InstallApplicationAsync (AndroidDevice debuggingDevice, LaunchConfiguration launchConfig)
     {
       // 
       // Asynchronous installation process, so the UI can be updated appropriately.
       // 
+
+      LoggingUtils.PrintFunction ();
 
       ManualResetEvent installCompleteEvent = new ManualResetEvent (false);
 

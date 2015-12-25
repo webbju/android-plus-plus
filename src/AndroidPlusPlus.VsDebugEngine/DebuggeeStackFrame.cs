@@ -130,6 +130,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     protected virtual int QueryArgumentsAndLocals ()
     {
+      LoggingUtils.PrintFunction ();
+
       try
       {
         throw new NotImplementedException ();
@@ -148,6 +150,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     protected virtual int QueryRegisters ()
     {
+      LoggingUtils.PrintFunction ();
+
       try
       {
         throw new NotImplementedException ();

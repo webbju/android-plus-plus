@@ -10,14 +10,12 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 -->
 
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-
-    <_PlatformFolder>$(VCTargetsPath)\Application Type\{master}\PlatformRules\</_PlatformFolder>
-
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">armv7-a</TargetArchitecture>
   </PropertyGroup>
 
-  <Import Project="$(_PlatformFolder)Platform.targets"/>
+  <Import Project="$(VCTargetsPath)\Platforms\{master}.$(TargetArchitecture)\Platform.Common.props" />
 
 </Project>

@@ -42,9 +42,9 @@ namespace AndroidPlusPlus.Common
 
     protected int m_lastOutputTimestamp = 0;
 
-    protected StringBuilder m_stdOutputBuilder = null;
+    protected StringBuilder m_stdOutputBuilder = new StringBuilder ();
 
-    protected StringBuilder m_stdErrorBuilder = null;
+    protected StringBuilder m_stdErrorBuilder = new StringBuilder ();
 
     protected SyncProcess m_process;
 
@@ -152,10 +152,6 @@ namespace AndroidPlusPlus.Common
       m_lastOutputTimestamp = m_startTicks;
 
       m_exitMutex = new ManualResetEvent (false);
-
-      m_stdOutputBuilder = new StringBuilder ();
-
-      m_stdErrorBuilder = new StringBuilder ();
 
       m_process = new SyncProcess ();
 
@@ -316,10 +312,6 @@ namespace AndroidPlusPlus.Common
         }
 
         m_lastOutputTimestamp = Environment.TickCount;
-
-        StandardOutput = m_stdOutputBuilder.ToString ();
-
-        StandardError = m_stdErrorBuilder.ToString ();
       }
       catch (Exception e)
       {
@@ -337,13 +329,25 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public string StandardOutput { get; protected set; }
+    public string StandardOutput 
+    { 
+      get
+      {
+        return m_stdOutputBuilder.ToString ();
+      }
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public string StandardError { get; protected set; }
+    public string StandardError
+    {
+      get
+      {
+        return m_stdErrorBuilder.ToString ();
+      }
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

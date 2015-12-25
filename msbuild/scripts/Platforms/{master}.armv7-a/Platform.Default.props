@@ -59,7 +59,7 @@
 
   <PropertyGroup>
 
-    <_PlatformFolder>$(VCTargetsPath)\Platforms\{master}\PlatformRules\</_PlatformFolder>
+    <_PlatformFolder>$(VCTargetsPath)\Application Type\{master}\PlatformRules\</_PlatformFolder>
 
   </PropertyGroup>
 

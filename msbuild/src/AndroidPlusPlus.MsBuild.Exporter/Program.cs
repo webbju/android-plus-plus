@@ -36,7 +36,7 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
     private static string s_versionDescriptorFile = string.Empty;
 
-    private static HashSet<string> s_vsVersions = new HashSet<string> ();
+    private static Dictionary<string, string> s_vsVersionMsBuildDirs = new Dictionary<string, string> ();
 
     private static HashSet<string> s_exportDirectories = new HashSet<string> ();
 
@@ -67,18 +67,8 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
         bool validateMsBuildInstallations = true;
 
-        if (s_vsVersions.Contains ("all"))
+        if (s_vsVersionMsBuildDirs.ContainsKey ("all"))
         {
-          if (!s_vsVersions.Contains ("2013"))
-          {
-            s_vsVersions.Add ("2013");
-          }
-
-          if (!s_vsVersions.Contains ("2015"))
-          {
-            s_vsVersions.Add ("2015");
-          }
-
           validateMsBuildInstallations = false;
         }
 
@@ -86,71 +76,35 @@ namespace AndroidPlusPlus.MsBuild.Exporter
         // Accumulate additional export locations for each requested MSBuild directory/version.
         // 
 
-        foreach (string version in s_vsVersions)
+        foreach (KeyValuePair<string, string> keyPair in s_vsVersionMsBuildDirs)
         {
-          switch (version)
+          s_exportDirectories.Clear ();
+
+          string version = keyPair.Key;
+
+          string dir = keyPair.Value;
+
+          if (Directory.Exists (dir))
           {
-            case "2013":
+            if (!s_exportDirectories.Contains (dir))
             {
-              string msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\V120\";
-
-              if (!Directory.Exists (msBuildInstallationDir))
-              {
-                msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\V120\";
-              }
-
-              if (Directory.Exists (msBuildInstallationDir))
-              {
-                if (!s_exportDirectories.Contains (msBuildInstallationDir))
-                {
-                  s_exportDirectories.Add (msBuildInstallationDir);
-                }
-              }
-              else if (validateMsBuildInstallations)
-              {
-                throw new DirectoryNotFoundException ("Could not locate required MSBuild platforms directory. This should have been installed with VS2013. Tried: " + msBuildInstallationDir);
-              }
-
-              break;
-            }
-
-            case "2015":
-            {
-              string msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\V140\";
-
-              if (!Directory.Exists (msBuildInstallationDir))
-              {
-                msBuildInstallationDir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\V140\";
-              }
-
-              if (Directory.Exists (msBuildInstallationDir))
-              {
-                if (!s_exportDirectories.Contains (msBuildInstallationDir))
-                {
-                  s_exportDirectories.Add (msBuildInstallationDir);
-                }
-              }
-              else if (validateMsBuildInstallations)
-              {
-                throw new DirectoryNotFoundException ("Could not locate required MSBuild platforms directory. This should have been installed with VS2015. Tried: " + msBuildInstallationDir);
-              }
-
-              break;
+              s_exportDirectories.Add (dir);
             }
           }
-        }
+          else if (validateMsBuildInstallations)
+          {
+            throw new DirectoryNotFoundException (string.Format ("Could not locate required MSBuild platforms directory. This should have been installed with Visual Studio {0}. Tried: {1}", version, dir));
+          }
 
-        // 
-        // Install/Uninstall scripts for each specified VS version.
-        // 
+          // 
+          // Install/Uninstall scripts for each specified VS version.
+          // 
 
-        foreach (string version in s_vsVersions)
-        {
-          UninstallMsBuildTemplates (version, ref textSubstitution);
+          UninstallMsBuildTemplates (version, ref textSubstitution, ref s_exportDirectories);
 
           if (!s_uninstall)
           {
-            ExportMsBuildTemplateForVersion (version, ref textSubstitution);
+            ExportMsBuildTemplateForVersion (version, ref textSubstitution, ref s_exportDirectories, ref s_templateDirs);
           }
         }
       }
@@ -256,14 +210,77 @@ namespace AndroidPlusPlus.MsBuild.Exporter
             {
               switch (version)
               {
-                case "all":
+                case "2010":
+                {
+                  if (!s_vsVersionMsBuildDirs.ContainsKey ("2010"))
+                  {
+                    string dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\";
+
+                    if (!Directory.Exists (dir))
+                    {
+                      dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\";
+                    }
+
+                    s_vsVersionMsBuildDirs.Add ("2010", dir);
+                  }
+
+                  break;
+                }
+
+                case "2012":
+                {
+                  if (!s_vsVersionMsBuildDirs.ContainsKey ("2012"))
+                  {
+                    string dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\V110\";
+
+                    if (!Directory.Exists (dir))
+                    {
+                      dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\V110\";
+                    }
+
+                    s_vsVersionMsBuildDirs.Add ("2012", dir);
+                  }
+
+                  break;
+                }
+
                 case "2013":
+                {
+                  if (!s_vsVersionMsBuildDirs.ContainsKey ("2013"))
+                  {
+                    string dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\V120\";
+
+                    if (!Directory.Exists (dir))
+                    {
+                      dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\V120\";
+                    }
+
+                    s_vsVersionMsBuildDirs.Add ("2013", dir);
+                  }
+
+                  break;
+                }
+
                 case "2015":
                 {
-                  if (!s_vsVersions.Contains (version))
+                  if (!s_vsVersionMsBuildDirs.ContainsKey ("2015"))
                   {
-                    s_vsVersions.Add (version);
+                    string dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\V140\";
+
+                    if (!Directory.Exists (dir))
+                    {
+                      dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\V140\";
+                    }
+
+                    s_vsVersionMsBuildDirs.Add ("2015", dir);
                   }
+
+                  break;
+                }
+
+                case "all":
+                {
+                  ProcessArguments ("--vs-version 2010;2012;2013;2015".Split (' '));
 
                   break;
                 }
@@ -297,7 +314,7 @@ namespace AndroidPlusPlus.MsBuild.Exporter
         }
       }
 
-      if (s_vsVersions.Count () == 0)
+      if (s_vsVersionMsBuildDirs.Count () == 0)
       {
         throw new ArgumentException ("--vs-version not defined correctly. Expected: 'all', '2013' or '2015'.");
       }
@@ -360,9 +377,9 @@ namespace AndroidPlusPlus.MsBuild.Exporter
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private static void UninstallMsBuildTemplates (string version, ref Dictionary<string, string> textSubstitution)
+    private static void UninstallMsBuildTemplates (string version, ref Dictionary<string, string> textSubstitution, ref HashSet <string> exportDirectories)
     {
-      foreach (string exportDir in s_exportDirectories)
+      foreach (string exportDir in exportDirectories)
       {
         // 
         // Clean 'BuildCustomizations' files and sub-directories.
@@ -449,15 +466,15 @@ namespace AndroidPlusPlus.MsBuild.Exporter
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private static void ExportMsBuildTemplateForVersion (string version, ref Dictionary <string, string> textSubstitution)
+    private static void ExportMsBuildTemplateForVersion (string version, ref Dictionary <string, string> textSubstitution, ref HashSet <string> exportDirectories, ref HashSet <string> templateDirectories)
     {
-      foreach (string exportDir in s_exportDirectories)
+      foreach (string exportDir in exportDirectories)
       {
         // 
         // Copy each directory of the template directories and apply pattern processing.
         // 
 
-        foreach (string templateDir in s_templateDirs)
+        foreach (string templateDir in templateDirectories)
         {
           Console.WriteLine (string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Copying {0} to {1}", templateDir, exportDir));
 

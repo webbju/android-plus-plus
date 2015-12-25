@@ -293,6 +293,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int CreateBoundBreakpoint (string location, DebuggeeDocumentContext documentContext, DebuggeeCodeContext codeContext)
     {
+      LoggingUtils.PrintFunction ();
+
       throw new NotImplementedException ();
     }
 
@@ -345,6 +347,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual void RefreshBoundBreakpoints ()
     {
+      LoggingUtils.PrintFunction ();
+
       throw new NotImplementedException ();
     }
 
@@ -354,6 +358,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual void RefreshErrorBreakpoints ()
     {
+      LoggingUtils.PrintFunction ();
+
       throw new NotImplementedException ();
     }
 

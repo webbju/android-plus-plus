@@ -151,6 +151,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int AddChildren (DebuggeeProperty [] children)
     {
+      LoggingUtils.PrintFunction ();
+
       try
       {
         if (children == null)

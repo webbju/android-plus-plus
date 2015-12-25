@@ -872,6 +872,8 @@ namespace AndroidPlusPlus.Common
 
     public Signal GetClientSignal (string sig)
     {
+      LoggingUtils.Print (string.Format ("[GdbClient] GetClientSignal: " + sig));
+
       Signal signal = null;
 
       m_gdbSupportedClientSignals.TryGetValue (sig, out signal);
@@ -885,6 +887,8 @@ namespace AndroidPlusPlus.Common
 
     public bool GetClientFeatureSupported (string feature)
     {
+      LoggingUtils.Print (string.Format ("[GdbClient] GetClientFeatureSupported: " + feature));
+
       return m_gdbSupportedClientMiFeatures.Contains (feature);
     }
 
@@ -894,6 +898,8 @@ namespace AndroidPlusPlus.Common
 
     public bool GetTargetFeatureSupported (string feature)
     {
+      LoggingUtils.Print (string.Format ("[GdbClient] GetTargetFeatureSupported: " + feature));
+
       return m_gdbSupportedTargetMiFeatures.Contains (feature);
     }
 

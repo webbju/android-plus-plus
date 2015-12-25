@@ -46,6 +46,8 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void Refresh ()
     {
+      LoggingUtils.PrintFunction ();
+
       throw new NotImplementedException ();
     }
 
