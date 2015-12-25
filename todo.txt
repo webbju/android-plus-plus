@@ -1,0 +1,20 @@
+
+- GDB clients don't seem to detach under some circumstances (i.e. continuing through a signal handler until process death).
+
+- Code to terminate active instances of GdbServer doesn't seem to be getting hit when attaching to a target.
+  -- Is there a way to query a GDB server instance to check which process it's bound to?
+
+- JDB isn't provided with a relevant -source path argument during boot.
+
+- Use of regular expressions (RegEx.Match) in various places it showing pretty highly in the profiler.
+  -- Can these be migrated to first-init compiled version of RegEx checking?
+  -- Will that actually make any substancial difference?  
+
+- Revise use of synchronisation 'lock' on various container types.
+  -- Might be better migrating to a single (class shared) lock object.
+  
+- Would be nice if the GDB attach logic tried to push a relevant GdbServer executable to device if one can't be found.
+
+- GDB/MI stepping instructions don't match what is expected behaviour in Visual Studio.
+  - Might have to use temporary breakpoints to perform actions like line-code stepping without entering the stepped function.
+
