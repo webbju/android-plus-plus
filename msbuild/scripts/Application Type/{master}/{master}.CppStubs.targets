@@ -11,122 +11,7 @@
 -->
 
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  
-  <!--
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  -->
 
-  <!--
-    Copied and modified from Microsoft.CppBuild.targets to support .so (shared library) file types.
-  -->
-  
-  <Target 
-    Name="ComputeReferenceLinkInputs"
-    DependsOnTargets="ResolvedLinkLib;ComputeResolveLinkObj"
-    Returns="@(ProjectReferenceToLink)"
-    Condition="@(ProjectReference) != ''">
-
-    <PropertyGroup>
-      <_REFERENCE_DEBUG>true</_REFERENCE_DEBUG>
-    </PropertyGroup>
-    
-    <ItemGroup Condition="'@(_ResolvedNativeProjectReferencePaths)' != ''" >
-
-      <ProjectReferenceToLink 
-        Condition=" '%(_ResolvedNativeProjectReferencePaths.FileType)'=='lib'
-          and  '%(_ResolvedNativeProjectReferencePaths.LinkLibraryDependencies)'!='false'
-          and ('%(_ResolvedNativeProjectReferencePaths.UseLibraryDependencyInputs)'!='true' 
-          or '%(_ResolvedNativeProjectReferencePaths.ProjectType)'!='StaticLibrary')"
-        Include="@(_ResolvedNativeProjectReferencePaths)"
-      />
-
-      <ProjectReferenceToLink 
-        Condition=" '%(_ResolvedNativeProjectReferencePaths.FileType)'=='so'"
-        Include="@(_ResolvedNativeProjectReferencePaths)"
-      />
-
-      <ProjectReferenceToLink 
-        Condition="'%(_ResolvedNativeProjectReferencePaths.FileType)'=='obj'
-          and '%(_ResolvedNativeProjectReferencePaths.LinkLibraryDependencies)'!='false'
-          and '%(_ResolvedNativeProjectReferencePaths.UseLibraryDependencyInputs)'=='true'
-          and '%(_ResolvedNativeProjectReferencePaths.ProjectType)'=='StaticLibrary'"
-        Include="@(_ResolvedNativeProjectReferencePaths)"
-      />
-
-      <ProjectReferenceToLink>
-        <CopyLocal Condition="'%(ProjectReferenceToLink.CopyLocal)'==''">%(ProjectReferenceToLink.Private)</CopyLocal>
-      </ProjectReferenceToLink>
-
-      <Link Condition="'@(ProjectReferenceToLink)'!=''" Include="@(ProjectReferenceToLink->ClearMetadata()->Distinct())" />
-
-    </ItemGroup>
-
-    <VCMessage Condition="'%(ProjectReferenceToLink.ProjectType)' == 'DynamicLibrary' and '$(WindowsAppContainer)' == 'true' and '%(ProjectReferenceToLink.WindowsAppContainer)' != 'true'" Code="MSB8019" Type="Warning" Arguments="@(ProjectReferenceToLink);%(ProjectReferenceToLink.MSBuildSourceProjectFile)"/>
-
-    <Message Condition="'$(_REFERENCE_DEBUG)'=='true'" Text="ProjectReferenceToLink=@(ProjectReferenceToLink)" Importance="high" />
-
-  </Target>
-  
-  <!--
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  -->
-  
-  <!--
-    Copied and modified from Microsoft.CppBuild.targets to support .a (static library) file types.
-  -->
-  
-  <Target 
-    Name="ComputeReferenceLibInputs"
-    DependsOnTargets="ResolvedLinkLib"
-    Returns="@(ProjectReferenceToLink)"
-    Condition="@(ProjectReference) != ''">
-
-    <PropertyGroup>
-      <_REFERENCE_DEBUG>true</_REFERENCE_DEBUG>
-    </PropertyGroup>
-
-    <ItemGroup Condition="'@(_ResolvedNativeProjectReferencePaths)' != ''" >
-
-      <ProjectReferenceToLink 
-        Condition=" '%(_ResolvedNativeProjectReferencePaths.FileType)'=='lib'
-          and  '%(_ResolvedNativeProjectReferencePaths.LinkLibraryDependencies)'!='false'
-          and ('%(_ResolvedNativeProjectReferencePaths.UseLibraryDependencyInputs)'=='false' 
-            or '%(_ResolvedNativeProjectReferencePaths.ProjectType)'!='StaticLibrary')"
-        Include="@(_ResolvedNativeProjectReferencePaths)"
-      />
-
-      <ProjectReferenceToLink 
-        Condition=" '%(_ResolvedNativeProjectReferencePaths.FileType)'=='a'
-          and  '%(_ResolvedNativeProjectReferencePaths.LinkLibraryDependencies)'!='false'
-          and ('%(_ResolvedNativeProjectReferencePaths.UseLibraryDependencyInputs)'=='false' 
-            or '%(_ResolvedNativeProjectReferencePaths.ProjectType)'!='StaticLibrary')"
-        Include="@(_ResolvedNativeProjectReferencePaths)"
-      />
-
-      <ProjectReferenceToLink 
-        Condition="'%(_ResolvedNativeProjectReferencePaths.FileType)'=='obj'
-          and '%(_ResolvedNativeProjectReferencePaths.LinkLibraryDependencies)'!='false'
-          and '%(_ResolvedNativeProjectReferencePaths.UseLibraryDependencyInputs)'=='true'
-          and '%(_ResolvedNativeProjectReferencePaths.ProjectType)'=='StaticLibrary'"
-        Include="@(_ResolvedNativeProjectReferencePaths)"
-      />
-
-      <ProjectReferenceToLink>
-        <CopyLocal Condition="'%(ProjectReferenceToLink.CopyLocal)'==''">%(ProjectReferenceToLink.Private)</CopyLocal>
-      </ProjectReferenceToLink>
-
-      <Lib Condition="'@(ProjectReferenceToLink)'!=''" Include="@(ProjectReferenceToLink->ClearMetadata()->Distinct())" />
-
-    </ItemGroup>
-
-    <Message Condition="'$(_REFERENCE_DEBUG)'=='true'" Text="ProjectReferenceToLink=@(ProjectReferenceToLink)" Importance="high" />
-
-  </Target>
-  
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -138,6 +23,7 @@
     Returns="@(_ProjectNativeSharedLibrariesDistinct)"
     DependsOnTargets="ResolvedLinkLib;ComputeResolveLinkObj">
     <ItemGroup>
+      <!-- Evaluate first and third-party shared library dependencies. -->
       <_ProjectNativeSharedLibraries 
         Include="
           @(Link->Metadata('OutputFile'));
@@ -162,6 +48,7 @@
     Name="GetDependencyNativeSharedLibraries"
     Returns="@(_DependencyNativeSharedLibrariesDistinct)"
     DependsOnTargets="">
+    <!-- Run GetProjectNativeSharedLibraries for each project referenced -->
     <MSBuild
       Projects="@(ProjectReference)"
       Targets="GetProjectNativeSharedLibraries"

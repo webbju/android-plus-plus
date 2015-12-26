@@ -18,8 +18,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sdl2-app", "sdl2-app\sdl2-a
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sdl2-library", "sdl2-library\sdl2-library.vcxproj", "{1049E8B2-043E-4593-99A7-67FBA6BE5939}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libhello-gdbserver", "hello-gdbserver\libhello-gdbserver.vcxproj", "{FFB97E7E-AC80-4B3C-840E-42CBA7F80E62}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "hello-gdbserver-app", "hello-gdbserver-app", "{B6AB7DAB-0ADD-4C6F-8207-A5168EAAFBAB}"
 EndProject
 Global
@@ -92,24 +90,8 @@ Global
 		{1049E8B2-043E-4593-99A7-67FBA6BE5939}.Release|Android++.armv7-a.ActiveCfg = Release|Android++.armv7-a
 		{1049E8B2-043E-4593-99A7-67FBA6BE5939}.Release|Android++.x86.ActiveCfg = Release|Android++.x86
 		{1049E8B2-043E-4593-99A7-67FBA6BE5939}.Release|Android++.x86.Build.0 = Release|Android++.x86
-		{FFB97E7E-AC80-4B3C-840E-42CBA7F80E62}.Debug|Android++.arm64-v8a.ActiveCfg = Debug|Android++.arm64-v8a
-		{FFB97E7E-AC80-4B3C-840E-42CBA7F80E62}.Debug|Android++.arm64-v8a.Build.0 = Debug|Android++.arm64-v8a
-		{FFB97E7E-AC80-4B3C-840E-42CBA7F80E62}.Debug|Android++.armv7-a.ActiveCfg = Debug|Android++.armv7-a
-		{FFB97E7E-AC80-4B3C-840E-42CBA7F80E62}.Debug|Android++.armv7-a.Build.0 = Debug|Android++.armv7-a
-		{FFB97E7E-AC80-4B3C-840E-42CBA7F80E62}.Debug|Android++.x86.ActiveCfg = Debug|Android++.x86
-		{FFB97E7E-AC80-4B3C-840E-42CBA7F80E62}.Debug|Android++.x86.Build.0 = Debug|Android++.x86
-		{FFB97E7E-AC80-4B3C-840E-42CBA7F80E62}.Release|Android++.arm64-v8a.ActiveCfg = Release|Android++.arm64-v8a
-		{FFB97E7E-AC80-4B3C-840E-42CBA7F80E62}.Release|Android++.arm64-v8a.Build.0 = Release|Android++.arm64-v8a
-		{FFB97E7E-AC80-4B3C-840E-42CBA7F80E62}.Release|Android++.armv7-a.ActiveCfg = Release|Android++.armv7-a
-		{FFB97E7E-AC80-4B3C-840E-42CBA7F80E62}.Release|Android++.armv7-a.Build.0 = Release|Android++.armv7-a
-		{FFB97E7E-AC80-4B3C-840E-42CBA7F80E62}.Release|Android++.x86.ActiveCfg = Release|Android++.x86
-		{FFB97E7E-AC80-4B3C-840E-42CBA7F80E62}.Release|Android++.x86.Build.0 = Release|Android++.x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{36324E8C-BC78-4B9E-A9E4-C6DC98158C80} = {B6AB7DAB-0ADD-4C6F-8207-A5168EAAFBAB}
-		{FFB97E7E-AC80-4B3C-840E-42CBA7F80E62} = {B6AB7DAB-0ADD-4C6F-8207-A5168EAAFBAB}
 	EndGlobalSection
 EndGlobal

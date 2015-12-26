@@ -14,4 +14,9 @@
       <Filter>Source Files</Filter>
     </AndroidJava>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="jni\hello-gdbserver.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
 </Project>
