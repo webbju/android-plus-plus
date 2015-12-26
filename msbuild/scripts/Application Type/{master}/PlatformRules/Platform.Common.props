@@ -70,9 +70,19 @@
 
     <TargetName Condition="'$(TargetName)' == ''">$(ProjectName)</TargetName>
 
-    <TargetName Condition="'$(TargetName)' != '' and '$(TargetName.Substring(0,3))' != 'lib'">lib$(TargetName)</TargetName>
+    <TargetName Condition="'$(TargetName)' != ''">$(TargetName)</TargetName>
 
     <TargetExt>.so</TargetExt>
+
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(ConfigurationType)' == 'AarLibrary'">
+
+    <LinkCompiled>false</LinkCompiled>
+
+    <TargetName Condition="'$(TargetName)' == ''">$(ProjectName)</TargetName>
+
+    <TargetExt>.aar</TargetExt>
 
   </PropertyGroup>
 

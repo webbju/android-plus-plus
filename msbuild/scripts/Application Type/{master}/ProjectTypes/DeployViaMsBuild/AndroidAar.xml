@@ -8,9 +8,9 @@
     -->
 
   <Rule
-    Name="AndroidApk"
+    Name="AndroidAar"
     PageTemplate="tool"
-    DisplayName="Android Apk Tool"
+    DisplayName="Android Aar Tool"
     Order="200">
 
     <!--
@@ -20,7 +20,7 @@
     -->
 
     <Rule.DataSource>
-      <DataSource Persistence="ProjectFile" ItemType="AndroidApk" />
+      <DataSource Persistence="ProjectFile" ItemType="AndroidAar" />
     </Rule.DataSource>
 
     <!--
@@ -70,7 +70,7 @@
     -->
 
     <DynamicEnumProperty
-     Name="AndroidApkBeforeTargets"
+     Name="AndroidAarBeforeTargets"
      Category="General"
      EnumProvider="Targets"
      IncludeInCommandLine="False">
@@ -83,7 +83,7 @@
       <DynamicEnumProperty.ProviderSettings>
         <NameValuePair
           Name="Exclude"
-          Value="^AndroidApkBeforeTargets|^Compute" />
+          Value="^AndroidAarBeforeTargets|^Compute" />
       </DynamicEnumProperty.ProviderSettings>
       <DynamicEnumProperty.DataSource>
         <DataSource
@@ -100,7 +100,7 @@
     -->
 
     <DynamicEnumProperty
-      Name="AndroidApkAfterTargets"
+      Name="AndroidAarAfterTargets"
       Category="General"
       EnumProvider="Targets"
       IncludeInCommandLine="False">
@@ -113,7 +113,7 @@
       <DynamicEnumProperty.ProviderSettings>
         <NameValuePair
           Name="Exclude"
-          Value="^AndroidApkAfterTargets|^Compute" />
+          Value="^AndroidAarAfterTargets|^Compute" />
       </DynamicEnumProperty.ProviderSettings>
       <DynamicEnumProperty.DataSource>
         <DataSource
@@ -137,11 +137,11 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <ItemType Name="AndroidApk" DisplayName="Android APK Tool" />
+  <ItemType Name="AndroidAar" DisplayName="Android AAR Tool" />
 
-  <!-- <FileExtension Name="*.apk" ContentType="AndroidApk" /> -->
+  <!-- <FileExtension Name="*.apk" ContentType="AndroidAar" /> -->
 
-  <ContentType Name="AndroidApk" DisplayName="Android APK Tool" ItemType="AndroidApk" />
+  <ContentType Name="AndroidAar" DisplayName="Android AAR Tool" ItemType="AndroidAar" />
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

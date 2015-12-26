@@ -290,7 +290,8 @@
     F1Keyword="VC.Project.VCConfiguration.ConfigurationType">
 
     <EnumValue Name="Makefile" DisplayName="Makefile" Description="Makefile" />
-    <EnumValue Name="Application" DisplayName="Application (.so)" Description="Application (.so)" />
+    <EnumValue Name="Application" DisplayName="Application (.apk)" Description="Application (.apk)" />
+    <EnumValue Name="AarLibrary" DisplayName="AAR Library (.aar)" Description="AAR Library (.aar)" />
     <EnumValue Name="Executable" DisplayName="Executable" Description="Executable" />
     <EnumValue Name="DynamicLibrary" DisplayName="Dynamic Library (.so)" Description="Dynamic Library (.so)" />
     <EnumValue Name="StaticLibrary" DisplayName="Static library (.a)" Description="Static Library (.a)" />

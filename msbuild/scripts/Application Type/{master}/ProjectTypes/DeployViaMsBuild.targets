@@ -11,6 +11,8 @@
 
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidJava.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
 
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidAar.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
+
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidProguard.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
 
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidDalvik.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
@@ -33,9 +35,9 @@
 
     <PrepareForBuildDependsOn>$(PrepareForBuildDependsOn);PrepareForBuild_DeployViaMsBuild</PrepareForBuildDependsOn>
 
-    <BuildLibTargets Condition="'$(ConfigurationType)'!='Utility'">$(BuildLibTargets);AndroidJava;</BuildLibTargets>
+    <BuildLibTargets Condition="'$(ConfigurationType)'!='Utility'">$(BuildLibTargets);AndroidJava;AndroidAar;</BuildLibTargets>
 
-    <BuildLinkTargets Condition="'$(ConfigurationType)'!='Utility'">$(BuildLinkTargets);AndroidApk;AndroidApkSign;</BuildLinkTargets>
+    <BuildLinkTargets Condition="'$(ConfigurationType)'!='Utility'">$(BuildLinkTargets);AndroidAar;AndroidApk;AndroidApkSign;</BuildLinkTargets>
 
     <AfterBuildCompileTargets Condition="'$(ConfigurationType)'!='Utility'">$(AfterBuildCompileTargets)</AfterBuildCompileTargets>
 

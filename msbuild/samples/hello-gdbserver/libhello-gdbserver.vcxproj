@@ -27,8 +27,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectName>hello-gdbserver</ProjectName>
-    <ProjectGuid>{36324E8C-BC78-4B9E-A9E4-C6DC98158C80}</ProjectGuid>
+    <ProjectName>libhello-gdbserver</ProjectName>
+    <ProjectGuid>{FFB97E7E-AC80-4B3C-840E-42CBA7F80E62}</ProjectGuid>
     <RootNamespace>hellogdbserver</RootNamespace>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
   </PropertyGroup>
@@ -36,28 +36,28 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.armv7-a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</IntDir>
     <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.x86'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</IntDir>
     <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.arm64-v8a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</IntDir>
     <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.armv7-a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</IntDir>
     <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
@@ -65,7 +65,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.x86'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</IntDir>
     <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
@@ -73,7 +73,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.arm64-v8a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</IntDir>
     <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
@@ -84,20 +84,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
   <ItemGroup>
-    <AndroidJava Include="src\com\example\hellogdbserver\HelloGdbServer.java" />
-  </ItemGroup>
-  <ItemGroup>
-    <AndroidManifest Include="AndroidManifest.xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="libhello-gdbserver.vcxproj">
-      <Project>{ffb97e7e-ac80-4b3c-840e-42cba7f80e62}</Project>
-      <Private>false</Private>
-      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
-      <CopyLocalSatelliteAssemblies>false</CopyLocalSatelliteAssemblies>
-      <LinkLibraryDependencies>true</LinkLibraryDependencies>
-      <UseLibraryDependencyInputs>true</UseLibraryDependencyInputs>
-    </ProjectReference>
+    <ClCompile Include="jni\hello-gdbserver.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

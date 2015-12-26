@@ -7,11 +7,8 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <AndroidManifest Include="AndroidManifest.xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <AndroidJava Include="src\com\example\hellogdbserver\HelloGdbServer.java">
+    <ClCompile Include="jni\hello-gdbserver.c">
       <Filter>Source Files</Filter>
-    </AndroidJava>
+    </ClCompile>
   </ItemGroup>
 </Project>

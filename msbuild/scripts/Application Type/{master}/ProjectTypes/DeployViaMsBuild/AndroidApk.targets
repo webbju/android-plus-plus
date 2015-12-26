@@ -59,21 +59,17 @@
     AfterTargets="$(AndroidApkAfterTargets)"
     DependsOnTargets="AndroidManifest;_AndroidApk;">
 
+    <CallTarget Targets="GetDependencyNativeSharedLibraries">
+      <Output TaskParameter="TargetOutputs" ItemName="_TargetElfFiles"/>
+    </CallTarget>
+
     <!--
       Register shared libraries (.so) which will need to be copied to the final APK .\lib\[arch] directory.
     -->
 
     <ItemGroup Condition="'$(ConfigurationType)' == 'Application'">
-      <!-- First-party (linker output) and third-party provided libraries. -->
-      <_TargetElfFiles Include="
-        @(Link->Metadata('OutputFile'));
-        @(LinkOutputFiles->Metadata('FullPath'));
-        $(ProjectDir)lib\$(TargetPlatformArchitectureEabi)\*.so;
-        $(ProjectDir)libs\$(TargetPlatformArchitectureEabi)\*.so">
-      </_TargetElfFiles>
-      <_TargetElfFilesDistinct Include="@(_TargetElfFiles->Distinct())"/>
       <_TargetElfSearchPaths Include="
-        @(_TargetElfFilesDistinct->'%(RootDir)%(Directory)');
+        @(_DependencyNativeSharedLibraries->'%(RootDir)%(Directory)');
         %(Link.AdditionalLibraryDirectories);
         $(IntDir)raw\lib\$(TargetPlatformArchitectureEabi)">
       </_TargetElfSearchPaths>
@@ -84,8 +80,8 @@
     -->
 
     <AndroidNdkDepends 
-      Condition="'@(_TargetElfFilesDistinct)' != ''" 
-      TargetElfFiles="@(_TargetElfFilesDistinct->Metadata('FullPath'))"
+      Condition="'@(_TargetElfFiles)' != ''" 
+      TargetElfFiles="@(_TargetElfFiles->Metadata('FullPath'))"
       LibrarySearchPaths="@(_TargetElfSearchPaths->Distinct())"
       NdkDependsTool="$(ANDROID_PLUS_PLUS)\toolchain\bin\app-ndk-depends.exe"
       Verbose="true">
@@ -111,7 +107,7 @@
     <Copy 
       Condition="'@(_CopyNativeLibrariesAndTools)' != ''" 
       SourceFiles="@(_CopyNativeLibrariesAndTools->Distinct())" 
-      DestinationFiles="@(_CopyNativeLibrariesAndTools->'%(IntermediateDirectory)\lib\$(TargetPlatformArchitectureEabi)\%(Filename)%(Extension)')" 
+      DestinationFiles="@(_CopyNativeLibrariesAndTools->Distinct()->'%(IntermediateDirectory)\lib\$(TargetPlatformArchitectureEabi)\%(Filename)%(Extension)')" 
     />
 
     <!-- 
@@ -124,7 +120,7 @@
 
     <Copy 
       SourceFiles="@(AndroidManifestOutputApk)" 
-      DestinationFiles="@(_UnsignedOutputFile)">
+      DestinationFiles="@(_UnsignedOutputFile->Distinct())">
       <Output TaskParameter="CopiedFiles" ItemName="AndroidApkUnsignedOutputFile" />
     </Copy>
 

@@ -282,6 +282,25 @@ namespace AndroidPlusPlus.MsBuild.Exporter
                 {
                   ProcessArguments ("--vs-version 2010;2012;2013;2015".Split (' '));
 
+                  // 
+                  // It's easier here just to process directories for all versions, and then remove any which don't exist.
+                  // 
+
+                  HashSet <string> invalidVersions = new HashSet<string> ();
+
+                  foreach (KeyValuePair<string, string> keyPair in s_vsVersionMsBuildDirs)
+                  {
+                    if (!Directory.Exists (keyPair.Value))
+                    {
+                      invalidVersions.Add (keyPair.Key);
+                    }
+                  }
+
+                  foreach (string invalidVersion in invalidVersions)
+                  {
+                    s_vsVersionMsBuildDirs.Remove (invalidVersion);
+                  }
+
                   break;
                 }
 
