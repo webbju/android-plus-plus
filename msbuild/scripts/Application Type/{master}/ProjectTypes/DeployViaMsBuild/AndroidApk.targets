@@ -59,18 +59,27 @@
     AfterTargets="$(AndroidApkAfterTargets)"
     DependsOnTargets="AndroidManifest;_AndroidApk;">
 
+    <CallTarget Targets="GetProjectNativeSharedLibraries">
+      <Output TaskParameter="TargetOutputs" ItemName="_TargetElfFilesProject" />
+    </CallTarget>
+
     <CallTarget Targets="GetDependencyNativeSharedLibraries">
-      <Output TaskParameter="TargetOutputs" ItemName="_TargetElfFiles"/>
+      <Output TaskParameter="TargetOutputs" ItemName="_TargetElfFilesDependencies" />
     </CallTarget>
 
     <!--
       Register shared libraries (.so) which will need to be copied to the final APK .\lib\[arch] directory.
     -->
 
-    <ItemGroup Condition="'$(ConfigurationType)' == 'Application'">
+    <ItemGroup>
+      <_TargetElfFiles 
+        Include="
+          @(_TargetElfFilesProject);
+          @(_TargetElfFilesDependencies)">
+      </_TargetElfFiles>
       <_TargetElfSearchPaths 
         Include="
-          @(_DependencyNativeSharedLibraries->'%(RootDir)%(Directory)');
+          @(__TargetElfFiles->'%(RootDir)%(Directory)');
           %(Link.AdditionalLibraryDirectories);
           $(IntDir)apk\lib\$(TargetPlatformArchitectureEabi)">
       </_TargetElfSearchPaths>
@@ -94,21 +103,25 @@
       Recursively copy registered native libraries/tools to appropriate architecture paths. 
     -->
 
-    <ItemGroup Condition="'$(ConfigurationType)' == 'Application'">
-      <_CopyNativeLibrariesAndTools Condition="'@(AndroidApkDependentLibraries)' != ''" Include="@(AndroidApkDependentLibraries->Distinct())">
+    <ItemGroup>
+      <_CopyNativeLibrariesAndTools 
+        Condition="'@(AndroidApkDependentLibraries)' != ''" 
+        Include="@(AndroidApkDependentLibraries->Distinct())">
         <IntermediateDirectory>$(IntDir)apk</IntermediateDirectory>
       </_CopyNativeLibrariesAndTools>
       
       <!-- Copy appropriate target architecture 'gdbserver' instance. -->
-      <_CopyNativeLibrariesAndTools Condition="('$(UseDebugLibraries)' == 'true' or '%(AndroidManifest.DebugMode)' == 'true')" Include="$(PlatformToolsetGdbServer)">
+      <_CopyNativeLibrariesAndTools 
+        Condition="('$(UseDebugLibraries)' == 'true' or '%(AndroidManifest.DebugMode)' == 'true')" 
+        Include="$(PlatformToolsetGdbServer)">
         <IntermediateDirectory>$(IntDir)apk</IntermediateDirectory>
       </_CopyNativeLibrariesAndTools>
     </ItemGroup>
     
     <Copy 
       Condition="'@(_CopyNativeLibrariesAndTools)' != ''" 
-      SourceFiles="@(_CopyNativeLibrariesAndTools->Distinct())" 
-      DestinationFiles="@(_CopyNativeLibrariesAndTools->Distinct()->'%(IntermediateDirectory)\lib\$(TargetPlatformArchitectureEabi)\%(Filename)%(Extension)')" 
+      SourceFiles="@(_CopyNativeLibrariesAndTools)" 
+      DestinationFiles="@(_CopyNativeLibrariesAndTools->'%(IntermediateDirectory)\lib\$(TargetPlatformArchitectureEabi)\%(Filename)%(Extension)')" 
     />
 
     <!-- 
@@ -181,7 +194,9 @@
       />
       <CleanAndroidApkCacheDirectories
         Include="
-          $(IntDir)apk\lib\$(TargetPlatformArchitectureEabi);"
+          $(IntDir)apk\lib\$(TargetPlatformArchitectureEabi);
+          $(IntDir)apk\lib;
+          $(IntDir)apk"
       />
     </ItemGroup>
 

@@ -20,8 +20,8 @@
   
   <Target 
     Name="GetProjectNativeSharedLibraries"
-    Returns="@(_ProjectNativeSharedLibrariesDistinct)"
-    DependsOnTargets="ResolvedLinkLib;ComputeResolveLinkObj">
+    Returns="@(_ProjectNativeSharedLibraries->Distinct())"
+    DependsOnTargets="ResolvedLinkLib;ComputeResolveLinkObj;_Link">
     <ItemGroup>
       <!-- Evaluate first and third-party shared library dependencies. -->
       <_ProjectNativeSharedLibraries 
@@ -30,10 +30,6 @@
           @(LinkOutputFiles->Metadata('FullPath'));
           $(ProjectDir)lib\$(TargetPlatformArchitectureEabi)\*.so;
           $(ProjectDir)libs\$(TargetPlatformArchitectureEabi)\*.so"
-      />
-      <!-- Filter any potential duplicates -->
-      <_ProjectNativeSharedLibrariesDistinct
-        Include="@(_ProjectNativeSharedLibraries->Distinct())"
       />
     </ItemGroup>
   </Target>
@@ -46,7 +42,7 @@
   
   <Target
     Name="GetDependencyNativeSharedLibraries"
-    Returns="@(_DependencyNativeSharedLibrariesDistinct)"
+    Returns="@(_DependencyNativeSharedLibraries->Distinct())"
     DependsOnTargets="">
     <!-- Run GetProjectNativeSharedLibraries for each project referenced -->
     <MSBuild
@@ -58,10 +54,6 @@
       UseResultsCache="false">
       <Output TaskParameter="TargetOutputs" ItemName="_DependencyNativeSharedLibraries"/>
     </MSBuild>
-    <!-- Filter any potential duplicates -->
-    <ItemGroup>
-      <_DependencyNativeSharedLibrariesDistinct Include="@(_DependencyNativeSharedLibraries->Distinct())" />
-    </ItemGroup>
   </Target>
   
   <!--

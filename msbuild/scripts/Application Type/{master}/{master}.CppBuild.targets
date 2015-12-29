@@ -57,47 +57,39 @@
     </PropertyPageSchema>
 
     <!-- Switch view between project property based directories and environment variables -->
-    <PropertyPageSchema Include="$(VCTargetsPath)\Application Type\{master}\PlatformProps\native_directories.xml" />
-
     <PropertyPageSchema 
-      Condition="'$(ConfigurationType)' == 'Executable'"
+      Include="$(VCTargetsPath)\Application Type\{master}\PlatformProps\native_directories.xml"
+    />
+
+    <PropertyPageSchema
+      Condition="('$(ConfigurationType)' == 'Application' or '$(ConfigurationType)' == 'Executable' or '$(ConfigurationType)' == 'DynamicLibrary')"
       Include="
         $(VCTargetsPath)\Application Type\{master}\PlatformProps\native_compile.xml;
         $(VCTargetsPath)\Application Type\{master}\PlatformProps\native_link.xml"
     />
 
     <PropertyPageSchema
-      Condition="'$(ConfigurationType)' == 'DynamicLibrary'"
-      Include="
-        $(VCTargetsPath)\Application Type\{master}\PlatformProps\native_compile.xml;
-        $(VCTargetsPath)\Application Type\{master}\PlatformProps\native_lib.xml"
-    />
-    
-    <PropertyPageSchema
       Condition="'$(ConfigurationType)' == 'StaticLibrary'"
       Include="
         $(VCTargetsPath)\Application Type\{master}\PlatformProps\native_compile.xml;
         $(VCTargetsPath)\Application Type\{master}\PlatformProps\native_lib.xml"
     />
-    
+
     <PropertyPageSchema
       Condition="('$(ConfigurationType)' == 'DynamicLibrary' or '$(ConfigurationType)' == 'StaticLibrary')"
-      Include="
-        $(VCTargetsPath)\Application Type\{master}\ProjectTypes\DeployViaMsBuild\AndroidAar.xml"
+      Include="$(VCTargetsPath)\Application Type\{master}\ProjectTypes\DeployViaMsBuild\AndroidAar.xml"
     />
 
     <PropertyPageSchema
       Condition="'$(ConfigurationType)' == 'Application'"
-      Include="
-        $(VCTargetsPath)\Application Type\{master}\ProjectTypes\DeployViaMsBuild\AndroidApk.xml"
+      Include="$(VCTargetsPath)\Application Type\{master}\ProjectTypes\DeployViaMsBuild\AndroidApk.xml"
     />
 
     <!-- Non-Utility project property pages -->
     <PropertyPageSchema 
       Condition="'$(ConfigurationType)' != 'Utility'" 
-      Include="
-        $(VCTargetsPath)$(LangID)\custom_build_step.xml;
-    "/>
+      Include="$(VCTargetsPath)$(LangID)\custom_build_step.xml"
+    />
 
   </ItemGroup>
   
@@ -126,7 +118,7 @@
     - Assuming that all project types would like a 'Custom Build Step'.
   -->
   
-  <ItemGroup Condition="('$(ConfigurationType)' == 'Executable' or '$(ConfigurationType)' == 'DynamicLibrary')">
+  <ItemGroup Condition="('$(ConfigurationType)' == 'Application' or '$(ConfigurationType)' == 'Executable' or '$(ConfigurationType)' == 'DynamicLibrary')">
     <ProjectTools Include="Link"/>
   </ItemGroup>
 
@@ -134,7 +126,7 @@
     <ProjectTools Include="Lib"/>
   </ItemGroup>
 
-  <ItemGroup Condition="('$(ConfigurationType)' == 'DynamicLibrary')">
+  <ItemGroup Condition="('$(ConfigurationType)' == 'StaticLibrary' or '$(ConfigurationType)' == 'DynamicLibrary')">
     <ProjectTools Include="AndroidAar"/>
   </ItemGroup>
 

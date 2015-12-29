@@ -99,7 +99,7 @@
           $(IntDir)aar\assets;
           $(IntDir)aar\libs;
           $(IntDir)aar\jni\$(TargetPlatformArchitectureEabi);
-        "
+          $(IntDir)aar"
       />
     </ItemGroup>
 

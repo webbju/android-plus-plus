@@ -70,7 +70,7 @@
 
     <TargetName Condition="'$(TargetName)' == ''">$(ProjectName)</TargetName>
 
-    <TargetName Condition="'$(TargetName)' != ''">$(TargetName)</TargetName>
+    <TargetName Condition="'$(TargetName)' != '' and '$(TargetName.Substring(0,3))' != 'lib'">lib$(TargetName)</TargetName>
 
     <TargetExt>.so</TargetExt>
 

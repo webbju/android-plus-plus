@@ -47,7 +47,7 @@
     <StringProperty 
       Name="ProjectManifest" 
       DisplayName="Project Manifest" 
-      Description="Default (primary) 'AndroidManifest.xml' for the project. For applications this is a manifest which specifies an &lt;application%gt; tag."
+      Description="Default (primary) 'AndroidManifest.xml' for the project. For applications this is a manifest which specifies an &lt;application&gt; tag."
       Category="General"
       IncludeInCommandLine="false"
       Subtype="file"
