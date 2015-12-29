@@ -68,10 +68,11 @@
     -->
 
     <ItemGroup Condition="'$(ConfigurationType)' == 'Application'">
-      <_TargetElfSearchPaths Include="
-        @(_DependencyNativeSharedLibraries->'%(RootDir)%(Directory)');
-        %(Link.AdditionalLibraryDirectories);
-        $(IntDir)raw\lib\$(TargetPlatformArchitectureEabi)">
+      <_TargetElfSearchPaths 
+        Include="
+          @(_DependencyNativeSharedLibraries->'%(RootDir)%(Directory)');
+          %(Link.AdditionalLibraryDirectories);
+          $(IntDir)apk\lib\$(TargetPlatformArchitectureEabi)">
       </_TargetElfSearchPaths>
     </ItemGroup>
 
@@ -95,12 +96,12 @@
 
     <ItemGroup Condition="'$(ConfigurationType)' == 'Application'">
       <_CopyNativeLibrariesAndTools Condition="'@(AndroidApkDependentLibraries)' != ''" Include="@(AndroidApkDependentLibraries->Distinct())">
-        <IntermediateDirectory>$(IntDir)raw</IntermediateDirectory>
+        <IntermediateDirectory>$(IntDir)apk</IntermediateDirectory>
       </_CopyNativeLibrariesAndTools>
       
       <!-- Copy appropriate target architecture 'gdbserver' instance. -->
       <_CopyNativeLibrariesAndTools Condition="('$(UseDebugLibraries)' == 'true' or '%(AndroidManifest.DebugMode)' == 'true')" Include="$(PlatformToolsetGdbServer)">
-        <IntermediateDirectory>$(IntDir)raw</IntermediateDirectory>
+        <IntermediateDirectory>$(IntDir)apk</IntermediateDirectory>
       </_CopyNativeLibrariesAndTools>
     </ItemGroup>
     
@@ -137,13 +138,13 @@
     <Copy 
       Condition="'@(AndroidApk)' != ''"
       SourceFiles="@(AndroidApk)" 
-      DestinationFiles="@(AndroidApk->'$(IntDir)raw\%(RecursiveDir)%(Filename)%(Extension)')"
+      DestinationFiles="@(AndroidApk->'$(IntDir)apk\%(RecursiveDir)%(Filename)%(Extension)')"
     />
 
     <Exec 
       Condition="'@(AndroidApkUnsignedOutputFile)' != ''"
       Command="7za.exe a -tzip -mx9 -ssc -r &quot;@(AndroidApkUnsignedOutputFile->Metadata('FullPath'))&quot; * &gt;NUL" 
-      WorkingDirectory="$(IntDir)raw"
+      WorkingDirectory="$(IntDir)apk"
     />
 
   </Target>
@@ -175,16 +176,12 @@
     <ItemGroup>
       <CleanAndroidApkCacheFiles
         Include="
-        $(IntDir)*.apk;
-        $(IntDir)raw\lib\$(TargetPlatformArchitectureEabi)\gdbserver;
-        $(IntDir)raw\lib\$(TargetPlatformArchitectureEabi)\*.a;
-        $(IntDir)raw\lib\$(TargetPlatformArchitectureEabi)\*.so;
-        $(IntDir)raw\**\*;"
+          $(IntDir)*.apk;
+          $(IntDir)apk\**\*;"
       />
       <CleanAndroidApkCacheDirectories
         Include="
-        $(IntDir)raw\lib\$(TargetPlatformArchitectureEabi);
-        "
+          $(IntDir)apk\lib\$(TargetPlatformArchitectureEabi);"
       />
     </ItemGroup>
 

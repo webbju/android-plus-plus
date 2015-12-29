@@ -60,10 +60,17 @@
     <PropertyPageSchema Include="$(VCTargetsPath)\Application Type\{master}\PlatformProps\native_directories.xml" />
 
     <PropertyPageSchema 
-      Condition="('$(ConfigurationType)' == 'Executable' or '$(ConfigurationType)' == 'DynamicLibrary')"
+      Condition="'$(ConfigurationType)' == 'Executable'"
       Include="
         $(VCTargetsPath)\Application Type\{master}\PlatformProps\native_compile.xml;
-        $(VCTargetsPath)\Application Type\{master}\PlatformProps\native_link.xml" 
+        $(VCTargetsPath)\Application Type\{master}\PlatformProps\native_link.xml"
+    />
+
+    <PropertyPageSchema
+      Condition="'$(ConfigurationType)' == 'DynamicLibrary'"
+      Include="
+        $(VCTargetsPath)\Application Type\{master}\PlatformProps\native_compile.xml;
+        $(VCTargetsPath)\Application Type\{master}\PlatformProps\native_lib.xml"
     />
     
     <PropertyPageSchema
@@ -72,17 +79,17 @@
         $(VCTargetsPath)\Application Type\{master}\PlatformProps\native_compile.xml;
         $(VCTargetsPath)\Application Type\{master}\PlatformProps\native_lib.xml"
     />
-
+    
     <PropertyPageSchema
-      Condition="'$(ConfigurationType)' == 'AarLibrary'"
+      Condition="('$(ConfigurationType)' == 'DynamicLibrary' or '$(ConfigurationType)' == 'StaticLibrary')"
       Include="
-        $(VCTargetsPath)\Application Type\{master}\ProjectTypes\DeployViaMsBuild\AndroidAar.xml;"
+        $(VCTargetsPath)\Application Type\{master}\ProjectTypes\DeployViaMsBuild\AndroidAar.xml"
     />
 
     <PropertyPageSchema
       Condition="'$(ConfigurationType)' == 'Application'"
       Include="
-        $(VCTargetsPath)\Application Type\{master}\ProjectTypes\DeployViaMsBuild\AndroidApk.xml;"
+        $(VCTargetsPath)\Application Type\{master}\ProjectTypes\DeployViaMsBuild\AndroidApk.xml"
     />
 
     <!-- Non-Utility project property pages -->
@@ -127,7 +134,7 @@
     <ProjectTools Include="Lib"/>
   </ItemGroup>
 
-  <ItemGroup Condition="('$(ConfigurationType)' == 'AarLibrary')">
+  <ItemGroup Condition="('$(ConfigurationType)' == 'DynamicLibrary')">
     <ProjectTools Include="AndroidAar"/>
   </ItemGroup>
 

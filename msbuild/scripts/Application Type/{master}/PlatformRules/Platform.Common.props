@@ -76,16 +76,6 @@
 
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(ConfigurationType)' == 'AarLibrary'">
-
-    <LinkCompiled>false</LinkCompiled>
-
-    <TargetName Condition="'$(TargetName)' == ''">$(ProjectName)</TargetName>
-
-    <TargetExt>.aar</TargetExt>
-
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(ConfigurationType)' == 'Executable'">
 
     <LinkCompiled>true</LinkCompiled>

@@ -203,8 +203,12 @@
     <ClInclude Include="src\common.h" />
   </ItemGroup>
   <ItemGroup>
-    <AndroidBuild Include="..\sdl2-library\AndroidManifest.xml" />
     <None Include="proguard-project.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\sdl2-library\sdl2-library.vcxproj">
+      <Project>{1049e8b2-043e-4593-99a7-67fba6be5939}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

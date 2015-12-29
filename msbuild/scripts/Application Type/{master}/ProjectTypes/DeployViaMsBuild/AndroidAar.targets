@@ -43,7 +43,7 @@
 
   <Target
     Name="_AndroidAar"
-    Condition="'$(ConfigurationType)' == 'AarLibrary'"
+    Condition="('$(ConfigurationType)' == 'DynamicLibrary' or '$(ConfigurationType)' == 'StaticLibrary')"
     DependsOnTargets="$(ComputeAndroidAarInputsTargets)">
   </Target>
 
@@ -88,15 +88,17 @@
     <ItemGroup>
       <CleanAndroidAarCacheFiles
         Include="
-        $(IntDir)*.apk;
-        $(IntDir)raw\lib\$(TargetPlatformArchitectureEabi)\gdbserver;
-        $(IntDir)raw\lib\$(TargetPlatformArchitectureEabi)\*.a;
-        $(IntDir)raw\lib\$(TargetPlatformArchitectureEabi)\*.so;
-        $(IntDir)raw\**\*;"
+        $(IntDir)*.aar;
+        $(IntDir)aar\jni\$(TargetPlatformArchitectureEabi)\*.a;
+        $(IntDir)aar\jni\$(TargetPlatformArchitectureEabi)\*.so;
+        $(IntDir)aar\**\*;"
       />
       <CleanAndroidAarCacheDirectories
         Include="
-        $(IntDir)raw\lib\$(TargetPlatformArchitectureEabi);
+          $(IntDir)aar\res;
+          $(IntDir)aar\assets;
+          $(IntDir)aar\libs;
+          $(IntDir)aar\jni\$(TargetPlatformArchitectureEabi);
         "
       />
     </ItemGroup>

@@ -71,7 +71,7 @@
 
       <Verbose Condition="'%(AndroidJava.Verbose)' == ''">false</Verbose>
 
-      <JarOutputFile Condition="'%(AndroidJava.JarOutputFile)' == '' and '$(ConfigurationType)' != 'Application'">$(TargetDir)$(TargetName).jar</JarOutputFile>
+      <JarOutputFile Condition="'%(AndroidJava.JarOutputFile)' == '' and '$(ConfigurationType)' != 'Application'">$(IntDir)bin\classes.jar</JarOutputFile>
 
       <JarOutputFile Condition="'%(AndroidJava.JarOutputFile)' == ''"></JarOutputFile>
 
