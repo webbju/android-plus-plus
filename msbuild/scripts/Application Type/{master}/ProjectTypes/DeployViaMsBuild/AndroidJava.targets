@@ -40,12 +40,23 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
+  
+  <Target
+    Name="_AndroidJava"
+    DependsOnTargets="$(ComputeAndroidJavaInputsTargets)">
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
 
   <Target
     Name="AndroidJava"
     BeforeTargets="$(AndroidJavaBeforeTargets)"
     AfterTargets="$(AndroidJavaAfterTargets)"
-    DependsOnTargets="$(ComputeAndroidJavaInputsTargets)">
+    DependsOnTargets="_AndroidJava">
 
     <!-- 
       Ensure requested output directories exist 
@@ -71,18 +82,27 @@
       - Segment class paths for 'Dalvik Executable' processing as some libraries are designed to skip this step.
     -->
 
+    <MSBuild
+      Projects="$(MSBuildProjectFullPath);@(ProjectReference)"
+      Targets="_ComputeRequiredJars"
+      BuildInParallel="$(BuildInParallel)"
+      Properties="Platform=$(Platform);Configuration=$(Configuration)"
+      RebaseOutputs="true"
+      UseResultsCache="false">
+      <Output TaskParameter="TargetOutputs" ItemName="_ClassPathJars"/>
+    </MSBuild>
+    
+    <ItemGroup>
+      <!-- Delete any tracked references to the output file for this project. -->
+      <_ClassPathJars Remove="%(AndroidJava.JarOutputFile)" />
+    </ItemGroup>
+
     <ItemGroup Condition="'@(AndroidJava)' != ''">
-      <_ClassPathJars Include="@(AndroidJava)" Condition="'%(Extension)' =='.jar'" />
-      <_DexClassPathJars Include="@(AndroidJava)" Condition="('%(Extension)' =='.jar' AND '%(DisableDexExport)' == 'false')" />
+      <!-- Clear any registered .jar files (so we're only left with .java source-files) -->
       <AndroidJava Remove="@(_ClassPathJars)" />
       <AndroidJava>
-        <!-- Promote any property specified class path data so it may be DEX processed -->
-        <DexClassPaths>%(AndroidJava.ClassPaths);%(AndroidJava.DexClassPaths)</DexClassPaths>
-      </AndroidJava>
-      <AndroidJava>
         <!-- Add any .jar files which have been added to the project to their respective class path category -->
-        <ClassPaths>@(_ClassPathJars->Metadata('FullPath')->Distinct());%(AndroidJava.ClassPaths);</ClassPaths>
-        <DexClassPaths>@(_DexClassPathJars->Metadata('FullPath')->Distinct());%(AndroidJava.DexClassPaths);</DexClassPaths>
+        <ClassPaths>@(_ClassPathJars->Distinct()->Metadata('FullPath'));%(AndroidJava.ClassPaths);</ClassPaths>
       </AndroidJava>
     </ItemGroup>
 
@@ -143,6 +163,41 @@
     />
 
   </Target>
+  
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target
+    Name="_ComputeRequiredJars"
+    Returns="@(_RequiredJars->Distinct())"
+    DependsOnTargets="">
+    <ItemGroup>
+      <_RequiredJars Include="@(AndroidJava)" Condition="'%(Extension)' =='.jar'" />
+      <!-- Allows 'output' files from third-party referenced projects to be added appropriately. -->
+      <_RequiredJars Include="%(AndroidJava.JarOutputFile)" />
+    </ItemGroup>
+  </Target>
+  
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+  
+  <Target
+    Name="_ComputePermittedDexJars"
+    Returns="@(_PermittedDexJars->Distinct())"
+    DependsOnTargets="">
+    <ItemGroup>
+      <!-- Collate any registered .jar files which are explicitly marked to allow DEX processing. -->
+      <_PermittedDexJars Include="@(AndroidJava)" Condition="('%(Extension)' =='.jar' AND '%(DisableDexExport)' == 'false')" />
+      <!-- Allows 'output' files from third-party referenced projects to be added appropriately. -->
+      <_PermittedDexJars Include="%(AndroidJava.JarOutputFile)" />
+    </ItemGroup>
+  </Target>
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -154,12 +209,27 @@
     Name="ComputeAndroidJavaOutput"
     DependsOnTargets="AndroidJava">
 
-    <!--
-      Pass-through required 'class paths' to be DEXed.
+    <!-- 
+      Pass-through any .jar for DEX processing. Though we need to do an initial shrinking/optimisation pass using ProGuard first.
     -->
 
+    <MSBuild
+      Projects="$(MSBuildProjectFullPath);@(ProjectReference)"
+      Targets="_ComputePermittedDexJars"
+      BuildInParallel="$(BuildInParallel)"
+      Properties="Platform=$(Platform);Configuration=$(Configuration)"
+      RebaseOutputs="true"
+      UseResultsCache="false">
+      <Output TaskParameter="TargetOutputs" ItemName="_PermittedDexJars"/>
+    </MSBuild>
+
     <ItemGroup>
-      <AndroidProguard Include="%(AndroidJava.DexClassPaths)" />
+      <!-- Delete any tracked references to the output file for this project. -->
+      <_PermittedDexJars Remove="%(AndroidJava.JarOutputFile)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <AndroidProguard Include="@(_PermittedDexJars)" />
     </ItemGroup>
 
   </Target>

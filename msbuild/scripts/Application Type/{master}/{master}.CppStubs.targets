@@ -21,7 +21,7 @@
   <Target 
     Name="GetProjectNativeSharedLibraries"
     Returns="@(_ProjectNativeSharedLibraries->Distinct())"
-    DependsOnTargets="ResolvedLinkLib;ComputeResolveLinkObj;_Link">
+    DependsOnTargets="ResolvedLinkLib;ComputeResolveLinkObj;">
     <ItemGroup>
       <!-- Evaluate first and third-party shared library dependencies. -->
       <_ProjectNativeSharedLibraries 

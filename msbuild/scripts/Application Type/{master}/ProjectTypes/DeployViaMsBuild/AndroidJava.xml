@@ -296,19 +296,6 @@
     />
 
     <!--
-      DexClassPaths
-    -->
-
-    <StringListProperty
-      Subtype="file"
-      Name="DexClassPaths"
-      DisplayName="DEX Class Path(s)"
-      Description="Specify the location of class files or JAR archives which should be exported to DEX (Dalvik Executable) byte-code."
-      Category="Advanced"
-      IncludeInCommandLine="false"
-    />
-    
-    <!--
       Verbose
     -->
 

@@ -35,11 +35,11 @@
 
     <PrepareForBuildDependsOn>$(PrepareForBuildDependsOn);PrepareForBuild_DeployViaMsBuild</PrepareForBuildDependsOn>
 
-    <BuildLibTargets Condition="'$(ConfigurationType)'!='Utility'">$(BuildLibTargets);AndroidJava;AndroidAar;</BuildLibTargets>
-
-    <BuildLinkTargets Condition="'$(ConfigurationType)'!='Utility'">$(BuildLinkTargets);AndroidAar;AndroidApk;AndroidApkSign;</BuildLinkTargets>
-
     <AfterBuildCompileTargets Condition="'$(ConfigurationType)'!='Utility'">$(AfterBuildCompileTargets)</AfterBuildCompileTargets>
+
+    <BuildLibTargets Condition="'$(ConfigurationType)'!='Utility'">$(BuildLibTargets);AndroidJava;</BuildLibTargets>
+
+    <AfterBuildLinkTargets Condition="'$(ConfigurationType)'!='Utility'">$(AfterBuildLinkTargets);AndroidAar;AndroidApk;AndroidApkSign;</AfterBuildLinkTargets>
 
     <BuildCompileAction>$(CommonBuildOnlyTargets);$(BeforeBuildCompileTargets);$(BuildCompileTargets);$(AfterBuildCompileTargets)</BuildCompileAction>
 

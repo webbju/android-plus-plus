@@ -55,6 +55,7 @@
 
   <Target
     Name="AndroidAar"
+    Condition="('$(ConfigurationType)' == 'DynamicLibrary' or '$(ConfigurationType)' == 'StaticLibrary')"
     BeforeTargets="$(AndroidAarBeforeTargets)"
     AfterTargets="$(AndroidAarAfterTargets)"
     DependsOnTargets="AndroidManifest;_AndroidAar;">
@@ -69,11 +70,8 @@
 
   <Target
     Name="ComputeAndroidAarOutput"
+    Condition="('$(ConfigurationType)' == 'DynamicLibrary' or '$(ConfigurationType)' == 'StaticLibrary')"
     DependsOnTargets="AndroidAar">
-
-    <ItemGroup>
-      <AndroidAarSign Include="@(AndroidAarUnsignedOutputFile)" />
-    </ItemGroup>
 
   </Target>
 
@@ -83,7 +81,8 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <Target Name="CleanAndroidAar">
+  <Target 
+    Name="CleanAndroidAar">
 
     <ItemGroup>
       <CleanAndroidAarCacheFiles

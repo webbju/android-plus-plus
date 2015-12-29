@@ -54,7 +54,6 @@
   
   <Target
     Name="AndroidDalvik"
-    Condition="'$(ConfigurationType)' == 'Application'"
     BeforeTargets="$(AndroidDalvikBeforeTargets)"
     AfterTargets="$(AndroidDalvikAfterTargets)"
     DependsOnTargets="_AndroidDalvik">
@@ -80,7 +79,7 @@
     -->
 
     <PropertyGroup>
-      <_DexOutputPath>$(ProjectDir)$(IntDir)bin\dex\</_DexOutputPath>
+      <_DexOutputPath>$(ProjectDir)$(IntDir)bin</_DexOutputPath>
       <!-- MultiDex script configuration -->
       <_MainDexInputJars>@(AndroidDalvik->Distinct()->'-injars &quot;%(FullPath)&quot;(!META-INF/**.*,**.class,!**.class.d)')</_MainDexInputJars>
       <_MainDexScriptOutputJar>$(ProjectDir)$(IntDir)bin\mainDexClasses.tmp.jar</_MainDexScriptOutputJar>
@@ -97,7 +96,7 @@
 
     <!-- Create an empty output jar. -->
     <Exec 
-      Condition="!Exists('$(_MainDexScriptOutputJar)')"
+      Condition="('@(AndroidDalvik)' != '' and !Exists('$(_MainDexScriptOutputJar)'))"
       Command="REM.&gt;&quot;$(_MainDexScriptOutputJar)&quot;"
     />
 
@@ -183,9 +182,9 @@ $(_MainDexInputJars)
       <Output TaskParameter="SkippedExecution" PropertyName="AndroidDalvikSkippedExecution" />
     </AndroidDex>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(AndroidDalvikSkippedExecution)' == 'true'">
       <!-- Ensure DEX output is referenced even when builds are skipped due to minimal rebuilds. -->
-      <AndroidDalvikOutputFiles Condition="'$(AndroidDalvikSkippedExecution)' == 'true'" Include="$(_DexOutputFile)" />
+      <AndroidDalvikOutputFiles Include="$(_DexOutputFile)" />
     </ItemGroup>
 
   </Target>
@@ -200,7 +199,11 @@ $(_MainDexInputJars)
     Name="ComputeAndroidDalvikOutput"
     DependsOnTargets="AndroidDalvik">
 
-    <ItemGroup>
+    <ItemGroup Condition="('$(ConfigurationType)' == 'DynamicLibrary' or '$(ConfigurationType)' == 'StaticLibrary')">
+      <AndroidAar Include="@(AndroidDalvikOutputFiles)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="('$(ConfigurationType)' == 'Application')">
       <AndroidApk Include="@(AndroidDalvikOutputFiles)" />
     </ItemGroup>
 

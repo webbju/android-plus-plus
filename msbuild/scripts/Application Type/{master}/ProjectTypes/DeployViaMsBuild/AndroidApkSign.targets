@@ -57,6 +57,7 @@
 
   <Target
     Name="AndroidApkSign"
+    Condition="'$(ConfigurationType)' == 'Application'"
     BeforeTargets="$(AndroidApkSignBeforeTargets)"
     AfterTargets="$(AndroidApkSignAfterTargets)"
     DependsOnTargets="AndroidApk;_AndroidApkSign;">
@@ -132,6 +133,7 @@
 
   <Target
     Name="ComputeAndroidApkSignOutput"
+    Condition="'$(ConfigurationType)' == 'Application'"
     DependsOnTargets="AndroidApkSign">
 
   </Target>
@@ -142,7 +144,8 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <Target Name="CleanAndroidApkSign">
+  <Target 
+    Name="CleanAndroidApkSign">
 
   </Target>
 

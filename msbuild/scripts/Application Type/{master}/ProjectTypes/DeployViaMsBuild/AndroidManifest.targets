@@ -38,6 +38,17 @@
     <CleanDependsOn>$(CleanDependsOn);CleanAndroidManifest;</CleanDependsOn>
 
   </PropertyGroup>
+  
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target
+    Name="_AndroidManifest"
+    DependsOnTargets="$(ComputeAndroidManifestInputsTargets)">
+  </Target>
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -55,7 +66,7 @@
     Condition="'@(AndroidManifest)' != ''"
     BeforeTargets="$(AndroidManifestBeforeTargets)"
     AfterTargets="$(AndroidManifestAfterTargets)"
-    DependsOnTargets="ClCompile;$(ComputeAndroidManifestInputsTargets)">
+    DependsOnTargets="ClCompile;_AndroidManifest">
 
     <!-- 
       Only request APK output for Application targets. 
@@ -230,7 +241,7 @@
     <ItemGroup>
       <ProjectAndroidManifests Include="@(AndroidManifest)" />
     </ItemGroup>
-  </Target>
+  </Target> 
 
   <Target
     Name="GetDependencyAndroidManifests"

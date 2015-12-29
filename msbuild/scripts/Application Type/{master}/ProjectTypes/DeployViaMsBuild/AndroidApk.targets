@@ -55,6 +55,7 @@
 
   <Target
     Name="AndroidApk"
+    Condition="'$(ConfigurationType)' == 'Application'"
     BeforeTargets="$(AndroidApkBeforeTargets)"
     AfterTargets="$(AndroidApkAfterTargets)"
     DependsOnTargets="AndroidManifest;_AndroidApk;">

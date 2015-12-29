@@ -9,9 +9,9 @@
   
   <PropertyGroup Condition="'$(AndroidAarBeforeTargets)' == '' and '$(AndroidAarAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
 
-    <AndroidApkBeforeTargets></AndroidApkBeforeTargets>
+    <AndroidAarBeforeTargets></AndroidAarBeforeTargets>
 
-    <AndroidApkAfterTargets>Link</AndroidApkAfterTargets>
+    <AndroidAarAfterTargets>Link</AndroidAarAfterTargets>
 
   </PropertyGroup>
 
