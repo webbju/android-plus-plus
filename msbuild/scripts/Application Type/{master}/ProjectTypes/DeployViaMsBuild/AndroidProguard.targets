@@ -29,7 +29,7 @@
 
   <PropertyGroup>
 
-    <ComputeAndroidProguardInputsTargets>$(ComputeAndroidProguardInputsTargets);ComputeAndroidJavaOutput;</ComputeAndroidProguardInputsTargets>
+    <ComputeAndroidProguardInputsTargets>$(ComputeAndroidProguardInputsTargets);ComputeAndroidJavaJackOutput;</ComputeAndroidProguardInputsTargets>
 
     <CleanDependsOn>$(CleanDependsOn);CleanAndroidProguard;</CleanDependsOn>
 
@@ -257,6 +257,20 @@ $(_ProGuardInJars)
   -->
 
   <Target Name="CleanAndroidProguard">
+
+    <ItemGroup>
+      <CleanAndroidProguardFiles 
+        Include="
+          $(IntDir)bin\**\proguard-*.jar;
+          $(IntDir)bin\**\proguard-*.jar.d;
+          $(IntDir)bin\**\proguard-*.txt;
+          $(IntDir)bin\**\proguard-*.txt.d;"
+      />
+    </ItemGroup>
+
+    <Delete Files="@(CleanAndroidProguardFiles)" />
+
+    <RemoveDir Directories="%(CleanAndroidProguardFiles.RelativeDir)" />
 
   </Target>
 

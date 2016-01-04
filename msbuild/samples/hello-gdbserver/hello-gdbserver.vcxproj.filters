@@ -10,9 +10,9 @@
     <AndroidManifest Include="AndroidManifest.xml" />
   </ItemGroup>
   <ItemGroup>
-    <AndroidJava Include="src\com\example\hellogdbserver\HelloGdbServer.java">
+    <AndroidJavaJack Include="src\com\example\hellogdbserver\HelloGdbServer.java">
       <Filter>Source Files</Filter>
-    </AndroidJava>
+    </AndroidJavaJack>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="jni\hello-gdbserver.c">

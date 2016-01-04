@@ -68,13 +68,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="JavaClassParser\AttributeInfo.cs" />
-    <Compile Include="JavaClassParser\ClassFile.cs" />
-    <Compile Include="JavaClassParser\ConstantInfo.cs" />
-    <Compile Include="JavaClassParser\EndianSwap.cs" />
-    <Compile Include="JavaClassParser\FieldInfo.cs" />
-    <Compile Include="JavaClassParser\MethodInfo.cs" />
-    <Compile Include="Program.cs" />
+    <Compile Include="App.Java.Builder\ClassFileParser\AttributeInfo.cs" />
+    <Compile Include="App.Java.Builder\ClassFileParser\ClassFile.cs" />
+    <Compile Include="App.Java.Builder\ClassFileParser\ConstantInfo.cs" />
+    <Compile Include="App.Java.Builder\ClassFileParser\EndianSwap.cs" />
+    <Compile Include="App.Java.Builder\ClassFileParser\FieldInfo.cs" />
+    <Compile Include="App.Java.Builder\ClassFileParser\MethodInfo.cs" />
+    <Compile Include="App.Java.Builder\Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

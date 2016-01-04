@@ -84,7 +84,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
   <ItemGroup>
-    <AndroidJava Include="src\com\example\hellogdbserver\HelloGdbServer.java" />
+    <AndroidJavaJack Include="src\com\example\hellogdbserver\HelloGdbServer.java" />
   </ItemGroup>
   <ItemGroup>
     <AndroidManifest Include="AndroidManifest.xml" />

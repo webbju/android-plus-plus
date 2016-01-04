@@ -9,7 +9,11 @@
 
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidManifest.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidJava.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
+  <!-- <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidAidl.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" /> -->
+
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidJavaJill.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
+
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidJavaJack.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
 
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidAar.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
 
@@ -20,7 +24,7 @@
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidApk.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
 
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidApkSign.targets" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
-  
+
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -37,7 +41,7 @@
 
     <AfterBuildCompileTargets Condition="'$(ConfigurationType)'!='Utility'">$(AfterBuildCompileTargets)</AfterBuildCompileTargets>
 
-    <BuildLibTargets Condition="'$(ConfigurationType)'!='Utility'">$(BuildLibTargets);AndroidJava;</BuildLibTargets>
+    <BuildLibTargets Condition="'$(ConfigurationType)'!='Utility'">$(BuildLibTargets);AndroidJavaJill;AndroidJavaJack;</BuildLibTargets>
 
     <AfterBuildLinkTargets Condition="'$(ConfigurationType)'!='Utility'">$(AfterBuildLinkTargets);AndroidAar;AndroidApk;AndroidApkSign;</AfterBuildLinkTargets>
 

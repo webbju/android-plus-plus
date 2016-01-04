@@ -12,32 +12,47 @@ using System.Text;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace app_java_builder.JavaClassParser
+namespace App.Java.Builder.ClassFileParser
 {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class AttributeInfo
+  public class FieldInfo
   {
-    public ushort attribute_name_index;
+    public ushort access_flags;
 
-    public uint attribute_length;
+    public ushort name_index;
 
-    public byte [] info;
+    public ushort description_index;
 
-    public AttributeInfo ()
+    public ushort attributes_count;
+
+    public AttributeInfo [] attributes;
+
+    public FieldInfo ()
     {
     }
 
     public void Parse (ref BinaryReader reader)
     {
-      attribute_name_index = EndianSwap.SwapUInt16 (reader.ReadUInt16 ());
+      access_flags = EndianSwap.SwapUInt16 (reader.ReadUInt16 ());
 
-      attribute_length = EndianSwap.SwapUInt32 (reader.ReadUInt32 ());
+      name_index = EndianSwap.SwapUInt16 (reader.ReadUInt16 ());
 
-      info = reader.ReadBytes ((int)attribute_length);
+      description_index = EndianSwap.SwapUInt16 (reader.ReadUInt16 ());
+
+      attributes_count = EndianSwap.SwapUInt16 (reader.ReadUInt16 ());
+
+      attributes = new AttributeInfo [attributes_count];
+
+      for (int i = 0; i < attributes_count; ++i)
+      {
+        attributes [i] = new AttributeInfo ();
+
+        attributes [i].Parse (ref reader);
+      }
     }
   }
 

@@ -48,17 +48,23 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidManifest.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidManifest.props" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidJava.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
+  <!-- <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidAidl.props" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" /> -->
 
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidProguard.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidJavaJill.props" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidDalvik.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidJavaJack.props" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidApk.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidAar.props" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
 
-  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidApkSign.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidProguard.props" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
+
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidDalvik.props" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
+
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidApk.props" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
+
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\AndroidApkSign.props" Condition="'$(__DeployViaMsBuildTargetsImported)' != 'true'" />
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

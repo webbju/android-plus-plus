@@ -8,11 +8,11 @@
   -->
   
   <PropertyGroup Condition="'$(AndroidDalvikBeforeTargets)' == '' and '$(AndroidDalvikAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
-  
+
     <AndroidDalvikBeforeTargets></AndroidDalvikBeforeTargets>
-    
-    <AndroidDalvikAfterTargets>AndroidJava</AndroidDalvikAfterTargets>
-    
+
+    <AndroidDalvikAfterTargets>AndroidJavaJack</AndroidDalvikAfterTargets>
+
   </PropertyGroup>
 
   <!--

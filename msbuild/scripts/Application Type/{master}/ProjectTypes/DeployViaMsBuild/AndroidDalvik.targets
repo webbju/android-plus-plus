@@ -79,18 +79,18 @@
     -->
 
     <PropertyGroup>
-      <_DexOutputPath>$(ProjectDir)$(IntDir)bin</_DexOutputPath>
+      <_DexOutputPath>$(ProjectDir)$(IntDir)bin\dex</_DexOutputPath>
       <!-- MultiDex script configuration -->
       <_MainDexInputJars>@(AndroidDalvik->Distinct()->'-injars &quot;%(FullPath)&quot;(!META-INF/**.*,**.class,!**.class.d)')</_MainDexInputJars>
-      <_MainDexScriptOutputJar>$(ProjectDir)$(IntDir)bin\mainDexClasses.tmp.jar</_MainDexScriptOutputJar>
-      <_MainDexScriptOutputMainList>$(ProjectDir)$(IntDir)bin\mainDexClasses.keep</_MainDexScriptOutputMainList>
+      <_MainDexScriptOutputJar>$(_DexOutputPath)\mainDexClasses.tmp.jar</_MainDexScriptOutputJar>
+      <_MainDexScriptOutputMainList>$(_DexOutputPath)\mainDexClasses.keep</_MainDexScriptOutputMainList>
+      <_MainDexScriptCommandFile>$(_DexOutputPath)\mainDex-commands.txt</_MainDexScriptCommandFile>
       <_MainDexClassPathArgument>@(AndroidDalvik->Distinct())</_MainDexClassPathArgument>
-      <_MainDexScriptCommandFile>$(ProjectDir)$(IntDir)bin\mainDex-commands.txt</_MainDexScriptCommandFile>
-      <_MainDexOutputLog>$(ProjectDir)$(IntDir)bin\mainDex-output.txt</_MainDexOutputLog>
-      <!-- and because Google love moving things for no reason -->
+      <_MainDexOutputLog>$(_DexOutputPath)\mainDex-output.txt</_MainDexOutputLog>
+      <!-- and because Google love moving things -->
       <_MainDexScriptRules>$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\multidex\mainDexClasses.rules</_MainDexScriptRules>
-      <_MainDexShrunkAndroidJar>$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\multidex\shrinkedAndroid.jar</_MainDexShrunkAndroidJar>
       <_MainDexScriptRules Condition="!Exists('$(_MainDexScriptRules)')">$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\mainDexClasses.rules</_MainDexScriptRules>
+      <_MainDexShrunkAndroidJar>$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\multidex\shrinkedAndroid.jar</_MainDexShrunkAndroidJar>
       <_MainDexShrunkAndroidJar Condition="!Exists('$(_MainDexShrunkAndroidJar)')">$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\lib\shrinkedAndroid.jar</_MainDexShrunkAndroidJar>
     </PropertyGroup>
 
@@ -220,8 +220,8 @@ $(_MainDexInputJars)
     <ItemGroup>
       <CleanAndroidDalvikCache
         Include="
-        $(IntDir)bin\**\*.dex;
-        $(IntDir)bin\**\*.dex.d;"
+          $(IntDir)bin\**\*.dex;
+          $(IntDir)bin\**\*.dex.d;"
       />
     </ItemGroup>
 

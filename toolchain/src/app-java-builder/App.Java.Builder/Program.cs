@@ -5,8 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace app_java_builder
+namespace App.Java.Builder
 {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -30,6 +30,10 @@ namespace app_java_builder
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     private static string s_jdkHomePath = string.Empty;
+
+    private static bool s_useJack = false;
+
+    private static string s_useJackPath = string.Empty;
 
     private static string s_compilerOutputPath = string.Empty;
 
@@ -85,6 +89,13 @@ namespace app_java_builder
 
           string arguments = string.Join (" ", s_compilerArguments.ToArray ());
 
+          if (s_useJack)
+          {
+            executable = Path.Combine (s_jdkHomePath, "bin", "java.exe");
+
+            arguments = string.Format ("-jar {0} {1}", s_useJackPath, string.Join (" ", s_compilerArguments.ToArray ()));
+          }
+
 #if true
           string sourcesFile = Path.Combine (workingDirectory, "sources.txt");
 
@@ -94,8 +105,6 @@ namespace app_java_builder
             {
               writer.WriteLine (file);
             }
-
-            writer.Close ();
           }
 
           string fileArgs = arguments += " @" + sourcesFile;
@@ -190,11 +199,11 @@ namespace app_java_builder
               {
                 using (BinaryReader reader = new BinaryReader (stream))
                 {
-                  JavaClassParser.ClassFile processedClassFile = new JavaClassParser.ClassFile (reader);
+                  ClassFileParser.ClassFile processedClassFile = new ClassFileParser.ClassFile (reader);
 
-                  JavaClassParser.ConstantClassInfo thisClassInfo = (JavaClassParser.ConstantClassInfo) processedClassFile.constant_pool [processedClassFile.this_class];
+                  ClassFileParser.ConstantClassInfo thisClassInfo = (ClassFileParser.ConstantClassInfo) processedClassFile.constant_pool [processedClassFile.this_class];
 
-                  JavaClassParser.ConstantUtf8Info thisClassId = (JavaClassParser.ConstantUtf8Info) processedClassFile.constant_pool [thisClassInfo.name_index];
+                  ClassFileParser.ConstantUtf8Info thisClassId = (ClassFileParser.ConstantUtf8Info) processedClassFile.constant_pool [thisClassInfo.name_index];
 
                   classId = Encoding.UTF8.GetString (thisClassId.bytes);
 
@@ -604,6 +613,20 @@ namespace app_java_builder
             }
 
             s_jdkHomePath = args [++i];
+
+            break;
+          }
+
+          case "--use-jack":
+          {
+            s_useJack = true;
+
+            if (!string.IsNullOrEmpty (s_useJackPath))
+            {
+              throw new ArgumentException ("--use-jack argument multiply defined.");
+            }
+
+            s_useJackPath = args [++i];
 
             break;
           }

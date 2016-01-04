@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+  
+  <PropertyGroup Condition="'$(AndroidJavaJackBeforeTargets)' == '' and '$(AndroidJavaJackAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
+
+    <AndroidJavaJackBeforeTargets></AndroidJavaJackBeforeTargets>
+
+    <AndroidJavaJackAfterTargets>AndroidManifest</AndroidJavaJackAfterTargets>
+
+  </PropertyGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <ItemDefinitionGroup Condition="'$(UseDebugLibraries)' == 'true'">
+
+    <AndroidJavaJack>
+
+      <GenerateDebuggingInformation Condition="'%(AndroidJavaJack.GenerateDebuggingInformation)' == ''">true</GenerateDebuggingInformation>
+
+    </AndroidJavaJack>
+
+  </ItemDefinitionGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+  
+  <ItemDefinitionGroup>
+
+    <AndroidJavaJack>
+
+      <ClassPaths Condition="'%(AndroidJavaJack.ClassPaths)' == ''">$(AndroidSdkRoot)\platforms\android-$(AndroidSdkLevel)\android.jar;$(AndroidSdkRoot)\tools\support\annotations.jar;%(ClassOutputDirectory)</ClassPaths>
+
+      <ConfigJarJar Condition="'%(AndroidJavaJack.ConfigJarJar)' == ''">%(ConfigJarJar)</ConfigJarJar>
+
+      <ConfigProGuard Condition="'%(AndroidJavaJack.ConfigProGuard)' == ''">%(ConfigProGuard)</ConfigProGuard>
+
+      <ImportFile Condition="'%(AndroidJavaJack.ImportFile)' == ''">%(ImportFile)</ImportFile>
+
+      <ImportMetaDir Condition="'%(AndroidJavaJack.ImportMetaDir)' == ''">%(ImportFile)</ImportMetaDir>
+
+      <ImportResourceDir Condition="'%(AndroidJavaJack.ImportResourceDir)' == ''">%(ImportFile)</ImportResourceDir>
+
+      <IncrementalFolder Condition="'%(AndroidJavaJack.IncrementalFolder)' == ''">$(IntDir)bin\jack\incremental-data</IncrementalFolder>
+
+      <MultiDexOutput Condition="'%(AndroidJavaJack.MultiDexOutput)' == ''">legacy</MultiDexOutput>
+
+      <OutputDexDir Condition="'%(AndroidJavaJack.OutputDexDir)' == ''">$(IntDir)bin\dex</OutputDexDir>
+
+      <OutputJackFile Condition="'%(AndroidJavaJack.OutputJackFile)' == ''">$(IntDir)bin\jack\%(Filename).jack</OutputJackFile>
+
+      <GenerateDebuggingInformation Condition="'%(AndroidJavaJack.GenerateDebuggingInformation)' == ''">false</GenerateDebuggingInformation>
+
+      <Verbose Condition="'%(AndroidJavaJack.Verbose)' == ''">false</Verbose>
+
+      <!--
+        Default TrackedToolTask properties.
+      -->
+
+      <MultiProcessorCompilation Condition="'%(AndroidJavaJack.MultiProcessorCompilation)' == ''">true</MultiProcessorCompilation>
+
+      <ProcessorNumber Condition="'%(AndroidJavaJack.ProcessorNumber)' == ''">$(NUMBER_OF_PROCESSORS)</ProcessorNumber>
+
+      <TrackerLogDirectory Condition="'%(AndroidJavaJack.TrackerLogDirectory)' == ''">$(TLogLocation)</TrackerLogDirectory>
+
+      <OutputCommandLine Condition="'%(AndroidJavaJack.OutputCommandLine)' == ''">false</OutputCommandLine>
+
+    </AndroidJavaJack>
+
+  </ItemDefinitionGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+</Project>

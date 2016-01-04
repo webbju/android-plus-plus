@@ -57,6 +57,13 @@
     BeforeTargets="$(AndroidJavaBeforeTargets)"
     AfterTargets="$(AndroidJavaAfterTargets)"
     DependsOnTargets="_AndroidJava">
+    
+    <PropertyGroup>
+      <UseJackTool>true</UseJackTool>
+      <UseJillTool>true</UseJillTool>
+      <UseJackToolPath>$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\jack.jar</UseJackToolPath>
+      <UseJillToolPath>$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\jill.jar</UseJillToolPath>
+    </PropertyGroup>
 
     <!-- 
       Ensure requested output directories exist 
@@ -123,6 +130,8 @@
       ToolPath="$(ANDROID_PLUS_PLUS)\toolchain\bin"
       ToolExe="app-java-builder.exe"
       JavaHomeDir="$(JavaHomeDir)"
+      UseJack="$(UseJackTool)"
+      UseJackPath="$(UseJackToolPath)"
       PropertiesFile="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml">
       <Output TaskParameter="OutputFiles" ItemName="AndroidJavaOutputPreprocessedClassFiles" />
       <Output TaskParameter="OutputClassPaths" ItemName="AndroidJavaOutputPreprocessedClassPaths" />
@@ -149,6 +158,8 @@
       ToolPath="$(ANDROID_PLUS_PLUS)\toolchain\bin"
       ToolExe="app-java-builder.exe"
       JavaHomeDir="$(JavaHomeDir)"
+      UseJack="$(UseJackTool)"
+      UseJackPath="$(UseJackToolPath)"
       OutputJar="%(AndroidJava.JarOutputFile)"
       PropertiesFile="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml">
       <Output TaskParameter="OutputFiles" ItemName="AndroidJavaOutputClassFiles" />
