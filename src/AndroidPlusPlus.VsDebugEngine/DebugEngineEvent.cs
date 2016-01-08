@@ -576,6 +576,8 @@ namespace AndroidPlusPlus.VsDebugEngine
         m_debugModule = debugModule;
 
         m_searchInfo = searchInfo;
+
+        m_symbolFlags = enum_MODULE_INFO_FLAGS.MIF_SYMBOLS_LOADED;
       }
 
       int IDebugSymbolSearchEvent2.GetSymbolSearchInfo (out IDebugModule3 pModule, ref string pbstrDebugMessage, enum_MODULE_INFO_FLAGS [] pdwModuleInfoFlags)
@@ -586,7 +588,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         pbstrDebugMessage = m_searchInfo;
 
-        pdwModuleInfoFlags [0] = enum_MODULE_INFO_FLAGS.MIF_SYMBOLS_LOADED;
+        pdwModuleInfoFlags [0] = m_symbolFlags;
 
         return Constants.S_OK;
       }

@@ -69,17 +69,40 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected DebuggeePort CreatePort (IDebugPortRequest2 portRequest)
+    protected int CreatePort (IDebugPortRequest2 portRequest, out IDebugPort2 port)
     {
-      AndroidAdb.Refresh ();
+      try
+      {
+        AndroidAdb.Refresh ();
 
-      string requestPortName;
+        string requestPortName;
 
-      LoggingUtils.RequireOk (portRequest.GetPortName (out requestPortName));
+        LoggingUtils.RequireOk (portRequest.GetPortName (out requestPortName));
 
-      AndroidDevice device = AndroidAdb.GetConnectedDeviceById (requestPortName);
+        if (string.IsNullOrWhiteSpace (requestPortName))
+        {
+          throw new InvalidOperationException ("Invalid/empty port name");
+        }
 
-      return new DebuggeePort (this, device);
+        AndroidDevice device = AndroidAdb.GetConnectedDeviceById (requestPortName);
+
+        if (device == null)
+        {
+          throw new InvalidOperationException ("Failed to find a device with the name: " + requestPortName);
+        }
+
+        port = new DebuggeePort (this, device);
+
+        return Constants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        port = null;
+
+        return Constants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -128,14 +151,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (ppPort == null)
         {
-          Guid portId;
-
-          ppPort = CreatePort (pRequest);
-
-          LoggingUtils.RequireOk (ppPort.GetPortId (out portId));
-
-          m_registeredPorts.Add (portId, ppPort);
+          LoggingUtils.RequireOk (CreatePort (pRequest, out ppPort));
         }
+
+        Guid portId;
+
+        LoggingUtils.RequireOk (ppPort.GetPortId (out portId));
+
+        m_registeredPorts.Add (portId, ppPort);
 
         return Constants.S_OK;
       }
@@ -145,7 +168,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         ppPort = null;
 
-        return Constants.E_FAIL;
+        return Constants.E_PORTSUPPLIER_NO_PORT;
       }
     }
 
@@ -332,16 +355,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       ppEnum = null;
 
-      try
-      {
-        throw new NotImplementedException ();
-      }
-      catch (NotImplementedException e)
-      {
-        LoggingUtils.HandleException (e);
-
-        return Constants.E_NOTIMPL;
-      }
+      return Constants.E_FAIL;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using EnvDTE;
 using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugCommon;
 
@@ -33,17 +32,9 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
     object StartWithDebugging (int launchOptions, LaunchConfiguration launchConfig, LaunchProps [] launchProps, IDictionary<string, string> projectProperties);
 
-#if VS2010
-    LaunchConfiguration GetLaunchConfigurationFromProjectProperties (IDictionary<string, string> projectProperties, Project startupProject);
-#else
     LaunchConfiguration GetLaunchConfigurationFromProjectProperties (IDictionary<string, string> projectProperties);
-#endif
 
-#if VS2010
-    LaunchProps [] GetLaunchPropsFromProjectProperties (IDictionary<string, string> projectProperties, Project startupProject);
-#else
     LaunchProps [] GetLaunchPropsFromProjectProperties (IDictionary<string, string> projectProperties);
-#endif
   }
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -67,10 +67,12 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     private object CreateServices (Type serviceType)
     {
       object service = null;
+
       if (typeof (EnvDTE.ProjectItem) == serviceType)
       {
         service = GetAutomationObject ();
       }
+
       return service;
     }
 

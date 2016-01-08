@@ -26,7 +26,7 @@ namespace AndroidPlusPlus.VsDebugLauncher.Rules
 
   [Export]
 
-  [PartMetadata(ProjectCapabilities.Requires, ProjectCapabilities.VisualC)]
+  [AppliesTo(ProjectCapabilities.VisualC)]
 
   internal partial class RuleProperties : StronglyTypedPropertyAccess
   {
@@ -81,7 +81,7 @@ namespace AndroidPlusPlus.VsDebugLauncher.Rules
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public async Task<Microsoft.Collections.Immutable.IImmutableMap<string, IPropertyPagesCatalog>> ExposeGetNamedCatalogs ()
+    public async Task<System.Collections.Immutable.IImmutableDictionary<string, IPropertyPagesCatalog>> ExposeGetNamedCatalogs ()
     {
       return await GetNamedCatalogsAsync ();
     }

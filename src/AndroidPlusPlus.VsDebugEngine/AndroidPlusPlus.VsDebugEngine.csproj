@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="14.0">
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
   </PropertyGroup>
@@ -13,7 +13,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>AndroidPlusPlus.VsDebugEngine</RootNamespace>
     <AssemblyName>AndroidPlusPlus.VsDebugEngine</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\Key.snk</AssemblyOriginatorKeyFile>
@@ -28,6 +28,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -38,24 +39,31 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(VisualStudioVersion)' == '12.0'">$(DefineConstants);VS2013</DefineConstants>
+    <DefineConstants Condition="'$(VisualStudioVersion)' == '14.0'">$(DefineConstants);VS2015</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- Define common reference search paths for Visual Studio and associated VSSDK assemblies -->
+    <ReferencePath Condition="'$(VisualStudioVersion)' == '12.0'">$(ReferencePath);$(MSBuildBinPath);$(VS120COMNTOOLS)..\IDE\PublicAssemblies;$(VS120COMNTOOLS)..\IDE\PrivateAssemblies;$(VS120COMNTOOLS)..\..\VSSDK\VisualStudioIntegration\Common\Assemblies\v4.0;$(VS120COMNTOOLS)..\..\VSSDK\VisualStudioIntegration\Common\Assemblies\v2.0;$(CommonProgramFiles)\Microsoft Shared\MSEnv\PublicAssemblies</ReferencePath>
+    <ReferencePath Condition="'$(VisualStudioVersion)' == '14.0'">$(ReferencePath);$(MSBuildBinPath);$(VS140COMNTOOLS)..\IDE\PublicAssemblies;$(VS140COMNTOOLS)..\IDE\PrivateAssemblies;$(VS140COMNTOOLS)..\..\VSSDK\VisualStudioIntegration\Common\Assemblies\v4.0;$(VS140COMNTOOLS)..\..\VSSDK\VisualStudioIntegration\Common\Assemblies\v2.0;$(CommonProgramFiles)\Microsoft Shared\MSEnv\PublicAssemblies</ReferencePath>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
-  <ItemGroup Condition="'$(VisualStudioVersion)' == '12.0'">
-    <!-- Visual Studio 2013 -->
-    <Reference Include="Microsoft.VisualStudio.Debugger.Interop.10.0, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
-    <Reference Include="Microsoft.VisualStudio.Debugger.InteropA, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-    <Reference Include="Microsoft.VisualStudio.OLE.Interop, Version=7.1.40304.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+  <ItemGroup>
+    <Reference Include="Microsoft.VisualStudio.Debugger.InteropA" />
+    <Reference Include="Microsoft.VisualStudio.Debugger.Interop.10.0" />
+    <Reference Include="Microsoft.VisualStudio.Debugger.Interop.12.0" />
+    <Reference Include="Microsoft.VisualStudio.OLE.Interop" />
   </ItemGroup>
   <ItemGroup Condition="'$(VisualStudioVersion)' == '14.0'">
-    <!-- Visual Studio 2015 -->
-    <Reference Include="Microsoft.VisualStudio.Debugger.Interop.10.0, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
-    <Reference Include="Microsoft.VisualStudio.Debugger.InteropA, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-    <Reference Include="Microsoft.VisualStudio.OLE.Interop, Version=7.1.40304.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+    <Reference Include="Microsoft.VisualStudio.Debugger.Interop.14.0" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\AndroidPlusPlus.Common\Properties\SharedAssemblyInfo.cs">
