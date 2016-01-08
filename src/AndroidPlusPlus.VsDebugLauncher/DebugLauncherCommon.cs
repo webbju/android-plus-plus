@@ -6,30 +6,12 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Xml;
 using System.Windows.Forms;
 
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.VCProjectEngine;
-
-#if VS2010
-using EnvDTE;
-using Microsoft.VisualStudio.Project.Contracts.VS2010ONLY;
-using Microsoft.VisualStudio.Project.Framework;
-using Microsoft.VisualStudio.Project.Utilities.DebuggerProviders;
-#elif VS2012
-using Microsoft.VisualStudio.Project;
-using Microsoft.VisualStudio.Project.Debuggers;
-using Microsoft.VisualStudio.Project.Utilities;
-using Microsoft.VisualStudio.Project.Utilities.DebuggerProviders;
-using Microsoft.VisualStudio.Project.VS.Debuggers;
-#elif VS2013 || VS2015
+#if VS2013 || VS2015
 using Microsoft.VisualStudio.ProjectSystem;
 using Microsoft.VisualStudio.ProjectSystem.Debuggers;
 using Microsoft.VisualStudio.ProjectSystem.Utilities;
@@ -51,7 +33,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class DebugLauncher : IDebugLauncher
+  public class DebugLauncherCommon : IDebugLauncher
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -66,8 +48,13 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public DebugLauncher (IServiceProvider serviceProvider)
+    public DebugLauncherCommon (IServiceProvider serviceProvider)
     {
+      if (serviceProvider == null)
+      {
+        throw new ArgumentNullException ("serviceProvider");
+      }
+
       m_serviceProvider = serviceProvider;
 
       m_debugConnectionService = m_serviceProvider.GetService (typeof (IDebuggerConnectionService)) as IDebuggerConnectionService;
@@ -86,7 +73,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public bool CanLaunch (int launchOptionsFlags)
+    public bool CanLaunch (int launchOptions)
     {
       // 
       // Requirements to satisfy before launching a requested debug session.
@@ -111,7 +98,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
         LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogShow ());
 
-        LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("Session started: {0}", logTime.ToString ("F")), false));
+        LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "Session started: {0}", logTime.ToString ("F", CultureInfo.CurrentCulture)), false));
       }
       catch (Exception e)
       {
@@ -125,9 +112,24 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public object StartWithoutDebugging (int launchOptionsFlags, LaunchConfiguration launchConfig, LaunchProps [] launchProps, IDictionary<string, string> projectProperties)
+    public object StartWithoutDebugging (int launchOptions, LaunchConfiguration launchConfig, LaunchProps [] launchProps, IDictionary<string, string> projectProperties)
     {
       LoggingUtils.PrintFunction ();
+
+      if (launchConfig == null)
+      {
+        throw new ArgumentNullException ("launchConfig");
+      }
+
+      if (launchProps == null)
+      {
+        throw new ArgumentNullException ("launchProps");
+      }
+
+      if (projectProperties == null)
+      {
+        throw new ArgumentNullException ("projectProperties");
+      }
 
       try
       {
@@ -137,20 +139,20 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
         AndroidAdb.Refresh ();
 
-        AndroidDevice debuggingDevice = GetPriortisedConnectedDevice ();
+        AndroidDevice debuggingDevice = GetPrioritisedConnectedDevice ();
 
         if (debuggingDevice == null)
         {
-          throw new InvalidOperationException ("No device/emulator found or connected. Check status via 'adb devices'.");
+          throw new InvalidOperationException ("No device/emulator found or connected. Check status using \"adb devices\".");
         }
 
         // 
         // Construct VS launch settings to debug or attach to the specified target application.
         // 
 
-        launchOptionsFlags |= (int) DebugLaunchOptions.Silent;
+        launchOptions |= (int) DebugLaunchOptions.Silent;
 
-        DebugLaunchSettings nonDebuglaunchSettings = new DebugLaunchSettings ((DebugLaunchOptions) launchOptionsFlags);
+        DebugLaunchSettings nonDebuglaunchSettings = new DebugLaunchSettings ((DebugLaunchOptions) launchOptions);
 
         nonDebuglaunchSettings.LaunchDebugEngineGuid = new Guid ("8310DAF9-1043-4C8E-85A0-FF68896E1922");
 
@@ -178,9 +180,24 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public object StartWithDebugging (int launchOptionsFlags, LaunchConfiguration launchConfig, LaunchProps [] launchProps, IDictionary<string, string> projectProperties)
+    public object StartWithDebugging (int launchOptions, LaunchConfiguration launchConfig, LaunchProps [] launchProps, IDictionary<string, string> projectProperties)
     {
       LoggingUtils.PrintFunction ();
+
+      if (launchConfig == null)
+      {
+        throw new ArgumentNullException ("launchConfig");
+      }
+
+      if (launchProps == null)
+      {
+        throw new ArgumentNullException ("launchProps");
+      }
+
+      if (projectProperties == null)
+      {
+        throw new ArgumentNullException ("projectProperties");
+      }
 
       try
       {
@@ -190,11 +207,11 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
         AndroidAdb.Refresh ();
 
-        AndroidDevice debuggingDevice = GetPriortisedConnectedDevice ();
+        AndroidDevice debuggingDevice = GetPrioritisedConnectedDevice ();
 
         if (debuggingDevice == null)
         {
-          throw new InvalidOperationException ("No device/emulator found or connected. Check status via 'adb devices'.");
+          throw new InvalidOperationException ("No device/emulator found or connected. Check status using \"adb devices\".");
         }
 
         // 
@@ -203,7 +220,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
         foreach (LaunchProps prop in launchProps)
         {
-          debuggingDevice.Shell ("setprop", string.Format ("{0} {1}", prop.Item1, prop.Item2));
+          debuggingDevice.Shell ("setprop", string.Format (CultureInfo.InvariantCulture, "{0} {1}", prop.Item1, prop.Item2));
         }
 
         // 
@@ -226,9 +243,9 @@ namespace AndroidPlusPlus.VsDebugLauncher
         }
 #endif
 
-        launchOptionsFlags |= (int) DebugLaunchOptions.Silent;
+        launchOptions |= (int) DebugLaunchOptions.Silent;
 
-        DebugLaunchSettings debugLaunchSettings = new DebugLaunchSettings ((DebugLaunchOptions) launchOptionsFlags);
+        DebugLaunchSettings debugLaunchSettings = new DebugLaunchSettings ((DebugLaunchOptions) launchOptions);
 
         debugLaunchSettings.LaunchDebugEngineGuid = new Guid ("8310DAF9-1043-4C8E-85A0-FF68896E1922");
 
@@ -265,11 +282,11 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
             foreach (string line in adbPmPathOutput)
             {
-              if (line.StartsWith ("package:"))
+              if (line.StartsWith ("package:", StringComparison.OrdinalIgnoreCase))
               {
                 appIsInstalled = true;
 
-                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("'{0}' already installed on target '{1}'.", launchConfig ["PackageName"], debuggingDevice.ID), false));
+                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' already installed on target '{1}'.", launchConfig ["PackageName"], debuggingDevice.ID), false));
 
                 string path = line.Substring ("package:".Length);
 
@@ -314,11 +331,11 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
                 TimeSpan thisMachineUtcVersusDeviceUtc = debuggingDeviceUtcTime - thisMachineUtcTime;
 
-                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("Current UTC time on '{0}': {1}", debuggingDevice.ID, debuggingDeviceUtcTime.ToString ()), false));
+                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "Current UTC time on '{0}': {1}", debuggingDevice.ID, debuggingDeviceUtcTime.ToString ()), false));
 
-                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("Current UTC time on '{0}': {1}", System.Environment.MachineName, thisMachineUtcTime.ToString ()), false));
+                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "Current UTC time on '{0}': {1}", System.Environment.MachineName, thisMachineUtcTime.ToString ()), false));
 
-                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("Difference in UTC time between '{0}' and '{1}': {2}", System.Environment.MachineName, debuggingDevice.ID, thisMachineUtcVersusDeviceUtc.ToString ()), false));
+                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "Difference in UTC time between '{0}' and '{1}': {2}", System.Environment.MachineName, debuggingDevice.ID, thisMachineUtcVersusDeviceUtc.ToString ()), false));
 
                 // 
                 // Check the last modified date; ls output currently uses this format:
@@ -345,7 +362,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
                 }
                 catch (Exception e)
                 {
-                  throw new InvalidOperationException (string.Format ("Failed to evaluate device local modified time of: {0}", path), e);
+                  throw new InvalidOperationException (string.Format (CultureInfo.InvariantCulture, "Failed to evaluate device local modified time of: {0}", path), e);
                 }
 
                 // 
@@ -358,15 +375,15 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
                 DateTime thisMachineUtcTimeAtLastModification = thisMachineUtcTime - timeSinceLastModification;
 
-                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("'{0}' was last modified on '{1}' at: {2}.", launchConfig ["PackageName"], debuggingDevice.ID, debuggingDeviceUtcTimeAtLastModification.ToString ()), false));
+                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' was last modified on '{1}' at: {2}.", launchConfig ["PackageName"], debuggingDevice.ID, debuggingDeviceUtcTimeAtLastModification.ToString ()), false));
 
-                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("{0} (on {1}) was around {2} (on {3}).", debuggingDeviceUtcTimeAtLastModification.ToString (), debuggingDevice.ID, thisMachineUtcTimeAtLastModification.ToString (), System.Environment.MachineName), false));
+                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "{0} (on {1}) was around {2} (on {3}).", debuggingDeviceUtcTimeAtLastModification.ToString (), debuggingDevice.ID, thisMachineUtcTimeAtLastModification.ToString (), System.Environment.MachineName), false));
 
-                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("'{0}' was last modified on '{1}' at: {2}.", Path.GetFileName (targetApkFileInfo.FullName), System.Environment.MachineName, targetApkFileInfo.LastWriteTime.ToString ()), false));
+                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' was last modified on '{1}' at: {2}.", Path.GetFileName (targetApkFileInfo.FullName), System.Environment.MachineName, targetApkFileInfo.LastWriteTime.ToString ()), false));
 
                 if ((targetApkFileInfo.LastWriteTime + thisMachineUtcVersusDeviceUtc) > thisMachineUtcTimeAtLastModification)
                 {
-                  LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("'{0}' was determined to be out-of-date. Reinstalling...", launchConfig ["PackageName"]), false));
+                  LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' was determined to be out-of-date. Reinstalling...", launchConfig ["PackageName"]), false));
                 }
                 else
                 {
@@ -384,15 +401,15 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
           if (!appIsInstalled || appIsOutOfDate)
           {
-            LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("Installing '{0}' to '{1}'...", launchConfig ["PackageName"], debuggingDevice.ID), false));
+            LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "Installing '{0}' to '{1}'...", launchConfig ["PackageName"], debuggingDevice.ID), false));
 
             InstallApplicationAsync (debuggingDevice, launchConfig);
 
-            LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("'{0}' installed successfully.", launchConfig ["PackageName"]), false));
+            LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' installed successfully.", launchConfig ["PackageName"]), false));
           }
           else
           {
-            LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format ("'{0}' on '{1}' is up-to-date. Skipping installation...", launchConfig ["PackageName"], debuggingDevice.ID), false));
+            LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' on '{1}' is up-to-date. Skipping installation...", launchConfig ["PackageName"], debuggingDevice.ID), false));
           }
 
           debugLaunchSettings.Executable = launchConfig ["TargetApk"];
@@ -414,7 +431,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private AndroidDevice GetPriortisedConnectedDevice ()
+    public AndroidDevice GetPrioritisedConnectedDevice ()
     {
       // 
       // Refresh ADB service and evaluate a list of connected devices or emulators.
@@ -494,7 +511,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
           if (!string.IsNullOrWhiteSpace (installerPackage))
           {
-            installArgsBuilder.Append (string.Format ("-i {0} ", installerPackage));
+            installArgsBuilder.Append (string.Format (CultureInfo.InvariantCulture, "-i {0} ", installerPackage));
           }
 
           installArgsBuilder.Append (targetRemoteTemporaryFile);
@@ -509,11 +526,11 @@ namespace AndroidPlusPlus.VsDebugLauncher
           //       Failure [INSTALL_FAILED_INVALID_URI]
           // 
 
-          m_debugConnectionService.LaunchDialogUpdate (string.Format ("[adb:push] {0} {1}", targetLocalApk, targetRemoteTemporaryPath), false);
+          m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "[adb:push] {0} {1}", targetLocalApk, targetRemoteTemporaryPath), false);
 
           debuggingDevice.Push (targetLocalApk, targetRemoteTemporaryPath);
 
-          m_debugConnectionService.LaunchDialogUpdate (string.Format ("[adb:shell:pm] {0} {1}", "install", installArgsBuilder.ToString ()), false);
+          m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "[adb:shell:pm] {0} {1}", "install", installArgsBuilder.ToString ()), false);
 
           string installReport = debuggingDevice.Shell ("pm", "install " + installArgsBuilder.ToString (), int.MaxValue);
 
@@ -521,10 +538,10 @@ namespace AndroidPlusPlus.VsDebugLauncher
           {
             string sanitisedFailure = installReport;
 
-            throw new InvalidOperationException (string.Format ("[adb:shell:pm] install failed: {0}", sanitisedFailure));
+            throw new InvalidOperationException (string.Format (CultureInfo.InvariantCulture, "[adb:shell:pm] install failed: {0}", sanitisedFailure));
           }
 
-          m_debugConnectionService.LaunchDialogUpdate (string.Format ("[adb:shell:rm] {0}", targetRemoteTemporaryFile), false);
+          m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "[adb:shell:rm] {0}", targetRemoteTemporaryFile), false);
 
           debuggingDevice.Shell ("rm", targetRemoteTemporaryFile);
         }
@@ -533,6 +550,8 @@ namespace AndroidPlusPlus.VsDebugLauncher
           LoggingUtils.HandleException (e);
 
           installFailedException = e;
+
+          throw;
         }
         finally
         {
@@ -559,11 +578,8 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if VS2010
-    public LaunchConfiguration GetLaunchConfigurationFromProjectProperties (IDictionary<string, string> projectProperties, Project startupProject)
-#else
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "AndroidSdkRoot")]
     public LaunchConfiguration GetLaunchConfigurationFromProjectProperties (IDictionary<string, string> projectProperties)
-#endif
     {
       LoggingUtils.PrintFunction ();
 
@@ -598,22 +614,12 @@ namespace AndroidPlusPlus.VsDebugLauncher
       else if (debuggerMode.Equals ("vs-android"))
       {
         // 
-        // Support for vs-android. Rather hacky for VS2010.
+        // Support for vs-android.
         // 
 
-#if VS2010
-        VCConfiguration activeConfiguration = GetActiveConfiguration (startupProject);
-
-        IVCRulePropertyStorage rulesAntBuild = activeConfiguration.Rules.Item ("AntBuild");
-
-        string antBuildPath = rulesAntBuild.GetEvaluatedPropertyValue ("AntBuildPath");
-
-        string antBuildType = rulesAntBuild.GetEvaluatedPropertyValue ("AntBuildType");
-#else
         string antBuildPath = EvaluateProjectProperty (projectProperties, "AntBuild", "AntBuildPath");
 
         string antBuildType = EvaluateProjectProperty (projectProperties, "AntBuild", "AntBuildType");
-#endif
 
         string antBuildXml = Path.Combine (antBuildPath, "build.xml");
 
@@ -623,7 +629,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
         string antBuildXmlProjectName = buildXmlDocument.DocumentElement.GetAttribute ("name");
 
-        debuggerTargetApk = Path.Combine (antBuildPath, "bin", antBuildXmlProjectName + "-" + antBuildType.ToLower () + ".apk");
+        debuggerTargetApk = Path.Combine (antBuildPath, "bin", string.Format (CultureInfo.InvariantCulture, "{0}-{1}.apk", antBuildXmlProjectName, antBuildType));
       }
 
       // 
@@ -659,11 +665,11 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       if (string.IsNullOrWhiteSpace (androidSdkRoot))
       {
-        throw new DirectoryNotFoundException ("Could not locate Android SDK. 'AndroidSdkRoot' property is empty.");
+        throw new DirectoryNotFoundException ("Could not locate Android SDK. \"AndroidSdkRoot\" property is empty.");
       }
       else if (!Directory.Exists (androidSdkRoot))
       {
-        throw new DirectoryNotFoundException ("Could not locate Android SDK. 'AndroidSdkRoot' property references a directory which does not exist. Expected: " + androidSdkRoot);
+        throw new DirectoryNotFoundException ("Could not locate Android SDK. \"AndroidSdkRoot\" property references a directory which does not exist. Expected: " + androidSdkRoot);
       }
 
       string androidSdkBuildToolsVersion = EvaluateProjectProperty (projectProperties, "ConfigurationGeneral", "AndroidSdkBuildToolsVersion");
@@ -672,7 +678,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       if (!Directory.Exists (androidSdkBuildToolsPath))
       {
-        throw new DirectoryNotFoundException (string.Format ("Could not locate Android SDK build-tools (v{0}). Expected: {1}", androidSdkBuildToolsVersion, androidSdkBuildToolsPath));
+        throw new DirectoryNotFoundException (string.Format (CultureInfo.CurrentCulture, "Could not locate Android SDK build-tools (v{0}). Expected: {1}", androidSdkBuildToolsVersion, androidSdkBuildToolsPath));
       }
 
       // 
@@ -703,7 +709,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
         foreach (string singleLine in apkDetails)
         {
-          if (singleLine.StartsWith ("package: "))
+          if (singleLine.StartsWith ("package: ", StringComparison.OrdinalIgnoreCase))
           {
             // 
             // Retrieve package name from format: "package: name='com.example.hellogdbserver' versionCode='1' versionName='1.0'"
@@ -713,19 +719,19 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
             foreach (string data in packageData)
             {
-              if (data.StartsWith ("name="))
+              if (data.StartsWith ("name=", StringComparison.OrdinalIgnoreCase))
               {
                 applicationPackageName = data.Substring ("name=".Length).Trim ('\'');
               }
             }
           }
-          else if (singleLine.StartsWith ("launchable-activity: "))
+          else if (singleLine.StartsWith ("launchable-activity: ", StringComparison.OrdinalIgnoreCase))
           {
             string [] launchActivityData = singleLine.Substring ("launchable-activity: ".Length).Split (' ');
 
             foreach (string data in launchActivityData)
             {
-              if (data.StartsWith ("name="))
+              if (data.StartsWith ("name=", StringComparison.OrdinalIgnoreCase))
               {
                 applicationLaunchActivity = data.Substring ("name=".Length).Trim ('\'');
               }
@@ -768,11 +774,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if VS2010
-    public LaunchProps [] GetLaunchPropsFromProjectProperties (IDictionary<string, string> projectProperties, Project startupProject)
-#else
     public LaunchProps [] GetLaunchPropsFromProjectProperties (IDictionary<string, string> projectProperties)
-#endif
     {
       LoggingUtils.PrintFunction ();
 
@@ -803,12 +805,12 @@ namespace AndroidPlusPlus.VsDebugLauncher
       LoggingUtils.PrintFunction ();
 
       string evaluatedProperty = string.Empty;
-
-      string schemaGroupedKey = schema + "." + property;
+      
+      string schemaGroupedKey = string.Concat (schema, ".", property);
 
       bool foundProperty = false;
 
-#if VS2012 || VS2013
+#if VS2013 || VS2015
       if (projectProperties.TryGetValue (schemaGroupedKey, out evaluatedProperty))
       {
         foundProperty = true;

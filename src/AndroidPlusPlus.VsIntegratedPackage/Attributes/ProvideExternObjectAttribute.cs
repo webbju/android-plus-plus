@@ -28,20 +28,26 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
   [AttributeUsage (AttributeTargets.Class, Inherited = true, AllowMultiple = true)]
 
-  public sealed class ProvideExternObjectAttribute : RegistrationAttribute
+  public class ProvideExternObjectAttribute : RegistrationAttribute
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private Type m_objectType;
+    private Guid m_clsIdGuid;
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private string m_qualifiedName;
 
-    public Type ObjectType { get { return m_objectType; } }
+    private string m_inprocServerPath;
+
+    private string m_fullClassName;
+
+    private string m_codeBasePath;
+
+    private string m_threadingModel;
+
+    private string m_assemblyPath;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -50,7 +56,41 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     public ProvideExternObjectAttribute (Type objectType)
       : base ()
     {
-      m_objectType = objectType;
+      m_clsIdGuid = objectType.GUID;
+
+      m_qualifiedName = objectType.AssemblyQualifiedName;
+
+      m_inprocServerPath = string.Empty;
+
+      m_fullClassName = objectType.FullName;
+
+      m_codeBasePath = "$PackageFolder$\\" + Path.GetFileName (objectType.Assembly.CodeBase);
+
+      m_threadingModel = "Both"; // Is this important?
+
+      m_assemblyPath = objectType.Assembly.ToString ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public ProvideExternObjectAttribute (Guid clsidGuid, string qualifiedName, string inprocServerPath, string fullClassName, string codeBasePath, string threadingModel, string assemblyPath)
+      : base ()
+    {
+      m_clsIdGuid = clsidGuid;
+
+      m_qualifiedName = qualifiedName;
+
+      m_inprocServerPath = inprocServerPath;
+
+      m_fullClassName = fullClassName;
+
+      m_codeBasePath = codeBasePath;
+
+      m_threadingModel = threadingModel;
+
+      m_assemblyPath = assemblyPath;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -61,7 +101,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     {
       get 
       { 
-        return string.Format (CultureInfo.InvariantCulture, @"CLSID\{0}", m_objectType.GUID.ToString ("B")); 
+        return string.Format (CultureInfo.InvariantCulture, @"CLSID\{0}", m_clsIdGuid.ToString ("B"));
       }
     }
 
@@ -124,17 +164,42 @@ namespace AndroidPlusPlus.VsIntegratedPackage
           throw new InvalidOperationException ();
         }
 
-        regKeySetValue.Invoke (regKey, new object [] { string.Empty, m_objectType.AssemblyQualifiedName });
+        if (!string.IsNullOrWhiteSpace(m_inprocServerPath))
+        {
+          inprocServerPath = m_inprocServerPath;
+        }
 
-        regKeySetValue.Invoke (regKey, new object [] { "InprocServer32", inprocServerPath }); // This may to reference the 64bit equivilent, in Windows\SysWow64\ at some point.
+        if (!string.IsNullOrWhiteSpace(m_codeBasePath))
+        {
+          codeBasePath = m_codeBasePath;
+        }
 
-        regKeySetValue.Invoke (regKey, new object [] { "Class", m_objectType.FullName });
+        if (!string.IsNullOrWhiteSpace (m_qualifiedName))
+        {
+          regKeySetValue.Invoke (regKey, new object[] { string.Empty, m_qualifiedName });
+        }
 
-        regKeySetValue.Invoke (regKey, new object [] { "CodeBase", Path.GetDirectoryName (codeBasePath) + "\\" + Path.GetFileName (m_objectType.Assembly.CodeBase) });
+        regKeySetValue.Invoke (regKey, new object [] { "Class", m_fullClassName });
 
-        regKeySetValue.Invoke (regKey, new object [] { "ThreadingModel", "Both" });// Is this important?
+        if (!string.IsNullOrWhiteSpace(inprocServerPath))
+        {
+          regKeySetValue.Invoke(regKey, new object[] { "InprocServer32", inprocServerPath }); // This may to reference the 64bit equivilent, in Windows\SysWow64\ at some point.
+        }
 
-        regKeySetValue.Invoke (regKey, new object [] { "Assembly", m_objectType.Assembly });
+        if (!string.IsNullOrWhiteSpace(codeBasePath))
+        {
+          regKeySetValue.Invoke(regKey, new object[] { "CodeBase", codeBasePath });
+        }
+
+        if (!string.IsNullOrWhiteSpace (m_assemblyPath))
+        {
+          regKeySetValue.Invoke(regKey, new object[] { "Assembly", m_assemblyPath });
+        }
+
+        if (!string.IsNullOrWhiteSpace(m_threadingModel))
+        {
+          regKeySetValue.Invoke(regKey, new object[] { "ThreadingModel", m_threadingModel });
+        }
 
         regKeyClose.Invoke (regKey, null);
       }

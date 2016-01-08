@@ -55,6 +55,27 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    protected class DevicePortRequest : IDebugPortRequest2
+    {
+      protected readonly AndroidDevice m_device;
+
+      public DevicePortRequest (AndroidDevice device)
+      {
+        m_device = device;
+      }
+
+      public int GetPortName (out string pbstrPortName)
+      {
+        pbstrPortName = m_device.ID;
+
+        return Constants.S_OK;
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     private Dictionary<Guid, IDebugPort2> m_registeredPorts = new Dictionary<Guid, IDebugPort2> ();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -69,17 +90,40 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected DebuggeePort CreatePort (IDebugPortRequest2 portRequest)
+    protected int CreatePort (IDebugPortRequest2 portRequest, out IDebugPort2 port)
     {
-      AndroidAdb.Refresh ();
+      LoggingUtils.PrintFunction ();
 
-      string requestPortName;
+      try
+      {
+        string requestPortName;
 
-      LoggingUtils.RequireOk (portRequest.GetPortName (out requestPortName));
+        LoggingUtils.RequireOk (portRequest.GetPortName (out requestPortName));
 
-      AndroidDevice device = AndroidAdb.GetConnectedDeviceById (requestPortName);
+        if (string.IsNullOrWhiteSpace (requestPortName))
+        {
+          throw new InvalidOperationException ("Invalid/empty port name");
+        }
 
-      return new DebuggeePort (this, device);
+        AndroidDevice device = AndroidAdb.GetConnectedDeviceById (requestPortName);
+
+        if (device == null)
+        {
+          throw new InvalidOperationException ("Failed to find a device with the name: " + requestPortName);
+        }
+
+        port = new DebuggeePort (this, device);
+
+        return Constants.S_OK;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
+
+        port = null;
+
+        return Constants.E_FAIL;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -95,7 +139,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     public int AddPort (IDebugPortRequest2 pRequest, out IDebugPort2 ppPort)
     {
       // 
-      // Attempt to find a port matching the requested name, refreshes and iterates updated ports via EnumPorts.
+      // Attempt to find a port matching the requested name, otherwise one is created.
       // 
 
       LoggingUtils.PrintFunction ();
@@ -107,6 +151,11 @@ namespace AndroidPlusPlus.VsDebugEngine
         LoggingUtils.RequireOk (CanAddPort ());
 
         LoggingUtils.RequireOk (pRequest.GetPortName (out requestPortName));
+        
+        if (string.IsNullOrWhiteSpace (requestPortName))
+        {
+          throw new InvalidOperationException ("Invalid/empty port name");
+        }
 
         ppPort = null;
 
@@ -128,9 +177,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (ppPort == null)
         {
+          // 
+          // Create and track a new port for this request.
+          // 
+
           Guid portId;
 
-          ppPort = CreatePort (pRequest);
+          LoggingUtils.RequireOk (CreatePort (pRequest, out ppPort));
 
           LoggingUtils.RequireOk (ppPort.GetPortId (out portId));
 
@@ -178,6 +231,17 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
+        AndroidAdb.Refresh ();
+
+        AndroidDevice [] connectedDevices = AndroidAdb.GetConnectedDevices ();
+
+        foreach (AndroidDevice device in connectedDevices)
+        {
+          IDebugPort2 ppPort;
+
+          LoggingUtils.RequireOk (AddPort (new DevicePortRequest (device), out ppPort));
+        }
+
         IDebugPort2 [] ports = new IDebugPort2 [m_registeredPorts.Count];
 
         m_registeredPorts.Values.CopyTo (ports, 0);
@@ -315,7 +379,16 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      return Constants.S_FALSE;
+      // 
+      // Return values from this function seem to do the opposite of what I'd expect:
+      // 
+      // Constants.S_OK = Use EnumPorts to seed device data.
+      // Constants.S_FALSE = UseEnumPersistedPorts to seed device data.
+      // 
+      // I think it potentially refers to whether the DE manually persists the ports, and so doesn't rely on a 'PortNames' being provided by VS?
+      // 
+
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -330,17 +403,38 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      ppEnum = null;
-
       try
       {
-        throw new NotImplementedException ();
+#if false
+        AndroidAdb.Refresh ();
+
+        if (PortNames.dwCount > 0)
+        {
+          // TODO: This conversion process is tricky, and still broken.
+          _BSTR_ARRAY portNames = (_BSTR_ARRAY) Marshal.PtrToStructure (PortNames.Members, typeof (_BSTR_ARRAY));
+
+          for (int i = 0; i < PortNames.dwCount; ++i)
+          {
+            IDebugPort2 ppPort;
+
+            AndroidDevice device = AndroidAdb.GetConnectedDeviceById (portNames.Members [i]);
+
+            LoggingUtils.RequireOk (AddPort (new DevicePortRequest (device), out ppPort));
+          }
+        }
+#endif
+
+        LoggingUtils.RequireOk (EnumPorts (out ppEnum));
+
+        return Constants.S_OK;
       }
-      catch (NotImplementedException e)
+      catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return Constants.E_NOTIMPL;
+        ppEnum = null;
+
+        return Constants.E_FAIL;
       }
     }
 
@@ -368,7 +462,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      pbstrText = "---";
+      pbstrText = "Select a target device/emulator from the 'Qualifier' drop-down option. If no targets are available, ensure your device is connected by using \"adb device\".";
 
       return Constants.S_OK;
     }

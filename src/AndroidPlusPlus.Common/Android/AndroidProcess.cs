@@ -39,9 +39,7 @@ namespace AndroidPlusPlus.Common
 
     private string m_legacyNativeLibraryDir;
 
-    private string m_primaryCpuAbi;
-
-    private string m_secondaryCpuAbi;
+    private List <string> m_processSupportedCpuAbis = new List<string> ();
 
     private string m_firstInstallTime;
 
@@ -183,48 +181,92 @@ namespace AndroidPlusPlus.Common
 
           if (line.StartsWith (CODE_PATH_EXPRESSION))
           {
-            m_codePath = line.Substring (CODE_PATH_EXPRESSION.Length);
+            string codePath = line.Substring (CODE_PATH_EXPRESSION.Length);
+
+            if (!string.IsNullOrWhiteSpace (codePath))
+            {
+              m_codePath = codePath;
+            }
           }
           else if (line.StartsWith (DATA_DIR_EXPRESSION))
           {
-            m_dataDir = line.Substring (DATA_DIR_EXPRESSION.Length);
+            string dataDir = line.Substring (DATA_DIR_EXPRESSION.Length);
+
+            if (!string.IsNullOrWhiteSpace (dataDir))
+            {
+              m_dataDir = dataDir;
+            }
           }
           else if (line.StartsWith (RESOURCE_PATH_EXPRESSION))
           {
-            m_resourcePath = line.Substring (RESOURCE_PATH_EXPRESSION.Length);
+            string resourcePath = line.Substring (RESOURCE_PATH_EXPRESSION.Length);
+
+            if (!string.IsNullOrWhiteSpace (resourcePath))
+            {
+              m_resourcePath = resourcePath;
+            }
           }
           else if (line.StartsWith (NATIVE_LIBRARY_PATH_EXPRESSION))
           {
-            m_nativeLibraryPath = line.Substring (NATIVE_LIBRARY_PATH_EXPRESSION.Length);
+            string nativeLibraryPath = line.Substring (NATIVE_LIBRARY_PATH_EXPRESSION.Length);
+
+            if (!string.IsNullOrWhiteSpace (nativeLibraryPath))
+            {
+              m_nativeLibraryPath = nativeLibraryPath;
+            }
           }
           else if (line.StartsWith (LEGACY_NATIVE_LIBRARY_DIR_EXPRESSION))
           {
-            m_legacyNativeLibraryDir = line.Substring (LEGACY_NATIVE_LIBRARY_DIR_EXPRESSION.Length);
+            string legacyNativeLibraryDir = line.Substring (LEGACY_NATIVE_LIBRARY_DIR_EXPRESSION.Length);
+
+            if (!string.IsNullOrWhiteSpace (legacyNativeLibraryDir))
+            {
+              m_legacyNativeLibraryDir = legacyNativeLibraryDir;
+            }
           }
           else if (line.StartsWith (PRIMARY_CPU_ABI_EXPRESSION))
           {
-            m_primaryCpuAbi = line.Substring (PRIMARY_CPU_ABI_EXPRESSION.Length);
+            string primaryCpiAbi = line.Substring (PRIMARY_CPU_ABI_EXPRESSION.Length);
+
+            if (!string.IsNullOrWhiteSpace (primaryCpiAbi) && !primaryCpiAbi.Equals ("null"))
+            {
+              m_processSupportedCpuAbis.Add (primaryCpiAbi);
+            }
           }
           else if (line.StartsWith (SECONDARY_CPU_ABI_EXPRESSION))
           {
             string secondaryAbi = line.Substring (SECONDARY_CPU_ABI_EXPRESSION.Length);
 
-            if (!secondaryAbi.Equals ("null"))
+            if (!string.IsNullOrWhiteSpace (secondaryAbi) && !secondaryAbi.Equals ("null"))
             {
-              m_secondaryCpuAbi = secondaryAbi;
+              m_processSupportedCpuAbis.Add (secondaryAbi);
             }
           }
           else if (line.StartsWith (FIRST_INSTALL_TIME_EXPRESSION))
           {
-            m_firstInstallTime = line.Substring (FIRST_INSTALL_TIME_EXPRESSION.Length);
+            string firstInstallTime = line.Substring (FIRST_INSTALL_TIME_EXPRESSION.Length);
+
+            if (!string.IsNullOrWhiteSpace (firstInstallTime))
+            {
+              m_firstInstallTime = firstInstallTime;
+            }
           }
           else if (line.StartsWith (LAST_UPDATE_TIME_EXPRESSION))
           {
-            m_lastUpdateTime = line.Substring (LAST_UPDATE_TIME_EXPRESSION.Length);
+            string lastUpdateTime = line.Substring (LAST_UPDATE_TIME_EXPRESSION.Length);
+
+            if (!string.IsNullOrWhiteSpace (lastUpdateTime))
+            {
+              m_lastUpdateTime = lastUpdateTime;
+            }
           }
           else if (line.StartsWith (PKG_FLAGS_EXPRESSION))
           {
-            m_pkgFlags = line.Substring (PKG_FLAGS_EXPRESSION.Length).Trim (new char [] { '[', ']' }).Split (new char [] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            string pkgFlags = line.Substring (PKG_FLAGS_EXPRESSION.Length);
+            
+            string [] pkgFlagsArray = pkgFlags.Trim (new char [] { '[', ']' }).Split (new char [] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+            m_pkgFlags = pkgFlagsArray;
           }
         }
       }
@@ -235,7 +277,7 @@ namespace AndroidPlusPlus.Common
 
       if (string.IsNullOrWhiteSpace (m_dataDir))
       {
-        m_dataDir = string.Format ("/data/data/{0}", Name);
+        m_dataDir = string.Concat ("/data/data/", Name);
       }
 
       if (string.IsNullOrWhiteSpace (m_codePath))
@@ -246,18 +288,20 @@ namespace AndroidPlusPlus.Common
         }
         else
         {
-          m_codePath = string.Format ("/data/data/{0}", Name);
+          m_codePath = string.Concat ("/data/data/", Name);
         }
       }
 
-      if (string.IsNullOrWhiteSpace (m_primaryCpuAbi))
+      foreach (string abi in HostDevice.SupportedCpuAbis)
       {
-        m_primaryCpuAbi = HostDevice.SupportedCpuAbis [0];
-      }
+        // 
+        // Add each of the additional supported ABIs; but keep those already identified via dump output as primary/secondary.
+        // 
 
-      if (string.IsNullOrWhiteSpace (m_primaryCpuAbi) && (HostDevice.SupportedCpuAbis.Length > 1))
-      {
-        m_secondaryCpuAbi = HostDevice.SupportedCpuAbis [1];
+        if (!m_processSupportedCpuAbis.Contains (abi))
+        {
+          m_processSupportedCpuAbis.Add (abi);
+        }
       }
 
       if (string.IsNullOrWhiteSpace (m_legacyNativeLibraryDir))
@@ -266,11 +310,11 @@ namespace AndroidPlusPlus.Common
         {
           string bundleId = Path.GetFileNameWithoutExtension (m_apkPath);
 
-          m_legacyNativeLibraryDir = string.Format ("/data/app-lib/{0}", bundleId);
+          m_legacyNativeLibraryDir = string.Concat ("/data/app-lib/", bundleId);
         }
         else
         {
-          m_legacyNativeLibraryDir = string.Format ("{0}/lib", m_codePath);
+          m_legacyNativeLibraryDir = string.Concat (m_codePath, "/lib");
         }
       }
 
@@ -281,25 +325,23 @@ namespace AndroidPlusPlus.Common
 
       if (HostDevice.SdkVersion >= AndroidSettings.VersionCode.JELLY_BEAN_MR1)
       {
-        m_nativeLibraryAbiPaths = new string [HostDevice.SupportedCpuAbis.Length];
+        List<string> nativeLibraryAbiPaths = new List<string> (m_processSupportedCpuAbis.Count);
 
-        for (int i = 0; i < HostDevice.SupportedCpuAbis.Length; ++i)
+        foreach (string abi in m_processSupportedCpuAbis)
         {
-          string abi = HostDevice.SupportedCpuAbis [i];
-
           switch (abi)
           {
             case "armeabi":
             case "armeabi-v7a":
             {
-              m_nativeLibraryAbiPaths [i] = string.Format ("{0}/{1}", m_nativeLibraryPath, "arm");
+              nativeLibraryAbiPaths.Add (string.Concat (m_nativeLibraryPath, "/", "arm"));
 
               break;
             }
 
             case "arm64-v8a":
             {
-              m_nativeLibraryAbiPaths [i] = string.Format ("{0}/{1}", m_nativeLibraryPath, "arm64");
+              nativeLibraryAbiPaths.Add (string.Concat (m_nativeLibraryPath, "/", "arm64"));
 
               break;
             }
@@ -310,12 +352,14 @@ namespace AndroidPlusPlus.Common
             case "mips64":
             default:
             {
-              m_nativeLibraryAbiPaths [i] = string.Format ("{0}/{1}", m_nativeLibraryPath, abi);
+              nativeLibraryAbiPaths.Add (string.Concat (m_nativeLibraryPath, "/", abi));
 
               break;
             }
           }
         }
+
+        m_nativeLibraryAbiPaths = nativeLibraryAbiPaths.ToArray ();
       }
     }
 
@@ -371,23 +415,11 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public string PrimaryCpuAbi
+    public string [] ProcessSupportedCpuAbis
     {
       get
       {
-        return m_primaryCpuAbi;
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public string SecondaryCpuAbi
-    {
-      get
-      {
-        return m_secondaryCpuAbi;
+        return m_processSupportedCpuAbis.ToArray ();
       }
     }
 

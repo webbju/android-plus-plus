@@ -6,16 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
-using EnvDTE;
-using Microsoft.Build.Framework.XamlTypes;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.VCProjectEngine;
 using Microsoft.VisualStudio.ProjectSystem;
 using Microsoft.VisualStudio.ProjectSystem.Debuggers;
 using Microsoft.VisualStudio.ProjectSystem.Utilities;
@@ -36,6 +31,10 @@ namespace AndroidPlusPlus.VsDebugLauncher
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  [ComVisible (true)]
+
+  [Guid ("A7A96E37-9D90-489A-84CB-14BBBE5686D2")]
+
   [ExportDebugger("AndroidPlusPlusDebugger")]
 
   [PartMetadata(ProjectCapabilities.Requires, ProjectCapabilities.VisualC)]
@@ -44,7 +43,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class DebugLauncherXII : DebugLaunchProviderBase 
+  public class DebugLauncher : DebugLaunchProviderBase 
   {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -67,7 +66,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
     {
       if (s_debugLauncher == null)
       {
-        s_debugLauncher = new DebugLauncher (serviceProvider);
+        s_debugLauncher = new DebugLauncherCommon (serviceProvider);
       }
 
       return s_debugLauncher;
@@ -79,7 +78,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
     public override async Task<bool> CanLaunchAsync (DebugLaunchOptions launchOptions)
     {
-      LoggingUtils.PrintFunction ();
+      LoggingUtils.PrintFunction();
 
       IDebugLauncher debugLauncher = null;
 
@@ -87,22 +86,23 @@ namespace AndroidPlusPlus.VsDebugLauncher
       {
         debugLauncher = GetDebugLauncher (ServiceProvider);
 
-        return debugLauncher.CanLaunch ((int) launchOptions);
+        return await System.Threading.Tasks.Task.Run(() =>
+        {
+          try
+          {
+            return debugLauncher.CanLaunch((int)launchOptions);
+          }
+          catch (Exception e)
+          {
+            HandleExceptionDialog(e, debugLauncher);
+          }
+
+          return false;
+        });
       }
       catch (Exception e)
       {
-        LoggingUtils.HandleException (e);
-
-        string description = string.Format ("[{0}] {1}", e.GetType (), e.Message);
-
-        description += "\nStack trace:\n" + e.StackTrace;
-
-        if (debugLauncher != null)
-        {
-          LoggingUtils.RequireOk (debugLauncher.GetConnectionService ().LaunchDialogUpdate (description, true));
-        }
-
-        VsShellUtilities.ShowMessageBox (ServiceProvider, description, "Android++ Debugger", OLEMSGICON.OLEMSGICON_CRITICAL, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+        HandleExceptionDialog(e, debugLauncher);
       }
 
       return false;
@@ -145,21 +145,30 @@ namespace AndroidPlusPlus.VsDebugLauncher
       }
       catch (Exception e)
       {
-        LoggingUtils.HandleException (e);
-
-        string description = string.Format ("[{0}] {1}", e.GetType (), e.Message);
-
-        description += "\nStack trace:\n" + e.StackTrace;
-
-        if (debugLauncher != null)
-        {
-          LoggingUtils.RequireOk (debugLauncher.GetConnectionService ().LaunchDialogUpdate (description, true));
-        }
-
-        VsShellUtilities.ShowMessageBox (ServiceProvider, description, "Android++ Debugger", OLEMSGICON.OLEMSGICON_CRITICAL, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+        HandleExceptionDialog (e, debugLauncher);
       }
 
       return new IDebugLaunchSettings [] { debugLaunchSettings };
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private void HandleExceptionDialog (Exception e, IDebugLauncher debugLauncher)
+    {
+      LoggingUtils.HandleException(e);
+
+      string description = string.Format("[{0}] {1}", e.GetType(), e.Message);
+
+      description += "\nStack trace:\n" + e.StackTrace;
+
+      if (debugLauncher != null)
+      {
+        LoggingUtils.RequireOk(debugLauncher.GetConnectionService().LaunchDialogUpdate(description, true));
+      }
+
+      VsShellUtilities.ShowMessageBox(ServiceProvider, description, "Android++ Debugger", OLEMSGICON.OLEMSGICON_CRITICAL, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
