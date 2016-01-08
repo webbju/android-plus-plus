@@ -26,7 +26,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public interface StateListener
+    public interface IStateListener
     {
       void DeviceConnected (AndroidDevice device);
 
@@ -43,7 +43,7 @@ namespace AndroidPlusPlus.Common
 
     private static Dictionary<string, AndroidDevice> m_connectedDevices = new Dictionary<string, AndroidDevice> ();
 
-    private static List<StateListener> m_registeredDeviceStateListeners = new List<StateListener> ();
+    private static List<IStateListener> m_registeredDeviceStateListeners = new List<IStateListener> ();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -143,7 +143,7 @@ namespace AndroidPlusPlus.Common
 
                 connectedDevice.Refresh ();
 
-                foreach (StateListener deviceListener in m_registeredDeviceStateListeners)
+                foreach (IStateListener deviceListener in m_registeredDeviceStateListeners)
                 {
                   deviceListener.DevicePervasive (connectedDevice);
                 }
@@ -162,7 +162,7 @@ namespace AndroidPlusPlus.Common
 
                 m_connectedDevices.Add (deviceName, connectedDevice);
 
-                foreach (StateListener deviceListener in m_registeredDeviceStateListeners)
+                foreach (IStateListener deviceListener in m_registeredDeviceStateListeners)
                 {
                   deviceListener.DeviceConnected (connectedDevice);
                 }
@@ -184,7 +184,7 @@ namespace AndroidPlusPlus.Common
 
               m_connectedDevices.Remove (deviceName);
 
-              foreach (StateListener deviceListener in m_registeredDeviceStateListeners)
+              foreach (IStateListener deviceListener in m_registeredDeviceStateListeners)
               {
                 deviceListener.DeviceDisconnected (disconnectedDevice);
               }
@@ -284,13 +284,27 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public static void RegisterDeviceStateListener (StateListener listner)
+    public static void RegisterDeviceStateListener (IStateListener listener)
     {
       LoggingUtils.PrintFunction ();
 
       lock (m_updateLockMutex)
       {
-        m_registeredDeviceStateListeners.Add (listner);
+        m_registeredDeviceStateListeners.Add (listener);
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public static void UnregisterDeviceStateListener (IStateListener listener)
+    {
+      LoggingUtils.PrintFunction ();
+
+      lock (m_updateLockMutex)
+      {
+        m_registeredDeviceStateListeners.Remove (listener);
       }
     }
 
