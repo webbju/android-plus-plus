@@ -14,7 +14,6 @@ using System.IO;
 using System.Linq;
 using System.Security;
 
-using EnvDTE;
 using Microsoft.Win32;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Debugger.Interop;
@@ -44,10 +43,10 @@ namespace AndroidPlusPlus.VsIntegratedPackage
   // 
   // Package registration
   // - Ensure the VSXI plugin is initialised on startup, not adhoc (on first use).
-  // - Register the informations needed to show the this package in the Help/About dialog of Visual Studio.
+  // - Register the data needed to show the this package in the Help/About dialog of Visual Studio.
   // 
 
-  [ProvideObject(typeof(VsIntegratedPackage.Package))]
+  [ProvideObject(typeof(VsIntegratedPackage.AndroidPackage))]
 
   [PackageRegistration(UseManagedResourcesOnly = true)]
 
@@ -64,7 +63,20 @@ namespace AndroidPlusPlus.VsIntegratedPackage
   [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)]
 
   // 
-  // 'Debug Engine' registration.
+  // VsDebugLauncher registration.
+  // 
+
+  [ProvideDebugLauncher("A7A96E37-9D90-489A-84CB-14BBBE5686D2",
+    "AndroidPlusPlus.VsDebugLauncher.Launcher",
+    "$PackageFolder$\\AndroidPlusPlus.VsDebugLauncher.dll",
+    "AndroidPlusPlus.VsDebugLauncher")]
+
+  //[ProvideObject(typeof(VsIntegratedPackage.DebugLauncher))]
+
+  //[ProvideExternObject(typeof(VsIntegratedPackage.DebugLauncher))]
+
+  // 
+  // VsDebugEngine registration.
   // 
 
   [ProvideExternObject(typeof(VsDebugEngine.DebugEngine))]
@@ -143,6 +155,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       "SIGTTIN (Stopped (tty input))|0x001A|0x0001",
       "SIGTTOU (Stopped (tty output))|0x001B|0x0001",
 
+#if false
       // TODO: These still need codes
       "SIGIO (I/O possible)|0x0000|0x0001",
       "SIGXCPU (CPU time limit exceeded)|0x0000|0x0001",
@@ -174,7 +187,6 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       "EXC_EMULATION (Emulation instruction)|0x0000|0x0001",
       "EXC_SOFTWARE (Software generated exception)|0x0000|0x0001",
       "EXC_BREAKPOINT (Breakpoint)|0x0000|0x0001",
-#if false
       "SIG32 (Real-time event 32)|0x0000|0x0001",
       "SIG33 (Real-time event 33)|0x0000|0x0001",
       "SIG34 (Real-time event 34)|0x0000|0x0001",
@@ -233,7 +245,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public sealed class Package : Microsoft.VisualStudio.Project.ProjectPackage, IVsInstalledProduct, IDisposable
+  public sealed class AndroidPackage : Microsoft.VisualStudio.Project.ProjectPackage, IVsInstalledProduct, IDisposable
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -256,7 +268,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public Package ()
+    public AndroidPackage ()
     {
       LoggingUtils.PrintFunction ();
     }
@@ -484,7 +496,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
       LoggingUtils.PrintFunction ();
 
-      DTE dteService = GetService (typeof (SDTE)) as DTE;
+      EnvDTE.DTE dteService = GetService (typeof (SDTE)) as EnvDTE.DTE;
 
       IVsShell shellService = GetService (typeof (SVsShell)) as IVsShell;
 

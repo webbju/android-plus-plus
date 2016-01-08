@@ -475,7 +475,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         throw new NotImplementedException ();
 
-        return Constants.S_OK;
+        //return Constants.S_OK;
       }
       catch (Exception e)
       {

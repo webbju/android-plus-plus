@@ -73,80 +73,88 @@ namespace AndroidPlusPlus.VsDebugEngine
       // Evaluate target device's architecture triple.
       // 
 
-      string preferedGdbAbiToolPrefix = string.Empty;
-
       bool allow64BitAbis = true;
 
-      switch (debugProgram.DebugProcess.NativeProcess.PrimaryCpuAbi)
+      string preferedGdbAbiToolPrefix = string.Empty;
+
+      foreach (string abi in debugProgram.DebugProcess.NativeProcess.ProcessSupportedCpuAbis)
       {
-        case "armeabi":
-        case "armeabi-v7a":
+        switch (abi)
         {
-          preferedGdbAbiToolPrefix = "arm-linux-androideabi";
-
-          break;
-        }
-
-        case "arm64-v8a":
-        {
-          if (allow64BitAbis)
-          {
-            preferedGdbAbiToolPrefix = "aarch64-linux-android";
-          }
-          else
+          case "armeabi":
+          case "armeabi-v7a":
           {
             preferedGdbAbiToolPrefix = "arm-linux-androideabi";
+
+            break;
           }
 
-          break;
-        }
-
-        case "x86":
-        {
-          preferedGdbAbiToolPrefix = "i686-linux-android";
-
-          break;
-        }
-
-        case "x86_64":
-        {
-          if (allow64BitAbis)
+          case "arm64-v8a":
           {
-            preferedGdbAbiToolPrefix = "x86_64-linux-android";
+            if (allow64BitAbis)
+            {
+              preferedGdbAbiToolPrefix = "aarch64-linux-android";
+            }
+            else
+            {
+              preferedGdbAbiToolPrefix = "arm-linux-androideabi";
+            }
+
+            break;
           }
-          else
+
+          case "x86":
           {
             preferedGdbAbiToolPrefix = "i686-linux-android";
+
+            break;
           }
 
-          break;
-        }
-
-        case "mips":
-        {
-          preferedGdbAbiToolPrefix = "mipsel-linux-android";
-
-          break;
-        }
-
-        case "mips64":
-        {
-          if (allow64BitAbis)
+          case "x86_64":
           {
-            preferedGdbAbiToolPrefix = "mips64el-linux-android";
+            if (allow64BitAbis)
+            {
+              preferedGdbAbiToolPrefix = "x86_64-linux-android";
+            }
+            else
+            {
+              preferedGdbAbiToolPrefix = "i686-linux-android";
+            }
+
+            break;
           }
-          else
+
+          case "mips":
           {
             preferedGdbAbiToolPrefix = "mipsel-linux-android";
+
+            break;
           }
 
-          break;
+          case "mips64":
+          {
+            if (allow64BitAbis)
+            {
+              preferedGdbAbiToolPrefix = "mips64el-linux-android";
+            }
+            else
+            {
+              preferedGdbAbiToolPrefix = "mipsel-linux-android";
+            }
+
+            break;
+          }
+        }
+
+        if (!string.IsNullOrEmpty (preferedGdbAbiToolPrefix))
+        {
+          break; // Early out, evaluated a target ABI triple.
         }
       }
 
       if (string.IsNullOrEmpty (preferedGdbAbiToolPrefix))
       {
-        throw new InvalidOperationException (string.Format ("Unrecognised target primary CPU ABI: {0}", debugProgram.DebugProcess.NativeProcess.PrimaryCpuAbi));
+        throw new InvalidOperationException ("Could not evaluate a target CPU ABI.");
       }
 
       bool preferedGdbAbiIs64Bit = preferedGdbAbiToolPrefix.Contains ("64");

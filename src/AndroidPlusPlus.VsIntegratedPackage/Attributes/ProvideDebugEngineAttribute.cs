@@ -44,7 +44,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     private Hashtable m_engineIncompatibleIds = new Hashtable ();
 
-    private Hashtable m_enginePortSupplierIds = new Hashtable ();
+    private List<Guid> m_enginePortSupplierIds = new List<Guid>();
 
     private Hashtable m_engineOptions = new Hashtable ();
 
@@ -148,11 +148,11 @@ namespace AndroidPlusPlus.VsIntegratedPackage
         // Otherwise, just add a single value entry.
         // 
 
-        foreach (object supplierKey in m_enginePortSupplierIds.Keys)
+        for (int i = 0; i < m_enginePortSupplierIds.Count; ++i)
         {
-          string supplierName = supplierKey.ToString ();
+          string supplierName = i.ToString (); // just use the index
 
-          object supplierGuid = m_enginePortSupplierIds [supplierKey];
+          Guid supplierGuid = m_enginePortSupplierIds [i];
 
           if (m_enginePortSupplierIds.Count > 1)
           {
@@ -169,14 +169,14 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
             if (regSubKey != null)
             {
-              regKeySetValue.Invoke (regSubKey, new object [] { supplierName, ((Guid)supplierGuid).ToString ("B") });
+              regKeySetValue.Invoke (regSubKey, new object [] { supplierName, supplierGuid.ToString ("B") });
 
               regKeyClose.Invoke (regSubKey, null);
             }
           }
           else if (m_enginePortSupplierIds.Count == 1)
           {
-            regKeySetValue.Invoke (regKey, new object [] { "PortSupplier", ((Guid)supplierGuid).ToString ("B") });
+            regKeySetValue.Invoke (regKey, new object [] { "PortSupplier", supplierGuid.ToString ("B") });
           }
         }
 
@@ -255,13 +255,27 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       }
       set
       {
+
         foreach (string supplierId in value)
         {
-          Guid incompatibleSupplierGuid = new Guid (supplierId);
+          bool conflict = false;
 
-          string debugEngineName = m_enginePortSupplierIds.Count.ToString ();
+          Guid supplierGuid = new Guid (supplierId);
 
-          m_enginePortSupplierIds [debugEngineName] = incompatibleSupplierGuid;
+          for (int i = 0; i < m_enginePortSupplierIds.Count; ++i)
+          {
+            if (m_enginePortSupplierIds [i].Equals (supplierGuid))
+            {
+              conflict = true;
+
+              break;
+            }
+          }
+
+          if (!conflict)
+          {
+            m_enginePortSupplierIds.Add (supplierGuid);
+          }
         }
       }
     }

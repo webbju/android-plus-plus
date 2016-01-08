@@ -3,7 +3,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using EnvDTE;
 using Microsoft.VisualStudio.Project;
 using Microsoft.VisualStudio.Project.Automation;
 using VSLangProj;
@@ -32,7 +31,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public AndroidProjectNode (Package package)
+    public AndroidProjectNode (AndroidPackage package)
     {
       
     }
@@ -73,7 +72,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       AndroidProjectFileNode node = new AndroidProjectFileNode (this, item);
 
       node.OleServiceProvider.AddService (typeof (EnvDTE.Project), new OleServiceProvider.ServiceCreatorCallback (CreateServices), false);
-      node.OleServiceProvider.AddService (typeof (ProjectItem), node.ServiceCreator, false);
+      node.OleServiceProvider.AddService (typeof (EnvDTE.ProjectItem), node.ServiceCreator, false);
       node.OleServiceProvider.AddService (typeof (VSProject), new OleServiceProvider.ServiceCreatorCallback (CreateServices), false);
 
       return node;

@@ -8,6 +8,8 @@ using System.Reflection;
 using System.IO;
 using System.Runtime.InteropServices;
 
+using AndroidPlusPlus.Common;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -38,27 +40,36 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     private static Assembly LoadAssemblyFromPackagePath (object sender, ResolveEventArgs args)
     {
-      string packagePath = Path.GetDirectoryName (Assembly.GetExecutingAssembly ().Location);
-
-      string assemblyFilename = args.Name;
-
-      int i = assemblyFilename.IndexOf (',');
-
-      if (i != -1)
+      try
       {
-        assemblyFilename = assemblyFilename.Substring (0, i);
-      }
+        string packagePath = Path.GetDirectoryName (Assembly.GetExecutingAssembly ().Location);
 
-      string assemblyPath = Path.Combine (packagePath, assemblyFilename + ".dll");
+        string assemblyFilename = args.Name;
 
-      if (File.Exists (assemblyPath))
-      {
+        int i = assemblyFilename.IndexOf (',');
+
+        if (i != -1)
+        {
+          assemblyFilename = assemblyFilename.Substring (0, i);
+        }
+
+        string assemblyPath = Path.Combine (packagePath, assemblyFilename + ".dll");
+
+        if (!File.Exists (assemblyPath))
+        {
+          return null;
+        }
+
         Assembly assembly = Assembly.LoadFrom (assemblyPath);
 
         return assembly;
       }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
 
-      return null;
+        return null;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
