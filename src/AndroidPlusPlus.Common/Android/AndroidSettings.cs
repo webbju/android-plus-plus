@@ -51,6 +51,11 @@ namespace AndroidPlusPlus.Common
       KITKAT_WATCH,
       L_PREVIEW = KITKAT_WATCH,
       LOLLIPOP,
+      LOLLIPOP_MR1,
+      MARSHMALLOW,
+      M = MARSHMALLOW,
+      NOUGAT,
+      N = NOUGAT
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -171,12 +176,12 @@ namespace AndroidPlusPlus.Common
       get
       {
         // 
-        // Evaluate which 'platforms' are supported by this distribution. (This implemenation is crude, should use Android.bat).
+        // Evaluate which 'platforms' are supported by this distribution. (This implementation is crude, should use Android.bat).
         // 
 
         List <VersionCode> installedSdkPlatforms = new List <VersionCode> ();
 
-        string platformSrcPath = SdkRoot + @"\platforms";
+        string platformSrcPath = Path.Combine (SdkRoot, "platforms");
 
         if (File.Exists (platformSrcPath))
         {
@@ -230,6 +235,8 @@ namespace AndroidPlusPlus.Common
           androidNdkPossibleLocations.Add (Environment.GetEnvironmentVariable ("ANDROID_NDK"));
 
           androidNdkPossibleLocations.Add (Environment.GetEnvironmentVariable ("ANDROID_NDK_ROOT"));
+
+          androidNdkPossibleLocations.Add (Environment.GetEnvironmentVariable ("ANDROID_NDK_PATH"));
         }
         catch (SecurityException e)
         {
@@ -271,7 +278,7 @@ namespace AndroidPlusPlus.Common
 
         List <VersionCode> installedNdkPlatforms = new List <VersionCode> ();
 
-        string platformSrcPath = NdkRoot + @"\platforms";
+        string platformSrcPath = Path.Combine (NdkRoot, "platforms");
 
         if (File.Exists (platformSrcPath))
         {

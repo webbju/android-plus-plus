@@ -280,6 +280,11 @@ namespace AndroidPlusPlus.Common
       if (!string.IsNullOrEmpty (args.Data))
       {
         LoggingUtils.Print (string.Format ("[GdbServer] ProcessStderr: {0}", args.Data));
+
+        if (args.Data.Contains ("Attached;"))
+        {
+          m_gdbServerAttached.Set ();
+        }
       }
     }
 

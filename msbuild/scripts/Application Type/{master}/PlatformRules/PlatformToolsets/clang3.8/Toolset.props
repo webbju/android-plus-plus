@@ -24,11 +24,11 @@
 
   <PropertyGroup>
 
-    <PlatformToolsetVersion>clang3.5</PlatformToolsetVersion>
+    <PlatformToolsetVersion>clang3.8</PlatformToolsetVersion>
 
     <GccToolchainVersion>4.9</GccToolchainVersion>
 
-    <LlvmVersion>3.5</LlvmVersion>
+    <LlvmVersion>3.8</LlvmVersion>
 
   </PropertyGroup>
 
@@ -61,6 +61,8 @@
     <PlatformToolsetPrebuilt Condition="'$(SixtyFourBit)' == 'true' AND Exists('$(PlatformToolsetToolchainFolder)\prebuilt\windows-x86_64')">$(PlatformToolsetToolchainFolder)\prebuilt\windows-x86_64</PlatformToolsetPrebuilt>
 
     <LlvmToolsetToolchainFolder>$(AndroidNdkRoot)\toolchains\llvm-$(LlvmVersion)</LlvmToolsetToolchainFolder>
+
+    <LlvmToolsetToolchainFolder Condition="!Exists('$(LlvmToolsetToolchainFolder)')">$(AndroidNdkRoot)\toolchains\llvm</LlvmToolsetToolchainFolder>
 
     <LlvmToolsetPrebuilt>$(LlvmToolsetToolchainFolder)\prebuilt\windows</LlvmToolsetPrebuilt>
 

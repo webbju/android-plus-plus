@@ -470,11 +470,19 @@
     
     <!-- Validate existence of Android SDK -->
     <Error Condition="'$(AndroidSdkRoot)' == ''" Text="Could not locate the Android SDK. Please consult $(ANDROID_PLUS_PLUS)\docs\getting_started.txt" />
+    <Error Condition="'$(AndroidSdkRoot)' == 'NOT_SET'" Text="Could not locate the Android SDK. Please consult $(ANDROID_PLUS_PLUS)\docs\getting_started.txt" />
     <Error Condition="!Exists('$(AndroidSdkRoot)')" Text="Could not locate the Android SDK. Path does not exist. Expected: $(AndroidSdkRoot)." />
+
+    <Error Condition="'$(AndroidSdkLevel)' == ''" Text="Could not determine Android SDK target API. Please consult $(ANDROID_PLUS_PLUS)\docs\getting_started.txt" />
+    <Error Condition="'$(AndroidSdkLevel)' == 'NOT_SET'" Text="Could not determine Android SDK target API. Please consult $(ANDROID_PLUS_PLUS)\docs\getting_started.txt" />
 
     <!-- Validate existence of Android NDK -->
     <Error Condition="'$(AndroidNdkRoot)' == ''" Text="Could not locate the Android NDK. Please consult $(ANDROID_PLUS_PLUS)\docs\getting_started.txt" />
+    <Error Condition="'$(AndroidNdkRoot)' == 'NOT_SET'" Text="Could not locate the Android NDK. Please consult $(ANDROID_PLUS_PLUS)\docs\getting_started.txt" />
     <Error Condition="!Exists('$(AndroidNdkRoot)')" Text="Could not locate the Android NDK. Path does not exist. Expected: $(AndroidNdkRoot)." />
+
+    <Error Condition="'$(AndroidNdkLevel)' == ''" Text="Could not determine Android NDK target API. Please consult $(ANDROID_PLUS_PLUS)\docs\getting_started.txt" />
+    <Error Condition="'$(AndroidNdkLevel)' == 'NOT_SET'" Text="Could not determine Android NDK target API. Please consult $(ANDROID_PLUS_PLUS)\docs\getting_started.txt" />
 
   </Target>
 

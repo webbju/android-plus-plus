@@ -74,7 +74,7 @@ namespace AndroidPlusPlus.Common
 
           Dictionary<string, string> currentAdbDevices = new Dictionary<string, string> ();
 
-          LoggingUtils.Print (string.Format ("[AndroidAdb] Devices output: {0}", adbDevices.StandardOutput));
+          LoggingUtils.Print (string.Concat ("[AndroidAdb] Devices output: ", adbDevices.StandardOutput));
 
           if (!String.IsNullOrEmpty (adbDevices.StandardOutput))
           {
@@ -82,7 +82,7 @@ namespace AndroidPlusPlus.Common
 
             foreach (string line in deviceOutputLines)
             {
-              if (Regex.IsMatch (line, "^[A-Za-z0-9.:\\-]+[\t][a-z]+$"))
+              if (Regex.IsMatch (line, "^[A-Za-z0-9.:\\-]+[\t][A-Za-z]+$"))
               {
                 string [] segments = line.Split (new char [] { '\t' });
 
@@ -121,11 +121,11 @@ namespace AndroidPlusPlus.Common
 
             string deviceType = devicePair.Value;
 
-            if (deviceType.Equals ("offline"))
+            if (deviceType.Equals ("offline", StringComparison.InvariantCultureIgnoreCase))
             {
               disconnectedDevices.Add (deviceName);
             }
-            else if (deviceType.Equals ("unauthorized"))
+            else if (deviceType.Equals ("unauthorized", StringComparison.InvariantCultureIgnoreCase))
             {
               // User needs to allow USB debugging.
             }
@@ -180,7 +180,7 @@ namespace AndroidPlusPlus.Common
 
             if (m_connectedDevices.TryGetValue (deviceName, out disconnectedDevice))
             {
-              LoggingUtils.Print (string.Format ("[AndroidAdb] Device disconnected: {0}", deviceName));
+              LoggingUtils.Print (string.Concat ("[AndroidAdb] Device disconnected: ", deviceName));
 
               m_connectedDevices.Remove (deviceName);
 

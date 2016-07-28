@@ -278,120 +278,127 @@ namespace AndroidPlusPlus.VsDebugLauncher
           {
             FileInfo targetApkFileInfo = new FileInfo (launchConfig ["TargetApk"]);
 
-            string [] adbPmPathOutput = debuggingDevice.Shell ("pm", "path " + launchConfig ["PackageName"]).Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (string line in adbPmPathOutput)
+            try
             {
-              if (line.StartsWith ("package:", StringComparison.OrdinalIgnoreCase))
+              string [] adbPmPathOutput = debuggingDevice.Shell ("pm", "path " + launchConfig ["PackageName"]).Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+              foreach (string line in adbPmPathOutput)
               {
-                appIsInstalled = true;
-
-                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' already installed on target '{1}'.", launchConfig ["PackageName"], debuggingDevice.ID), false));
-
-                string path = line.Substring ("package:".Length);
-
-                // 
-                // Get the target device/emulator's UTC current time.
-                // 
-                //   This is done by specifying the '-u' argument to 'date'. Despite this though, 
-                //   the returned string will always claim to be in GMT: 
-                // 
-                //   i.e: "Fri Jan  9 14:35:23 GMT 2015"
-                // 
-
-                DateTime debuggingDeviceUtcTime;
-
-                try
+                if (line.StartsWith ("package:", StringComparison.OrdinalIgnoreCase))
                 {
-                  string [] deviceDateOutput = debuggingDevice.Shell ("date", "-u").Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                  appIsInstalled = true;
 
-                  string debuggingDeviceUtcTimestamp = deviceDateOutput [0];
+                  LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' already installed on target '{1}'.", launchConfig ["PackageName"], debuggingDevice.ID), false));
 
-                  string [] debuggingDeviceUtcTimestampComponents = debuggingDeviceUtcTimestamp.Split (new char [] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                  string path = line.Substring ("package:".Length);
 
-                  debuggingDeviceUtcTimestampComponents [4] = "-00:00";
+                  // 
+                  // Get the target device/emulator's UTC current time.
+                  // 
+                  //   This is done by specifying the '-u' argument to 'date'. Despite this though, 
+                  //   the returned string will always claim to be in GMT: 
+                  // 
+                  //   i.e: "Fri Jan  9 14:35:23 GMT 2015"
+                  // 
 
-                  if (!DateTime.TryParseExact (string.Join (" ", debuggingDeviceUtcTimestampComponents), "ddd MMM  d HH:mm:ss zzz yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out debuggingDeviceUtcTime))
+                  DateTime debuggingDeviceUtcTime;
+
+                  try
                   {
-                    break;
+                    string [] deviceDateOutput = debuggingDevice.Shell ("date", "-u").Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+                    string debuggingDeviceUtcTimestamp = deviceDateOutput [0];
+
+                    string [] debuggingDeviceUtcTimestampComponents = debuggingDeviceUtcTimestamp.Split (new char [] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                    debuggingDeviceUtcTimestampComponents [4] = "-00:00";
+
+                    if (!DateTime.TryParseExact (string.Join (" ", debuggingDeviceUtcTimestampComponents), "ddd MMM  d HH:mm:ss zzz yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out debuggingDeviceUtcTime))
+                    {
+                      break;
+                    }
+
+                    debuggingDeviceUtcTime = debuggingDeviceUtcTime.ToUniversalTime ();
+                  }
+                  catch (Exception e)
+                  {
+                    throw new InvalidOperationException ("Failed to evaluate device local time.", e);
                   }
 
-                  debuggingDeviceUtcTime = debuggingDeviceUtcTime.ToUniversalTime ();
-                }
-                catch (Exception e)
-                {
-                  throw new InvalidOperationException ("Failed to evaluate device local time.", e);
-                }
+                  // 
+                  // Convert current device/emulator time to UTC, and probe the working machine's time too.
+                  // 
 
-                // 
-                // Convert current device/emulator time to UTC, and probe the working machine's time too.
-                // 
+                  DateTime thisMachineUtcTime = DateTime.UtcNow;
 
-                DateTime thisMachineUtcTime = DateTime.UtcNow;
+                  TimeSpan thisMachineUtcVersusDeviceUtc = debuggingDeviceUtcTime - thisMachineUtcTime;
 
-                TimeSpan thisMachineUtcVersusDeviceUtc = debuggingDeviceUtcTime - thisMachineUtcTime;
+                  LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "Current UTC time on '{0}': {1}", debuggingDevice.ID, debuggingDeviceUtcTime.ToString ()), false));
 
-                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "Current UTC time on '{0}': {1}", debuggingDevice.ID, debuggingDeviceUtcTime.ToString ()), false));
+                  LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "Current UTC time on '{0}': {1}", System.Environment.MachineName, thisMachineUtcTime.ToString ()), false));
 
-                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "Current UTC time on '{0}': {1}", System.Environment.MachineName, thisMachineUtcTime.ToString ()), false));
+                  LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "Difference in UTC time between '{0}' and '{1}': {2}", System.Environment.MachineName, debuggingDevice.ID, thisMachineUtcVersusDeviceUtc.ToString ()), false));
 
-                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "Difference in UTC time between '{0}' and '{1}': {2}", System.Environment.MachineName, debuggingDevice.ID, thisMachineUtcVersusDeviceUtc.ToString ()), false));
+                  // 
+                  // Check the last modified date; ls output currently uses this format:
+                  // 
+                  // -rw-r--r-- system   system   11533274 2015-01-09 13:47 com.example.native_activity-2.apk
+                  // 
 
-                // 
-                // Check the last modified date; ls output currently uses this format:
-                // 
-                // -rw-r--r-- system   system   11533274 2015-01-09 13:47 com.example.native_activity-2.apk
-                // 
+                  DateTime lastModifiedTimestampDeviceLocalTime;
 
-                DateTime lastModifiedTimestampDeviceLocalTime;
-
-                try
-                {
-                  string [] extendedLsOutput = debuggingDevice.Shell ("ls -l", path).Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-
-                  string [] extendedLsOutputComponents = extendedLsOutput [0].Split (new char [] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-                  string date = extendedLsOutputComponents [4];
-
-                  string time = extendedLsOutputComponents [5];
-
-                  if (!DateTime.TryParseExact (date + " " + time, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out lastModifiedTimestampDeviceLocalTime))
+                  try
                   {
-                    break;
+                    string [] extendedLsOutput = debuggingDevice.Shell ("ls -l", path).Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+                    string [] extendedLsOutputComponents = extendedLsOutput [0].Split (new char [] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                    string date = extendedLsOutputComponents [4];
+
+                    string time = extendedLsOutputComponents [5];
+
+                    if (!DateTime.TryParseExact (date + " " + time, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out lastModifiedTimestampDeviceLocalTime))
+                    {
+                      break;
+                    }
                   }
+                  catch (Exception e)
+                  {
+                    throw new InvalidOperationException (string.Format (CultureInfo.InvariantCulture, "Failed to evaluate device local modified time of: {0}", path), e);
+                  }
+
+                  // 
+                  // Calculate how long ago the APK was changed, according to the device's local time.
+                  // 
+
+                  TimeSpan timeSinceLastModification = debuggingDeviceUtcTime - lastModifiedTimestampDeviceLocalTime;
+
+                  DateTime debuggingDeviceUtcTimeAtLastModification = debuggingDeviceUtcTime - timeSinceLastModification;
+
+                  DateTime thisMachineUtcTimeAtLastModification = thisMachineUtcTime - timeSinceLastModification;
+
+                  LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' was last modified on '{1}' at: {2}.", launchConfig ["PackageName"], debuggingDevice.ID, debuggingDeviceUtcTimeAtLastModification.ToString ()), false));
+
+                  LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "{0} (on {1}) was around {2} (on {3}).", debuggingDeviceUtcTimeAtLastModification.ToString (), debuggingDevice.ID, thisMachineUtcTimeAtLastModification.ToString (), System.Environment.MachineName), false));
+
+                  LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' was last modified on '{1}' at: {2}.", Path.GetFileName (targetApkFileInfo.FullName), System.Environment.MachineName, targetApkFileInfo.LastWriteTime.ToString ()), false));
+
+                  if ((targetApkFileInfo.LastWriteTime + thisMachineUtcVersusDeviceUtc) > thisMachineUtcTimeAtLastModification)
+                  {
+                    LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' was determined to be out-of-date. Reinstalling...", launchConfig ["PackageName"]), false));
+                  }
+                  else
+                  {
+                    appIsOutOfDate = false;
+                  }
+
+                  break;
                 }
-                catch (Exception e)
-                {
-                  throw new InvalidOperationException (string.Format (CultureInfo.InvariantCulture, "Failed to evaluate device local modified time of: {0}", path), e);
-                }
-
-                // 
-                // Calculate how long ago the APK was changed, according to the device's local time.
-                // 
-
-                TimeSpan timeSinceLastModification = debuggingDeviceUtcTime - lastModifiedTimestampDeviceLocalTime;
-
-                DateTime debuggingDeviceUtcTimeAtLastModification = debuggingDeviceUtcTime - timeSinceLastModification;
-
-                DateTime thisMachineUtcTimeAtLastModification = thisMachineUtcTime - timeSinceLastModification;
-
-                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' was last modified on '{1}' at: {2}.", launchConfig ["PackageName"], debuggingDevice.ID, debuggingDeviceUtcTimeAtLastModification.ToString ()), false));
-
-                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "{0} (on {1}) was around {2} (on {3}).", debuggingDeviceUtcTimeAtLastModification.ToString (), debuggingDevice.ID, thisMachineUtcTimeAtLastModification.ToString (), System.Environment.MachineName), false));
-
-                LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' was last modified on '{1}' at: {2}.", Path.GetFileName (targetApkFileInfo.FullName), System.Environment.MachineName, targetApkFileInfo.LastWriteTime.ToString ()), false));
-
-                if ((targetApkFileInfo.LastWriteTime + thisMachineUtcVersusDeviceUtc) > thisMachineUtcTimeAtLastModification)
-                {
-                  LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' was determined to be out-of-date. Reinstalling...", launchConfig ["PackageName"]), false));
-                }
-                else
-                {
-                  appIsOutOfDate = false;
-                }
-
-                break;
               }
+            }
+            catch (Exception)
+            {
+              appIsInstalled = false;
             }
           }
           else

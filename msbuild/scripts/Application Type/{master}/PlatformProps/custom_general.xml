@@ -55,6 +55,7 @@
     Description="Specifies the target API level for SDK dependencies."
     Category="PlatformDefaults">
 
+    <EnumValue Name="24" DisplayName="Android 7.0 (android-24)" />
     <EnumValue Name="23" DisplayName="Android 6.0 (android-23)" />
     <EnumValue Name="22" DisplayName="Android 5.1 (android-22)" />
     <EnumValue Name="21" DisplayName="Android 5.0 (android-21)" />
@@ -87,6 +88,8 @@
     Description="Specifies which version of 'build-tools' should be used."
     Category="PlatformDefaults">
 
+    <EnumValue Name="24.0.1" DisplayName="24.0.1" />
+    <EnumValue Name="24.0.0" DisplayName="24.0.0" />
     <EnumValue Name="23.0.2" DisplayName="23.0.2" />
     <EnumValue Name="23.0.1" DisplayName="23.0.1" />
     <EnumValue Name="23.0.0" DisplayName="23.0" />
@@ -134,6 +137,9 @@
     Description="Specifies the target API level for NDK dependencies."
     Category="PlatformDefaults">
 
+    <EnumValue Name="24" DisplayName="Android 7.0 (android-24)" />
+    <EnumValue Name="23" DisplayName="Android 6.0 (android-23)" />
+    <EnumValue Name="22" DisplayName="Android 5.1 (android-22)" />
     <EnumValue Name="21" DisplayName="Android 5.0 (android-21)" />
     <EnumValue Name="19" DisplayName="Android 4.4 (android-19)" />
     <EnumValue Name="18" DisplayName="Android 4.3 (android-18)" />
