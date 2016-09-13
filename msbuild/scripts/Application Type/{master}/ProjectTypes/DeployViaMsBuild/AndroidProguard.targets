@@ -211,6 +211,12 @@ $(_ProGuardInJars)
       </AndroidProguard>
     </ItemGroup>
 
+    <PropertyGroup>
+      <!-- Use a custom deployment of ProGuard (which supports Java 8 sources), when possible -->
+      <__ProguardExeJar Condition="!Exists('$(__ProguardExeJar)')">$(ANDROID_PLUS_PLUS)\contrib\proguard5.2.1\lib\proguard.jar</__ProguardExeJar>
+      <__ProguardExeJar>$(_ProGuardRoot)\lib\proguard.jar</__ProguardExeJar>
+    </PropertyGroup>
+
     <AndroidProguard
       BuildingInIDE="$(BuildingInsideVisualStudio)"
       Condition="'@(AndroidProguard)' != ''"
@@ -221,7 +227,7 @@ $(_ProGuardInJars)
       OutputCommandLine="%(AndroidProguard.OutputCommandLine)"
       ToolPath="$(JavaHomeDir)\bin"
       ToolExe="java.exe"
-      ProguardJar="$(_ProGuardRoot)\lib\proguard.jar"
+      ProguardJar="$(__ProguardExeJar)"
       PropertiesFile="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml">
       <Output TaskParameter="OutputFiles" ItemName="AndroidProguardOutputFiles" />
       <Output TaskParameter="SkippedExecution" PropertyName="AndroidProguardSkippedExecution" />
