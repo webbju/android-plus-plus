@@ -399,7 +399,7 @@ namespace AndroidPlusPlus.Common
 
           if (Process.HostDevice.SdkVersion >= AndroidSettings.VersionCode.LOLLIPOP)
           {
-            string [] libraries = Process.HostDevice.Shell ("ls", nativeLibraryAbiPath).Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            string [] libraries = Process.HostDevice.Shell ("ls", nativeLibraryAbiPath).Replace ("\r", "").Split (new char [] { '\n', ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
             foreach (string file in libraries)
             {
