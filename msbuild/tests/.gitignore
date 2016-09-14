@@ -4,3 +4,4 @@ ipch/
 *.vcxproj.user
 *.sdf
 *.suo
+*.opendb

@@ -66,7 +66,7 @@
 
       <PositionIndependentCode Condition="'%(ClCompile.PositionIndependentCode)' == ''">BigPic</PositionIndependentCode>
 
-      <PositionIndependentExecutable Condition="'%(ClCompile.PositionIndependentExecutable)' == '' and '$(AndroidNdkLevel)' >= '16'">BigPie</PositionIndependentExecutable>
+      <PositionIndependentExecutable Condition="'%(ClCompile.PositionIndependentExecutable)' == ''">BigPie</PositionIndependentExecutable>
 
     </ClCompile>
 
@@ -86,7 +86,7 @@
 
       <SysRoot Condition="'%(Link.SysRoot)' == ''">$(PlatformToolsetSysRoot)</SysRoot>
 
-      <PositionIndependentExecutable Condition="'%(ClCompile.PositionIndependentExecutable)' == '' and '$(AndroidNdkLevel)' >= '16'">Both</PositionIndependentExecutable>
+      <PositionIndependentExecutable Condition="'%(ClCompile.PositionIndependentExecutable)' == ''">Both</PositionIndependentExecutable>
 
     </Link>
 

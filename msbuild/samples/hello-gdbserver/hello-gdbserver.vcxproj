@@ -46,6 +46,8 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
+    <AndroidSdkBuildToolsVersion>23.0.2</AndroidSdkBuildToolsVersion>
+    <AndroidSdkLevel>22</AndroidSdkLevel>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.arm64-v8a'" Label="Configuration">
     <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</IntDir>
@@ -86,6 +88,11 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.x86'">
+    <AndroidJava>
+      <OutputCommandLine>true</OutputCommandLine>
+    </AndroidJava>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="jni\hello-gdbserver.c" />
   </ItemGroup>
@@ -99,5 +106,6 @@
   <ImportGroup Label="ExtensionTargets">
     <Import Condition="'$(VisualStudioVersion)' == '14.0' and exists('$(VCTargetsPath)\V140\BuildCustomizations\Android++.DeployViaMsBuild.targets') and '$(__DeployViaMsBuildImported_Targets)' != 'true'" Project="$(VCTargetsPath)\V140\BuildCustomizations\Android++.DeployViaMsBuild.targets" />
     <Import Condition="'$(VisualStudioVersion)' == '12.0' and exists('$(VCTargetsPath)\V120\BuildCustomizations\Android++.DeployViaMsBuild.targets') and '$(__DeployViaMsBuildImported_Targets)' != 'true'" Project="$(VCTargetsPath)\V120\BuildCustomizations\Android++.DeployViaMsBuild.targets" />
-    <Import Condition="exists('$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.targets') and '$(__DeployViaMsBuildImported_Targets)' != 'true'" Project="$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.targets" />  </ImportGroup>
+    <Import Condition="exists('$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.targets') and '$(__DeployViaMsBuildImported_Targets)' != 'true'" Project="$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.targets" />
+  </ImportGroup>
 </Project>

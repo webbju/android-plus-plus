@@ -279,13 +279,13 @@
       <AndroidJava
         Condition="'@(AndroidManifestOutputFiles)' != ''"
         Include="@(AndroidManifestOutputFiles->ClearMetadata()->Distinct())"
-        Exclude="@(AndroidManifestOutputResourceConstantSourceFiles);@(AndroidManifestOutputApk)"
-      />
+        Exclude="@(AndroidManifestOutputResourceConstantSourceFiles);@(AndroidManifestOutputApk)">
+      </AndroidJava>
 
       <AndroidJava
         Condition="Exists('$(BuildConfigOutputFile)')"
-        Include="$(BuildConfigOutputFile)"
-      />
+        Include="$(BuildConfigOutputFile)">
+      </AndroidJava>
 
       <AndroidJava
         Condition="'@(AndroidJavaReorderCache)' != ''"

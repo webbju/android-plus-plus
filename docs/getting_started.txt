@@ -8,10 +8,10 @@ Prerequisites:
    * Please avoid installing to a path which contains spaces.
    * Compatibility tested with NDK r9d, r10, r10b, r10c and r10d.
 
- - Java Development Kit (JDK) 1.6 or 1.7
+ - Java Development Kit (JDK) 1.7 or 1.8
    * If using JDK 1.7, please ensure you are using a revision of at least 67. 
+   * If using JDK 1.8, please ensure you are using a revision of at least 21. 
    * Early revisions of JDK 1.7 tend to cause devices to hang when debugging.
-   * JDK 1.8 is untested and should be avoided.
 
 --------------------------------------------------------------------------------------------------------------------------------
 

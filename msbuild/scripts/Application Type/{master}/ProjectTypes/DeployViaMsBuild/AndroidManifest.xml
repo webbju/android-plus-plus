@@ -322,6 +322,11 @@
       Switch="--min-sdk-version"
       Separator=" ">
 
+      <EnumValue Name="24" DisplayName="Android 7.0 (android-24)" />
+      <EnumValue Name="23" DisplayName="Android 6.0 (android-23)" />
+      <EnumValue Name="22" DisplayName="Android 5.1 (android-22)" />
+      <EnumValue Name="21" DisplayName="Android 5.0 (android-21)" />
+      <EnumValue Name="20" DisplayName="Android 4.4W (android-20)" />
       <EnumValue Name="19" DisplayName="Android 4.4 (android-19)" />
       <EnumValue Name="18" DisplayName="Android 4.3 (android-18)" />
       <EnumValue Name="17" DisplayName="Android 4.2 (android-17)" />
@@ -352,6 +357,11 @@
       Switch="--target-sdk-version"
       Separator=" ">
 
+      <EnumValue Name="24" DisplayName="Android 7.0 (android-24)" />
+      <EnumValue Name="23" DisplayName="Android 6.0 (android-23)" />
+      <EnumValue Name="22" DisplayName="Android 5.1 (android-22)" />
+      <EnumValue Name="21" DisplayName="Android 5.0 (android-21)" />
+      <EnumValue Name="20" DisplayName="Android 4.4W (android-20)" />
       <EnumValue Name="19" DisplayName="Android 4.4 (android-19)" />
       <EnumValue Name="18" DisplayName="Android 4.3 (android-18)" />
       <EnumValue Name="17" DisplayName="Android 4.2 (android-17)" />

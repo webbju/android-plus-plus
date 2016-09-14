@@ -4,22 +4,28 @@
 
     <__AndroidNdkPropsImported>true</__AndroidNdkPropsImported>
 
-    <AndroidNdkRoot Condition="'$(AndroidNdkRoot)' == ''">$(ANDROID_NDK)</AndroidNdkRoot>
-    <AndroidNdkRoot Condition="'$(AndroidNdkRoot)' == ''">$(ANDROID_NDK_ROOT)</AndroidNdkRoot>
+    <AndroidNdkRoot Condition="'$(AndroidNdkRoot)' == ''">NOT_SET</AndroidNdkRoot>
+    <AndroidNdkRoot Condition="'$(AndroidNdkRoot)' == 'NOT_SET' AND Exists('$(ANDROID_NDK)')">$(ANDROID_NDK)</AndroidNdkRoot>
+    <AndroidNdkRoot Condition="'$(AndroidNdkRoot)' == 'NOT_SET' AND Exists('$(ANDROID_NDK_ROOT)')">$(ANDROID_NDK_ROOT)</AndroidNdkRoot>
+    <AndroidNdkRoot Condition="'$(AndroidNdkRoot)' == 'NOT_SET' AND Exists('$(ANDROID_NDK_PATH)')">$(ANDROID_NDK_PATH)</AndroidNdkRoot>
 
-    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-21')">21</AndroidNdkLevel>
-    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-19')">19</AndroidNdkLevel>
-    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-18')">18</AndroidNdkLevel>
-    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-17')">17</AndroidNdkLevel>
-    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-16')">16</AndroidNdkLevel>
-    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-15')">15</AndroidNdkLevel>
-    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-14')">14</AndroidNdkLevel>
-    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-13')">13</AndroidNdkLevel>
-    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-9')">9</AndroidNdkLevel>
-    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-8')">8</AndroidNdkLevel>
-    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-5')">5</AndroidNdkLevel>
-    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-4')">4</AndroidNdkLevel>
-    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == '' AND Exists('$(AndroidNdkRoot)\platforms\android-3')">3</AndroidNdkLevel>
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == ''">NOT_SET</AndroidNdkLevel>
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == 'NOT_SET' AND Exists('$(AndroidNdkRoot)\platforms\android-24')">24</AndroidNdkLevel>
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == 'NOT_SET' AND Exists('$(AndroidNdkRoot)\platforms\android-23')">23</AndroidNdkLevel>
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == 'NOT_SET' AND Exists('$(AndroidNdkRoot)\platforms\android-22')">22</AndroidNdkLevel>
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == 'NOT_SET' AND Exists('$(AndroidNdkRoot)\platforms\android-21')">21</AndroidNdkLevel>
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == 'NOT_SET' AND Exists('$(AndroidNdkRoot)\platforms\android-19')">19</AndroidNdkLevel>
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == 'NOT_SET' AND Exists('$(AndroidNdkRoot)\platforms\android-18')">18</AndroidNdkLevel>
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == 'NOT_SET' AND Exists('$(AndroidNdkRoot)\platforms\android-17')">17</AndroidNdkLevel>
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == 'NOT_SET' AND Exists('$(AndroidNdkRoot)\platforms\android-16')">16</AndroidNdkLevel>
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == 'NOT_SET' AND Exists('$(AndroidNdkRoot)\platforms\android-15')">15</AndroidNdkLevel>
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == 'NOT_SET' AND Exists('$(AndroidNdkRoot)\platforms\android-14')">14</AndroidNdkLevel>
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == 'NOT_SET' AND Exists('$(AndroidNdkRoot)\platforms\android-13')">13</AndroidNdkLevel>
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == 'NOT_SET' AND Exists('$(AndroidNdkRoot)\platforms\android-9')">9</AndroidNdkLevel>
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == 'NOT_SET' AND Exists('$(AndroidNdkRoot)\platforms\android-8')">8</AndroidNdkLevel>
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == 'NOT_SET' AND Exists('$(AndroidNdkRoot)\platforms\android-5')">5</AndroidNdkLevel>
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == 'NOT_SET' AND Exists('$(AndroidNdkRoot)\platforms\android-4')">4</AndroidNdkLevel>
+    <AndroidNdkLevel Condition="'$(AndroidNdkLevel)' == 'NOT_SET' AND Exists('$(AndroidNdkRoot)\platforms\android-3')">3</AndroidNdkLevel>
 
     <!-- Crude 64-bit detection -->
     <SixtyFourBit Condition="'$(ProgramW6432)' != ''">true</SixtyFourBit>

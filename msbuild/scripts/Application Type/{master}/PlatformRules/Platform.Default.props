@@ -54,9 +54,9 @@
 
   <Import Project="$(VCTargetsPath)\Application Type\{master}\{master}.Paths.default.props" />
 
-  <Import Project="$(VCTargetsPath)\Application Type\{master}\{master}.AndroidNdk.default.props" />
-
   <Import Project="$(VCTargetsPath)\Application Type\{master}\{master}.AndroidSdk.default.props" />
+
+  <Import Project="$(VCTargetsPath)\Application Type\{master}\{master}.AndroidNdk.default.props" />
 
   <!--
     Correct the target toolchain based on what's installed in the active NDK.
@@ -64,19 +64,11 @@
 
   <PropertyGroup>
 
-    <PlatformToolset Condition="'$(PlatformToolset)' == '' and exists('$(AndroidNdkRoot)\toolchains\$(TargetPlatformArchitectureToolchainPrefix)-clang3.6')">clang3.6</PlatformToolset>
-
-    <PlatformToolset Condition="'$(PlatformToolset)' == '' and exists('$(AndroidNdkRoot)\toolchains\$(TargetPlatformArchitectureToolchainPrefix)-clang3.5')">clang3.5</PlatformToolset>
-
-    <PlatformToolset Condition="'$(PlatformToolset)' == '' and exists('$(AndroidNdkRoot)\toolchains\$(TargetPlatformArchitectureToolchainPrefix)-clang3.4')">clang3.4</PlatformToolset>
-
-    <PlatformToolset Condition="'$(PlatformToolset)' == '' and exists('$(AndroidNdkRoot)\toolchains\$(TargetPlatformArchitectureToolchainPrefix)-clang3.3')">clang3.3</PlatformToolset>
+    <PlatformToolset Condition="'$(PlatformToolset)' == '' and exists('$(AndroidNdkRoot)\toolchains\llvm')">clang3.8</PlatformToolset>
 
     <PlatformToolset Condition="'$(PlatformToolset)' == '' and exists('$(AndroidNdkRoot)\toolchains\$(TargetPlatformArchitectureToolchainPrefix)-4.9')">gcc4.9</PlatformToolset>
 
-    <PlatformToolset Condition="'$(PlatformToolset)' == '' and exists('$(AndroidNdkRoot)\toolchains\$(TargetPlatformArchitectureToolchainPrefix)-4.8')">gcc4.8</PlatformToolset>
-
-    <PlatformToolset Condition="'$(PlatformToolset)' == ''">gcc4.6</PlatformToolset>
+    <PlatformToolset Condition="'$(PlatformToolset)' == ''">clang3.8</PlatformToolset>
 
     <DefaultPlatformToolset Condition="'$(DefaultPlatformToolset)' == ''">$(PlatformToolset)</DefaultPlatformToolset>
 

@@ -34,7 +34,7 @@
 
   <PropertyGroup>
 
-    <PlatformToolsetToolchainFolder>$(AndroidNdkRoot)\toolchains\$(TargetPlatformArchitectureToolchainPrefix)-$(PlatformToolset)</PlatformToolsetToolchainFolder>
+    <PlatformToolsetToolchainFolder>$(AndroidNdkRoot)\toolchains\$(TargetPlatformArchitectureToolchainPrefix)-$(GccToolchainVersion)</PlatformToolsetToolchainFolder>
 
     <PlatformToolsetPrebuilt>$(PlatformToolsetToolchainFolder)\prebuilt\windows</PlatformToolsetPrebuilt>
 
