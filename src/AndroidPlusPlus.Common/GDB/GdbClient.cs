@@ -433,15 +433,11 @@ namespace AndroidPlusPlus.Common
       //   lrwxrwxrwx u0_a91   u0_a91            2015-02-09 14:13 exe -> /system/bin/app_process32
       //
 
-      bool debugging64bitProcess = false;
-
       string targetAppProcess = m_gdbSetup.Process.HostDevice.Shell ("run-as", string.Format ("{0} readlink /proc/{1}/exe", m_gdbSetup.Process.Name, m_gdbSetup.Process.Pid)).Replace ("\r", "").Replace ("\n", "");
 
-      string cachedAppProcess = Path.Combine (m_gdbSetup.CacheSysRoot, targetAppProcess.Substring (1));
-
-      if (targetAppProcess.Contains ("app_process64"))
+      if (string.IsNullOrWhiteSpace (targetAppProcess))
       {
-        debugging64bitProcess = true;
+        targetAppProcess = "/system/bin/app_process";
       }
 
       // 
@@ -453,9 +449,9 @@ namespace AndroidPlusPlus.Common
 
       HashSet<string> debugFileDirectoryPaths = new HashSet<string> ();
 
-      string [] cachedSystemBinaries = m_gdbSetup.CacheSystemBinaries (debugging64bitProcess);
+      ICollection<string> cachedSystemBinaries = m_gdbSetup.CacheSystemBinaries ();
 
-      string [] cachedSystemLibraries = m_gdbSetup.CacheSystemLibraries (debugging64bitProcess);
+      ICollection<string> cachedSystemLibraries = m_gdbSetup.CacheSystemLibraries ();
 
       sharedLibrarySearchPaths.Add (PathUtils.SantiseWindowsPath (m_gdbSetup.CacheSysRoot)); // prioritise sysroot parent.
 
@@ -469,7 +465,7 @@ namespace AndroidPlusPlus.Common
         }
       }
 
-      string [] cachedAppLibraries = m_gdbSetup.CacheApplicationLibraries ();
+      ICollection<string> cachedAppLibraries = m_gdbSetup.CacheApplicationLibraries ();
 
       foreach (string appBinary in cachedAppLibraries)
       {
@@ -513,9 +509,11 @@ namespace AndroidPlusPlus.Common
       }
 #endif
 
+      string cachedAppProcess = Path.Combine (m_gdbSetup.CacheSysRoot, targetAppProcess.Substring (1)); // trim leading '/'
+
       if (!File.Exists (cachedAppProcess))
       {
-        string linker = (debugging64bitProcess) ? @"system\bin\linker64" : @"system\bin\linker";
+        string linker = (targetAppProcess.Contains ("64")) ? @"system\bin\linker64" : @"system\bin\linker";
 
         cachedAppProcess = Path.Combine (m_gdbSetup.CacheSysRoot, linker);
       }

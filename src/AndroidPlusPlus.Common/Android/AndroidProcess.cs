@@ -35,17 +35,17 @@ namespace AndroidPlusPlus.Common
 
     private string m_nativeLibraryPath;
 
-    private string [] m_nativeLibraryAbiPaths;
+    private ICollection<string> m_nativeLibraryAbiPaths = new List<string> ();
 
     private string m_legacyNativeLibraryDir;
 
-    private List <string> m_processSupportedCpuAbis = new List<string> ();
+    private ICollection<string> m_processSupportedCpuAbis = new List<string> ();
 
     private string m_firstInstallTime;
 
     private string m_lastUpdateTime;
 
-    private string [] m_pkgFlags;
+    private ICollection<string> m_pkgFlags;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -325,7 +325,7 @@ namespace AndroidPlusPlus.Common
 
       if (HostDevice.SdkVersion >= AndroidSettings.VersionCode.JELLY_BEAN_MR1)
       {
-        List<string> nativeLibraryAbiPaths = new List<string> (m_processSupportedCpuAbis.Count);
+        ICollection<string> nativeLibraryAbiPaths = new List<string> (m_processSupportedCpuAbis.Count);
 
         foreach (string abi in m_processSupportedCpuAbis)
         {
@@ -359,7 +359,7 @@ namespace AndroidPlusPlus.Common
           }
         }
 
-        m_nativeLibraryAbiPaths = nativeLibraryAbiPaths.ToArray ();
+        m_nativeLibraryAbiPaths = nativeLibraryAbiPaths;
       }
     }
 
@@ -403,7 +403,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public string [] NativeLibraryAbiPaths
+    public ICollection<string> NativeLibraryAbiPaths
     {
       get
       {
@@ -415,11 +415,11 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public string [] ProcessSupportedCpuAbis
+    public ICollection<string> ProcessSupportedCpuAbis
     {
       get
       {
-        return m_processSupportedCpuAbis.ToArray ();
+        return m_processSupportedCpuAbis;
       }
     }
 

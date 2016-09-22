@@ -250,6 +250,42 @@ namespace AndroidPlusPlus.Common
 
       try
       {
+        // 
+        // Check if the remote path is a symbolic link, and adjust the target file.
+        // (ADB Pull doesn't follow these links)
+        // 
+
+        try
+        {
+          string readlink = Shell ("readlink", remotePath).Replace ("\r", "").Replace ("\n", "");
+
+          if (readlink.StartsWith ("/"))  // absolute path link
+          {
+            remotePath = readlink;
+          }
+          else // relative path link
+          {
+            int i = remotePath.LastIndexOf('/');
+
+            if (i != -1)
+            {
+              string parentPath = remotePath.Substring (0, i);
+
+              string file = remotePath.Substring (i + 1);
+
+              remotePath = parentPath + '/' + file;
+            }
+          }
+        }
+        catch (Exception)
+        {
+           // Ignore. Not a relative link.
+        }
+
+        // 
+        // Pull the requested file.
+        // 
+
         int exitCode = -1;
 
         using (SyncRedirectProcess process = AndroidAdb.AdbCommand (this, "pull", string.Format ("{0} {1}", remotePath, PathUtils.QuoteIfNeeded (localPath))))
@@ -430,7 +466,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public AndroidSettings.VersionCode SdkVersion 
+    public uint SdkVersion 
     {
       get
       {
@@ -440,15 +476,13 @@ namespace AndroidPlusPlus.Common
 
         try
         {
-          int sdkLevel = int.Parse (GetProperty ("ro.build.version.sdk"));
-
-          return (AndroidSettings.VersionCode) sdkLevel;
+          return uint.Parse (GetProperty ("ro.build.version.sdk"));
         }
         catch (Exception e)
         {
           LoggingUtils.HandleException (e);
 
-          return AndroidSettings.VersionCode.GINGERBREAD;
+          return (uint) AndroidSettings.VersionCode.GINGERBREAD;
         }
       }
     }

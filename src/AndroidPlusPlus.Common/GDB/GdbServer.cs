@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Threading;
+using System.IO;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -108,22 +109,52 @@ namespace AndroidPlusPlus.Common
 
       foreach (string path in potentialGdbServerPaths)
       {
-        using (SyncRedirectProcess checkGdbServer = AndroidAdb.AdbCommand (m_gdbSetup.Process.HostDevice, "shell", "ls " + path))
+        try
         {
-          int exitCode = checkGdbServer.StartAndWaitForExit (1000);
+          string ls = m_gdbSetup.Process.HostDevice.Shell ("ls", path);
 
-          if ((exitCode == 0) && !checkGdbServer.StandardOutput.ToLower ().Contains ("no such file"))
+          if (ls.ToLowerInvariant ().Contains ("no such file"))
           {
-            gdbServerPath = path;
+            throw new DirectoryNotFoundException (path);
+          }
 
-            break;
+          gdbServerPath = path;
+
+          break;
+        }
+        catch (Exception)
+        {
+          // Ignore.
+        }
+      }
+
+      // 
+      // If we can't find a bundled 'gdbserver' binary, attempt to find one in the NDK.
+      // 
+
+      if (string.IsNullOrWhiteSpace (gdbServerPath))
+      {
+        foreach (string path in m_gdbSetup.Process.NativeLibraryAbiPaths)
+        {
+          try
+          {
+            string shortAbi = path.Substring(path.LastIndexOf('/') + 1);
+
+            string local = Path.Combine (AndroidSettings.NdkRoot, string.Format(@"prebuilt\android-{0}\gdbserver\gdbserver", shortAbi));
+
+            string remote = string.Format ("/data/local/tmp/gdbserver-{0}", shortAbi);
+
+            m_gdbSetup.Process.HostDevice.Push (local, remote);
+          }
+          catch (Exception e)
+          {
+            LoggingUtils.HandleException (e);
           }
         }
       }
 
       if (string.IsNullOrWhiteSpace (gdbServerPath))
       {
-        // TODO: Push the required gdbserver binary, so we can attach to any app.
         throw new InvalidOperationException (string.Format ("Failed to locate required 'gdbserver' binary on device ({0}).", m_gdbSetup.Process.HostDevice.ID));
       }
 

@@ -27,72 +27,34 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public enum VersionCode
+    public struct VersionCode
     {
-      BASE = 1,
-      BASE_1_1,
-      CUPCAKE,
-      DONUT,
-      ECLAIR,
-      ECLAIR_0_1,
-      ECLAIR_MR1,
-      FROYO,
-      GINGERBREAD,
-      GINGERBREAD_MR1,
-      HONEYCOMB,
-      HONEYCOMB_MR1,
-      HONEYCOMB_MR2,
-      ICE_CREAM_SANDWICH,
-      ICE_CREAM_SANDWICH_MR1,
-      JELLY_BEAN,
-      JELLY_BEAN_MR1,
-      JELLY_BEAN_MR2,
-      KITKAT,
-      KITKAT_WATCH,
-      L_PREVIEW = KITKAT_WATCH,
-      LOLLIPOP,
-      LOLLIPOP_MR1,
-      MARSHMALLOW,
-      M = MARSHMALLOW,
-      NOUGAT,
-      N = NOUGAT
+      public const uint BASE = 1;
+      public const uint BASE_1_1 = BASE + 1;
+      public const uint CUPCAKE = BASE_1_1 + 1;
+      public const uint DONUT = CUPCAKE + 1;
+      public const uint ECLAIR = DONUT + 1;
+      public const uint ECLAIR_0_1 = ECLAIR + 1;
+      public const uint ECLAIR_MR1 = ECLAIR_0_1 + 1;
+      public const uint FROYO = ECLAIR_MR1 + 1;
+      public const uint GINGERBREAD = FROYO + 1;
+      public const uint GINGERBREAD_MR1 = GINGERBREAD + 1;
+      public const uint HONEYCOMB = GINGERBREAD_MR1 + 1;
+      public const uint HONEYCOMB_MR1 = HONEYCOMB + 1;
+      public const uint HONEYCOMB_MR2 = HONEYCOMB_MR1 + 1;
+      public const uint ICE_CREAM_SANDWICH = HONEYCOMB_MR2 + 1;
+      public const uint ICE_CREAM_SANDWICH_MR1 = ICE_CREAM_SANDWICH + 1;
+      public const uint JELLY_BEAN = ICE_CREAM_SANDWICH_MR1 + 1;
+      public const uint JELLY_BEAN_MR1 = JELLY_BEAN + 1;
+      public const uint JELLY_BEAN_MR2 = JELLY_BEAN_MR1 + 1;
+      public const uint KITKAT = JELLY_BEAN_MR2 + 1;
+      public const uint KITKAT_WATCH = KITKAT + 1;
+      public const uint L_PREVIEW = KITKAT_WATCH;
+      public const uint LOLLIPOP = KITKAT_WATCH + 1;
+      public const uint LOLLIPOP_MR1 = LOLLIPOP + 1;
+      public const uint M = LOLLIPOP_MR1 + 1;
+      public const uint N = M + 1;
     }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public enum SdkTools
-    {
-      SdkManager,
-      AvdManager,
-      Aapt,
-      Adb,
-      Aidl,
-      Dx,
-      Android,
-      Ddms,
-      Monitor,
-      Zipalign
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    private static string [] defaultSdkToolPaths =
-    {
-      @"SDK Manager.exe",
-      @"AVD Manager.exe",
-      @"platform-tools\aapt.exe",
-      @"platform-tools\adb.exe",
-      @"platform-tools\aidl.exe",
-      @"platform-tools\dx.bat",
-      @"tools\android.bat",
-      @"tools\ddms.bat",
-      @"tools\monitor.bat",
-      @"tools\zipalign.exe"
-    };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -156,7 +118,7 @@ namespace AndroidPlusPlus.Common
         {
           if (location != null)
           {
-            if (File.Exists (Path.Combine(location, GetSdkToolPathFromRoot (SdkTools.SdkManager))))
+            if (File.Exists (Path.Combine(location, "SDK Manager.exe")))
             {
               return location;
             }
@@ -171,7 +133,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public static List <VersionCode> SdkInstalledPlatforms
+    public static ICollection <uint> SdkInstalledPlatforms
     {
       get
       {
@@ -179,7 +141,7 @@ namespace AndroidPlusPlus.Common
         // Evaluate which 'platforms' are supported by this distribution. (This implementation is crude, should use Android.bat).
         // 
 
-        List <VersionCode> installedSdkPlatforms = new List <VersionCode> ();
+        List<uint> installedSdkPlatforms = new List<uint> ();
 
         string platformSrcPath = Path.Combine (SdkRoot, "platforms");
 
@@ -191,9 +153,7 @@ namespace AndroidPlusPlus.Common
           {
             if (platformDirs [i].StartsWith ("android-"))
             {
-              VersionCode versionCode = (VersionCode) uint.Parse (platformDirs [i].Substring ("android-".Length - 1));
-
-              installedSdkPlatforms.Add (versionCode);
+              installedSdkPlatforms.Add (uint.Parse (platformDirs [i].Substring ("android-".Length - 1)));
             }
           }
         }
@@ -205,15 +165,6 @@ namespace AndroidPlusPlus.Common
 
         return installedSdkPlatforms;
       }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public static string GetSdkToolPathFromRoot (SdkTools tool)
-    {
-      return defaultSdkToolPaths [(uint)tool];
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -268,7 +219,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public static List <VersionCode> NdkInstalledPlatforms
+    public static ICollection<uint> NdkInstalledPlatforms
     {
       get
       {
@@ -276,7 +227,7 @@ namespace AndroidPlusPlus.Common
         // Evaluate which 'platforms' are supported by this distribution. (This implemenation is crude, should use Android.bat).
         // 
 
-        List <VersionCode> installedNdkPlatforms = new List <VersionCode> ();
+        List<uint> installedNdkPlatforms = new List<uint> ();
 
         string platformSrcPath = Path.Combine (NdkRoot, "platforms");
 
@@ -288,9 +239,7 @@ namespace AndroidPlusPlus.Common
           {
             if (platformDirs [i].StartsWith ("android-"))
             {
-              VersionCode versionCode = (VersionCode) uint.Parse (platformDirs [i].Substring ("android-".Length - 1));
-
-              installedNdkPlatforms.Add (versionCode);
+              installedNdkPlatforms.Add (uint.Parse (platformDirs [i].Substring ("android-".Length - 1)));
             }
           }
         }
