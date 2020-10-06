@@ -161,19 +161,19 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       Engine.Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus, string.Format ("Configuring GDB for '{0}' target...", preferedGdbAbiToolPrefix)), null, null);
 
-      // 
+      //
       // Android++ bundles its own copies of GDB to get round various NDK issues. Search for these.
-      // 
+      //
 
       string androidPlusPlusRoot = Environment.GetEnvironmentVariable ("ANDROID_PLUS_PLUS");
 
-      // 
+      //
       // Build GDB version permutations.
-      // 
+      //
 
       List<string> gdbToolPermutations = new List<string> ();
 
-      string [] availableHostArchitectures = new string [] { "x86", "x86_64" };
+      string [] availableHostArchitectures = new string [] { "x86_64" };
 
       foreach (string arch in availableHostArchitectures)
       {
