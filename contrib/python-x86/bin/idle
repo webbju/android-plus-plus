@@ -1,5 +1,0 @@
-#!/tmp/ndk-andrewhsieh/buildhost/install/prebuilt/windows/bin/python2.7.exe
-
-from idlelib.PyShell import main
-if __name__ == '__main__':
-    main()
