@@ -8,7 +8,6 @@ using System.ComponentModel.Composition;
 using System.Threading.Tasks;
 
 using Microsoft.VisualStudio.ProjectSystem;
-using Microsoft.VisualStudio.ProjectSystem.Utilities;
 using Microsoft.VisualStudio.ProjectSystem.Properties;
 
 using AndroidPlusPlus.Common;

@@ -1,1 +1,14 @@
 build/
+bin/
+obj/
+Debug/
+Release/
+ipch/
+vs*/
+.vs/
+Android++/
+packages/
+*.vcxproj.user
+*.sdf
+*.suo
+*.opendb
