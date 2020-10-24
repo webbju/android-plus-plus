@@ -52,14 +52,6 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
   [ProvideAutoLoad(VSConstants.UICONTEXT.NoSolution_string)]
 
-  [ProvideProjectFactory (typeof (VsIntegratedPackage.AndroidProjectFactory), 
-    "Android++ Project",
-    "Android++ Project Files (*.androidpp);*.androidpp",
-    "androidpp", 
-    "androidpp", 
-    @"..\..\Templates\Projects", 
-    LanguageVsTemplate = "Android++")]
-
   [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)]
 
   // 
@@ -79,31 +71,31 @@ namespace AndroidPlusPlus.VsIntegratedPackage
   // VsDebugEngine registration.
   // 
 
-  [ProvideExternObject(typeof(VsDebugEngine.DebugEngine))]
+  [ProvideExternObject(typeof(DebugEngine))]
 
-  [ProvideExternObject(typeof(VsDebugEngine.DebugPortSupplier))]
+  [ProvideExternObject(typeof(DebugPortSupplier))]
 
-  [ProvideExternObject(typeof(VsDebugEngine.DebugProgramProvider))]
+  [ProvideExternObject(typeof(DebugProgramProvider))]
 
-  [ProvideDebugPortSupplier(VsDebugEngine.DebugEngineGuids.guidDebugPortSupplierStringID, "Android++", typeof(VsDebugEngine.DebugPortSupplier))]
+  [ProvideDebugPortSupplier(DebugEngineGuids.guidDebugPortSupplierStringID, "Android++", typeof(DebugPortSupplier))]
 
-  [ProvideDebugEngine(VsDebugEngine.DebugEngineGuids.guidDebugEngineStringID, "Android++", typeof(VsDebugEngine.DebugEngine),
+  [ProvideDebugEngine(DebugEngineGuids.guidDebugEngineStringID, "Android++", typeof(DebugEngine),
     IncompatibleList = new string [] 
     { 
-      VsDebugEngine.DebugEngineGuids.guidIncompatibleDebugEngineSilverlightStringID,
-      VsDebugEngine.DebugEngineGuids.guidIncompatibleDebugEngineTSql2000StringID,
-      VsDebugEngine.DebugEngineGuids.guidIncompatibleDebugEngineTSql2005StringID,
-      VsDebugEngine.DebugEngineGuids.guidIncompatibleDebugEngineNativeStringID,
-      VsDebugEngine.DebugEngineGuids.guidIncompatibleDebugEngineManagedStringID,
-      VsDebugEngine.DebugEngineGuids.guidIncompatibleDebugEngineManaged20StringID,
-      VsDebugEngine.DebugEngineGuids.guidIncompatibleDebugEngineManaged40StringID,
-      VsDebugEngine.DebugEngineGuids.guidIncompatibleDebugEngineWorkflowStringID,
-      VsDebugEngine.DebugEngineGuids.guidIncompatibleDebugEngineManagedAndNativeStringID,
-      VsDebugEngine.DebugEngineGuids.guidIncompatibleDebugEngineScriptStringID,
+      DebugEngineGuids.guidIncompatibleDebugEngineSilverlightStringID,
+      DebugEngineGuids.guidIncompatibleDebugEngineTSql2000StringID,
+      DebugEngineGuids.guidIncompatibleDebugEngineTSql2005StringID,
+      DebugEngineGuids.guidIncompatibleDebugEngineNativeStringID,
+      DebugEngineGuids.guidIncompatibleDebugEngineManagedStringID,
+      DebugEngineGuids.guidIncompatibleDebugEngineManaged20StringID,
+      DebugEngineGuids.guidIncompatibleDebugEngineManaged40StringID,
+      DebugEngineGuids.guidIncompatibleDebugEngineWorkflowStringID,
+      DebugEngineGuids.guidIncompatibleDebugEngineManagedAndNativeStringID,
+      DebugEngineGuids.guidIncompatibleDebugEngineScriptStringID,
     },
     PortSupplier = new string []
     {
-      VsDebugEngine.DebugEngineGuids.guidDebugPortSupplierStringID,
+      DebugEngineGuids.guidDebugPortSupplierStringID,
       "708C1ECA-FF48-11D2-904F-00C04FA302A1"
     },
     //ProgramProvider = typeof(VsDebugEngine.DebugProgramProvider),
@@ -117,7 +109,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     Exceptions = true,
     DataBP = true)]
 
-  [ProvideDebugExtension (VsDebugEngine.DebugEngineGuids.guidDebugEngineStringID, 
+  [ProvideDebugExtension (DebugEngineGuids.guidDebugEngineStringID, 
     "Android++",
     (uint) 0,
     (uint) (enum_EXCEPTION_STATE.EXCEPTION_STOP_FIRST_CHANCE | enum_EXCEPTION_STATE.EXCEPTION_STOP_SECOND_CHANCE),
@@ -224,29 +216,14 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     }
   )]
 
-  // 
-  // This attribute is needed to let the shell know that this package exposes some menus.
-  // 
-
-#if false
-  [ProvideMenuResource ("Menus.ctmenu", 1)]
-#endif
-
   [ProvideService(typeof(IDebuggerConnectionService))]
 
-#if false
-  [ProvideToolWindow (typeof (GdbConsoleWindow), 
-    Style = VsDockStyle.Tabbed, 
-    Window = "{A8792F75-01C3-4AB4-BB10-CFBCF0615A9C}", 
-    Orientation = ToolWindowOrientation.Right)]
-#endif
-
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public sealed class AndroidPackage : Microsoft.VisualStudio.Project.ProjectPackage, IVsInstalledProduct, IDisposable
-  {
+  public sealed class AndroidPackage : Package, IVsInstalledProduct, IDisposable
+    {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -260,8 +237,6 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     private SolutionEventListener m_solutionEventListener;
 
-    private UiCommandEventListener m_interfaceEventListener;
-
     private TextWriterTraceListener m_traceWriterListener;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -272,27 +247,6 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     {
       LoggingUtils.PrintFunction ();
     }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    #region Microsoft.VisualStudio.Project.ProjectPackage Members
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public override string ProductUserContext
-    {
-      get { return "Android++Proj"; }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    #endregion
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -310,13 +264,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
       base.Initialize ();
 
-      RegisterProjectFactory (new AndroidProjectFactory (this));
-
       InitialiseTraceListeners ();
 
       InitialisePackageServices ();
-
-      InitialiseInterfaceListeners ();
 
       InitialiseEventListeners ();
 
@@ -424,25 +374,6 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       DebuggerConnectionService launchService = new DebuggerConnectionService ();
 
       serviceContainer.AddService (typeof (IDebuggerConnectionService), launchService, true);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    void InitialiseInterfaceListeners ()
-    {
-      LoggingUtils.PrintFunction ();
-
-      // 
-      // Register command (UI button/element) listener.
-      // 
-
-      OleMenuCommandService menuCommandService = GetService (typeof (IMenuCommandService)) as OleMenuCommandService;
-
-      m_interfaceEventListener = new UiCommandEventListener (this);
-
-      m_interfaceEventListener.RegisterCallbacks (menuCommandService);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

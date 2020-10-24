@@ -11,16 +11,10 @@ using System.Threading;
 using System.Xml;
 using System.Windows.Forms;
 
-#if VS2013 || VS2015
-using Microsoft.VisualStudio.ProjectSystem;
-using Microsoft.VisualStudio.ProjectSystem.Debuggers;
-using Microsoft.VisualStudio.ProjectSystem.Utilities;
-using Microsoft.VisualStudio.ProjectSystem.Utilities.DebuggerProviders;
-using Microsoft.VisualStudio.ProjectSystem.VS.Debuggers;
-#endif
-
 using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugCommon;
+using Microsoft.VisualStudio.ProjectSystem.Debug;
+using Microsoft.VisualStudio.ProjectSystem.VS.Debug;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -61,9 +61,9 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
         textSubstitution.Add ("{master-verbose}", "AndroidPlusPlus");
 
-        // 
+        //
         // Decide whether to validate MSBuild installed directories if the user specified particular VS version(s).
-        // 
+        //
 
         bool validateMsBuildInstallations = true;
 
@@ -72,9 +72,9 @@ namespace AndroidPlusPlus.MsBuild.Exporter
           validateMsBuildInstallations = false;
         }
 
-        // 
+        //
         // Accumulate additional export locations for each requested MSBuild directory/version.
-        // 
+        //
 
         foreach (KeyValuePair<string, string> keyPair in s_vsVersionMsBuildDirs)
         {
@@ -96,9 +96,9 @@ namespace AndroidPlusPlus.MsBuild.Exporter
             throw new DirectoryNotFoundException (string.Format ("Could not locate required MSBuild platforms directory. This should have been installed with Visual Studio {0}. Tried: {1}", version, dir));
           }
 
-          // 
+          //
           // Install/Uninstall scripts for each specified VS version.
-          // 
+          //
 
           UninstallMsBuildTemplates (version, ref textSubstitution, ref s_exportDirectories);
 
@@ -208,72 +208,66 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
             foreach (string version in versions)
             {
+              if (s_vsVersionMsBuildDirs.ContainsKey (version))
+              {
+                continue;
+              }
+
+              // https://docs.microsoft.com/en-us/cpp/build/reference/msbuild-visual-cpp-overview?view=vs-2019
               switch (version)
               {
                 case "2010":
                 {
-                  if (!s_vsVersionMsBuildDirs.ContainsKey ("2010"))
+                  string dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\";
+
+                  if (!Directory.Exists (dir))
                   {
-                    string dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\";
-
-                    if (!Directory.Exists (dir))
-                    {
-                      dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\";
-                    }
-
-                    s_vsVersionMsBuildDirs.Add ("2010", dir);
+                    dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\";
                   }
+
+                  s_vsVersionMsBuildDirs.Add (version, dir);
 
                   break;
                 }
 
                 case "2012":
                 {
-                  if (!s_vsVersionMsBuildDirs.ContainsKey ("2012"))
+                  string dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\V110\";
+
+                  if (!Directory.Exists (dir))
                   {
-                    string dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\V110\";
-
-                    if (!Directory.Exists (dir))
-                    {
-                      dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\V110\";
-                    }
-
-                    s_vsVersionMsBuildDirs.Add ("2012", dir);
+                    dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\V110\";
                   }
+
+                  s_vsVersionMsBuildDirs.Add (version, dir);
 
                   break;
                 }
 
                 case "2013":
                 {
-                  if (!s_vsVersionMsBuildDirs.ContainsKey ("2013"))
+                  string dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\V120\";
+
+                  if (!Directory.Exists (dir))
                   {
-                    string dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\V120\";
-
-                    if (!Directory.Exists (dir))
-                    {
-                      dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\V120\";
-                    }
-
-                    s_vsVersionMsBuildDirs.Add ("2013", dir);
+                    dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\V120\";
                   }
+
+                  s_vsVersionMsBuildDirs.Add (version, dir);
 
                   break;
                 }
 
                 case "2015":
                 {
-                  if (!s_vsVersionMsBuildDirs.ContainsKey ("2015"))
+                  string dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\V140\";
+
+                  if (!Directory.Exists (dir))
                   {
-                    string dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\V140\";
-
-                    if (!Directory.Exists (dir))
-                    {
-                      dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\V140\";
-                    }
-
-                    s_vsVersionMsBuildDirs.Add ("2015", dir);
+                    dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\V140\";
                   }
+
+                  s_vsVersionMsBuildDirs.Add (version, dir);
 
                   break;
                 }
@@ -297,9 +291,9 @@ namespace AndroidPlusPlus.MsBuild.Exporter
         }
       }
 
-      // 
+      //
       // Validate the tool executed with appropriate arguments.
-      // 
+      //
 
       if (!s_uninstall)
       {
@@ -381,9 +375,9 @@ namespace AndroidPlusPlus.MsBuild.Exporter
     {
       foreach (string exportDir in exportDirectories)
       {
-        // 
+        //
         // Clean 'BuildCustomizations' files and sub-directories.
-        // 
+        //
 
         Console.WriteLine (string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Uninstalling scripts from {0}", exportDir));
 
@@ -433,9 +427,9 @@ namespace AndroidPlusPlus.MsBuild.Exporter
           }
         }
 
-        // 
+        //
         // Clean 'Platforms' files and sub-directories.
-        // 
+        //
 
         if (Directory.Exists (Path.Combine (exportDir, "Platforms")))
         {
@@ -470,9 +464,9 @@ namespace AndroidPlusPlus.MsBuild.Exporter
     {
       foreach (string exportDir in exportDirectories)
       {
-        // 
+        //
         // Copy each directory of the template directories and apply pattern processing.
-        // 
+        //
 
         foreach (string templateDir in templateDirectories)
         {
@@ -481,9 +475,9 @@ namespace AndroidPlusPlus.MsBuild.Exporter
           CopyFoldersAndFiles (templateDir, exportDir, true, ref textSubstitution);
         }
 
-        // 
+        //
         // Copy specified version descriptor file to the root of 'Platforms'. Useful for tracking install versions.
-        // 
+        //
 
         if (!string.IsNullOrEmpty (s_versionDescriptorFile))
         {
@@ -515,9 +509,9 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
           File.Copy (file, newFileName, true);
 
-          // 
+          //
           // Process file contents with same text substitution settings too.
-          // 
+          //
 
           switch (Path.GetExtension (newFileName))
           {
@@ -544,9 +538,9 @@ namespace AndroidPlusPlus.MsBuild.Exporter
             }
           }
 
-          // 
+          //
           // Validate the written file exists, and is proper.
-          // 
+          //
 
           try
           {
