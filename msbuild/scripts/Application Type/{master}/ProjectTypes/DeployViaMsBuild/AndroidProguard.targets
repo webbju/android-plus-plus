@@ -213,8 +213,8 @@ $(_ProGuardInJars)
 
     <PropertyGroup>
       <!-- Use a custom deployment of ProGuard (which supports Java 8 sources), when possible -->
-      <__ProguardExeJar Condition="!Exists('$(__ProguardExeJar)')">$(ANDROID_PLUS_PLUS)\contrib\proguard5.2.1\lib\proguard.jar</__ProguardExeJar>
-      <__ProguardExeJar>$(_ProGuardRoot)\lib\proguard.jar</__ProguardExeJar>
+      <__ProguardExeJar>$(ANDROID_PLUS_PLUS)\contrib\proguard5.2.1\lib\proguard.jar</__ProguardExeJar>
+      <__ProguardExeJar Condition="!Exists('$(__ProguardExeJar)')">$(_ProGuardRoot)\lib\proguard.jar</__ProguardExeJar>
     </PropertyGroup>
 
     <AndroidProguard

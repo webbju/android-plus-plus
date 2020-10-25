@@ -210,7 +210,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public string [] CacheSystemBinaries (bool only64bit)
+    public ICollection<string> CacheSystemBinaries ()
     {
       // 
       // Evaluate remote binaries required for debugging, which must be cached on the host device.
@@ -218,25 +218,14 @@ namespace AndroidPlusPlus.Common
 
       LoggingUtils.PrintFunction ();
 
-      List<string> deviceBinaries = new List<string> ();
-
-      if (only64bit && (Process.HostDevice.SdkVersion >= AndroidSettings.VersionCode.LOLLIPOP))
+      string [] deviceBinaries = new string []
       {
-        deviceBinaries.AddRange (new string []
-        {
-          "/system/bin/app_process64",
-          "/system/bin/linker64",
-        });
-      }
-      else
-      {
-        deviceBinaries.AddRange (new string []
-        {
-          "/system/bin/app_process",
-          "/system/bin/app_process32",
-          "/system/bin/linker",
-        });
-      }
+        "/system/bin/app_process",
+        "/system/bin/app_process32",
+        "/system/bin/app_process64",
+        "/system/bin/linker",
+        "/system/bin/linker64",
+      };
 
       // 
       // Pull the required binaries from the device.
@@ -291,7 +280,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public string [] CacheSystemLibraries (bool only64bit)
+    public ICollection<string> CacheSystemLibraries ()
     {
       // 
       // Evaluate the remote libraries required for debugging on the host device.
@@ -299,23 +288,47 @@ namespace AndroidPlusPlus.Common
 
       LoggingUtils.PrintFunction ();
 
-      List<string> deviceLibraries = new List<string> ();
+      List<string> systemLibraries = new List<string> ();
 
-      string libdir = (only64bit) ? "lib64" : "lib";
-
-      deviceLibraries.AddRange (new string []
+      systemLibraries.AddRange(new string []
       {
-        string.Format ("/system/{0}/libandroid.so", libdir),
-        string.Format ("/system/{0}/libandroid_runtime.so", libdir),
-      //string.Format ("/system/{0}/libart.so", libdir),
-        string.Format ("/system/{0}/libbinder.so", libdir),
-        string.Format ("/system/{0}/libc.so", libdir),
-      //string.Format ("/system/{0}/libdvm.so", libdir),
-        string.Format ("/system/{0}/libEGL.so", libdir),
-        string.Format ("/system/{0}/libGLESv1_CM.so", libdir),
-        string.Format ("/system/{0}/libGLESv2.so", libdir),
-        string.Format ("/system/{0}/libutils.so", libdir),
+        "/system/lib/libandroid.so",
+        "/system/lib/libandroid_runtime.so",
+        "/system/lib/libbinder.so",
+        "/system/lib/libc.so",
+        "/system/lib/libEGL.so",
+        "/system/lib/libGLESv1_CM.so",
+        "/system/lib/libGLESv2.so",
+        "/system/lib/libutils.so",
       });
+
+      try
+      {
+        string dir = "/system/lib64";
+
+        string ls = Process.HostDevice.Shell ("ls", dir);
+
+        if (ls.ToLowerInvariant ().Contains ("no such file"))
+        {
+          throw new DirectoryNotFoundException (dir);
+        }
+
+        systemLibraries.AddRange (new string []
+        {
+          "/system/lib64/libandroid.so",
+          "/system/lib64/libandroid_runtime.so",
+          "/system/lib64/libbinder.so",
+          "/system/lib64/libc.so",
+          "/system/lib64/libEGL.so",
+          "/system/lib64/libGLESv1_CM.so",
+          "/system/lib64/libGLESv2.so",
+          "/system/lib64/libutils.so",
+        });
+      }
+      catch (Exception)
+      {
+        // Ignore. No lib64 directory?
+      }
 
       // 
       // Pull the required libraries from the device.
@@ -323,7 +336,7 @@ namespace AndroidPlusPlus.Common
 
       List<string> hostBinaries = new List<string> ();
 
-      foreach (string binary in deviceLibraries)
+      foreach (string binary in systemLibraries)
       {
         string cachedBinary = Path.Combine (CacheSysRoot, binary.Substring (1));
 
@@ -370,7 +383,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public string [] CacheApplicationLibraries ()
+    public ICollection<string> CacheApplicationLibraries ()
     {
       // 
       // Application binaries (those under /lib/ of an installed application).
@@ -381,132 +394,86 @@ namespace AndroidPlusPlus.Common
 
       try
       {
-        List<string> additionalLibraries = new List<string> ();
+        HashSet<string> deviceBinaries = new HashSet<string> ();
 
-        foreach (string nativeLibraryAbiPath in Process.NativeLibraryAbiPaths)
+        foreach (string path in Process.NativeLibraryAbiPaths)
         {
-          string nativeOatLibraryPath = nativeLibraryAbiPath.Replace ("/lib", "/oat");
-
-          // 
-          // On Android L, Google have broken pull permissions to 'app-lib' (and '/data/app/XXX/lib/') content so we use cp to avoid this.
-          // 
-
-          bool pulledLibraries = false;
-
-          string libraryCachePath = Path.Combine (CacheSysRoot, nativeLibraryAbiPath.Substring (1));
-
-          Directory.CreateDirectory (libraryCachePath);
-
-          if (Process.HostDevice.SdkVersion >= AndroidSettings.VersionCode.LOLLIPOP)
-          {
-            string [] libraries = Process.HostDevice.Shell ("ls", nativeLibraryAbiPath).Replace ("\r", "").Split (new char [] { '\n', ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (string file in libraries)
-            {
-              string remoteLib = nativeLibraryAbiPath + "/" + file;
-
-              string temporaryStorage = "/data/local/tmp/" + file;
-
-              try
-              {
-                Process.HostDevice.Shell ("cp", string.Format ("-fH {0} {1}", remoteLib, temporaryStorage));
-
-                Process.HostDevice.Pull (temporaryStorage, libraryCachePath);
-
-                Process.HostDevice.Shell ("rm", temporaryStorage);
-
-                LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", remoteLib));
-
-                pulledLibraries = true;
-              }
-              catch (Exception e)
-              {
-                LoggingUtils.HandleException (string.Format ("[GdbSetup] Failed pulling {0} from device/emulator.", remoteLib), e);
-              }
-            }
-          }
-
-          // 
-          // Also on Android L, Google's new oat format is an ELF which is readable by GDB. We want to include this in the sysroot.
-          // 
-
-          bool pulledOatLibraries = false;
-
-          string libraryOatCachePath = Path.Combine (CacheSysRoot, nativeOatLibraryPath.Substring (1));
-
-          Directory.CreateDirectory (libraryOatCachePath);
-
-          if (Process.HostDevice.SdkVersion >= AndroidSettings.VersionCode.LOLLIPOP)
-          {
-            string [] oatLibraries = new string []
-            {
-              // Due to permissions these have to be directly referenced; ls won't work.
-              "base.odex"
-            };
-
-            foreach (string file in oatLibraries)
-            {
-              string remoteLib = nativeOatLibraryPath + "/" + file;
-
-              string temporaryStorage = "/data/local/tmp/" + file;
-
-              try
-              {
-                Process.HostDevice.Shell ("cp", string.Format ("-fH {0} {1}", remoteLib, temporaryStorage));
-
-                Process.HostDevice.Pull (temporaryStorage, libraryCachePath);
-
-                Process.HostDevice.Shell ("rm", temporaryStorage);
-
-                LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", remoteLib));
-
-                pulledOatLibraries = true;
-              }
-              catch (Exception e)
-              {
-                LoggingUtils.HandleException (string.Format ("[GdbSetup] Failed pulling {0} from device/emulator.", remoteLib), e);
-              }
-            }
-          }
+          string ls = string.Empty;
 
           try
           {
-            if (!pulledLibraries)
+            ls = Process.HostDevice.Shell ("ls", path);
+
+            if (ls.ToLowerInvariant ().Contains ("no such file"))
             {
-              Process.HostDevice.Pull (nativeLibraryAbiPath, libraryCachePath);
+              throw new DirectoryNotFoundException (path);
+            }
+          }
+          catch (Exception)
+          {
+          }
+          finally
+          {
+            string [] libraries = ls.Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
-              LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", nativeLibraryAbiPath));
+            foreach (string file in libraries)
+            {
+              string lib = path + '/' + file;
 
-              pulledLibraries = true;
+              deviceBinaries.Add (lib);
+            }
+          }
+        }
+
+        // 
+        // On Android L, Google have broken pull permissions to 'app-lib' (and '/data/app/XXX/lib/') content so we use cp to avoid this.
+        // 
+
+        List<string> applicationLibraries = new List<string> (deviceBinaries.Count);
+
+        foreach (string binary in deviceBinaries)
+        {
+          string cachePath = Path.Combine (CacheSysRoot, binary.Substring (1).Replace ('/', '\\'));
+
+          Directory.CreateDirectory (Path.GetDirectoryName (cachePath));
+
+          try
+          {
+            if (Process.HostDevice.SdkVersion >= AndroidSettings.VersionCode.LOLLIPOP)
+            {
+              string temporaryStorage = "/data/local/tmp/" + Path.GetFileName (cachePath);
+
+              Process.HostDevice.Shell ("cp", string.Format ("-fH {0} {1}", binary, temporaryStorage));
+
+              Process.HostDevice.Pull (temporaryStorage, cachePath);
+
+              Process.HostDevice.Shell ("rm", temporaryStorage);
+
+              LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", binary));
+            }
+            else
+            {
+              Process.HostDevice.Pull (binary, cachePath);
             }
 
-            if (!pulledOatLibraries)
-            {
-              Process.HostDevice.Pull (nativeOatLibraryPath, libraryOatCachePath);
+            LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", binary));
 
-              LoggingUtils.Print (string.Format ("[GdbSetup] Pulled {0} from device/emulator.", nativeOatLibraryPath));
-
-              pulledOatLibraries = true;
-            }
+            applicationLibraries.Add (binary);
           }
           catch (Exception e)
           {
-            LoggingUtils.HandleException (string.Format ("[GdbSetup] Failed pulling {0} from device/emulator.", nativeLibraryAbiPath), e);
+            LoggingUtils.HandleException (string.Format ("[GdbSetup] Failed pulling {0} from device/emulator.", binary), e);
           }
-
-          additionalLibraries.AddRange (Directory.GetFiles (libraryCachePath, "lib*.so", SearchOption.AllDirectories));
-
-          additionalLibraries.AddRange (Directory.GetFiles (libraryOatCachePath, "*.odex", SearchOption.AllDirectories));
         }
 
-        return additionalLibraries.ToArray ();
+        return applicationLibraries;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
       }
 
-      return new string [] {};
+      return new List<string>();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
