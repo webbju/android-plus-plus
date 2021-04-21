@@ -8,6 +8,7 @@ vs*/
 .vs/
 Android++/
 packages/
+MigrationBackup/
 *.vcxproj.user
 *.sdf
 *.suo
