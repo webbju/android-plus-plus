@@ -1,116 +1,12 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{E3A93421-987E-4704-B0D8-21415453B5C9}</ProjectGuid>
-    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>AndroidPlusPlus.MsBuild.Common</RootNamespace>
-    <AssemblyName>AndroidPlusPlus.MsBuild.Common</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
+    <TargetFrameworks>net472</TargetFrameworks>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>..\..\build\bin\win32\vs$(VisualStudioVersion)\debug</OutputPath>
-    <BaseIntermediateOutputPath>..\..\build\obj\win32\vs$(VisualStudioVersion)\debug\$(AssemblyName)</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <RegisterForComInterop>false</RegisterForComInterop>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>..\..\build\bin\win32\vs$(VisualStudioVersion)\release</OutputPath>
-    <BaseIntermediateOutputPath>..\..\build\obj\win32\vs$(VisualStudioVersion)\release\$(AssemblyName)</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Configuration" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.IO.Compression" />
-    <Reference Include="System.Numerics" />
-    <Reference Include="System.Xaml" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
+    <PackageReference Include="Microsoft.Build" Version="16.7.0" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="16.7.0" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\..\..\src\AndroidPlusPlus.Common\Properties\SharedAssemblyInfo.cs">
-      <Link>Properties\SharedAssemblyInfo.cs</Link>
-    </Compile>
-    <Compile Include="Misc\AndroidManifestDocument.cs" />
-    <Compile Include="Misc\PathUtils.cs" />
-    <Compile Include="Tasks\GccUtilities.cs" />
-    <Compile Include="Tasks\JavaUtilities.cs" />
-    <Compile Include="Tasks\TrackedOutOfDateToolTask.cs" />
-    <Compile Include="Tasks\TrackedFileManager.cs" />
-    <Compile Include="Tasks\TrackedToolTask.cs" />
-    <Compile Include="Tasks\TrackerUtilities.cs" />
-    <Compile Include="Tasks\XamlParser.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="app.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Build">
-      <Version>16.7.0</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Build.Utilities.Core">
-      <Version>16.7.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Text.Encodings.Web">
-      <Version>4.7.2</Version>
-    </PackageReference>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>del /q /f "$(ProjectDir)..\..\bin\$(TargetName).dll"
-del /q /f "$(ProjectDir)..\..\bin\$(TargetName).pdb"
-xcopy /f /y "$(TargetDir)$(TargetName).dll" "$(ProjectDir)..\..\bin\*"
-xcopy /f /y "$(TargetDir)$(TargetName).pdb" "$(ProjectDir)..\..\bin\*"
-</PostBuildEvent>
-  </PropertyGroup>
-  <PropertyGroup>
-    <PreBuildEvent>ren "$(ProjectDir)..\..\bin\$(TargetName).dll" "$(ProjectDir)..\..\bin\tmp" 2&gt;nul
-del "$(ProjectDir)..\..\bin\tmp"
-ren "$(ProjectDir)..\..\bin\$(TargetName).pdb" "$(ProjectDir)..\..\bin\tmp" 2&gt;nul
-del "$(ProjectDir)..\..\bin\tmp"</PreBuildEvent>
-  </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
 </Project>
