@@ -13,8 +13,6 @@
     <AssemblyName>AndroidPlusPlus.MsBuild.Common</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>..\..\..\src\Key.snk</AssemblyOriginatorKeyFile>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -75,9 +73,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\src\Key.snk">
-      <Link>Key.snk</Link>
-    </None>
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
@@ -111,7 +106,7 @@ del "$(ProjectDir)..\..\bin\tmp"
 ren "$(ProjectDir)..\..\bin\$(TargetName).pdb" "$(ProjectDir)..\..\bin\tmp" 2&gt;nul
 del "$(ProjectDir)..\..\bin\tmp"</PreBuildEvent>
   </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>
