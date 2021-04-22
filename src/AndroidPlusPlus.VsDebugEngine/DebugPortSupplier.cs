@@ -100,12 +100,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new InvalidOperationException ("Invalid/empty port name");
         }
 
-        AndroidDevice device = AndroidAdb.GetConnectedDeviceById (requestPortName);
-
-        if (device == null)
-        {
-          throw new InvalidOperationException ("Failed to find a device with the name: " + requestPortName);
-        }
+        AndroidDevice device = AndroidAdb.GetConnectedDeviceById (requestPortName) ?? throw new InvalidOperationException ($"Failed to find a device named {requestPortName}");
 
         port = new DebuggeePort (this, device);
 
@@ -133,9 +128,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int AddPort (IDebugPortRequest2 pRequest, out IDebugPort2 ppPort)
     {
-      // 
+      //
       // Attempt to find a port matching the requested name, otherwise one is created.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -146,7 +141,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         LoggingUtils.RequireOk (CanAddPort ());
 
         LoggingUtils.RequireOk (pRequest.GetPortName (out requestPortName));
-        
+
         if (string.IsNullOrWhiteSpace (requestPortName))
         {
           throw new InvalidOperationException ("Invalid/empty port name");
@@ -172,9 +167,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (ppPort == null)
         {
-          // 
+          //
           // Create and track a new port for this request.
-          // 
+          //
 
           Guid portId;
 
@@ -203,9 +198,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int CanAddPort ()
     {
-      // 
+      //
       // Verifies that a port supplier can add new ports.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -218,9 +213,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int EnumPorts (out IEnumDebugPorts2 ppEnum)
     {
-      // 
+      //
       // Retrieves a list of all the ports supplied by a port supplier.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -259,9 +254,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetPort (ref Guid guidPort, out IDebugPort2 ppPort)
     {
-      // 
+      //
       // Gets a port from a port supplier.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -290,9 +285,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetPortSupplierId (out Guid pguidPortSupplier)
     {
-      // 
+      //
       // Gets the port supplier identifier.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -307,9 +302,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetPortSupplierName (out string pbstrName)
     {
-      // 
+      //
       // Gets the port supplier name.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -324,9 +319,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int RemovePort (IDebugPort2 pPort)
     {
-      // 
+      //
       // Removes a port. This method removes the port from the port supplier's internal list of active ports.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -364,20 +359,20 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int CanPersistPorts ()
     {
-      // 
+      //
       // This method determines whether the port supplier can persist ports (by writing them to disk) between invocations of the debugger.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
-      // 
+      //
       // Return values from this function seem to do the opposite of what I'd expect:
-      // 
+      //
       // Constants.S_OK = Use EnumPorts to seed device data.
       // Constants.S_FALSE = UseEnumPersistedPorts to seed device data.
-      // 
+      //
       // I think it potentially refers to whether the DE manually persists the ports, and so doesn't rely on a 'PortNames' being provided by VS?
-      // 
+      //
 
       return Constants.S_OK;
     }
@@ -388,9 +383,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int EnumPersistedPorts (BSTR_ARRAY PortNames, out IEnumDebugPorts2 ppEnum)
     {
-      // 
+      //
       // This method retrieves an object that allows enumeration of the list of persisted ports.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -447,9 +442,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetDescription (enum_PORT_SUPPLIER_DESCRIPTION_FLAGS [] pdwFlags, out string pbstrText)
     {
-      // 
+      //
       // Retrieves the description and description metadata for the port supplier.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 

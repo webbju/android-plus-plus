@@ -22,9 +22,9 @@ namespace AndroidPlusPlus.VsDebugEngine
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   //
-  // A debug engine (DE) or a custom port supplier implements this interface to represent a 'program' that can be debugged. 
+  // A debug engine (DE) or a custom port supplier implements this interface to represent a 'program' that can be debugged.
   // A 'program' is a thread container running in a particular run-time architecture, while a process is made up of one or more programs.
-  // 
+  //
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -100,9 +100,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int Attach (IDebugEventCallback2 pCallback)
     {
-      // 
+      //
       // Attaches to this program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -110,11 +110,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        if (AttachedEngine == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.Attach (pCallback));
 
         LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.Attach (pCallback));
@@ -144,9 +139,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int CanDetach ()
     {
-      // 
+      //
       // Determines if a debug engine (DE) can detach from the program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -154,11 +149,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        if (AttachedEngine == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.CanDetach ());
 
         LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.CanDetach ());
@@ -188,9 +178,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int CauseBreak ()
     {
-      // 
+      //
       // Requests that this program stop execution the next time one of its threads runs code.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -198,11 +188,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        if (AttachedEngine == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.CauseBreak ());
 
         LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.CauseBreak ());
@@ -232,9 +217,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int Continue (IDebugThread2 pThread)
     {
-      // 
+      //
       // Continues running this program from a stopped state. Any previous execution state is preserved.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -242,11 +227,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        if (AttachedEngine == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.Continue (pThread));
 
         LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.Continue (pThread));
@@ -276,9 +256,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int Detach ()
     {
-      // 
+      //
       // Detaches the debugger from this program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -286,11 +266,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        if (AttachedEngine == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.Detach (this));
 
         return Constants.S_OK;
@@ -318,9 +293,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int EnumCodeContexts (IDebugDocumentPosition2 pDocPos, out IEnumDebugCodeContexts2 ppEnum)
     {
-      // 
+      //
       // Enumerates the code contexts for a given position in a source file.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -328,11 +303,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        if (AttachedEngine == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         List<IDebugCodeContext2> codeContexts = new List<IDebugCodeContext2> ();
 
         uint count;
@@ -365,11 +335,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         ppEnum = new DebuggeeCodeContext.Enumerator (codeContexts);
 
-        if (ppEnum == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         return Constants.S_OK;
       }
       catch (Exception e)
@@ -386,9 +351,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int EnumCodePaths (string pszHint, IDebugCodeContext2 pStart, IDebugStackFrame2 pFrame, int fSource, out IEnumCodePaths2 ppEnum, out IDebugCodeContext2 ppSafety)
     {
-      // 
+      //
       // Enumerates the code paths of this program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -398,11 +363,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        if (AttachedEngine == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.EnumCodePaths (pszHint, pStart, pFrame, fSource, out ppEnum, out ppSafety));
 
         //LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.EnumCodePaths (pszHint, pStart, pFrame, fSource, out ppEnum, out ppSafety));
@@ -423,9 +383,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int EnumModules (out IEnumDebugModules2 ppEnum)
     {
-      // 
+      //
       // Enumerates the modules that this program has loaded and is executing.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -433,11 +393,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        if (AttachedEngine == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         List<IDebugModule2> modules = new List<IDebugModule2> ();
 
         uint count;
@@ -468,11 +423,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         ppEnum = new DebuggeeModule.Enumerator (modules);
 
-        if (ppEnum == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         return Constants.S_OK;
       }
       catch (Exception e)
@@ -489,19 +439,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int EnumThreads (out IEnumDebugThreads2 ppEnum)
     {
-      // 
+      //
       // Enumerates the threads that are running in this program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
       try
       {
-        if (AttachedEngine == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         List<IDebugThread2> threads = new List<IDebugThread2> ();
 
         uint count;
@@ -530,11 +475,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         ppEnum = new DebuggeeThread.Enumerator (threads);
 
-        if (ppEnum == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         return Constants.S_OK;
       }
       catch (Exception e)
@@ -553,19 +493,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int Execute ()
     {
-      // 
+      //
       // Continues running this program from a stopped state. Any previous execution state is cleared.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
       try
       {
-        if (AttachedEngine == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.Execute ());
 
         LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.Execute ());
@@ -586,9 +521,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetDebugProperty (out IDebugProperty2 ppProperty)
     {
-      // 
+      //
       // Gets program properties.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -596,11 +531,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        if (AttachedEngine == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.GetDebugProperty (out ppProperty));
 
         //LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.GetDebugProperty (out ppProperty));
@@ -621,9 +551,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetDisassemblyStream (enum_DISASSEMBLY_STREAM_SCOPE dwScope, IDebugCodeContext2 pCodeContext, out IDebugDisassemblyStream2 ppDisassemblyStream)
     {
-      // 
+      //
       // Gets the disassembly stream for this program or part of this program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -631,11 +561,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        if (AttachedEngine == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.GetDisassemblyStream (dwScope, pCodeContext, out ppDisassemblyStream));
 
         //LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.GetDisassemblyStream (dwScope, pCodeContext, out ppDisassemblyStream));
@@ -656,10 +581,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetENCUpdate (out object ppUpdate)
     {
-      // 
+      //
       // Gets the Edit and Continue (ENC) update for this program.
       // A custom debug engine does not implement this method (it should always return E_NOTIMPL).
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -674,9 +599,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetEngineInfo (out string pbstrEngine, out Guid pguidEngine)
     {
-      // 
+      //
       // Gets the name and identifier of the debug engine (DE) running a program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -693,9 +618,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetMemoryBytes (out IDebugMemoryBytes2 ppMemoryBytes)
     {
-      // 
+      //
       // Gets the memory bytes for this program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -703,11 +628,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        if (AttachedEngine == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         return AttachedEngine.NativeDebugger.NativeProgram.GetMemoryBytes (out ppMemoryBytes);
       }
       catch (Exception e)
@@ -724,19 +644,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetName (out string pbstrName)
     {
-      // 
+      //
       // Gets the name of the program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
       try
       {
-        if (AttachedEngine == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         pbstrName = DebugProcess.NativeProcess.Name;
 
         //LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.GetName (out pbstrName));
@@ -761,9 +676,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetProcess (out IDebugProcess2 ppProcess)
     {
-      // 
+      //
       // Gets the process that this program is running in.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -778,9 +693,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetProgramId (out Guid pguidProgramId)
     {
-      // 
+      //
       // Gets a globally unique identifier for this program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -795,19 +710,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int Step (IDebugThread2 pThread, enum_STEPKIND sk, enum_STEPUNIT Step)
     {
-      // 
+      //
       // Performs a step.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
       try
       {
-        if (AttachedEngine == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.Step (pThread, sk, Step));
 
         //LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.Step (pThread, sk, Step));
@@ -828,19 +738,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int Terminate ()
     {
-      // 
+      //
       // Terminates this program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
       try
       {
-        if (AttachedEngine == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         if (AttachedEngine.NativeDebugger.NativeProgram != null)
         {
           LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.Terminate ());
@@ -867,19 +772,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int WriteDump (enum_DUMPTYPE DUMPTYPE, string pszDumpUrl)
     {
-      // 
+      //
       // Writes a dump to a file.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
       try
       {
-        if (AttachedEngine == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.WriteDump (DUMPTYPE, pszDumpUrl));
 
         LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.WriteDump (DUMPTYPE, pszDumpUrl));
@@ -912,19 +812,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int ExecuteOnThread (IDebugThread2 pThread)
     {
-      // 
+      //
       // ExecuteOnThread is called when the Session Debug Manager (SDM) wants execution to continue and have stepping state cleared.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
       try
       {
-        if (AttachedEngine == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.ExecuteOnThread (pThread));
 
         //LoggingUtils.RequireOk (AttachedEngine.JavaDebugger.JavaProgram.ExecuteOnThread (pThread));
@@ -995,9 +890,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetHostName (enum_GETHOSTNAME_TYPE dwHostNameType, out string pbstrHostName)
     {
-      // 
+      //
       // Gets the name of the process hosting the program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -1036,7 +931,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       //
       // Gets the system process identifier for the process hosting the program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -1060,9 +955,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetProgramName (out string pbstrProgramName)
     {
-      // 
+      //
       // Gets the name of the program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 

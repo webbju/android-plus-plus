@@ -76,26 +76,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public DebuggeeBreakpointError (DebugBreakpointManager breakpointManager, DebuggeeBreakpointPending pendingBreakpoint, DebuggeeCodeContext codeContext, string error)
     {
-      if (breakpointManager == null)
-      {
-        throw new ArgumentNullException (nameof(breakpointManager));
-      }
+      m_breakpointManager = breakpointManager ?? throw new ArgumentNullException (nameof(breakpointManager));
 
-      if (pendingBreakpoint == null)
-      {
-        throw new ArgumentNullException (nameof(pendingBreakpoint));
-      }
+      m_pendingBreakpoint = pendingBreakpoint ?? throw new ArgumentNullException (nameof(pendingBreakpoint));
 
-      if (codeContext == null)
-      {
-        throw new ArgumentNullException (nameof(codeContext));
-      }
-
-      m_breakpointManager = breakpointManager;
-
-      m_pendingBreakpoint = pendingBreakpoint;
-
-      m_codeContext = codeContext;
+      m_codeContext = codeContext ?? throw new ArgumentNullException (nameof(codeContext));
 
       m_breakpointResolution = new DebuggeeBreakpointResolution (m_codeContext, error);
     }

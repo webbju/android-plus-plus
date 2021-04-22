@@ -23,12 +23,12 @@ namespace AndroidPlusPlus.VsDebugEngine
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  // 
-  // An implementation of IDebugCodeContext2 and IDebugMemoryContext2. 
+  //
+  // An implementation of IDebugCodeContext2 and IDebugMemoryContext2.
   // IDebugMemoryContext2 represents a position in the address space of the machine running the program being debugged.
-  // IDebugCodeContext2 represents the starting position of a code instruction. 
+  // IDebugCodeContext2 represents the starting position of a code instruction.
   // For most run-time architectures today, a code context can be thought of as an address in a program's execution stream.
-  // 
+  //
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -65,28 +65,18 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public DebuggeeCodeContext (DebugEngine engine, DebuggeeDocumentContext documentContext, DebuggeeAddress address)
     {
-      if (documentContext == null)
-      {
-        throw new ArgumentNullException (nameof(documentContext));
-      }
-
-      if (address == null)
-      {
-        throw new ArgumentNullException (nameof(address));
-      }
-
       m_engine = engine;
 
-      m_documentContext = documentContext;
+      m_documentContext = documentContext ?? throw new ArgumentNullException (nameof(documentContext));
 
-      m_address = address;
+      m_address = address ?? throw new ArgumentNullException (nameof(address));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public DebuggeeDocumentContext DocumentContext 
+    public DebuggeeDocumentContext DocumentContext
     {
       get
       {
@@ -98,7 +88,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public DebuggeeAddress Address 
+    public DebuggeeAddress Address
     {
       get
       {
@@ -186,9 +176,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int Add (ulong count, out IDebugMemoryContext2 offsetAddressContext)
     {
-      // 
+      //
       // Adds a specified value to the current context's address to create a new context.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -216,9 +206,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int Subtract (ulong count, out IDebugMemoryContext2 offsetAddressContext)
     {
-      // 
+      //
       // Subtracts a specified value to the current context's address to create a new context.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -246,10 +236,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int Compare (enum_CONTEXT_COMPARE contextCompare, IDebugMemoryContext2 [] compareToItems, uint compareToLength, out uint foundIndex)
     {
-      // 
-      // Compares the memory context to each context in the given array in the manner indicated by compare flags, 
+      //
+      // Compares the memory context to each context in the given array in the manner indicated by compare flags,
       // returning an index of the first context that matches.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -260,9 +250,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new ArgumentException ("Comparing contexts of different sizes.");
         }
 
-        // 
+        //
         // Get the context info for the current object.
-        // 
+        //
 
         CONTEXT_INFO [] currentContextInfo = new CONTEXT_INFO [1];
 
@@ -390,9 +380,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetName (out string contextName)
     {
-      // 
+      //
       // Gets the user-displayable name for this context
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -422,9 +412,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetInfo (enum_CONTEXT_INFO_FIELDS requestedFields, CONTEXT_INFO [] infoArray)
     {
-      // 
+      //
       // Gets information that describes this context.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -460,9 +450,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetDocumentContext (out IDebugDocumentContext2 documentContext)
     {
-      // 
+      //
       // Gets the document context for this code-context.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -488,9 +478,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetLanguageInfo (ref string languageName, ref Guid languageGuid)
     {
-      // 
+      //
       // Gets the language information for this code context.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -541,12 +531,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        program = m_engine.Program;
-
-        if (program == null)
-        {
-          throw new InvalidOperationException ();
-        }
+        program = m_engine.Program ?? throw new InvalidOperationException ();
 
         return Constants.S_OK;
       }

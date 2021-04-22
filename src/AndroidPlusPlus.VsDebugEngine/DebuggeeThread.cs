@@ -105,9 +105,9 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         ++m_threadSuspendCount;
 
-        // 
+        //
         // Invalidate the current stack-trace.
-        // 
+        //
 
         lock (m_threadStackFrames)
         {
@@ -142,13 +142,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int CanSetNextStatement (IDebugStackFrame2 stackFrame, IDebugCodeContext2 codeContext)
     {
-      // 
+      //
       // Determines whether the next statement can be set to the given stack frame and code context.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
-      return Constants.S_OK; 
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -157,13 +157,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int EnumFrameInfo (enum_FRAMEINFO_FLAGS requestedFields, uint radix, out IEnumDebugFrameInfo2 enumDebugFrame)
     {
-      // 
+      //
       // Retrieves a list of the stack frames for this thread.
       // For the sample engine, enumerating the stack frames requires walking the callstack in the debuggee for this thread
-      // and converting that to an implementation of IEnumDebugFrameInfo2. 
+      // and converting that to an implementation of IEnumDebugFrameInfo2.
       // Real engines will most likely want to cache this information to avoid recomputing it each time it is asked for,
       // and or construct it on demand instead of walking the entire stack.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -171,13 +171,11 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         StackTrace (uint.MaxValue);
 
-        DebuggeeStackFrame [] stackFrames = m_threadStackFrames.ToArray ();
+        FRAMEINFO [] frameInfo = new FRAMEINFO [m_threadStackFrames.Count];
 
-        FRAMEINFO [] frameInfo = new FRAMEINFO [stackFrames.Length];
-
-        for (int i = 0; i < stackFrames.Length; ++i)
+        for (int i = 0; i < m_threadStackFrames.Count; ++i)
         {
-          LoggingUtils.RequireOk (stackFrames [i].SetFrameInfo (requestedFields, radix, ref frameInfo [i]));
+          LoggingUtils.RequireOk (m_threadStackFrames [i].SetFrameInfo (requestedFields, radix, ref frameInfo [i]));
         }
 
         enumDebugFrame = new DebuggeeStackFrame.Enumerator (frameInfo);
@@ -200,9 +198,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetName (out string threadName)
     {
-      // 
+      //
       // Get the name of the thread.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -243,9 +241,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetThreadProperties (enum_THREADPROPERTY_FIELDS requestedFields, THREADPROPERTIES [] propertiesArray)
     {
-      // 
+      //
       // Gets properties that describe a thread.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -295,9 +293,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((requestedFields & enum_THREADPROPERTY_FIELDS.TPF_LOCATION) != 0)
         {
-          // 
+          //
           // The thread location (usually the topmost stack frame), typically expressed as the name of the method where execution is currently halted.
-          // 
+          //
 
           propertiesArray [0].bstrLocation = "[External Code]";
 
@@ -336,10 +334,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int Resume (out uint suspendCount)
     {
-      // 
+      //
       // Resume a thread.
       // This is called when the user chooses "Unfreeze" from the threads window when a thread has previously been frozen.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -354,10 +352,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int Suspend (out uint suspendCount)
     {
-      // 
+      //
       // Suspend a thread.
       // This is called when the user chooses "Freeze" from the threads window.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -372,9 +370,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int SetNextStatement (IDebugStackFrame2 stackFrame, IDebugCodeContext2 codeContext)
     {
-      // 
+      //
       // Sets the next statement to the given stack frame and code context.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -387,9 +385,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetLogicalThread (IDebugStackFrame2 stackFrame, out IDebugLogicalThread2 logicalThread)
     {
-      // 
+      //
       // Gets the logical thread associated with this physical thread. Not implemented.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -404,9 +402,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int SetThreadName (string name)
     {
-      // 
+      //
       // Sets the name of the thread. Not implemented.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -459,9 +457,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int CanDoFuncEval ()
     {
-      // 
+      //
       // Returns whether this thread can be used to do function/property evaluation.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -474,9 +472,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetFlags (out uint flags)
     {
-      // 
+      //
       // Get flags. Not implemented.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -491,9 +489,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int SetFlags (uint flags)
     {
-      // 
-      // Set flags. 
-      // 
+      //
+      // Set flags.
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -508,17 +506,17 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetThreadProperties100 (uint requestedFields, THREADPROPERTIES100 [] propertiesArray)
     {
-      // 
+      //
       // Gets properties that describe a thread.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
       try
       {
-        // 
+        //
         // 9.0 (2008) thread properties.
-        // 
+        //
 
         THREADPROPERTIES [] threadProperties9 = new THREADPROPERTIES [1];
 
@@ -540,9 +538,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         propertiesArray [0].dwFields |= (uint)threadProperties9 [0].dwFields;
 
-        // 
+        //
         // 10.0 (2010) thread properties.
-        // 
+        //
 
         if ((requestedFields & (uint) enum_THREADPROPERTY_FIELDS100.TPF100_DISPLAY_NAME) != 0)
         {

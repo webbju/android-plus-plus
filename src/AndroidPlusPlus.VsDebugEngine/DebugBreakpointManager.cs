@@ -243,7 +243,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (m_requiresRefresh)
         {
-          foreach (DebuggeeBreakpointPending breakpoint in m_pendingBreakpoints.ToArray ())
+          foreach (var breakpoint in m_pendingBreakpoints)
           {
             breakpoint.RefreshBoundBreakpoints ();
 
@@ -313,7 +313,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        foreach (DebuggeeBreakpointPending pending in m_pendingBreakpoints.ToArray ())
+        foreach (var pending in m_pendingBreakpoints)
         {
           // 
           // Check for matching 'bound' breakpoints.
@@ -375,7 +375,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        foreach (DebuggeeBreakpointPending pending in m_pendingBreakpoints.ToArray ())
+        foreach (var pending in m_pendingBreakpoints)
         {
           // 
           // Check for matching 'error' breakpoints.

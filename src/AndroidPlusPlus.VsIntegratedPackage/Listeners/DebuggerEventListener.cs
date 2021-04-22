@@ -98,9 +98,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
       LoggingUtils.RequireOk (m_debuggerService.AdviseDebugEventCallback (this));
 
-      // 
+      //
       // Register required listener events and paired process function callbacks.
-      // 
+      //
 
       m_eventCallbacks = new Dictionary<Guid, DebuggerEventListenerDelegate> ();
 
@@ -404,16 +404,6 @@ namespace AndroidPlusPlus.VsIntegratedPackage
         m_adbLogcatProcess = AndroidAdb.AdbCommandAsync (debuggerLogcatEvent.HostDevice, "logcat", "");
 
         m_adbLogcatListener = new DeviceLogcatListener ();
-
-        if (m_adbLogcatProcess == null)
-        {
-          throw new InvalidOperationException ("Failed to launch logcat application.");
-        }
-
-        if (m_adbLogcatListener == null)
-        {
-          throw new InvalidOperationException ("Failed to launch logcat listener.");
-        }
 
         m_adbLogcatProcess.Start (m_adbLogcatListener);
 

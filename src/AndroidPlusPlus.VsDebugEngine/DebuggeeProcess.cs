@@ -236,7 +236,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      IDebugProgram2 [] programs = new IDebugProgram2 [] { DebuggeeProgram };
+      var programs = new IDebugProgram2 [] { DebuggeeProgram };
 
       ppEnum = new DebuggeeProgram.Enumerator (programs);
 

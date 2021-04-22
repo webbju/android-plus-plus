@@ -28,24 +28,17 @@ namespace AndroidPlusPlus.Common
     public MiResultValueList (string variable, List <MiResultValue> values)
       : base (variable)
     {
-      if (values == null)
-      {
-        throw new ArgumentNullException (nameof(values));
-      }
+      m_valueList = values ?? throw new ArgumentNullException (nameof(values));
 
-      m_valueList = values;
-
-      // 
+      //
       // Build a searchable dictionary of available result variables (fields).
-      // 
+      //
 
       m_fieldDictionary = new Dictionary<string, List<MiResultValue>> ();
 
       foreach (MiResultValue value in m_valueList)
       {
-        List<MiResultValue> fieldList;
-
-        if (!m_fieldDictionary.TryGetValue (value.Variable, out fieldList))
+        if (!m_fieldDictionary.TryGetValue (value.Variable, out List<MiResultValue> fieldList))
         {
           fieldList = new List<MiResultValue> ();
         }

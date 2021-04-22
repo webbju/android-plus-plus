@@ -542,12 +542,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       thread = m_thread;
 
-      if (thread == null)
-      {
-        return Constants.S_FALSE;
-      }
-
-      return Constants.S_OK;
+      return (thread != null) ? Constants.S_OK : Constants.S_FALSE;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

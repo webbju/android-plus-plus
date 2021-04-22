@@ -28,16 +28,11 @@ namespace AndroidPlusPlus.Common
     public MiResultValueTuple (string variable, List<MiResultValue> values)
       : base (variable)
     {
-      if (values == null)
-      {
-        throw new ArgumentNullException (nameof(values));
-      }
+      m_valueList = values ?? throw new ArgumentNullException (nameof(values));
 
-      m_valueList = values;
-
-      // 
+      //
       // Build a searchable dictionary of available result variables (fields).
-      // 
+      //
 
       m_fieldDictionary = new Dictionary<string, List <MiResultValue>> ();
 

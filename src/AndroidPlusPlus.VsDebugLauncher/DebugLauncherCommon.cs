@@ -116,12 +116,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       AndroidAdb.Refresh ();
 
-      AndroidDevice debuggingDevice = GetPrioritisedConnectedDevice ();
-
-      if (debuggingDevice == null)
-      {
-        throw new InvalidOperationException ("No device/emulator found or connected. Check status using \"adb devices\".");
-      }
+      AndroidDevice debuggingDevice = GetPrioritisedConnectedDevice () ?? throw new InvalidOperationException ("No device/emulator found or connected. Check status using \"adb devices\".");
 
       //
       // Construct VS launch settings to debug or attach to the specified target application.
@@ -175,18 +170,13 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       AndroidAdb.Refresh ();
 
-      AndroidDevice debuggingDevice = GetPrioritisedConnectedDevice ();
-
-      if (debuggingDevice == null)
-      {
-        throw new InvalidOperationException ("No device/emulator found or connected. Check status using \"adb devices\".");
-      }
+      AndroidDevice debuggingDevice = GetPrioritisedConnectedDevice () ?? throw new InvalidOperationException ("No device/emulator found or connected. Check status using \"adb devices\".");
 
       //
       // Enforce required device/emulator properties.
       //
 
-      foreach (LaunchProps prop in launchProps)
+      foreach (var prop in launchProps)
       {
         debuggingDevice.Shell ("setprop", string.Format (CultureInfo.InvariantCulture, "{0} {1}", prop.Item1, prop.Item2));
       }
@@ -756,7 +746,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
         new LaunchProps("debug.egl.callstack", (debuggerPropEglCallstack) ? "1" : "0")
       };
 
-      return launchProps.ToArray ();
+      return launchProps;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -778,13 +768,6 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       bool foundProperty = false;
 
-#if VS2013 || VS2015
-      if (projectProperties.TryGetValue (schemaGroupedKey, out evaluatedProperty))
-      {
-        foundProperty = true;
-      }
-#endif
-
       if (!foundProperty && projectProperties.TryGetValue (property, out evaluatedProperty))
       {
         foundProperty = true;
@@ -796,38 +779,6 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       return evaluatedProperty;
     }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#if VS2010
-    private static VCConfiguration GetActiveConfiguration (Project project)
-    {
-      LoggingUtils.PrintFunction ();
-
-      if (project == null)
-      {
-        throw new ArgumentNullException ("project");
-      }
-
-      VCProject vcProject = project.Object as VCProject;
-
-      VCConfiguration [] vcProjectConfigurations = (VCConfiguration []) vcProject.Configurations;
-
-      Configuration activeConfiguration = project.ConfigurationManager.ActiveConfiguration;
-
-      foreach (VCConfiguration config in vcProjectConfigurations)
-      {
-        if (config.Name.StartsWith (activeConfiguration.ConfigurationName))
-        {
-          return config;
-        }
-      }
-
-      return null;
-    }
-#endif
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

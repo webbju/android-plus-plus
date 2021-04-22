@@ -225,14 +225,7 @@ namespace AndroidPlusPlus.Common
 
     public void AddChild (MiVariable variable)
     {
-      LoggingUtils.PrintFunction ();
-
-      if (variable == null)
-      {
-        throw new ArgumentNullException (nameof(variable));
-      }
-
-      m_children [variable.Name] = variable;
+      m_children [variable.Name] = variable ?? throw new ArgumentNullException (nameof(variable));;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

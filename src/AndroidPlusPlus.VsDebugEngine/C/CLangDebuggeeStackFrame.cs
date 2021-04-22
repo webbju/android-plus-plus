@@ -55,11 +55,6 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       m_debugger = debugger;
 
-      if (frameTuple == null)
-      {
-        throw new ArgumentNullException (nameof(frameTuple));
-      }
-
       m_queriedRegisters = false;
 
       m_queriedArgumentsAndLocals = false;
@@ -83,21 +78,12 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public uint StackLevel 
+    public uint StackLevel
     {
       get
       {
         return m_stackLevel;
       }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public override void Delete ()
-    {
-      base.Delete ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -120,9 +106,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           m_stackLevel = frameTuple ["level"] [0].GetUnsignedInt ();
         }
 
-        // 
+        //
         // Discover the function or shared library location.
-        // 
+        //
 
         if (frameTuple.HasField ("addr"))
         {
@@ -153,15 +139,15 @@ namespace AndroidPlusPlus.VsDebugEngine
           m_locationModule = string.Empty;
         }
 
-        // 
+        //
         // Generate code and document contexts for this frame location.
-        // 
+        //
 
         if (frameTuple.HasField ("fullname") && frameTuple.HasField ("line"))
         {
-          // 
+          //
           // If the symbol table isn't yet loaded, we'll need to specify exactly the location of this stack frame.
-          // 
+          //
 
           TEXT_POSITION [] textPositions = new TEXT_POSITION [2];
 
@@ -177,12 +163,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           m_documentContext = new DebuggeeDocumentContext (m_debugger.Engine, filename, textPositions [0], textPositions [1]);
 
-          m_codeContext = CLangDebuggeeCodeContext.GetCodeContextForLocation (m_debugger, m_locationAddress.ToString ());
-
-          if (m_codeContext == null)
-          {
-            throw new InvalidOperationException ();
-          }
+          m_codeContext = CLangDebuggeeCodeContext.GetCodeContextForLocation (m_debugger, m_locationAddress.ToString ()) ?? throw new InvalidOperationException ("Failed to find code context for location");
         }
         else
         {
@@ -233,12 +214,7 @@ namespace AndroidPlusPlus.VsDebugEngine
                   continue;
                 }
 
-                CLangDebuggeeProperty property = m_debugger.VariableManager.CreatePropertyFromVariable (this, variable);
-
-                if (property == null)
-                {
-                  throw new InvalidOperationException ();
-                }
+                CLangDebuggeeProperty property = m_debugger.VariableManager.CreatePropertyFromVariable (this, variable) ?? throw new InvalidOperationException ();
 
                 if (localVariables [i].HasField ("arg"))
                 {
@@ -281,9 +257,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        // 
+        //
         // Returns a list of registers for the current stack level.
-        // 
+        //
 
         if (!m_queriedRegisters)
         {
@@ -345,9 +321,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public DebuggeeProperty EvaluateCustomExpression (enum_EVALFLAGS evaluateFlags, string expression, uint radix)
     {
-      // 
+      //
       // Evaluates a custom property lookup, and registers a new entry for this expression if one can't be found.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -376,15 +352,15 @@ namespace AndroidPlusPlus.VsDebugEngine
         }
 
 
-        // 
+        //
         // Check if this expression has already been queried via a child property.
-        // 
+        //
 
         // TODO.
 
-        // 
+        //
         // Couldn't find a pre-registered matching property for this expression, creating a new custom one.
-        // 
+        //
 
         MiVariable customExpressionVariable = m_debugger.VariableManager.CreateVariableFromExpression (this, expression);
 
@@ -602,9 +578,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public override int GetLanguageInfo (ref string languageName, ref Guid languageGuid)
     {
-      // 
-      // Gets the language associated with this stack frame. 
-      // 
+      //
+      // Gets the language associated with this stack frame.
+      //
 
       LoggingUtils.PrintFunction ();
 

@@ -38,14 +38,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public DebuggeeBreakpointResolution (DebuggeeCodeContext codeContext, string message)
     {
-      if (codeContext == null)
-      {
-        throw new ArgumentNullException (nameof(codeContext));
-      }
+      m_codeContext = codeContext ?? throw new ArgumentNullException (nameof(codeContext));
 
-      m_codeContext = codeContext;
-
-      m_resolutionMessage = message;
+      m_resolutionMessage = message ?? throw new ArgumentNullException (nameof(message));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -66,9 +61,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void GetBreakpointType (out enum_BP_TYPE type)
     {
-      // 
+      //
       // Data breakpoints not supported, yet.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -87,9 +82,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetBreakpointType (enum_BP_TYPE [] pBPType)
     {
-      // 
+      //
       // Gets the type of the breakpoint represented by this resolution.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -104,9 +99,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetResolutionInfo (enum_BPRESI_FIELDS requestedFields, BP_RESOLUTION_INFO [] resolutionInfo)
     {
-      // 
+      //
       // Gets the breakpoint resolution information that describes this breakpoint.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -181,9 +176,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetResolutionInfo (enum_BPERESI_FIELDS requestedFields, BP_ERROR_RESOLUTION_INFO [] resolutionInfo)
     {
-      // 
+      //
       // Gets the breakpoint resolution information.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 

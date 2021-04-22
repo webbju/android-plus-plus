@@ -28,13 +28,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private static IVsOutputWindow s_outputWindow = null;
+    private static IVsOutputWindow s_outputWindow;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private static IVsOutputWindow AquireOutputWindow ()
+    private static IVsOutputWindow AcquireOutputWindow ()
     {
       ThreadHelper.ThrowIfNotOnUIThread();
 
@@ -47,19 +47,19 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     public static void WriteLine (Guid outputPaneGuid, string line)
     {
-      // 
+      //
       // Output specified line to the pane represented by the provided Guid.
       //   i.e. VSConstants.OutputWindowPaneGuid.DebugPane_guid
-      // 
+      //
 
       IVsOutputWindowPane debugWindowPane = null;
 
       if (s_outputWindow == null)
       {
-        s_outputWindow = AquireOutputWindow ();
+        s_outputWindow = AcquireOutputWindow ();
       }
 
-      if ((s_outputWindow != null) && (s_outputWindow.GetPane (outputPaneGuid, out debugWindowPane) != VSConstants.S_OK))
+      if (s_outputWindow?.GetPane (outputPaneGuid, out debugWindowPane) != VSConstants.S_OK)
       {
         ErrorHandler.ThrowOnFailure (s_outputWindow.CreatePane (outputPaneGuid, "General", 1, 0));
 

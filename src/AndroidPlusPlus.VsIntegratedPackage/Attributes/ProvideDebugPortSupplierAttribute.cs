@@ -70,25 +70,15 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     protected override void RegisterWithKey (object regKey, Type regKeyType)
     {
-      // 
+      //
       // Unified registration functionality for accepting both RegistrationAttribute.Key and RegistryKey objects.
-      // 
+      //
 
       try
       {
-        MethodInfo 
-          regKeySetValue = regKeyType.GetMethod ("SetValue", new [] { typeof (string), typeof (object) }),
-          regKeyClose = regKeyType.GetMethod("Close");
+        var regKeySetValue = regKeyType.GetMethod ("SetValue", new [] { typeof (string), typeof (object) }) ?? throw new InvalidOperationException ();
 
-        if (regKeySetValue == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
-        if (regKeyClose == null)
-        {
-          throw new InvalidOperationException ();
-        }
+        var regKeyClose = regKeyType.GetMethod("Close") ?? throw new InvalidOperationException ();
 
         regKeySetValue.Invoke (regKey, new object [] { string.Empty, m_portSupplierType.AssemblyQualifiedName });
 

@@ -50,32 +50,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public CLangDebuggeeProperty CreatePropertyFromVariable (CLangDebuggeeStackFrame stackFrame, MiVariable variable)
     {
-      LoggingUtils.PrintFunction ();
-
-      try
-      {
-        if (stackFrame == null)
-        {
-          throw new ArgumentNullException (nameof(stackFrame));
-        }
-
-        if (variable == null)
-        {
-          throw new ArgumentNullException (nameof(variable));
-        }
-
-        /*CLangDebuggeeProperty [] childProperties = GetChildProperties (stackFrame, parentProperty);
-
-        parentProperty.AddChildren (childProperties);*/
-
-        return new CLangDebuggeeProperty (m_debugger, stackFrame, variable);;
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-
-        return null;
-      }
+      return new CLangDebuggeeProperty (m_debugger, stackFrame, variable);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
