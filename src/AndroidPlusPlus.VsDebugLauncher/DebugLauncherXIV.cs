@@ -43,7 +43,8 @@ namespace AndroidPlusPlus.VsDebugLauncher
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public class DebugLauncher : Microsoft.VisualStudio.ProjectSystem.VS.Debug.DebugLaunchProviderBase
-    {
+  {
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -96,19 +97,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
       {
         debugLauncher = GetDebugLauncher (ServiceProvider);
 
-        return await System.Threading.Tasks.Task.Run(() =>
-       {
-         try
-         {
-            return debugLauncher.CanLaunch((int)launchOptions);
-         }
-         catch (Exception e)
-         {
-           HandleExceptionDialog(e, debugLauncher);
-         }
-
-         return false;
-       });
+        return await debugLauncher.CanLaunch((int)launchOptions);
       }
       catch (Exception e)
       {
@@ -134,23 +123,23 @@ namespace AndroidPlusPlus.VsDebugLauncher
       {
         debugLauncher = GetDebugLauncher (ServiceProvider);
 
-        debugLauncher.PrepareLaunch ();
+        await debugLauncher.PrepareLaunch ();
 
-        Dictionary<string, string> projectProperties = await DebuggerProperties.ProjectPropertiesToDictionary ();
+        Dictionary<string, string> projectProperties = await DebuggerProperties.ProjectPropertiesToDictionaryAsync ();
 
-        projectProperties.Add ("ConfigurationGeneral.ProjectDir", Path.GetDirectoryName (DebuggerProperties.GetConfiguredProject ().UnconfiguredProject.FullPath));
+        projectProperties.Add ("ConfigurationGeneral.ProjectDir", Path.GetDirectoryName (DebuggerProperties.GetConfiguredProject().UnconfiguredProject.FullPath));
 
         LaunchConfiguration launchConfig = debugLauncher.GetLaunchConfigurationFromProjectProperties (projectProperties);
 
-        LaunchProps [] launchProps = debugLauncher.GetLaunchPropsFromProjectProperties (projectProperties);
+        ICollection<LaunchProps> launchProps = debugLauncher.GetLaunchPropsFromProjectProperties (projectProperties);
 
         if (launchOptions.HasFlag (DebugLaunchOptions.NoDebug))
         {
-          debugLaunchSettings = (DebugLaunchSettings) debugLauncher.StartWithoutDebugging ((int) launchOptions, launchConfig, launchProps, projectProperties);
+          debugLaunchSettings = await debugLauncher.StartWithoutDebugging ((int) launchOptions, launchConfig, launchProps, projectProperties);
         }
         else
         {
-          debugLaunchSettings = (DebugLaunchSettings) debugLauncher.StartWithDebugging ((int) launchOptions, launchConfig, launchProps, projectProperties);
+          debugLaunchSettings = await debugLauncher.StartWithDebugging ((int) launchOptions, launchConfig, launchProps, projectProperties);
         }
       }
       catch (Exception e)
@@ -165,7 +154,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private void HandleExceptionDialog (Exception e, IDebugLauncher debugLauncher)
+    private async Task<int> HandleExceptionDialog (Exception e, IDebugLauncher debugLauncher)
     {
       LoggingUtils.HandleException(e);
 
@@ -173,12 +162,9 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       description += "\nStack trace:\n" + e.StackTrace;
 
-      if (debugLauncher != null)
-      {
-        LoggingUtils.RequireOk(debugLauncher.GetConnectionService().LaunchDialogUpdate(description, true));
-      }
+      await debugLauncher?.GetConnectionService().LaunchDialogUpdate(description, true);
 
-      VsShellUtilities.ShowMessageBox(ServiceProvider, description, "Android++ Debugger", OLEMSGICON.OLEMSGICON_CRITICAL, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+      return VsShellUtilities.ShowMessageBox(ServiceProvider, description, "Android++ Debugger", OLEMSGICON.OLEMSGICON_CRITICAL, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

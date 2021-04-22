@@ -53,22 +53,17 @@ namespace AndroidPlusPlus.Common
 
     public AndroidProcess (AndroidDevice device, string name, uint pid, uint ppid, string user)
     {
-      if (device == null)
+      if (string.IsNullOrEmpty(name))
       {
-        throw new ArgumentNullException ("device");
-      }
-
-      if (string.IsNullOrEmpty (name))
-      {
-        throw new ArgumentNullException ("name");
+        throw new ArgumentNullException (nameof(name));
       }
 
       if (string.IsNullOrEmpty (user))
       {
-        throw new ArgumentNullException ("user");
+        throw new ArgumentNullException (nameof(user));
       }
 
-      HostDevice = device;
+      HostDevice = device ?? throw new ArgumentNullException (nameof(device));
 
       Name = name;
 
@@ -173,7 +168,7 @@ namespace AndroidPlusPlus.Common
 
         builder.Replace ("\r", "");
 
-        string [] packageDumpReport = builder.ToString ().Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        var packageDumpReport = builder.ToString ().Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
         for (int i = 0; i < packageDumpReport.Length; ++i)
         {
@@ -264,7 +259,7 @@ namespace AndroidPlusPlus.Common
           {
             string pkgFlags = line.Substring (PKG_FLAGS_EXPRESSION.Length);
             
-            string [] pkgFlagsArray = pkgFlags.Trim (new char [] { '[', ']' }).Split (new char [] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            var pkgFlagsArray = pkgFlags.Trim (new char [] { '[', ']' }).Split (new char [] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
             m_pkgFlags = pkgFlagsArray;
           }

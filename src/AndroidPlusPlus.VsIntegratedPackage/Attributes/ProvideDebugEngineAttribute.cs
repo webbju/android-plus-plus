@@ -77,39 +77,25 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     protected override void RegisterWithKey (object regKey, Type regKeyType)
     {
-      // 
+      //
       // Unified registration functionality for accepting both RegistrationAttribute.Key and RegistryKey objects.
-      // 
+      //
 
       try
       {
-        MethodInfo 
-          regKeySetValue = regKeyType.GetMethod ("SetValue", new [] { typeof (string), typeof (object) }),
-          regKeyCreateSubKey = regKeyType.GetMethod ("CreateSubKey", new [] {typeof (string), typeof (RegistryKeyPermissionCheck)}),
-          regKeyClose = regKeyType.GetMethod ("Close");
+        var regKeySetValue = regKeyType.GetMethod ("SetValue", new [] { typeof (string), typeof (object) }) ?? throw new InvalidOperationException ();
 
-        if (regKeySetValue == null)
-        {
-          throw new InvalidOperationException ();
-        }
+        var regKeyCreateSubKey = regKeyType.GetMethod ("CreateSubKey", new [] {typeof (string), typeof (RegistryKeyPermissionCheck)});
+
+        var regKeyClose = regKeyType.GetMethod ("Close") ?? throw new InvalidOperationException ();
 
         bool createSubKeyRequiresPermission = true;
 
         if (regKeyCreateSubKey == null)
         {
-          regKeyCreateSubKey = regKeyType.GetMethod ("CreateSubkey");
+          regKeyCreateSubKey = regKeyType.GetMethod ("CreateSubkey") ?? throw new InvalidOperationException ();
 
           createSubKeyRequiresPermission = false;
-        }
-
-        if (regKeyCreateSubKey == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
-        if (regKeyClose == null)
-        {
-          throw new InvalidOperationException ();
         }
 
         regKeySetValue.Invoke (regKey, new object [] { string.Empty, m_engineType.AssemblyQualifiedName });
@@ -125,7 +111,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
           object engineGuid = m_engineIncompatibleIds [engineKey];
 
           object regSubKey = null;
-          
+
           if (createSubKeyRequiresPermission)
           {
             regSubKey = regKeyCreateSubKey.Invoke (regKey, new object [] { "IncompatibleList", RegistryKeyPermissionCheck.ReadWriteSubTree });
@@ -143,10 +129,10 @@ namespace AndroidPlusPlus.VsIntegratedPackage
           }
         }
 
-        // 
+        //
         // If there's more than one PortSupplier, add each Guid to a listing as a subkey of the Engine parent.
         // Otherwise, just add a single value entry.
-        // 
+        //
 
         for (int i = 0; i < m_enginePortSupplierIds.Count; ++i)
         {
@@ -157,7 +143,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
           if (m_enginePortSupplierIds.Count > 1)
           {
             object regSubKey = null;
-            
+
             if (createSubKeyRequiresPermission)
             {
               regSubKey = regKeyCreateSubKey.Invoke (regKey, new object [] { @"PortSupplier", RegistryKeyPermissionCheck.ReadWriteSubTree });
@@ -180,9 +166,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
           }
         }
 
-        // 
+        //
         // Iterate through additional properties and translate their values to registry compatible formats.
-        // 
+        //
 
         foreach (object key in m_engineOptions.Keys)
         {
@@ -293,9 +279,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
         return (null == val) ? false : (bool)val;
       }
-      set 
+      set
       {
-        m_engineOptions["AddressBP"] = value; 
+        m_engineOptions["AddressBP"] = value;
       }
     }
 
@@ -312,9 +298,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
         return (null == val) ? false : (bool)val;
       }
-      set 
+      set
       {
-        m_engineOptions["AlwaysLoadLocal"] = value; 
+        m_engineOptions["AlwaysLoadLocal"] = value;
       }
     }
 
@@ -333,7 +319,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       }
       set
       {
-        m_engineOptions["LoadedByDebuggee"] = value; 
+        m_engineOptions["LoadedByDebuggee"] = value;
       }
     }
 
@@ -502,9 +488,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
         return (null == val) ? false : (bool)val;
       }
-      set 
+      set
       {
-        m_engineOptions["HitCountBP"] = value; 
+        m_engineOptions["HitCountBP"] = value;
       }
     }
 

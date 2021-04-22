@@ -39,12 +39,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public class Enumerator : DebugEnumerator<IDebugProcess2, IEnumDebugProcesses2>, IEnumDebugProcesses2
     {
-      public Enumerator (List<IDebugProcess2> processes)
-        : base (processes)
-      {
-      }
-
-      public Enumerator (IDebugProcess2 [] processes)
+      public Enumerator (ICollection<IDebugProcess2> processes)
         : base (processes)
       {
       }
@@ -241,7 +236,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      IDebugProgram2 [] programs = new IDebugProgram2 [] { DebuggeeProgram };
+      var programs = new IDebugProgram2 [] { DebuggeeProgram };
 
       ppEnum = new DebuggeeProgram.Enumerator (programs);
 

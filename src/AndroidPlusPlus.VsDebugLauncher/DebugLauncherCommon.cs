@@ -15,6 +15,7 @@ using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugCommon;
 using Microsoft.VisualStudio.ProjectSystem.Debug;
 using Microsoft.VisualStudio.ProjectSystem.VS.Debug;
+using System.Threading.Tasks;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -44,12 +45,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
     public DebugLauncherCommon (IServiceProvider serviceProvider)
     {
-      if (serviceProvider == null)
-      {
-        throw new ArgumentNullException ("serviceProvider");
-      }
-
-      m_serviceProvider = serviceProvider;
+      m_serviceProvider = serviceProvider ?? throw new ArgumentNullException (nameof(serviceProvider));
 
       m_debugConnectionService = m_serviceProvider.GetService (typeof (IDebuggerConnectionService)) as IDebuggerConnectionService;
     }
@@ -67,365 +63,326 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public bool CanLaunch (int launchOptions)
+    public Task<bool> CanLaunch (int launchOptions)
     {
-      // 
+      //
       // Requirements to satisfy before launching a requested debug session.
-      // 
+      //
 
-      LoggingUtils.PrintFunction ();
-
-      return true;
+      return Task.FromResult(true);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void PrepareLaunch ()
+    public async Task<int> PrepareLaunch ()
     {
       LoggingUtils.PrintFunction ();
 
-      try
-      {
-        DateTime logTime = DateTime.Now;
+      DateTime logTime = DateTime.Now;
 
-        LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogShow ());
+      await m_debugConnectionService.LaunchDialogShow ();
 
-        LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "Session started: {0}", logTime.ToString ("F", CultureInfo.CurrentCulture)), false));
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-
-        throw;
-      }
+      return await m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "Session started: {0}", logTime.ToString ("F", CultureInfo.CurrentCulture)), false);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public object StartWithoutDebugging (int launchOptions, LaunchConfiguration launchConfig, LaunchProps [] launchProps, IDictionary<string, string> projectProperties)
+    public Task<DebugLaunchSettings> StartWithoutDebugging (int launchOptions, LaunchConfiguration launchConfig, ICollection<LaunchProps> launchProps, IDictionary<string, string> projectProperties)
     {
       LoggingUtils.PrintFunction ();
 
       if (launchConfig == null)
       {
-        throw new ArgumentNullException ("launchConfig");
+        throw new ArgumentNullException (nameof(launchConfig));
       }
 
       if (launchProps == null)
       {
-        throw new ArgumentNullException ("launchProps");
+        throw new ArgumentNullException (nameof(launchProps));
       }
 
       if (projectProperties == null)
       {
-        throw new ArgumentNullException ("projectProperties");
+        throw new ArgumentNullException (nameof(projectProperties));
       }
 
-      try
-      {
-        // 
-        // Refresh ADB service and evaluate a list of connected devices or emulators.
-        // 
+      //
+      // Refresh ADB service and evaluate a list of connected devices or emulators.
+      //
 
-        AndroidAdb.Refresh ();
+      AndroidAdb.Refresh ();
 
-        AndroidDevice debuggingDevice = GetPrioritisedConnectedDevice ();
+      AndroidDevice debuggingDevice = GetPrioritisedConnectedDevice () ?? throw new InvalidOperationException ("No device/emulator found or connected. Check status using \"adb devices\".");
 
-        if (debuggingDevice == null)
-        {
-          throw new InvalidOperationException ("No device/emulator found or connected. Check status using \"adb devices\".");
-        }
+      //
+      // Construct VS launch settings to debug or attach to the specified target application.
+      //
 
-        // 
-        // Construct VS launch settings to debug or attach to the specified target application.
-        // 
+      launchOptions |= (int) DebugLaunchOptions.Silent;
 
-        launchOptions |= (int) DebugLaunchOptions.Silent;
+      DebugLaunchSettings nonDebuglaunchSettings = new DebugLaunchSettings ((DebugLaunchOptions) launchOptions);
 
-        DebugLaunchSettings nonDebuglaunchSettings = new DebugLaunchSettings ((DebugLaunchOptions) launchOptions);
+      nonDebuglaunchSettings.LaunchDebugEngineGuid = new Guid ("8310DAF9-1043-4C8E-85A0-FF68896E1922");
 
-        nonDebuglaunchSettings.LaunchDebugEngineGuid = new Guid ("8310DAF9-1043-4C8E-85A0-FF68896E1922");
+      nonDebuglaunchSettings.PortSupplierGuid = new Guid ("3AEE417F-E5F9-4B89-BC31-20534C99B7F5");
 
-        nonDebuglaunchSettings.PortSupplierGuid = new Guid ("3AEE417F-E5F9-4B89-BC31-20534C99B7F5");
+      nonDebuglaunchSettings.PortName = debuggingDevice.ID;
 
-        nonDebuglaunchSettings.PortName = debuggingDevice.ID;
+      nonDebuglaunchSettings.Options = launchConfig.ToString ();
 
-        nonDebuglaunchSettings.Options = launchConfig.ToString ();
+      nonDebuglaunchSettings.Executable = launchConfig ["TargetApk"];
 
-        nonDebuglaunchSettings.Executable = launchConfig ["TargetApk"];
+      nonDebuglaunchSettings.LaunchOperation = DebugLaunchOperation.Custom;
 
-        nonDebuglaunchSettings.LaunchOperation = DebugLaunchOperation.Custom;
-
-        return nonDebuglaunchSettings;
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-
-        throw;
-      }
+      return Task.FromResult(nonDebuglaunchSettings);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public object StartWithDebugging (int launchOptions, LaunchConfiguration launchConfig, LaunchProps [] launchProps, IDictionary<string, string> projectProperties)
+    public async Task<DebugLaunchSettings> StartWithDebugging (int launchOptions, LaunchConfiguration launchConfig, ICollection<LaunchProps> launchProps, IDictionary<string, string> projectProperties)
     {
       LoggingUtils.PrintFunction ();
 
       if (launchConfig == null)
       {
-        throw new ArgumentNullException ("launchConfig");
+        throw new ArgumentNullException (nameof(launchConfig));
       }
 
       if (launchProps == null)
       {
-        throw new ArgumentNullException ("launchProps");
+        throw new ArgumentNullException (nameof(launchProps));
       }
 
       if (projectProperties == null)
       {
-        throw new ArgumentNullException ("projectProperties");
+        throw new ArgumentNullException (nameof(projectProperties));
       }
 
-      try
+      //
+      // Refresh ADB service and evaluate a list of connected devices or emulators.
+      //
+
+      AndroidAdb.Refresh ();
+
+      AndroidDevice debuggingDevice = GetPrioritisedConnectedDevice () ?? throw new InvalidOperationException ("No device/emulator found or connected. Check status using \"adb devices\".");
+
+      //
+      // Enforce required device/emulator properties.
+      //
+
+      foreach (var prop in launchProps)
       {
-        // 
-        // Refresh ADB service and evaluate a list of connected devices or emulators.
-        // 
+        debuggingDevice.Shell ("setprop", string.Format (CultureInfo.InvariantCulture, "{0} {1}", prop.Item1, prop.Item2));
+      }
 
-        AndroidAdb.Refresh ();
+      //
+      // Construct VS launch settings to debug or attach to the specified target application.
+      //
 
-        AndroidDevice debuggingDevice = GetPrioritisedConnectedDevice ();
-
-        if (debuggingDevice == null)
-        {
-          throw new InvalidOperationException ("No device/emulator found or connected. Check status using \"adb devices\".");
-        }
-
-        // 
-        // Enforce required device/emulator properties.
-        // 
-
-        foreach (LaunchProps prop in launchProps)
-        {
-          debuggingDevice.Shell ("setprop", string.Format (CultureInfo.InvariantCulture, "{0} {1}", prop.Item1, prop.Item2));
-        }
-
-        // 
-        // Construct VS launch settings to debug or attach to the specified target application.
-        // 
-
-        bool shouldAttach = false;
+      bool shouldAttach = false;
 
 #if false
-        AndroidProcess [] debuggingDeviceProcesses = debuggingDevice.GetProcesses ();
+      AndroidProcess [] debuggingDeviceProcesses = debuggingDevice.GetProcesses ();
 
-        foreach (AndroidProcess process in debuggingDeviceProcesses)
+      foreach (AndroidProcess process in debuggingDeviceProcesses)
+      {
+        if (process.Name.Equals (applicationPackageName))
         {
-          if (process.Name.Equals (applicationPackageName))
-          {
-            shouldAttach = true;
+          shouldAttach = true;
 
-            break;
-          }
+          break;
         }
+      }
 #endif
 
-        launchOptions |= (int) DebugLaunchOptions.Silent;
+      launchOptions |= (int) DebugLaunchOptions.Silent;
 
-        DebugLaunchSettings debugLaunchSettings = new DebugLaunchSettings ((DebugLaunchOptions) launchOptions);
+      DebugLaunchSettings debugLaunchSettings = new DebugLaunchSettings ((DebugLaunchOptions) launchOptions);
 
-        debugLaunchSettings.LaunchDebugEngineGuid = new Guid ("8310DAF9-1043-4C8E-85A0-FF68896E1922");
+      debugLaunchSettings.LaunchDebugEngineGuid = new Guid ("8310DAF9-1043-4C8E-85A0-FF68896E1922");
 
-        debugLaunchSettings.PortSupplierGuid = new Guid ("3AEE417F-E5F9-4B89-BC31-20534C99B7F5");
+      debugLaunchSettings.PortSupplierGuid = new Guid ("3AEE417F-E5F9-4B89-BC31-20534C99B7F5");
 
-        debugLaunchSettings.PortName = debuggingDevice.ID;
+      debugLaunchSettings.PortName = debuggingDevice.ID;
 
-        debugLaunchSettings.Options = launchConfig.ToString ();
+      debugLaunchSettings.Options = launchConfig.ToString ();
 
-        if (shouldAttach)
+      if (shouldAttach)
+      {
+        debugLaunchSettings.Executable = launchConfig ["PackageName"];
+
+        debugLaunchSettings.LaunchOperation = DebugLaunchOperation.AlreadyRunning;
+      }
+      else
+      {
+        //
+        // Determine whether the application is currently installed, and if it is;
+        // check last modified date to ensure we don't re-installed unchanged binaries.
+        //
+
+        bool upToDateCheck = launchConfig ["UpToDateCheck"].Equals ("true");
+
+        bool appIsInstalled = false;
+
+        bool appIsOutOfDate = true;
+
+        if (upToDateCheck)
         {
-          debugLaunchSettings.Executable = launchConfig ["PackageName"];
+          FileInfo targetApkFileInfo = new FileInfo (launchConfig ["TargetApk"]);
 
-          debugLaunchSettings.LaunchOperation = DebugLaunchOperation.AlreadyRunning;
+          try
+          {
+            var adbPmPathOutput = debuggingDevice.Shell ("pm", "path " + launchConfig ["PackageName"]).Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (string line in adbPmPathOutput)
+            {
+              if (line.StartsWith ("package:", StringComparison.OrdinalIgnoreCase))
+              {
+                appIsInstalled = true;
+
+                LoggingUtils.RequireOk (await m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' already installed on target '{1}'.", launchConfig ["PackageName"], debuggingDevice.ID), false));
+
+                string path = line.Substring ("package:".Length);
+
+                //
+                // Get the target device/emulator's UTC current time.
+                //
+                //   This is done by specifying the '-u' argument to 'date'. Despite this though,
+                //   the returned string will always claim to be in GMT:
+                //
+                //   i.e: "Fri Jan  9 14:35:23 GMT 2015"
+                //
+
+                DateTime debuggingDeviceUtcTime;
+
+                try
+                {
+                  var deviceDateOutput = debuggingDevice.Shell ("date", "-u").Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+                  string debuggingDeviceUtcTimestamp = deviceDateOutput [0];
+
+                  var debuggingDeviceUtcTimestampComponents = debuggingDeviceUtcTimestamp.Split (new char [] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                  debuggingDeviceUtcTimestampComponents [4] = "-00:00";
+
+                  if (!DateTime.TryParseExact (string.Join (" ", debuggingDeviceUtcTimestampComponents), "ddd MMM  d HH:mm:ss zzz yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out debuggingDeviceUtcTime))
+                  {
+                    break;
+                  }
+
+                  debuggingDeviceUtcTime = debuggingDeviceUtcTime.ToUniversalTime ();
+                }
+                catch (Exception e)
+                {
+                  throw new InvalidOperationException ("Failed to evaluate device local time.", e);
+                }
+
+                //
+                // Convert current device/emulator time to UTC, and probe the working machine's time too.
+                //
+
+                DateTime thisMachineUtcTime = DateTime.UtcNow;
+
+                TimeSpan thisMachineUtcVersusDeviceUtc = debuggingDeviceUtcTime - thisMachineUtcTime;
+
+                await m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "Current UTC time on '{0}': {1}", debuggingDevice.ID, debuggingDeviceUtcTime.ToString ()), false);
+
+                await m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "Current UTC time on '{0}': {1}", System.Environment.MachineName, thisMachineUtcTime.ToString ()), false);
+
+                await m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "Difference in UTC time between '{0}' and '{1}': {2}", System.Environment.MachineName, debuggingDevice.ID, thisMachineUtcVersusDeviceUtc.ToString ()), false);
+
+                //
+                // Check the last modified date; ls output currently uses this format:
+                //
+                // -rw-r--r-- system   system   11533274 2015-01-09 13:47 com.example.native_activity-2.apk
+                //
+
+                DateTime lastModifiedTimestampDeviceLocalTime;
+
+                try
+                {
+                  var extendedLsOutput = debuggingDevice.Shell ("ls -l", path).Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+                  var extendedLsOutputComponents = extendedLsOutput [0].Split (new char [] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                  string date = extendedLsOutputComponents [4];
+
+                  string time = extendedLsOutputComponents [5];
+
+                  if (!DateTime.TryParseExact (date + " " + time, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out lastModifiedTimestampDeviceLocalTime))
+                  {
+                    break;
+                  }
+                }
+                catch (Exception e)
+                {
+                  throw new InvalidOperationException (string.Format (CultureInfo.InvariantCulture, "Failed to evaluate device local modified time of: {0}", path), e);
+                }
+
+                //
+                // Calculate how long ago the APK was changed, according to the device's local time.
+                //
+
+                TimeSpan timeSinceLastModification = debuggingDeviceUtcTime - lastModifiedTimestampDeviceLocalTime;
+
+                DateTime debuggingDeviceUtcTimeAtLastModification = debuggingDeviceUtcTime - timeSinceLastModification;
+
+                DateTime thisMachineUtcTimeAtLastModification = thisMachineUtcTime - timeSinceLastModification;
+
+                await m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' was last modified on '{1}' at: {2}.", launchConfig ["PackageName"], debuggingDevice.ID, debuggingDeviceUtcTimeAtLastModification.ToString ()), false);
+
+                await m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "{0} (on {1}) was around {2} (on {3}).", debuggingDeviceUtcTimeAtLastModification.ToString (), debuggingDevice.ID, thisMachineUtcTimeAtLastModification.ToString (), System.Environment.MachineName), false);
+
+                await m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' was last modified on '{1}' at: {2}.", Path.GetFileName (targetApkFileInfo.FullName), System.Environment.MachineName, targetApkFileInfo.LastWriteTime.ToString ()), false);
+
+                if ((targetApkFileInfo.LastWriteTime + thisMachineUtcVersusDeviceUtc) > thisMachineUtcTimeAtLastModification)
+                {
+                  await m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' was determined to be out-of-date. Reinstalling...", launchConfig ["PackageName"]), false);
+                }
+                else
+                {
+                  appIsOutOfDate = false;
+                }
+
+                break;
+              }
+            }
+          }
+          catch (Exception)
+          {
+            appIsInstalled = false;
+          }
         }
         else
         {
-          // 
-          // Determine whether the application is currently installed, and if it is; 
-          // check last modified date to ensure we don't re-installed unchanged binaries.
-          // 
-
-          bool upToDateCheck = launchConfig ["UpToDateCheck"].Equals ("true");
-
-          bool appIsInstalled = false;
-
-          bool appIsOutOfDate = true;
-
-          if (upToDateCheck)
-          {
-            FileInfo targetApkFileInfo = new FileInfo (launchConfig ["TargetApk"]);
-
-            try
-            {
-              string [] adbPmPathOutput = debuggingDevice.Shell ("pm", "path " + launchConfig ["PackageName"]).Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-
-              foreach (string line in adbPmPathOutput)
-              {
-                if (line.StartsWith ("package:", StringComparison.OrdinalIgnoreCase))
-                {
-                  appIsInstalled = true;
-
-                  LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' already installed on target '{1}'.", launchConfig ["PackageName"], debuggingDevice.ID), false));
-
-                  string path = line.Substring ("package:".Length);
-
-                  // 
-                  // Get the target device/emulator's UTC current time.
-                  // 
-                  //   This is done by specifying the '-u' argument to 'date'. Despite this though, 
-                  //   the returned string will always claim to be in GMT: 
-                  // 
-                  //   i.e: "Fri Jan  9 14:35:23 GMT 2015"
-                  // 
-
-                  DateTime debuggingDeviceUtcTime;
-
-                  try
-                  {
-                    string [] deviceDateOutput = debuggingDevice.Shell ("date", "-u").Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-
-                    string debuggingDeviceUtcTimestamp = deviceDateOutput [0];
-
-                    string [] debuggingDeviceUtcTimestampComponents = debuggingDeviceUtcTimestamp.Split (new char [] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-                    debuggingDeviceUtcTimestampComponents [4] = "-00:00";
-
-                    if (!DateTime.TryParseExact (string.Join (" ", debuggingDeviceUtcTimestampComponents), "ddd MMM  d HH:mm:ss zzz yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out debuggingDeviceUtcTime))
-                    {
-                      break;
-                    }
-
-                    debuggingDeviceUtcTime = debuggingDeviceUtcTime.ToUniversalTime ();
-                  }
-                  catch (Exception e)
-                  {
-                    throw new InvalidOperationException ("Failed to evaluate device local time.", e);
-                  }
-
-                  // 
-                  // Convert current device/emulator time to UTC, and probe the working machine's time too.
-                  // 
-
-                  DateTime thisMachineUtcTime = DateTime.UtcNow;
-
-                  TimeSpan thisMachineUtcVersusDeviceUtc = debuggingDeviceUtcTime - thisMachineUtcTime;
-
-                  LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "Current UTC time on '{0}': {1}", debuggingDevice.ID, debuggingDeviceUtcTime.ToString ()), false));
-
-                  LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "Current UTC time on '{0}': {1}", System.Environment.MachineName, thisMachineUtcTime.ToString ()), false));
-
-                  LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "Difference in UTC time between '{0}' and '{1}': {2}", System.Environment.MachineName, debuggingDevice.ID, thisMachineUtcVersusDeviceUtc.ToString ()), false));
-
-                  // 
-                  // Check the last modified date; ls output currently uses this format:
-                  // 
-                  // -rw-r--r-- system   system   11533274 2015-01-09 13:47 com.example.native_activity-2.apk
-                  // 
-
-                  DateTime lastModifiedTimestampDeviceLocalTime;
-
-                  try
-                  {
-                    string [] extendedLsOutput = debuggingDevice.Shell ("ls -l", path).Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-
-                    string [] extendedLsOutputComponents = extendedLsOutput [0].Split (new char [] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-                    string date = extendedLsOutputComponents [4];
-
-                    string time = extendedLsOutputComponents [5];
-
-                    if (!DateTime.TryParseExact (date + " " + time, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out lastModifiedTimestampDeviceLocalTime))
-                    {
-                      break;
-                    }
-                  }
-                  catch (Exception e)
-                  {
-                    throw new InvalidOperationException (string.Format (CultureInfo.InvariantCulture, "Failed to evaluate device local modified time of: {0}", path), e);
-                  }
-
-                  // 
-                  // Calculate how long ago the APK was changed, according to the device's local time.
-                  // 
-
-                  TimeSpan timeSinceLastModification = debuggingDeviceUtcTime - lastModifiedTimestampDeviceLocalTime;
-
-                  DateTime debuggingDeviceUtcTimeAtLastModification = debuggingDeviceUtcTime - timeSinceLastModification;
-
-                  DateTime thisMachineUtcTimeAtLastModification = thisMachineUtcTime - timeSinceLastModification;
-
-                  LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' was last modified on '{1}' at: {2}.", launchConfig ["PackageName"], debuggingDevice.ID, debuggingDeviceUtcTimeAtLastModification.ToString ()), false));
-
-                  LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "{0} (on {1}) was around {2} (on {3}).", debuggingDeviceUtcTimeAtLastModification.ToString (), debuggingDevice.ID, thisMachineUtcTimeAtLastModification.ToString (), System.Environment.MachineName), false));
-
-                  LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' was last modified on '{1}' at: {2}.", Path.GetFileName (targetApkFileInfo.FullName), System.Environment.MachineName, targetApkFileInfo.LastWriteTime.ToString ()), false));
-
-                  if ((targetApkFileInfo.LastWriteTime + thisMachineUtcVersusDeviceUtc) > thisMachineUtcTimeAtLastModification)
-                  {
-                    LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' was determined to be out-of-date. Reinstalling...", launchConfig ["PackageName"]), false));
-                  }
-                  else
-                  {
-                    appIsOutOfDate = false;
-                  }
-
-                  break;
-                }
-              }
-            }
-            catch (Exception)
-            {
-              appIsInstalled = false;
-            }
-          }
-          else
-          {
-            LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate ("Skipping up-to-date check.", false));
-          }
-
-          if (!appIsInstalled || appIsOutOfDate)
-          {
-            LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "Installing '{0}' to '{1}'...", launchConfig ["PackageName"], debuggingDevice.ID), false));
-
-            InstallApplicationAsync (debuggingDevice, launchConfig);
-
-            LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' installed successfully.", launchConfig ["PackageName"]), false));
-          }
-          else
-          {
-            LoggingUtils.RequireOk (m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' on '{1}' is up-to-date. Skipping installation...", launchConfig ["PackageName"], debuggingDevice.ID), false));
-          }
-
-          debugLaunchSettings.Executable = launchConfig ["TargetApk"];
-
-          debugLaunchSettings.LaunchOperation = DebugLaunchOperation.Custom;
+          await m_debugConnectionService.LaunchDialogUpdate ("Skipping up-to-date check.", false);
         }
 
-        return debugLaunchSettings;
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
+        if (!appIsInstalled || appIsOutOfDate)
+        {
+          await m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "Installing '{0}' to '{1}'...", launchConfig ["PackageName"], debuggingDevice.ID), false);
 
-        throw;
+          InstallApplicationAsync (debuggingDevice, launchConfig);
+
+          await m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' installed successfully.", launchConfig ["PackageName"]), false);
+        }
+        else
+        {
+          await m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "'{0}' on '{1}' is up-to-date. Skipping installation...", launchConfig ["PackageName"], debuggingDevice.ID), false);
+        }
+
+        debugLaunchSettings.Executable = launchConfig ["TargetApk"];
+
+        debugLaunchSettings.LaunchOperation = DebugLaunchOperation.Custom;
       }
+
+      return debugLaunchSettings;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -434,35 +391,33 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
     public AndroidDevice GetPrioritisedConnectedDevice ()
     {
-      // 
+      //
       // Refresh ADB service and evaluate a list of connected devices or emulators.
-      // 
+      //
       // We want to prioritise devices over emulators here, which makes the logic a little dodgy.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
-      AndroidDevice debuggingDevice = null;
+      var connectedDevices = AndroidAdb.GetConnectedDevices ();
 
-      AndroidDevice [] connectedDevices = AndroidAdb.GetConnectedDevices ();
-
-      if (connectedDevices.Length > 0)
+      foreach (var device in connectedDevices)
       {
-        for (int i = 0; i < connectedDevices.Length; ++i)
+        if (!device.IsEmulator)
         {
-          if (!connectedDevices [i].IsEmulator)
-          {
-            debuggingDevice = connectedDevices [i];
-          }
-        }
-
-        if (debuggingDevice == null)
-        {
-          debuggingDevice = connectedDevices [0];
+          return device;
         }
       }
 
-      return debuggingDevice;
+      foreach (var device in connectedDevices)
+      {
+        if (device.IsEmulator)
+        {
+          return device;
+        }
+      }
+
+      return  null;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -471,9 +426,9 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
     private void InstallApplicationAsync (AndroidDevice debuggingDevice, LaunchConfiguration launchConfig)
     {
-      // 
+      //
       // Asynchronous installation process, so the UI can be updated appropriately.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -495,11 +450,11 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
           string installerPackage = launchConfig ["InstallerPackage"];
 
-          // 
+          //
           // Construct 'am install' arguments for installing the application in a manner compatible with GDB.
-          // 
+          //
           // Note: Installations to /mnt/asec/ cause 'run-as' to fail regarding permissions.
-          // 
+          //
 
           StringBuilder installArgsBuilder = new StringBuilder ();
 
@@ -517,15 +472,15 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
           installArgsBuilder.Append (targetRemoteTemporaryFile);
 
-          // 
+          //
           // Explicitly install the target APK using 'pm' tool, as this allows more customisation.
-          // 
+          //
           //  1) APKs must already be on the device for this tool to work. We push these manually.
-          // 
+          //
           //  2) Installations can fail for various reasons; errors are reported thusly:
           //         pkg: /data/local/tmp/hello-gdbserver-Debug.apk
           //       Failure [INSTALL_FAILED_INVALID_URI]
-          // 
+          //
 
           m_debugConnectionService.LaunchDialogUpdate (string.Format (CultureInfo.InvariantCulture, "[adb:push] {0} {1}", targetLocalApk, targetRemoteTemporaryPath), false);
 
@@ -584,9 +539,9 @@ namespace AndroidPlusPlus.VsDebugLauncher
     {
       LoggingUtils.PrintFunction ();
 
-      // 
+      //
       // Retrieve standard project macro values, and determine the preferred debugger configuration.
-      // 
+      //
 
       string projectTargetName = EvaluateProjectProperty (projectProperties, "ConfigurationGeneral", "TargetName");
 
@@ -614,9 +569,9 @@ namespace AndroidPlusPlus.VsDebugLauncher
       }
       else if (debuggerMode.Equals ("vs-android"))
       {
-        // 
+        //
         // Support for vs-android.
-        // 
+        //
 
         string antBuildPath = EvaluateProjectProperty (projectProperties, "AntBuild", "AntBuildPath");
 
@@ -633,9 +588,9 @@ namespace AndroidPlusPlus.VsDebugLauncher
         debuggerTargetApk = Path.Combine (antBuildPath, "bin", string.Format (CultureInfo.InvariantCulture, "{0}-{1}.apk", antBuildXmlProjectName, antBuildType));
       }
 
-      // 
+      //
       // Ensure the provided target APK is found and absolute.
-      // 
+      //
 
       if (string.IsNullOrEmpty (debuggerTargetApk))
       {
@@ -658,9 +613,9 @@ namespace AndroidPlusPlus.VsDebugLauncher
         throw new FileNotFoundException ("Could not find required target application. Expected: " + debuggerTargetApk);
       }
 
-      // 
+      //
       // Find the selected Android SDK (and associated build-tools) deployment.
-      // 
+      //
 
       string androidSdkRoot = EvaluateProjectProperty (projectProperties, "ConfigurationGeneral", "AndroidSdkRoot");
 
@@ -682,9 +637,9 @@ namespace AndroidPlusPlus.VsDebugLauncher
         throw new DirectoryNotFoundException (string.Format (CultureInfo.CurrentCulture, "Could not locate Android SDK build-tools (v{0}). Expected: {1}", androidSdkBuildToolsVersion, androidSdkBuildToolsPath));
       }
 
-      // 
+      //
       // Spawn a AAPT.exe instance to gain some extra information about the APK we are trying to load.
-      // 
+      //
 
       string applicationPackageName = string.Empty;
 
@@ -706,17 +661,17 @@ namespace AndroidPlusPlus.VsDebugLauncher
           throw new InvalidOperationException ("AAPT failed to dump required application badging information. Exit-code: " + exitCode);
         }
 
-        string [] apkDetails = getApkDetails.StandardOutput.Replace ("\r", "").Split (new char [] { '\n' });
+        var apkDetails = getApkDetails.StandardOutput.Replace ("\r", "").Split (new char [] { '\n' });
 
         foreach (string singleLine in apkDetails)
         {
           if (singleLine.StartsWith ("package: ", StringComparison.OrdinalIgnoreCase))
           {
-            // 
+            //
             // Retrieve package name from format: "package: name='com.example.hellogdbserver' versionCode='1' versionName='1.0'"
-            // 
+            //
 
-            string [] packageData = singleLine.Substring ("package: ".Length).Split (' ');
+            var packageData = singleLine.Substring ("package: ".Length).Split (' ');
 
             foreach (string data in packageData)
             {
@@ -728,7 +683,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
           }
           else if (singleLine.StartsWith ("launchable-activity: ", StringComparison.OrdinalIgnoreCase))
           {
-            string [] launchActivityData = singleLine.Substring ("launchable-activity: ".Length).Split (' ');
+            var launchActivityData = singleLine.Substring ("launchable-activity: ".Length).Split (' ');
 
             foreach (string data in launchActivityData)
             {
@@ -741,32 +696,33 @@ namespace AndroidPlusPlus.VsDebugLauncher
         }
       }
 
-      // 
+      //
       // If a specific launch activity was not requested, ensure that the default one is referenced.
-      // 
+      //
 
       if (string.IsNullOrEmpty (debuggerLaunchActivity))
       {
         debuggerLaunchActivity = applicationLaunchActivity;
       }
 
-      LaunchConfiguration launchConfig = new LaunchConfiguration ();
+      LaunchConfiguration launchConfig = new LaunchConfiguration
+      {
+        ["TargetApk"] = debuggerTargetApk,
 
-      launchConfig ["TargetApk"] = debuggerTargetApk;
+        ["UpToDateCheck"] = debuggerUpToDateCheck,
 
-      launchConfig ["UpToDateCheck"] = debuggerUpToDateCheck;
+        ["PackageName"] = applicationPackageName,
 
-      launchConfig ["PackageName"] = applicationPackageName;
+        ["LaunchActivity"] = debuggerLaunchActivity,
 
-      launchConfig ["LaunchActivity"] = debuggerLaunchActivity;
+        ["DebugMode"] = debuggerDebugMode,
 
-      launchConfig ["DebugMode"] = debuggerDebugMode;
+        ["OpenGlTrace"] = debuggerOpenGlTrace,
 
-      launchConfig ["OpenGlTrace"] = debuggerOpenGlTrace;
+        ["KeepAppData"] = debuggerKeepAppData,
 
-      launchConfig ["KeepAppData"] = debuggerKeepAppData;
-
-      launchConfig ["InstallerPackage"] = debuggerInstallerPackage;
+        ["InstallerPackage"] = debuggerInstallerPackage
+      };
 
       return launchConfig;
     }
@@ -775,7 +731,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public LaunchProps [] GetLaunchPropsFromProjectProperties (IDictionary<string, string> projectProperties)
+    public ICollection<LaunchProps> GetLaunchPropsFromProjectProperties (IDictionary<string, string> projectProperties)
     {
       LoggingUtils.PrintFunction ();
 
@@ -783,13 +739,14 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       bool debuggerPropEglCallstack = EvaluateProjectProperty (projectProperties, "AndroidPlusPlusDebugger", "DebuggerPropEglCallstack").Equals ("true");
 
-      List<LaunchProps> launchProps = new List<LaunchProps> ();
+      List<LaunchProps> launchProps = new List<LaunchProps>
+      {
+        new LaunchProps("debug.checkjni", (debuggerPropCheckJni) ? "1" : "0"),
 
-      launchProps.Add (new LaunchProps ("debug.checkjni", (debuggerPropCheckJni) ? "1" : "0"));
+        new LaunchProps("debug.egl.callstack", (debuggerPropEglCallstack) ? "1" : "0")
+      };
 
-      launchProps.Add (new LaunchProps ("debug.egl.callstack", (debuggerPropEglCallstack) ? "1" : "0"));
-
-      return launchProps.ToArray ();
+      return launchProps;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -798,25 +755,18 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
     private static string EvaluateProjectProperty (IDictionary <string, string> projectProperties, string schema, string property)
     {
-      // 
+      //
       // VS2010 provides a pre-processed list of project properties. We have to evaluate these manually for VS2012+.
       // - In order to avoid duplicates from similar properties under different schemas, they are prefixed in the list.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
       string evaluatedProperty = string.Empty;
-      
+
       string schemaGroupedKey = string.Concat (schema, ".", property);
 
       bool foundProperty = false;
-
-#if VS2013 || VS2015
-      if (projectProperties.TryGetValue (schemaGroupedKey, out evaluatedProperty))
-      {
-        foundProperty = true;
-      }
-#endif
 
       if (!foundProperty && projectProperties.TryGetValue (property, out evaluatedProperty))
       {
@@ -829,38 +779,6 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       return evaluatedProperty;
     }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#if VS2010
-    private static VCConfiguration GetActiveConfiguration (Project project)
-    {
-      LoggingUtils.PrintFunction ();
-
-      if (project == null)
-      {
-        throw new ArgumentNullException ("project");
-      }
-
-      VCProject vcProject = project.Object as VCProject;
-
-      VCConfiguration [] vcProjectConfigurations = (VCConfiguration []) vcProject.Configurations;
-
-      Configuration activeConfiguration = project.ConfigurationManager.ActiveConfiguration;
-
-      foreach (VCConfiguration config in vcProjectConfigurations)
-      {
-        if (config.Name.StartsWith (activeConfiguration.ConfigurationName))
-        {
-          return config;
-        }
-      }
-
-      return null;
-    }
-#endif
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

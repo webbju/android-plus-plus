@@ -21,9 +21,9 @@ namespace AndroidPlusPlus.VsDebugEngine
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  // 
-  // This class represents a document context to the debugger. A document context represents a location within a source file. 
-  // 
+  //
+  // This class represents a document context to the debugger. A document context represents a location within a source file.
+  //
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -88,10 +88,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int Compare (enum_DOCCONTEXT_COMPARE compare, IDebugDocumentContext2 [] documentContexts, uint documentContextsLength, out uint matchIndex)
     {
-      // 
+      //
       // Compares this document context to a given array of document contexts.
       // Returns via 'matchIndex' the index into the 'documentContexts' array of the first document context that satisfies the comparison.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -127,16 +127,16 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int EnumCodeContexts (out IEnumDebugCodeContexts2 enumCodeContexts)
     {
-      // 
+      //
       // Retrieves a list of all code contexts associated with this document context.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
       try
       {
         IDebugCodeContext2 [] codeContexts;
-        
+
         if (m_codeContext != null)
         {
           codeContexts = new IDebugCodeContext2 [] { m_codeContext };
@@ -147,11 +147,6 @@ namespace AndroidPlusPlus.VsDebugEngine
         }
 
         enumCodeContexts = new DebuggeeCodeContext.Enumerator (codeContexts);
-
-        if (enumCodeContexts == null)
-        {
-          throw new InvalidOperationException ();
-        }
 
         return Constants.S_OK;
       }
@@ -171,10 +166,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetDocument (out IDebugDocument2 document)
     {
-      // 
+      //
       // Gets the document that contains this document context.
       // This method is for those debug engines that supply documents directly to the IDE. Otherwise, this method should return E_NOTIMPL.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -189,9 +184,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetLanguageInfo (ref string languageName, ref Guid languageGuid)
     {
-      // 
+      //
       // Gets the language associated with this document context.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -208,9 +203,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetName (enum_GETNAME_TYPE type, out string name)
     {
-      // 
+      //
       // Gets the displayable name of the document that contains this document context.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -222,9 +217,9 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           case enum_GETNAME_TYPE.GN_NAME:
           {
-            // 
+            //
             // Specifies a friendly name of the document or context.
-            // 
+            //
 
             name = Path.GetFileNameWithoutExtension (m_fileName);
 
@@ -233,9 +228,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           case enum_GETNAME_TYPE.GN_FILENAME:
           {
-            // 
+            //
             // Specifies the full path of the document or context.
-            // 
+            //
 
             name = m_fileName;
 
@@ -244,9 +239,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           case enum_GETNAME_TYPE.GN_BASENAME:
           {
-            // 
+            //
             // Specifies a base file name instead of a full path of the document or context.
-            // 
+            //
 
             name = Path.GetFileName (m_fileName);
 
@@ -255,9 +250,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           case enum_GETNAME_TYPE.GN_MONIKERNAME:
           {
-            // 
+            //
             // Specifies a unique name of the document or context in the form of a moniker.
-            // 
+            //
 
             name = m_fileName;
 
@@ -266,9 +261,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           case enum_GETNAME_TYPE.GN_URL:
           {
-            // 
+            //
             // Specifies a URL name of the document or context.
-            // 
+            //
 
             name = "file://" + m_fileName.Replace ("\\", "/");
 
@@ -277,9 +272,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           case enum_GETNAME_TYPE.GN_TITLE:
           {
-            // 
+            //
             // Specifies a title of the document, if one exists.
-            // 
+            //
 
             name = Path.GetFileName (m_fileName);
 
@@ -288,9 +283,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           case enum_GETNAME_TYPE.GN_STARTPAGEURL:
           {
-            // 
+            //
             // Gets the starting page URL for processes.
-            // 
+            //
 
             name = "file://" + m_fileName.Replace ("\\", "/");
 
@@ -319,11 +314,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetSourceRange (TEXT_POSITION [] beginPosition, TEXT_POSITION [] endPosition)
     {
-      // 
+      //
       // Gets the source code range of this document context.
-      // A source range is the entire range of source code, from the current statement back to just after the previous statement that contributed code. 
+      // A source range is the entire range of source code, from the current statement back to just after the previous statement that contributed code.
       // The source range is typically used for mixing source statements, including comments, with code in the disassembly window.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -345,10 +340,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetStatementRange (TEXT_POSITION [] beginPosition, TEXT_POSITION [] endPosition)
     {
-      // 
+      //
       // Gets the file statement range of the document context.
       // A statement range is the range of the lines that contributed the code to which this document context refers.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -378,9 +373,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int Seek (int nCount, out IDebugDocumentContext2 ppDocContext)
     {
-      // 
+      //
       // Moves the document context by a given number of statements or lines.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 

@@ -32,7 +32,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private class Enumerator : DebugEnumerator<IDebugPort2, IEnumDebugPorts2>, IEnumDebugPorts2
     {
-      public Enumerator (List<IDebugPort2> ports)
+      public Enumerator (ICollection<IDebugPort2> ports)
         : base (ports)
       {
       }
@@ -60,19 +60,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public DebuggeePort (IDebugPortSupplier2 portSupplier, AndroidDevice device)
     {
-      if (portSupplier == null)
-      {
-        throw new ArgumentNullException ("portSupplier");
-      }
+      m_portSupplier = portSupplier ?? throw new ArgumentNullException (nameof(portSupplier));
 
-      if (device == null)
-      {
-        throw new ArgumentNullException ("device");
-      }
-
-      m_portSupplier = portSupplier;
-
-      m_portDevice = device;
+      m_portDevice = device ?? throw new ArgumentNullException (nameof(device));
 
       m_portGuid = Guid.NewGuid ();
 
@@ -85,7 +75,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public AndroidDevice PortDevice 
+    public AndroidDevice PortDevice
     {
       get
       {
@@ -101,9 +91,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      DebuggeeProcess process = null;
-
-      m_portProcesses.TryGetValue (pid, out process);
+      m_portProcesses.TryGetValue (pid, out DebuggeeProcess process);
 
       return process;
     }
@@ -114,9 +102,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int RefreshProcesses ()
     {
-      // 
+      //
       // Check which processes are currently running on the target device (port).
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -126,9 +114,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         m_portProcesses.Clear ();
 
-        // 
+        //
         // Register a new process with this port if it was spawned by 'zygote'.
-        // 
+        //
 
         uint [] zygotePids = m_portDevice.GetPidsFromName ("zygote");
 
@@ -146,9 +134,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           }
         }
 
-        // 
+        //
         // Register a new process with this port if it was spawned by 'zygote64' (it's a 64-bit process).
-        // 
+        //
 
         uint [] zygote64Pids = m_portDevice.GetPidsFromName ("zygote64");
 
@@ -188,9 +176,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int EnumProcesses (out IEnumDebugProcesses2 ppEnum)
     {
-      // 
+      //
       // Returns a list of all the processes running on a port.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -222,9 +210,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetPortId (out Guid pguidPort)
     {
-      // 
+      //
       // Gets the port identifier.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -239,9 +227,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetPortName (out string pbstrName)
     {
-      // 
+      //
       // Gets the port name.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -256,9 +244,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetPortRequest (out IDebugPortRequest2 ppRequest)
     {
-      // 
+      //
       // Gets the description of a port that was previously used to create the port (if available).
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -273,9 +261,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetPortSupplier (out IDebugPortSupplier2 ppSupplier)
     {
-      // 
+      //
       // Gets the port supplier for this port.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -290,9 +278,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetProcess (AD_PROCESS_ID ProcessId, out IDebugProcess2 ppProcess)
     {
-      // 
+      //
       // Gets the specified process running on a port.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -304,12 +292,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           LoggingUtils.RequireOk (RefreshProcesses ());
 
-          DebuggeeProcess process = GetProcessForPid (ProcessId.dwProcessId);
-
-          if (process == null)
-          {
-            throw new InvalidOperationException (string.Format ("Could not locate requested process. Pid: {0}", ProcessId.dwProcessId));
-          }
+          DebuggeeProcess process = GetProcessForPid (ProcessId.dwProcessId) ?? throw new InvalidOperationException ($"Could not locate requested process. Pid: {ProcessId.dwProcessId}");
 
           ppProcess = process as IDebugProcess2;
         }
@@ -356,9 +339,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int AddProgramNode (IDebugProgramNode2 pProgramNode)
     {
-      // 
+      //
       // Registers a program that can be debugged with the port it is running on.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -402,9 +385,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int RemoveProgramNode (IDebugProgramNode2 pProgramNode)
     {
-      // 
+      //
       // Unregisters a program that can be debugged from the port it is running on.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -450,9 +433,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void Advise (object pUnkSink, out int pdwCookie)
     {
-      // 
+      //
       // Establishes an advisory connection between the connection point and the caller's sink object.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -478,9 +461,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void EnumConnections (out IEnumConnections ppEnum)
     {
-      // 
+      //
       // Creates an enumerator object for iteration through the connections that exist to this connection point.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -513,9 +496,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void GetConnectionInterface (out Guid pIID)
     {
-      // 
+      //
       // Returns the IID of the outgoing interface managed by this connection point.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -528,9 +511,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void GetConnectionPointContainer (out IConnectionPointContainer ppCPC)
     {
-      // 
+      //
       // Retrieves the IConnectionPointContainer interface pointer to the connectable object that conceptually owns this connection point.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -543,9 +526,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void Unadvise (int dwCookie)
     {
-      // 
+      //
       // Terminates an advisory connection previously established through the System.Runtime.InteropServices.ComTypes.IConnectionPoint.Advise(System.Object,System.Int32@) method.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -589,9 +572,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void EnumConnectionPoints (out IEnumConnectionPoints ppEnum)
     {
-      // 
+      //
       // Creates an enumerator of all the connection points supported in the connectable object, one connection point per IID.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -619,10 +602,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void FindConnectionPoint (ref Guid riid, out IConnectionPoint ppCP)
     {
-      // 
-      // Asks the connectible object if it has a connection point for a particular IID, 
+      //
+      // Asks the connectible object if it has a connection point for a particular IID,
       // and if so, returns the IConnectionPoint interface pointer to that connection point.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 

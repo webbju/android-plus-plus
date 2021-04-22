@@ -26,7 +26,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private readonly T [] m_data;
+    private readonly ICollection<T> m_data;
 
     private uint m_position;
 
@@ -34,20 +34,9 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public DebugEnumerator (T [] data)
+    public DebugEnumerator (ICollection<T> data)
     {
       m_data = data;
-
-      m_position = 0;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public DebugEnumerator (List <T> data)
-    {
-      m_data = data.ToArray ();
 
       m_position = 0;
     }
@@ -81,7 +70,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      pcelt = (uint)m_data.Length;
+      pcelt = (uint)m_data.Count;
 
       return Constants.S_OK;
     }
@@ -165,7 +154,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         int hr = Constants.S_OK;
 
-        celtFetched = (uint)m_data.Length - m_position;
+        celtFetched = (uint)m_data.Count - m_position;
 
         if (celt > celtFetched)
         {
@@ -178,10 +167,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (rgelt != null)
         {
-          for (int c = 0; c < celtFetched; c++)
-          {
-            rgelt[c] = m_data[m_position + c];
-          }
+          T[] duplicate = new T[m_data.Count];
+
+          m_data.CopyTo(duplicate, 0);
+
+          Array.Copy(duplicate, rgelt, celtFetched);
         }
 
         m_position += celtFetched;

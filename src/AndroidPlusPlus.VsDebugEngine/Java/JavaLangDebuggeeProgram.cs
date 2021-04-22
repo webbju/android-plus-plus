@@ -85,9 +85,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int Attach (IDebugEventCallback2 pCallback)
     {
-      // 
+      //
       // Attaches to this program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -235,9 +235,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int EnumCodeContexts (IDebugDocumentPosition2 pDocPos, out IEnumDebugCodeContexts2 ppEnum)
     {
-      // 
+      //
       // Enumerates the code contexts for a given position in a source file.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -255,12 +255,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         string location = string.Format ("\"{0}:{1}\"", fileName, startPos [0].dwLine + 1);
 
-        DebuggeeCodeContext codeContext = m_debugger.GetCodeContextForLocation (location);
-
-        if (codeContext == null)
-        {
-          throw new InvalidOperationException ("Failed evaluating code-context for location.");
-        }
+        DebuggeeCodeContext codeContext = m_debugger.GetCodeContextForLocation (location) ?? throw new InvalidOperationException ("Failed evaluating code-context for location.");
 
         DebuggeeCodeContext [] codeContexts = new DebuggeeCodeContext [] { codeContext };
 
@@ -284,18 +279,18 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int EnumCodePaths (string pszHint, IDebugCodeContext2 pStart, IDebugStackFrame2 pFrame, int fSource, out IEnumCodePaths2 ppEnum, out IDebugCodeContext2 ppSafety)
     {
-      // 
+      //
       // Enumerates the code paths of this program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
 #if false
       try
       {
-        // 
+        //
         // Get the entire call-stack for the current thread, and enumerate.
-        // 
+        //
 
         CLangDebuggeeStackFrame stackFrame = pFrame as CLangDebuggeeStackFrame;
 
@@ -358,9 +353,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int EnumModules (out IEnumDebugModules2 ppEnum)
     {
-      // 
+      //
       // Enumerates the modules that this program has loaded and is executing.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -374,11 +369,6 @@ namespace AndroidPlusPlus.VsDebugEngine
         }
 
         ppEnum = new DebuggeeModule.Enumerator (modules);
-
-        if (ppEnum == null)
-        {
-          throw new InvalidOperationException ();
-        }
 
         return Constants.S_OK;
       }
@@ -398,9 +388,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int EnumThreads (out IEnumDebugThreads2 ppEnum)
     {
-      // 
+      //
       // Enumerates the threads that are running in this program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -411,11 +401,6 @@ namespace AndroidPlusPlus.VsDebugEngine
         threads.AddRange (m_debugThreads.Values);
 
         ppEnum = new DebuggeeThread.Enumerator (threads);
-
-        if (ppEnum == null)
-        {
-          throw new InvalidOperationException ();
-        }
 
         return Constants.S_OK;
       }
@@ -435,9 +420,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetDebugProperty (out IDebugProperty2 ppProperty)
     {
-      // 
+      //
       // Gets program properties.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -461,9 +446,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int Execute ()
     {
-      // 
+      //
       // Continues running this program from a stopped state. Any previous execution state is cleared.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -504,10 +489,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetENCUpdate (out object ppUpdate)
     {
-      // 
+      //
       // Gets the Edit and Continue (ENC) update for this program.
       // A custom debug engine does not implement this method (it should always return E_NOTIMPL).
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -522,9 +507,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetEngineInfo (out string pbstrEngine, out Guid pguidEngine)
     {
-      // 
+      //
       // Gets the name and identifier of the debug engine (DE) running a program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -541,9 +526,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetMemoryBytes (out IDebugMemoryBytes2 ppMemoryBytes)
     {
-      // 
+      //
       // Gets the memory bytes for this program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -558,9 +543,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetName (out string pbstrName)
     {
-      // 
+      //
       // Gets the name of the program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -575,9 +560,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetProcess (out IDebugProcess2 ppProcess)
     {
-      // 
+      //
       // Gets the process that this program is running in.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -592,9 +577,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetProgramId (out Guid pguidProgramId)
     {
-      // 
+      //
       // Gets a globally unique identifier for this program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -609,9 +594,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int Step (IDebugThread2 pThread, enum_STEPKIND sk, enum_STEPUNIT Step)
     {
-      // 
+      //
       // Performs a step.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -673,9 +658,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int Terminate ()
     {
-      // 
+      //
       // Terminates this program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -699,9 +684,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int WriteDump (enum_DUMPTYPE DUMPTYPE, string pszDumpUrl)
     {
-      // 
+      //
       // Writes a dump to a file.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -735,9 +720,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int ExecuteOnThread (IDebugThread2 pThread)
     {
-      // 
+      //
       // Executes the debugger program. The thread is returned to give the debugger information on which thread the user is viewing when executing the program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 

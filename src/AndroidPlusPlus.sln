@@ -3,18 +3,29 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30011.22
 MinimumVisualStudioVersion = 14.0.0.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.Common", "AndroidPlusPlus.Common\AndroidPlusPlus.Common.csproj", "{6D575221-37D1-4C3D-82A5-5FEB632069AA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AndroidPlusPlus.Common", "AndroidPlusPlus.Common\AndroidPlusPlus.Common.csproj", "{6D575221-37D1-4C3D-82A5-5FEB632069AA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsDebugEngine", "AndroidPlusPlus.VsDebugEngine\AndroidPlusPlus.VsDebugEngine.csproj", "{52DDF087-9B2C-49AF-BD1C-EC2B9C1DD0F5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AndroidPlusPlus.VsDebugEngine", "AndroidPlusPlus.VsDebugEngine\AndroidPlusPlus.VsDebugEngine.csproj", "{52DDF087-9B2C-49AF-BD1C-EC2B9C1DD0F5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsDebugLauncher", "AndroidPlusPlus.VsDebugLauncher\AndroidPlusPlus.VsDebugLauncher.csproj", "{7C701BB4-BAD8-40DA-AFDC-B9820A04F005}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AndroidPlusPlus.VsDebugLauncher", "AndroidPlusPlus.VsDebugLauncher\AndroidPlusPlus.VsDebugLauncher.csproj", "{7C701BB4-BAD8-40DA-AFDC-B9820A04F005}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsIntegratedPackage", "AndroidPlusPlus.VsIntegratedPackage\AndroidPlusPlus.VsIntegratedPackage.csproj", "{14DF8540-798D-46E9-9EC0-1648D3792660}"
 	ProjectSection(ProjectDependencies) = postProject
 		{7C701BB4-BAD8-40DA-AFDC-B9820A04F005} = {7C701BB4-BAD8-40DA-AFDC-B9820A04F005}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidPlusPlus.VsDebugCommon", "AndroidPlusPlus.VsDebugCommon\AndroidPlusPlus.VsDebugCommon.csproj", "{72DEB30B-76E5-4B4A-9075-5ABC3412B8DB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AndroidPlusPlus.VsDebugCommon", "AndroidPlusPlus.VsDebugCommon\AndroidPlusPlus.VsDebugCommon.csproj", "{72DEB30B-76E5-4B4A-9075-5ABC3412B8DB}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AndroidPlusPlus.MsBuild.Common", "AndroidPlusPlus.MsBuild.Common\AndroidPlusPlus.MsBuild.Common.csproj", "{142446E1-20C8-41C6-9CD5-94BD7D7D4427}"
+	ProjectSection(ProjectDependencies) = postProject
+		{6D575221-37D1-4C3D-82A5-5FEB632069AA} = {6D575221-37D1-4C3D-82A5-5FEB632069AA}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AndroidPlusPlus.MsBuild.CppTasks", "AndroidPlusPlus.MsBuild.CppTasks\AndroidPlusPlus.MsBuild.CppTasks.csproj", "{3A4EB417-FB3B-4582-915A-678F3DE1EB22}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AndroidPlusPlus.MsBuild.DeployTasks", "AndroidPlusPlus.MsBuild.DeployTasks\AndroidPlusPlus.MsBuild.DeployTasks.csproj", "{D4F29445-D80E-4DBC-B544-81E1959D17F3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AndroidPlusPlus.MsBuild.Exporter", "AndroidPlusPlus.MsBuild.Exporter\AndroidPlusPlus.MsBuild.Exporter.csproj", "{1302AF6C-F5A8-4374-9C6C-8D5295B93492}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -42,6 +53,22 @@ Global
 		{72DEB30B-76E5-4B4A-9075-5ABC3412B8DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{72DEB30B-76E5-4B4A-9075-5ABC3412B8DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{72DEB30B-76E5-4B4A-9075-5ABC3412B8DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{142446E1-20C8-41C6-9CD5-94BD7D7D4427}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{142446E1-20C8-41C6-9CD5-94BD7D7D4427}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{142446E1-20C8-41C6-9CD5-94BD7D7D4427}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{142446E1-20C8-41C6-9CD5-94BD7D7D4427}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A4EB417-FB3B-4582-915A-678F3DE1EB22}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A4EB417-FB3B-4582-915A-678F3DE1EB22}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A4EB417-FB3B-4582-915A-678F3DE1EB22}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A4EB417-FB3B-4582-915A-678F3DE1EB22}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D4F29445-D80E-4DBC-B544-81E1959D17F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4F29445-D80E-4DBC-B544-81E1959D17F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4F29445-D80E-4DBC-B544-81E1959D17F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4F29445-D80E-4DBC-B544-81E1959D17F3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1302AF6C-F5A8-4374-9C6C-8D5295B93492}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1302AF6C-F5A8-4374-9C6C-8D5295B93492}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1302AF6C-F5A8-4374-9C6C-8D5295B93492}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1302AF6C-F5A8-4374-9C6C-8D5295B93492}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

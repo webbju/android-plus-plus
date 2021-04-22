@@ -54,8 +54,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private DebugBreakpointManager m_breakpointManager;
 
-    private LaunchConfiguration m_launchConfiguration;
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -65,8 +63,6 @@ namespace AndroidPlusPlus.VsDebugEngine
       m_broadcastHandleLock = new AutoResetEvent (false);
 
       m_breakpointManager = new DebugBreakpointManager (this);
-
-      m_launchConfiguration = new LaunchConfiguration ();
 
       Program = null;
 
@@ -172,11 +168,6 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      if (callback == null)
-      {
-        throw new ArgumentNullException ("callback");
-      }
-
       Guid eventGuid = ComUtils.GuidOf (debugEvent);
 
       uint eventAttributes = 0;
@@ -185,7 +176,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (((eventAttributes & (uint) enum_EVENTATTRIBUTES.EVENT_STOPPING) != 0) && (thread == null))
       {
-        throw new ArgumentNullException ("thread", "For stopping events, this parameter cannot be a null value as the stack frame is obtained from this parameter.");
+        throw new ArgumentNullException (nameof(thread), "For stopping events, this parameter cannot be a null value as the stack frame is obtained from this parameter.");
       }
 
       try
@@ -278,9 +269,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int Attach (IDebugProgram2 [] rgpPrograms, IDebugProgramNode2 [] rgpProgramNodes, uint celtPrograms, IDebugEventCallback2 ad7Callback, enum_ATTACH_REASON dwReason)
     {
-      // 
+      //
       // Attach the debug engine to a program.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -317,7 +308,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus, string.Format ("Starting GDB client...")), null, null);
 
-        NativeDebugger = new CLangDebugger (this, m_launchConfiguration, Program);
+        NativeDebugger = new CLangDebugger (this, new LaunchConfiguration(), Program);
 
         Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus, string.Format ("Starting JDB client...")), null, null);
 
@@ -325,25 +316,25 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         ThreadPool.QueueUserWorkItem (delegate (object obj)
         {
-          // 
+          //
           // When this method is called, the DE needs to send these events in sequence:
           // 1. IDebugEngineCreate2
           // 2. IDebugProgramCreateEvent2
           // 3. IDebugLoadCompleteEvent2
           // 4. (if enum_ATTACH_REASON.ATTACH_REASON_LAUNCH), IDebugEntryPointEvent2
-          // 
+          //
 
           try
           {
             Broadcast (new DebugEngineEvent.EngineCreate (this), Program, null);
 
-            // 
+            //
             // Run a couple of tests which prevent the run-as tool from functioning properly:
-            // 
+            //
             // 1) Test if this device/emulator is susceptible to a (usually 4.3 specific) run-as permissions bug.
             //      https://code.google.com/p/android/issues/detail?id=58373
             // 2) Test if the installed package is not declared 'debuggable'.
-            // 
+            //
 
             AndroidDevice debuggingDevice = Program.DebugProcess.NativeProcess.HostDevice;
 
@@ -364,17 +355,12 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             CLangDebuggeeThread currentThread = null;
 
-            NativeDebugger.RunInterruptOperation (delegate (CLangDebugger debugger)
+            NativeDebugger.RunInterruptOperation ((CLangDebugger debugger) =>
             {
               debugger.NativeProgram.RefreshAllThreads ();
 
-              currentThread = debugger.NativeProgram.GetThread (debugger.NativeProgram.CurrentThreadId);
-
-              if (currentThread == null)
-              {
-                // Lack of current thread is usually a good indication that connection/attaching failed.
-                throw new InvalidOperationException (string.Format ("Failed to retrieve program's main thread (tid: {0}).", debugger.NativeProgram.CurrentThreadId));
-              }
+              // Lack of current thread is usually a good indication that connection/attaching failed.
+              currentThread = debugger.NativeProgram.GetThread (debugger.NativeProgram.CurrentThreadId) ?? throw new InvalidOperationException (string.Format ("Failed to retrieve program's main thread (tid: {0}).", debugger.NativeProgram.CurrentThreadId));
             });
 
             Broadcast (new DebugEngineEvent.ProgramCreate (), Program, null);
@@ -424,11 +410,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int CauseBreak ()
     {
-      // 
+      //
       // Requests all programs being debugged by this DebugEngine instance stop execution (next time one of their threads attempts to run).
       // Normally called in response to user clicking the PAUSE button in the debugger.
       // When the break is complete, an AsyncBreakComplete event will be sent back to the debugger.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -452,10 +438,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int ContinueFromSynchronousEvent (IDebugEvent2 eventObject)
     {
-      // 
+      //
       // Called by the Session Debug Manager (SDM) to indicate that a synchronous event, previously sent by the DebugEngine to the SDM,
       // was received and processed. An example of this is 'Program Destroy', which triggers a shutdown of the DebugEngine.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -479,10 +465,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int CreatePendingBreakpoint (IDebugBreakpointRequest2 pBPRequest, out IDebugPendingBreakpoint2 ppPendingBP)
     {
-      // 
-      // Creates a pending breakpoint for this DebugEngine. 
+      //
+      // Creates a pending breakpoint for this DebugEngine.
       // A 'PendingBreakpoint' contains all required data to bind a breakpoint to a location in the debuggee.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -508,10 +494,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int DestroyProgram (IDebugProgram2 pProgram)
     {
-      // 
+      //
       // Informs a DebugEngine that the program specified has been atypically terminated, and that the DebugEngine should
       // clean up all references to the program and send a 'program destroy' event.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -533,9 +519,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int EnumPrograms (out IEnumDebugPrograms2 ppEnum)
     {
-      // 
+      //
       // Retrieves a list of all programs being debugged by a debug engine (DE).
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -563,9 +549,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetEngineId (out Guid guidEngine)
     {
-      // 
+      //
       // Gets the GUID of the DebugEngine.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -580,9 +566,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int LoadSymbols ()
     {
-      // 
+      //
       // Loads (as necessary) symbols for all modules being debugged by this debugging engine.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -604,9 +590,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int RemoveAllSetExceptions (ref Guid guidType)
     {
-      // 
+      //
       // Removes the list of exceptions the IDE has set for a particular run-time architecture or language.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -628,9 +614,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int RemoveSetException (EXCEPTION_INFO [] pException)
     {
-      // 
+      //
       // Removes the specified exception so it is no longer handled by the DebugEngine.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -652,9 +638,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int SetAllExceptions (enum_EXCEPTION_STATE dwState)
     {
-      // 
+      //
       // This method sets the state of all outstanding exceptions.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -676,17 +662,17 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int SetException (EXCEPTION_INFO [] pException)
     {
-      // 
+      //
       // Specifies how the DebugEngine should handle a given exception.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
       try
       {
-        // 
+        //
         // Filter exceptions to those targeted at this debug engine.
-        // 
+        //
 
         List<EXCEPTION_INFO> filtedExceptions = new List<EXCEPTION_INFO> (pException.Length);
 
@@ -733,9 +719,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int SetEngineGuid (ref Guid guidEngine)
     {
-      // 
+      //
       // This method sets the debug engine's (DE) GUID.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -748,9 +734,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int SetJustMyCodeState (int fUpdate, uint dwModules, JMC_CODE_SPEC [] rgJMCSpec)
     {
-      // 
+      //
       // This method tells the debug engine about the JustMyCode state information.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -763,9 +749,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int SetLocale (ushort wLangID)
     {
-      // 
+      //
       // Called by the Session Debug Manager (SDM) to propagate the locale settings of the IDE.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -778,9 +764,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int SetMetric (string pszMetric, object varValue)
     {
-      // 
+      //
       // A metric is a registry value used to change Engine behaviour or advertise supported functionality.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -802,9 +788,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int SetRegistryRoot (string pszRegistryRoot)
     {
-      // 
+      //
       // Sets the registry root for the Engine. Different VS installations can change where their registry data is stored.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -817,9 +803,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int SetSymbolPath (string szSymbolSearchPath, string szSymbolCachePath, uint Flags)
     {
-      // 
+      //
       // Sets the path or paths that are searched for debugging symbols.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -829,7 +815,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (!string.IsNullOrWhiteSpace (szSymbolSearchPath))
         {
-          string [] symbolsPaths = szSymbolSearchPath.Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+          var symbolsPaths = szSymbolSearchPath.Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
 
           foreach (string path in symbolsPaths)
           {
@@ -876,9 +862,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int CanTerminateProcess (IDebugProcess2 process)
     {
-      // 
+      //
       // Determines if a process can be terminated.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -891,11 +877,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int LaunchSuspended (string pszServer, IDebugPort2 port, string exe, string args, string dir, string env, string options, enum_LAUNCH_FLAGS launchFlags, uint hStdInput, uint hStdOutput, uint hStdError, IDebugEventCallback2 ad7Callback, out IDebugProcess2 process)
     {
-      // 
+      //
       // Normally, VS launches a program using the IDebugPortEx2::LaunchSuspended method, and the attaches the debugger to the suspended program.
       // However, there are circumstances in which the DebugEngine may need to launch a program or other dependencies (e.g. tools or interpreters) in which case this method is used.
       // IDebugEngineLaunch2::ResumeProcess method is called to start the process after the program has been launched in a suspended state.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -903,12 +889,12 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (port == null)
         {
-          throw new ArgumentNullException ("port");
+          throw new ArgumentNullException (nameof(port));
         }
 
         if (string.IsNullOrEmpty (exe))
         {
-          throw new ArgumentNullException ("exe");
+          throw new ArgumentNullException (nameof(exe));
         }
 
         if (!File.Exists (exe))
@@ -922,40 +908,35 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         DebuggeeProcess debugProcess = null;
 
-        // 
+        //
         // Evaluate options; including current debugger target application.
-        // 
+        //
 
-        if (m_launchConfiguration == null)
-        {
-          throw new InvalidOperationException ("No launch configuration found.");
-        }
+        var launchConfiguration = LaunchConfiguration.FromString (options);
 
-        m_launchConfiguration.FromString (options);
+        string packageName = launchConfiguration["PackageName"];
 
-        string packageName = m_launchConfiguration ["PackageName"];
+        string launchActivity = launchConfiguration["LaunchActivity"];
 
-        string launchActivity = m_launchConfiguration ["LaunchActivity"];
+        bool debugMode = launchConfiguration["DebugMode"].Equals ("true");
 
-        bool debugMode = m_launchConfiguration ["DebugMode"].Equals ("true");
-
-        bool openGlTrace = m_launchConfiguration ["OpenGlTrace"].Equals ("true");
+        bool openGlTrace = launchConfiguration["OpenGlTrace"].Equals ("true");
 
         bool appIsRunning = false;
 
-        // 
+        //
         // Cache any LaunchSuspended specific parameters.
-        // 
+        //
 
-        m_launchConfiguration ["LaunchSuspendedExe"] = exe;
+        launchConfiguration["LaunchSuspendedExe"] = exe;
 
-        m_launchConfiguration ["LaunchSuspendedDir"] = dir;
+        launchConfiguration["LaunchSuspendedDir"] = dir;
 
-        m_launchConfiguration ["LaunchSuspendedEnv"] = env;
+        launchConfiguration["LaunchSuspendedEnv"] = env;
 
-        // 
+        //
         // Prevent blocking the main VS thread when launching a suspended application.
-        // 
+        //
 
         Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.ShowDialog, string.Empty), null, null);
 
@@ -965,9 +946,9 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           try
           {
-            // 
+            //
             // Launch application on device in a 'suspended' state.
-            // 
+            //
 
             Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus, string.Format ("Starting '{0}'...", packageName)), null, null);
 
@@ -1005,9 +986,9 @@ namespace AndroidPlusPlus.VsDebugEngine
               }
             }
 
-            // 
+            //
             // Query whether the target application is already running. (Double-check)
-            // 
+            //
 
             int launchAttempt = 1;
 
@@ -1019,9 +1000,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
               LoggingUtils.RequireOk (debuggeePort.RefreshProcesses ());
 
-              // 
+              //
               // Validate that the process is running and was spawned by one of the zygote processes.
-              // 
+              //
 
               uint [] zygotePids = debuggeePort.PortDevice.GetPidsFromName ("zygote");
 
@@ -1092,16 +1073,11 @@ namespace AndroidPlusPlus.VsDebugEngine
           Thread.Sleep (100);
         }
 
-        // 
+        //
         // Attach to launched process.
-        // 
+        //
 
-        if (debugProcess == null)
-        {
-          throw new InvalidOperationException (string.Format ("'{0}' failed to launch. Could not continue.", packageName));
-        }
-
-        process = debugProcess;
+        process = debugProcess ?? throw new InvalidOperationException ($"{packageName} failed to launch. Could not continue.");
 
         return Constants.S_OK;
       }
@@ -1132,18 +1108,18 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int ResumeProcess (IDebugProcess2 process)
     {
-      // 
+      //
       // Resume a process launched by IDebugEngineLaunch2.LaunchSuspended
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
       try
       {
-        // 
-        // Send a program node to the SDM. 
+        //
+        // Send a program node to the SDM.
         // This will cause the SDM to turn around and call IDebugEngine2.Attach which will complete the hookup with AD7
-        // 
+        //
 
         IDebugPort2 port;
 
@@ -1171,11 +1147,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int TerminateProcess (IDebugProcess2 process)
     {
-      // 
+      //
       // Terminate a process launched by IDebugEngineLaunch2.LaunchSuspended.
-      // 
+      //
       // The debugger will call IDebugEngineLaunch2.CanTerminateProcess before calling this method.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -1215,11 +1191,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int Stop ()
     {
-      // 
+      //
       // Stops all threads running in this program.
-      // This method is called when this program is being debugged in a multi-program environment. 
+      // This method is called when this program is being debugged in a multi-program environment.
       // This DebugEngine only supports debugging native applications and therefore only has one program per-process.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -1241,9 +1217,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int WatchForExpressionEvaluationOnThread (IDebugProgram2 pOriginatingProgram, uint dwTid, uint dwEvalFlags, IDebugEventCallback2 pExprCallback, int fWatch)
     {
-      // 
+      //
       // WatchForExpressionEvaluationOnThread is used to cooperate between two different engines debugging the same process.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -1265,9 +1241,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int WatchForThreadStep (IDebugProgram2 pOriginatingProgram, uint dwTid, int fWatch, uint dwFrame)
     {
-      // 
+      //
       // WatchForThreadStep is used to cooperate between two different engines debugging the same process.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 

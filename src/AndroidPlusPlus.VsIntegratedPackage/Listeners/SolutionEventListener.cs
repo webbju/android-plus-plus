@@ -59,6 +59,8 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     public SolutionEventListener (EnvDTE.DTE dteService, IVsSolution2 solutionService)
     {
+      Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
+
       m_dteService = dteService;
 
       m_solutionService = solutionService;

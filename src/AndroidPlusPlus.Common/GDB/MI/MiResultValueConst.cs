@@ -36,12 +36,12 @@ namespace AndroidPlusPlus.Common
     {
       if (string.IsNullOrWhiteSpace (variable))
       {
-        throw new ArgumentNullException ("variable");
+        throw new ArgumentNullException (nameof(variable));
       }
 
       if (value == null)
       {
-        throw new ArgumentNullException ("value");
+        throw new ArgumentNullException (nameof(value));
       }
 
       m_valueList = new List<MiResultValue> ();

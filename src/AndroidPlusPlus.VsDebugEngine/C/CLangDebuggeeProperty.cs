@@ -90,9 +90,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public override int EnumChildren (enum_DEBUGPROP_INFO_FLAGS dwFields, uint dwRadix, ref Guid guidFilter, enum_DBG_ATTRIB_FLAGS dwAttribFilter, string pszNameFilter, uint dwTimeout, out IEnumDebugPropertyInfo2 ppEnum)
     {
-      // 
+      //
       // Enumerates the children of a property. This provides support for dereferencing pointers, displaying members of an array, or fields of a class or struct.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -115,7 +115,7 @@ namespace AndroidPlusPlus.VsDebugEngine
             {
               if (childVariable.IsPseudoChild)
               {
-                CLangDebuggeeProperty pseudoChildProperty = m_debugger.VariableManager.CreatePropertyFromVariable (m_stackFrame as CLangDebuggeeStackFrame, childVariable);
+                CLangDebuggeeProperty pseudoChildProperty = m_debugger.VariableManager.CreatePropertyFromVariable (m_stackFrame as CLangDebuggeeStackFrame, childVariable) ?? throw new InvalidOperationException ("Failed to create child property.");
 
                 CLangDebuggeeProperty [] childSubProperties = m_debugger.VariableManager.GetChildProperties (m_stackFrame as CLangDebuggeeStackFrame, pseudoChildProperty);
 
@@ -123,12 +123,7 @@ namespace AndroidPlusPlus.VsDebugEngine
               }
               else
               {
-                CLangDebuggeeProperty childProperty = m_debugger.VariableManager.CreatePropertyFromVariable (m_stackFrame as CLangDebuggeeStackFrame, childVariable);
-
-                if (childProperty == null)
-                {
-                  throw new InvalidOperationException ();
-                }
+                CLangDebuggeeProperty childProperty = m_debugger.VariableManager.CreatePropertyFromVariable (m_stackFrame as CLangDebuggeeStackFrame, childVariable) ?? throw new InvalidOperationException ("Failed to create child property.");
 
                 m_children.Add (childProperty);
               }
@@ -156,9 +151,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public override int GetMemoryBytes (out IDebugMemoryBytes2 memoryBytes)
     {
-      // 
+      //
       // Returns the memory bytes for a property value.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -171,9 +166,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public override int GetMemoryContext (out IDebugMemoryContext2 memoryContext)
     {
-      // 
+      //
       // Returns the memory context for a property value.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -181,13 +176,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        // 
+        //
         // Pick out a memory address from a pool of potential strings.
-        // 
-        //   This is mainly to support GDB reporting symbols like: 
-        // 
+        //
+        //   This is mainly to support GDB reporting symbols like:
+        //
         //   {void (JNIEnv *, jclass)} 0xb3e66c84 <Java_com_example_hellogdbserver_HelloGdbServer_invokeCrash>
-        // 
+        //
 
         string [] expressionPool = { m_expression, m_gdbVariable.Value };
 
@@ -230,9 +225,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public override int GetPropertyInfo (enum_DEBUGPROP_INFO_FLAGS requestedFields, uint radix, uint timeout, IDebugReference2 [] debugReferenceArray, uint argumentCount, DEBUG_PROPERTY_INFO [] propertyInfoArray)
     {
-      // 
+      //
       // Fills in a DEBUG_PROPERTY_INFO structure that describes a property.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -369,9 +364,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public override int GetSize (out uint size)
     {
-      // 
+      //
       // Returns the size, in bytes, of the property value.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -416,9 +411,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public override int SetValueAsString (string value, uint radix, uint timeout)
     {
-      // 
+      //
       // Sets the value of a property from a string.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 

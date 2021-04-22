@@ -76,15 +76,15 @@ namespace AndroidPlusPlus.Common
 
           LoggingUtils.Print (string.Concat ("[AndroidAdb] Devices output: ", adbDevices.StandardOutput));
 
-          if (!String.IsNullOrEmpty (adbDevices.StandardOutput))
+          if (!string.IsNullOrEmpty (adbDevices.StandardOutput))
           {
-            string [] deviceOutputLines = adbDevices.StandardOutput.Replace ("\r", "").Split (new char [] { '\n' });
+            var deviceOutputLines = adbDevices.StandardOutput.Replace ("\r", "").Split (new char [] { '\n' });
 
             foreach (string line in deviceOutputLines)
             {
               if (Regex.IsMatch (line, "^[A-Za-z0-9.:\\-]+[\t][A-Za-z]+$"))
               {
-                string [] segments = line.Split (new char [] { '\t' });
+                var segments = line.Split (new char [] { '\t' });
 
                 string deviceName = segments [0];
 
@@ -131,21 +131,19 @@ namespace AndroidPlusPlus.Common
             }
             else
             {
-              AndroidDevice connectedDevice;
-
-              if (m_connectedDevices.TryGetValue (deviceName, out connectedDevice))
+              if (m_connectedDevices.TryGetValue(deviceName, out AndroidDevice connectedDevice))
               {
                 // 
                 // Device is pervasive. Refresh internal properties.
                 // 
 
-                LoggingUtils.Print (string.Format ("[AndroidAdb] Device pervaded: {0} - {1}", deviceName, deviceType));
+                LoggingUtils.Print(string.Format("[AndroidAdb] Device pervaded: {0} - {1}", deviceName, deviceType));
 
-                connectedDevice.Refresh ();
+                connectedDevice.Refresh();
 
                 foreach (IStateListener deviceListener in m_registeredDeviceStateListeners)
                 {
-                  deviceListener.DevicePervasive (connectedDevice);
+                  deviceListener.DevicePervasive(connectedDevice);
                 }
               }
               else
@@ -154,17 +152,17 @@ namespace AndroidPlusPlus.Common
                 // Device connected.
                 // 
 
-                LoggingUtils.Print (string.Format ("[AndroidAdb] Device connected: {0} - {1}", deviceName, deviceType));
+                LoggingUtils.Print(string.Format("[AndroidAdb] Device connected: {0} - {1}", deviceName, deviceType));
 
-                connectedDevice = new AndroidDevice (deviceName);
+                connectedDevice = new AndroidDevice(deviceName);
 
-                connectedDevice.Refresh ();
+                connectedDevice.Refresh();
 
-                m_connectedDevices.Add (deviceName, connectedDevice);
+                m_connectedDevices.Add(deviceName, connectedDevice);
 
                 foreach (IStateListener deviceListener in m_registeredDeviceStateListeners)
                 {
-                  deviceListener.DeviceConnected (connectedDevice);
+                  deviceListener.DeviceConnected(connectedDevice);
                 }
               }
             }
@@ -176,9 +174,7 @@ namespace AndroidPlusPlus.Common
 
           foreach (string deviceName in disconnectedDevices)
           {
-            AndroidDevice disconnectedDevice;
-
-            if (m_connectedDevices.TryGetValue (deviceName, out disconnectedDevice))
+            if (m_connectedDevices.TryGetValue (deviceName, out AndroidDevice disconnectedDevice))
             {
               LoggingUtils.Print (string.Concat ("[AndroidAdb] Device disconnected: ", deviceName));
 
@@ -215,15 +211,11 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public static AndroidDevice [] GetConnectedDevices ()
+    public static ICollection<AndroidDevice> GetConnectedDevices ()
     {
       lock (m_updateLockMutex)
       {
-        AndroidDevice [] deviceArray = new AndroidDevice [m_connectedDevices.Count];
-
-        m_connectedDevices.Values.CopyTo (deviceArray, 0);
-
-        return deviceArray;
+        return m_connectedDevices.Values;
       }
     }
 
@@ -235,7 +227,7 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.Print (string.Format ("[AndroidDevice] AdbCommand: Cmd={0} Args={1}", command, arguments));
 
-      SyncRedirectProcess adbCommand = new SyncRedirectProcess (AndroidSettings.SdkRoot + @"\platform-tools\adb.exe", string.Format ("{0} {1}", command, arguments));
+      var adbCommand = new SyncRedirectProcess (AndroidSettings.SdkRoot + @"\platform-tools\adb.exe", string.Format ("{0} {1}", command, arguments));
 
       return adbCommand;
     }
@@ -248,7 +240,7 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.Print (string.Format ("[AndroidDevice] AdbCommand: Target={0} Cmd={1} Args={2}", target.ID, command, arguments));
 
-      SyncRedirectProcess adbCommand = new SyncRedirectProcess (AndroidSettings.SdkRoot + @"\platform-tools\adb.exe", string.Format ("-s {0} {1} {2}", target.ID, command, arguments));
+      var adbCommand = new SyncRedirectProcess (AndroidSettings.SdkRoot + @"\platform-tools\adb.exe", string.Format ("-s {0} {1} {2}", target.ID, command, arguments));
 
       return adbCommand;
     }
@@ -261,7 +253,7 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.Print (string.Format ("[AndroidDevice] AdbCommandAsync: Target={0} Cmd={1} Args={2}", target.ID, command, arguments));
 
-      AsyncRedirectProcess adbCommand = new AsyncRedirectProcess (AndroidSettings.SdkRoot + @"\platform-tools\adb.exe", string.Format ("-s {0} {1} {2}", target.ID, command, arguments));
+      var adbCommand = new AsyncRedirectProcess (AndroidSettings.SdkRoot + @"\platform-tools\adb.exe", string.Format ("-s {0} {1} {2}", target.ID, command, arguments));
 
       return adbCommand;
     }
@@ -272,12 +264,7 @@ namespace AndroidPlusPlus.Common
 
     public static bool IsDeviceConnected (AndroidDevice queryDevice)
     {
-      LoggingUtils.PrintFunction ();
-
-      lock (m_updateLockMutex)
-      {
-        return m_connectedDevices.ContainsKey (queryDevice.ID);
-      }
+      return m_connectedDevices.ContainsKey(queryDevice.ID);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

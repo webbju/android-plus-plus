@@ -42,7 +42,7 @@ namespace AndroidPlusPlus.Common
 
       if (string.IsNullOrWhiteSpace (sectionName))
       {
-        throw new ArgumentNullException ("sectionName");
+        throw new ArgumentNullException (nameof(sectionName));
       }
 
       using (SyncRedirectProcess dumpSection = new SyncRedirectProcess (objDumpTool, string.Format ("-s -j {0} {1}", sectionName, elfBinary)))

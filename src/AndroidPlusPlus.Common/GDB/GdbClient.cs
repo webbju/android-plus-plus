@@ -29,7 +29,7 @@ namespace AndroidPlusPlus.Common
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class GdbClient : AsyncRedirectProcess.EventListener, IDisposable
+  public class GdbClient : AsyncRedirectProcess.IEventListener, IDisposable
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -108,7 +108,7 @@ namespace AndroidPlusPlus.Common
         {
           string command = string.Format ("-interpreter-exec console \"handle {0} {1}\"", Name, shouldStop ? "stop" : "nostop");
 
-          m_gdbClient.SendCommand (command, delegate (MiResultRecord resultRecord)
+          m_gdbClient.SendCommand (command, (MiResultRecord resultRecord) =>
           {
             MiResultRecord.RequireOk (resultRecord, command);
 
@@ -123,7 +123,7 @@ namespace AndroidPlusPlus.Common
         {
           string command = string.Format ("-interpreter-exec console \"handle {0} {1}\"", Name, shouldPassToProgram ? "pass" : "nopass");
 
-          m_gdbClient.SendCommand (command, delegate (MiResultRecord resultRecord)
+          m_gdbClient.SendCommand (command, (MiResultRecord resultRecord) =>
           {
             MiResultRecord.RequireOk (resultRecord, command);
 
@@ -246,7 +246,7 @@ namespace AndroidPlusPlus.Common
       // Export an execution script ('gdb.setup') for standard start-up properties.
       // 
 
-      string [] execCommands = m_gdbSetup.CreateGdbExecutionScript ();
+      var execCommands = m_gdbSetup.CreateGdbExecutionScript ();
 
       using (StreamWriter writer = new StreamWriter (Path.Combine (m_gdbSetup.CacheDirectory, "gdb.setup")))
       {
@@ -304,7 +304,7 @@ namespace AndroidPlusPlus.Common
 
       try
       {
-        SendCommand ("-list-features", delegate (MiResultRecord resultRecord)
+        SendCommand ("-list-features", (MiResultRecord resultRecord) =>
         {
           MiResultRecord.RequireOk (resultRecord, "-list-features");
 
@@ -332,7 +332,7 @@ namespace AndroidPlusPlus.Common
       {
         string command = string.Format ("-interpreter-exec console \"info signals\"");
 
-        SendCommand (command, delegate (MiResultRecord resultRecord)
+        SendCommand (command, (MiResultRecord resultRecord) =>
         {
           MiResultRecord.RequireOk (resultRecord, command);
 
@@ -388,7 +388,7 @@ namespace AndroidPlusPlus.Common
       {
         string command = "-gdb-exit";
 
-        SendCommand (command, delegate (MiResultRecord resultRecord)
+        SendCommand (command, (MiResultRecord resultRecord) =>
         {
           MiResultRecord.RequireOk (resultRecord, command);
         });
@@ -407,12 +407,7 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      if (gdbServer == null)
-      {
-        throw new ArgumentNullException ("gdbServer");
-      }
-
-      m_gdbServer = gdbServer;
+      m_gdbServer = gdbServer ?? throw new ArgumentNullException (nameof(gdbServer));
 
       m_gdbSetup.ClearPortForwarding ();
 
@@ -491,7 +486,7 @@ namespace AndroidPlusPlus.Common
 
 #if true
       {
-        string [] array = new string [sharedLibrarySearchPaths.Count];
+        var array = new string [sharedLibrarySearchPaths.Count];
 
         sharedLibrarySearchPaths.CopyTo (array, 0);
 
@@ -501,7 +496,7 @@ namespace AndroidPlusPlus.Common
 
 #if true
       {
-        string [] array = new string [debugFileDirectoryPaths.Count];
+        var array = new string [debugFileDirectoryPaths.Count];
 
         debugFileDirectoryPaths.CopyTo (array, 0);
 
@@ -632,10 +627,7 @@ namespace AndroidPlusPlus.Common
       {
         string command = "-target-detach";
 
-        SendCommand (command, delegate (MiResultRecord resultRecord)
-        {
-          MiResultRecord.RequireOk (resultRecord, command);
-        });
+        SendCommand (command, (MiResultRecord resultRecord) => MiResultRecord.RequireOk (resultRecord, command));
       }
       catch (Exception e)
       {
@@ -665,10 +657,7 @@ namespace AndroidPlusPlus.Common
       {
         string command = "-exec-interrupt";
 
-        SendCommand (command, delegate (MiResultRecord resultRecord)
-        {
-          MiResultRecord.RequireOk (resultRecord, command);
-        });
+        SendCommand (command, (MiResultRecord resultRecord) => MiResultRecord.RequireOk (resultRecord, command));
       }
       catch (Exception e)
       {
@@ -690,10 +679,7 @@ namespace AndroidPlusPlus.Common
       {
         string command = "-exec-continue";
 
-        SendCommand (command, delegate (MiResultRecord resultRecord)
-        {
-          MiResultRecord.RequireOk (resultRecord, command);
-        });
+        SendCommand (command, (MiResultRecord resultRecord) => MiResultRecord.RequireOk (resultRecord, command));
       }
       catch (Exception e)
       {
@@ -719,10 +705,7 @@ namespace AndroidPlusPlus.Common
       {
         string command = "-interpreter-exec console \"kill\"";
 
-        SendCommand (command, delegate (MiResultRecord resultRecord)
-        {
-          MiResultRecord.RequireOk (resultRecord, command);
-        });
+        SendCommand (command, (MiResultRecord resultRecord) => MiResultRecord.RequireOk (resultRecord, command));
       }
       catch (Exception e)
       {
@@ -753,10 +736,7 @@ namespace AndroidPlusPlus.Common
 
           string command = string.Format ("-exec-step --thread {0} {1}", threadId, ((reverse) ? "--reverse" : ""));
 
-          SendCommand (command, delegate (MiResultRecord resultRecord)
-          {
-            MiResultRecord.RequireOk (resultRecord, command);
-          });
+          SendCommand (command, (MiResultRecord resultRecord) => MiResultRecord.RequireOk (resultRecord, command));
 
           break;
         }
@@ -770,10 +750,7 @@ namespace AndroidPlusPlus.Common
 
           string command = string.Format ("-exec-step-instruction --thread {0} {1}", threadId, ((reverse) ? "--reverse" : ""));
 
-          SendCommand (command, delegate (MiResultRecord resultRecord)
-          {
-            MiResultRecord.RequireOk (resultRecord, command);
-          });
+          SendCommand (command, (MiResultRecord resultRecord) => MiResultRecord.RequireOk (resultRecord, command));
 
           break;
         }
@@ -796,7 +773,7 @@ namespace AndroidPlusPlus.Common
         {
           string command = string.Format ("-exec-finish --thread {0} {1}", threadId, ((reverse) ? "--reverse" : ""));
 
-          SendCommand (command, delegate (MiResultRecord resultRecord)
+          SendCommand (command, (MiResultRecord resultRecord) =>
           {
             MiResultRecord.RequireOk (resultRecord, command);
           });
@@ -826,7 +803,7 @@ namespace AndroidPlusPlus.Common
 
           string command = string.Format ("-exec-next --thread {0} {1}", threadId, ((reverse) ? "--reverse" : ""));
 
-          SendCommand (command, delegate (MiResultRecord resultRecord)
+          SendCommand (command, (MiResultRecord resultRecord) =>
           {
             MiResultRecord.RequireOk (resultRecord, command);
           });
@@ -843,10 +820,7 @@ namespace AndroidPlusPlus.Common
 
           string command = string.Format ("-exec-next-instruction --thread {0} {1}", threadId, ((reverse) ? "--reverse" : ""));
 
-          SendCommand (command, delegate (MiResultRecord resultRecord)
-          {
-            MiResultRecord.RequireOk (resultRecord, command);
-          });
+          SendCommand (command, (MiResultRecord resultRecord) => MiResultRecord.RequireOk (resultRecord, command));
 
           break;
         }
@@ -872,9 +846,7 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.Print (string.Format ("[GdbClient] GetClientSignal: " + sig));
 
-      Signal signal = null;
-
-      m_gdbSupportedClientSignals.TryGetValue (sig, out signal);
+      m_gdbSupportedClientSignals.TryGetValue(sig, out Signal signal);
 
       return signal;
     }
@@ -911,7 +883,7 @@ namespace AndroidPlusPlus.Common
 
       if (string.IsNullOrWhiteSpace (setting))
       {
-        throw new ArgumentNullException ("setting");
+        throw new ArgumentNullException (nameof(setting));
       }
 
       string command = string.Format ("-gdb-show {0}", setting);
@@ -938,7 +910,7 @@ namespace AndroidPlusPlus.Common
 
       if (string.IsNullOrWhiteSpace (setting))
       {
-        throw new ArgumentNullException ("setting");
+        throw new ArgumentNullException (nameof(setting));
       }
 
       if (appendToExisting)
@@ -951,7 +923,7 @@ namespace AndroidPlusPlus.Common
 
         if (!string.IsNullOrWhiteSpace (existingSettingValue))
         {
-          string [] existingValues = existingSettingValue.Split (new char [] { ';' });
+          var existingValues = existingSettingValue.Split (new char [] { ';' });
 
           foreach (string existing in existingValues)
           {
@@ -992,7 +964,7 @@ namespace AndroidPlusPlus.Common
 
       if (string.IsNullOrWhiteSpace (command))
       {
-        throw new ArgumentNullException ("command");
+        throw new ArgumentNullException (nameof(command));
       }
 
       MiResultRecord syncResultRecord = null;
@@ -1013,7 +985,7 @@ namespace AndroidPlusPlus.Common
 
       m_syncCommandLocks [command] = syncCommandLock;
 
-      SendCommand (command, timeout, delegate (MiResultRecord record) 
+      SendCommand (command, timeout, (MiResultRecord record)  =>
       {
         syncResultRecord = record;
 
@@ -1069,7 +1041,7 @@ namespace AndroidPlusPlus.Common
 
       if (string.IsNullOrWhiteSpace (command))
       {
-        throw new ArgumentNullException ("command");
+        throw new ArgumentNullException (nameof(command));
       }
 
       if (m_gdbClientInstance == null)
@@ -1079,11 +1051,12 @@ namespace AndroidPlusPlus.Common
 
       m_timeSinceLastOperation.Restart ();
 
-      AsyncCommandData commandData = new AsyncCommandData ();
+      AsyncCommandData commandData = new AsyncCommandData
+      {
+        Command = command,
 
-      commandData.Command = command;
-
-      commandData.ResultDelegate = asyncDelegate;
+        ResultDelegate = asyncDelegate
+      };
 
       ++m_sessionCommandToken;
 

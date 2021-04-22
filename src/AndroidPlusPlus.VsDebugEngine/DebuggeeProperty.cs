@@ -31,12 +31,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public sealed class Enumerator : DebugEnumerator<DEBUG_PROPERTY_INFO, IEnumDebugPropertyInfo2>, IEnumDebugPropertyInfo2
     {
-      public Enumerator (DEBUG_PROPERTY_INFO [] properties)
-        : base (properties)
-      {
-      }
-
-      public Enumerator (List<DEBUG_PROPERTY_INFO> properties)
+      public Enumerator (ICollection<DEBUG_PROPERTY_INFO> properties)
         : base (properties)
       {
       }
@@ -104,7 +99,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (string.IsNullOrEmpty (expression))
       {
-        throw new ArgumentNullException ("expression");
+        throw new ArgumentNullException (nameof(expression));
       }
 
       m_expression = expression;
@@ -115,9 +110,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       m_children = new List<DebuggeeProperty> ();
 
-      // 
+      //
       // Compound parental expressions to evaluate this property's full identifier.
-      // 
+      //
 
       StringBuilder expressionBuilder = new StringBuilder (2048);
 
@@ -157,7 +152,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (children == null)
         {
-          throw new ArgumentNullException ("children");
+          throw new ArgumentNullException (nameof(children));
         }
 
         m_children.AddRange (children);
@@ -184,9 +179,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int EnumChildren (enum_DEBUGPROP_INFO_FLAGS dwFields, uint dwRadix, ref Guid guidFilter, enum_DBG_ATTRIB_FLAGS dwAttribFilter, string pszNameFilter, uint dwTimeout, out IEnumDebugPropertyInfo2 ppEnum)
     {
-      // 
+      //
       // Enumerates the children of a property. This provides support for dereferencing pointers, displaying members of an array, or fields of a class or struct.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -204,7 +199,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           LoggingUtils.RequireOk (child.GetPropertyInfo (dwFields, dwRadix, dwTimeout, null, 0, infoArray));
 
-          if ((guidFilter == DebuggeeProperty.Filters.guidFilterRegisters) 
+          if ((guidFilter == DebuggeeProperty.Filters.guidFilterRegisters)
             || (guidFilter == DebuggeeProperty.Filters.guidFilterAutoRegisters))
           {
             if ((infoArray [0].dwAttrib & enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_STORAGE_REGISTER) != 0)
@@ -244,12 +239,12 @@ namespace AndroidPlusPlus.VsDebugEngine
         if ((guidFilter == DebuggeeProperty.Filters.guidFilterRegisters)
             || (guidFilter == DebuggeeProperty.Filters.guidFilterAutoRegisters))
         {
-          // 
-          // 
+          //
+          //
           // Registers must be specified in a collection/list as children of a 'CPU' property.
-          // 
+          //
           // Other types documented: https://msdn.microsoft.com/en-us/library/aa290860(v=vs.71).aspx
-          // 
+          //
 
           DebuggeeProperty registersProperty = new DebuggeeProperty (m_debugEngine, m_stackFrame, "CPU", string.Empty);
 
@@ -282,10 +277,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int GetDerivedMostProperty (out IDebugProperty2 derivedMostProperty)
     {
-      // 
-      // Returns the property that describes the most-derived property of a property. This is called to support object oriented languages. 
+      //
+      // Returns the property that describes the most-derived property of a property. This is called to support object oriented languages.
       // It allows the debug engine to return an IDebugProperty2 for the most-derived object in a hierarchy.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -300,10 +295,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int GetExtendedInfo (ref Guid extendedInfoGuid, out object extendedInfo)
     {
-      // 
-      // Retrieves information that does not lend itself to being retrieved by calling the IDebugProperty2::GetPropertyInfo method. 
+      //
+      // Retrieves information that does not lend itself to being retrieved by calling the IDebugProperty2::GetPropertyInfo method.
       // This includes information about custom viewers, managed type slots and other information.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -318,9 +313,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int GetMemoryBytes (out IDebugMemoryBytes2 memoryBytes)
     {
-      // 
+      //
       // Returns the memory bytes for a property value.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -335,9 +330,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int GetMemoryContext (out IDebugMemoryContext2 memoryContext)
     {
-      // 
+      //
       // Returns the memory context for a property value.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -352,9 +347,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int GetParent (out IDebugProperty2 parentProperty)
     {
-      // 
+      //
       // Returns the parent of this property.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -362,12 +357,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        if (m_parent == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
-        parentProperty = m_parent;
+        parentProperty = m_parent ?? throw new InvalidOperationException ();
 
         return Constants.S_OK;
       }
@@ -385,9 +375,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int GetPropertyInfo (enum_DEBUGPROP_INFO_FLAGS requestedFields, uint radix, uint timeout, IDebugReference2 [] debugReferenceArray, uint argumentCount, DEBUG_PROPERTY_INFO [] propertyInfoArray)
     {
-      // 
+      //
       // Fills in a DEBUG_PROPERTY_INFO structure that describes a property.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -475,9 +465,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int GetReference (out IDebugReference2 debugReference)
     {
-      // 
+      //
       //  Return an IDebugReference2 for this property. An IDebugReference2 can be thought of as a type and an address.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -492,9 +482,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int GetSize (out uint size)
     {
-      // 
+      //
       // Returns the size, in bytes, of the property value.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -509,9 +499,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int SetValueAsReference (IDebugReference2 [] debugReferenceArray, uint argumentCount, IDebugReference2 debugReferenceValue, uint timeout)
     {
-      // 
+      //
       // Sets the value of the property from the value of a given reference.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -524,9 +514,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int SetValueAsString (string value, uint radix, uint timeout)
     {
-      // 
+      //
       // Sets the value of a property from a string.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 

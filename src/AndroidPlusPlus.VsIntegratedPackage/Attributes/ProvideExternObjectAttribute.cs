@@ -99,8 +99,8 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     public string CLSIDKey
     {
-      get 
-      { 
+      get
+      {
         return string.Format (CultureInfo.InvariantCulture, @"CLSID\{0}", m_clsIdGuid.ToString ("B"));
       }
     }
@@ -144,25 +144,15 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     private void RegisterWithKey (object regKey, Type regKeyType, string inprocServerPath, string codeBasePath)
     {
-      // 
+      //
       // Unified registration functionality for accepting both RegistrationAttribute.Key and RegistryKey objects.
-      // 
+      //
 
       try
       {
-        MethodInfo 
-          regKeySetValue = regKeyType.GetMethod ("SetValue", new [] { typeof (string), typeof (object) }),
-          regKeyClose = regKeyType.GetMethod ("Close");
+        var regKeySetValue = regKeyType.GetMethod ("SetValue", new [] { typeof (string), typeof (object) }) ?? throw new InvalidOperationException ();
 
-        if (regKeySetValue == null)
-        {
-          throw new InvalidOperationException ();
-        }
-
-        if (regKeyClose == null)
-        {
-          throw new InvalidOperationException ();
-        }
+        var regKeyClose = regKeyType.GetMethod ("Close") ?? throw new InvalidOperationException ();
 
         if (!string.IsNullOrWhiteSpace(m_inprocServerPath))
         {

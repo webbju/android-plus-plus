@@ -61,7 +61,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       Engine = debugEngine;
 
-      m_launchConfiguration = launchConfiguration;
+      m_launchConfiguration = launchConfiguration ?? new LaunchConfiguration();
 
       NativeProgram = new CLangDebuggeeProgram (this, debugProgram);
 
@@ -69,9 +69,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       VariableManager = new CLangDebuggerVariableManager (this);
 
-      // 
+      //
       // Evaluate target device's architecture triple.
-      // 
+      //
 
       bool allow64BitAbis = true;
 
@@ -83,15 +83,9 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           case "armeabi":
           case "armeabi-v7a":
-          {
-            preferedGdbAbiToolPrefix = "arm-linux-androideabi";
-
-            break;
-          }
-
           case "arm64-v8a":
           {
-            if (allow64BitAbis)
+            if (allow64BitAbis && abi.Equals("arm64-v8a"))
             {
               preferedGdbAbiToolPrefix = "aarch64-linux-android";
             }
@@ -104,15 +98,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           }
 
           case "x86":
-          {
-            preferedGdbAbiToolPrefix = "i686-linux-android";
-
-            break;
-          }
-
           case "x86_64":
           {
-            if (allow64BitAbis)
+            if (allow64BitAbis && abi.Equals("x86_64"))
             {
               preferedGdbAbiToolPrefix = "x86_64-linux-android";
             }
@@ -125,15 +113,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           }
 
           case "mips":
-          {
-            preferedGdbAbiToolPrefix = "mipsel-linux-android";
-
-            break;
-          }
-
           case "mips64":
           {
-            if (allow64BitAbis)
+            if (allow64BitAbis && abi.Equals("mips64"))
             {
               preferedGdbAbiToolPrefix = "mips64el-linux-android";
             }
@@ -173,7 +155,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       List<string> gdbToolPermutations = new List<string> ();
 
-      string [] availableHostArchitectures = new string [] { "x86_64" };
+      var availableHostArchitectures = new string [] { "x86_64" };
 
       foreach (string arch in availableHostArchitectures)
       {
@@ -184,11 +166,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         string gdbToolFilePattern = string.Format ("{0}-gdb.cmd", preferedGdbAbiToolPrefix);
 
-        string [] availableVersionPaths = Directory.GetDirectories (Path.Combine (androidPlusPlusRoot, "contrib", "gdb", "bin", arch), "*.*.*", SearchOption.TopDirectoryOnly);
+        var availableVersionPaths = Directory.GetDirectories (Path.Combine (androidPlusPlusRoot, "contrib", "gdb", "bin", arch), "*.*.*", SearchOption.TopDirectoryOnly);
 
         foreach (string versionPath in availableVersionPaths)
         {
-          string [] gdbToolMatches = Directory.GetFiles (versionPath, gdbToolFilePattern, SearchOption.TopDirectoryOnly);
+          var gdbToolMatches = Directory.GetFiles (versionPath, gdbToolFilePattern, SearchOption.TopDirectoryOnly);
 
           foreach (string tool in gdbToolMatches)
           {
@@ -203,9 +185,9 @@ namespace AndroidPlusPlus.VsDebugEngine
       }
       else
       {
-        // 
+        //
         // Pick the oldest GDB version available if running 'Jelly Bean' or below.
-        // 
+        //
 
         bool forceNdkR9dClient = (debugProgram.DebugProcess.NativeProcess.HostDevice.SdkVersion <= AndroidSettings.VersionCode.JELLY_BEAN);
 
@@ -218,9 +200,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, gdbToolPermutations [gdbToolPermutations.Count - 1]);
         }
 
-        // 
+        //
         // A symbolic link to 'share' is placed in the architecture directory, provide GDB with that location.
-        // 
+        //
 
         string architecturePath = Path.GetDirectoryName (Path.GetDirectoryName (m_gdbSetup.GdbToolPath));
 
@@ -234,14 +216,9 @@ namespace AndroidPlusPlus.VsDebugEngine
         throw new InvalidOperationException ("Could not evaluate a suitable GDB instance. Ensure you have the correct NDK deployment for your system's architecture.");
       }
 
-      if (m_launchConfiguration != null)
+      if (m_launchConfiguration.TryGetValue ("LaunchSuspendedDir", out string launchDirectory))
       {
-        string launchDirectory;
-
-        if (m_launchConfiguration.TryGetValue ("LaunchSuspendedDir", out launchDirectory))
-        {
-          m_gdbSetup.SymbolDirectories.Add (launchDirectory);
-        }
+        m_gdbSetup.SymbolDirectories.Add (launchDirectory);
       }
 
       GdbServer = new GdbServer (m_gdbSetup);
@@ -367,15 +344,15 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void RunInterruptOperation (InterruptOperation operation, bool shouldContinue = true)
     {
-      // 
+      //
       // Interrupt the GDB session in order to execute the provided delegate in a 'stopped' state.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
       if (operation == null)
       {
-        throw new ArgumentNullException ("operation");
+        throw new ArgumentNullException (nameof(operation));
       }
 
       if (GdbClient == null)
@@ -477,9 +454,9 @@ namespace AndroidPlusPlus.VsDebugEngine
         case "done":
         case "running": // same behaviour (backward compatibility)
         {
-          // 
+          //
           // "^done" [ "," results ]: The synchronous operation was successful, results are the return values.
-          // 
+          //
 
           try
           {
@@ -532,13 +509,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         case "connected":
         {
-          // 
+          //
           // ^connected: GDB has connected to a remote target.
-          // 
+          //
 
           try
           {
-            // 
+            //
             // If notifications are unsupported, we should assume that we need to refresh breakpoints when connected.
             //
 
@@ -556,21 +533,21 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           break;
         }
-        
+
         case "error":
         {
-          // 
+          //
           // "^error" "," c-string: The operation failed. The c-string contains the corresponding error message.
-          // 
+          //
 
           break;
         }
-        
+
         case "exit":
         {
-          // 
+          //
           // ^exit: GDB has terminated.
-          // 
+          //
 
           break;
         }
@@ -589,7 +566,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         case MiStreamRecord.StreamType.Console:
         {
-          // The console output stream contains text that should be displayed in the CLI console window. It contains the textual responses to CLI commands. 
+          // The console output stream contains text that should be displayed in the CLI console window. It contains the textual responses to CLI commands.
 
           LoggingUtils.Print (string.Format ("[CLangDebugger] Console: {0}", streamRecord.Stream));
 
@@ -598,7 +575,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         case MiStreamRecord.StreamType.Target:
         {
-          // The console output stream contains text that should be displayed in the CLI console window. It contains the textual responses to CLI commands. 
+          // The console output stream contains text that should be displayed in the CLI console window. It contains the textual responses to CLI commands.
 
           LoggingUtils.Print (string.Format ("[CLangDebugger] Target: {0}", streamRecord.Stream));
 
@@ -641,19 +618,19 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       switch (asyncRecord.Type)
       {
-        case MiAsyncRecord.AsyncType.Exec: 
+        case MiAsyncRecord.AsyncType.Exec:
         {
-          // 
+          //
           // Records prefixed '*'.
-          // 
+          //
 
           switch (asyncRecord.Class)
           {
             case "running":
             {
-              // 
+              //
               // The target is now running. The thread field tells which specific thread is now running, can be 'all' if every thread is running.
-              // 
+              //
 
               lock (NativeProgram)
               {
@@ -693,9 +670,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             case "stopped":
             {
-              // 
+              //
               // The target has stopped.
-              // 
+              //
 
               CLangDebuggeeThread stoppedThread = null;
 
@@ -724,18 +701,18 @@ namespace AndroidPlusPlus.VsDebugEngine
                   throw new InvalidOperationException ("Could not evaluate a thread on which we stopped");
                 }
 
-                // 
+                //
                 // Flag some or all of the program's threads as stopped, directed by 'stopped-threads' field.
-                // 
+                //
 
                 bool hasStoppedThreads = asyncRecord.HasField ("stopped-threads");
 
                 if (hasStoppedThreads)
                 {
-                  // 
-                  // If all threads are stopped, the stopped field will have the value of "all". 
+                  //
+                  // If all threads are stopped, the stopped field will have the value of "all".
                   // Otherwise, the value of the stopped field will be a list of thread identifiers.
-                  // 
+                  //
 
                   MiResultValue stoppedThreadsRecord = asyncRecord ["stopped-threads"] [0];
 
@@ -770,9 +747,9 @@ namespace AndroidPlusPlus.VsDebugEngine
                 }
               }
 
-              // 
+              //
               // Unblocks waiting for 'stopped' to be processed. Skipping event handling during interrupt requests as it confuses VS debugger flow.
-              // 
+              //
 
               bool ignoreInterruptSignal = false;
 
@@ -783,9 +760,9 @@ namespace AndroidPlusPlus.VsDebugEngine
                 ignoreInterruptSignal = true;
               }
 
-              // 
+              //
               // Process any pending requests to refresh registered breakpoints.
-              // 
+              //
 
 #if false
               RefreshSharedLibraries ();
@@ -801,30 +778,30 @@ namespace AndroidPlusPlus.VsDebugEngine
                 Engine.BreakpointManager.RefreshBreakpoints ();
               }
 
-              // 
+              //
               // This behaviour seems at odds with the GDB/MI spec, but a *stopped event can contain
-              // multiple 'reason' fields. This seems to occur mainly when signals have been ignored prior 
+              // multiple 'reason' fields. This seems to occur mainly when signals have been ignored prior
               // to a non-ignored triggering, i.e:
-              // 
+              //
               //   Signal        Stop\tPrint\tPass to program\tDescription\n
               //   SIGSEGV       No\tYes\tYes\t\tSegmentation fault\n
-              // 
+              //
               // *stopped,reason="signal-received",signal-name="SIGSEGV",signal-meaning="Segmentation fault",reason="signal-received",signal-name="SIGSEGV",signal-meaning="Segmentation fault",reason="exited-signalled",signal-name="SIGSEGV",signal-meaning="Segmentation fault"
-              // 
+              //
 
               if (asyncRecord.HasField ("reason"))
               {
-                // 
+                //
                 // Here we pick the most recent (unhandled) signal.
-                // 
+                //
 
                 int stoppedIndex = asyncRecord ["reason"].Count - 1;
 
                 MiResultValue stoppedReason = asyncRecord ["reason"] [stoppedIndex];
 
-                // 
+                //
                 // The reason field can have one of the following values:
-                // 
+                //
 
                 switch (stoppedReason.GetString ())
                 {
@@ -839,9 +816,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                     if (breakpointMode.Equals ("del"))
                     {
-                      // 
+                      //
                       // For temporary breakpoints, we won't have a valid managed object - so will just enforce a break event.
-                      // 
+                      //
 
                       //Engine.Broadcast (new DebugEngineEvent.Break (), NativeProgram.DebugProgram, stoppedThread);
 
@@ -853,9 +830,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                       if (boundBreakpoint == null)
                       {
-                        // 
+                        //
                         // Could not find the breakpoint we're looking for. Refresh everything and try again.
-                        // 
+                        //
 
                         Engine.BreakpointManager.SetDirty (true);
 
@@ -866,9 +843,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                       if (boundBreakpoint == null)
                       {
-                        // 
+                        //
                         // Could not locate a registered breakpoint with matching id.
-                        // 
+                        //
 
                         DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, stoppedReason.GetString (), "Breakpoint #" + breakpointId + "hit", 0x00000000, canContinue);
 
@@ -882,9 +859,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                         if (breakpointState [0] == enum_BP_STATE.BPS_DELETED)
                         {
-                          // 
+                          //
                           // Hit a breakpoint which internally is flagged as deleted. Oh noes!
-                          // 
+                          //
 
                           DebugEngineEvent.Exception exception = new DebugEngineEvent.Exception (NativeProgram.DebugProgram, stoppedReason.GetString (), "Breakpoint #" + breakpointId + " hit [deleted]", 0x00000000, canContinue);
 
@@ -892,9 +869,9 @@ namespace AndroidPlusPlus.VsDebugEngine
                         }
                         else
                         {
-                          // 
+                          //
                           // Hit a breakpoint which is known about. Issue break event.
-                          // 
+                          //
 
                           IDebugBoundBreakpoint2 [] boundBreakpoints = new IDebugBoundBreakpoint2 [] { boundBreakpoint };
 
@@ -992,9 +969,9 @@ namespace AndroidPlusPlus.VsDebugEngine
                   case "exited-normally":
                   case "exited-signalled":
                   {
-                    // 
+                    //
                     // React to program termination, but defer this so it doesn't consume the async output thread.
-                    // 
+                    //
 
                     ThreadPool.QueueUserWorkItem (delegate (object state)
                     {
@@ -1022,9 +999,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         case MiAsyncRecord.AsyncType.Status:
         {
-          // 
+          //
           // Records prefixed '+'.
-          // 
+          //
 
           break;
         }
@@ -1032,24 +1009,26 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         case MiAsyncRecord.AsyncType.Notify:
         {
-          // 
+          //
           // Records prefixed '='.
-          // 
+          //
 
           switch (asyncRecord.Class)
           {
             case "thread-group-added":
             case "thread-group-started":
             {
-              // 
+              //
               // A thread group became associated with a running program, either because the program was just started or the thread group was attached to a program.
-              // 
+              //
 
               try
               {
                 string threadGroupId = asyncRecord ["id"] [0].GetString ();
 
                 m_threadGroupStatus [threadGroupId] = 0;
+
+                Serilog.Log.Debug($"Thread group added/started: {threadGroupId}");
               }
               catch (Exception e)
               {
@@ -1062,9 +1041,9 @@ namespace AndroidPlusPlus.VsDebugEngine
             case "thread-group-removed":
             case "thread-group-exited":
             {
-              // 
+              //
               // A thread group is no longer associated with a running program, either because the program has exited, or because it was detached from.
-              // 
+              //
 
               try
               {
@@ -1074,6 +1053,8 @@ namespace AndroidPlusPlus.VsDebugEngine
                 {
                   m_threadGroupStatus [threadGroupId] = asyncRecord ["exit-code"] [0].GetUnsignedInt ();
                 }
+
+                Serilog.Log.Debug($"Thread group removed/exited: {threadGroupId}");
               }
               catch (Exception e)
               {
@@ -1085,9 +1066,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             case "thread-created":
             {
-              // 
-              // A thread either was created. The id field contains the gdb identifier of the thread. The gid field identifies the thread group this thread belongs to. 
-              // 
+              //
+              // A thread either was created. The id field contains the gdb identifier of the thread. The gid field identifies the thread group this thread belongs to.
+              //
 
               try
               {
@@ -1095,12 +1076,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                 string threadGroupId = asyncRecord ["group-id"] [0].GetString ();
 
-                CLangDebuggeeThread thread = NativeProgram.GetThread (threadId);
+                CLangDebuggeeThread thread = NativeProgram.GetThread (threadId) ?? NativeProgram.AddThread (threadId);
 
-                if (thread == null)
-                {
-                  NativeProgram.AddThread (threadId);
-                }
+                Serilog.Log.Debug($"Thread created: {threadId}");
               }
               catch (Exception e)
               {
@@ -1112,9 +1090,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             case "thread-exited":
             {
-              // 
-              // A thread has exited. The 'id' field contains the GDB identifier of the thread. The 'group-id' field identifies the thread group this thread belongs to. 
-              // 
+              //
+              // A thread has exited. The 'id' field contains the GDB identifier of the thread. The 'group-id' field identifies the thread group this thread belongs to.
+              //
 
               try
               {
@@ -1125,6 +1103,8 @@ namespace AndroidPlusPlus.VsDebugEngine
                 uint exitCode = m_threadGroupStatus [threadGroupId];
 
                 NativeProgram.RemoveThread (threadId, exitCode);
+
+                Serilog.Log.Debug($"Thread removed: {threadId}");
               }
               catch (Exception e)
               {
@@ -1136,15 +1116,17 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             case "thread-selected":
             {
-              // 
+              //
               // Informs that the selected thread was changed as result of the last command.
-              // 
+              //
 
               try
               {
                 uint threadId = asyncRecord ["id"] [0].GetUnsignedInt ();
 
                 NativeProgram.CurrentThreadId = threadId;
+
+                Serilog.Log.Debug($"Thread selected: {threadId}");
               }
               catch (Exception e)
               {
@@ -1156,25 +1138,22 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             case "library-loaded":
             {
-              // 
+              //
               // Reports that a new library file was loaded by the program.
-              // 
+              //
 
               try
               {
                 string moduleName = asyncRecord ["id"] [0].GetString ();
 
-                CLangDebuggeeModule module = NativeProgram.GetModule (moduleName);
-
-                if (module == null)
-                {
-                  module = NativeProgram.AddModule (moduleName, asyncRecord);
-                }
+                CLangDebuggeeModule module = NativeProgram.GetModule (moduleName) ?? NativeProgram.AddModule (moduleName, asyncRecord);
 
                 if (!GdbClient.GetClientFeatureSupported ("breakpoint-notifications"))
                 {
                   Engine.BreakpointManager.SetDirty (true);
                 }
+
+                Serilog.Log.Debug($"Library loaded: {moduleName}");
               }
               catch (Exception e)
               {
@@ -1186,9 +1165,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             case "library-unloaded":
             {
-              // 
+              //
               // Reports that a library was unloaded by the program.
-              // 
+              //
 
               try
               {
@@ -1228,9 +1207,9 @@ namespace AndroidPlusPlus.VsDebugEngine
                   // If the breakpoint is unknown, this usually means it was bound externally to the IDE.
                   /*if (pendingBreakpoint == null)
                   {
-                    // 
+                    //
                     // CreatePendingBreakpoint always sets the dirty flag, so we need to reset this if it's handled immediately.
-                    // 
+                    //
 
                     DebugBreakpointRequest breakpointRequest = new DebugBreakpointRequest (currentGdbBreakpoint.Address);
 
@@ -1278,10 +1257,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void RefreshSharedLibraries ()
     {
-      // 
+      //
       // Retrieve a list of actively mapped shared libraries.
       // - This also triggers GDB to tell us about libraries which it may have missed.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 

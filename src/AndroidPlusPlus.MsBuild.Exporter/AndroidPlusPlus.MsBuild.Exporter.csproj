@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net472</TargetFrameworks>
+    <Platforms>AnyCPU</Platforms>
+    <OutputType>Exe</OutputType>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AndroidPlusPlus.MsBuild.Common\AndroidPlusPlus.MsBuild.Common.csproj" />
+    <ProjectReference Include="..\AndroidPlusPlus.MsBuild.CppTasks\AndroidPlusPlus.MsBuild.CppTasks.csproj" />
+    <ProjectReference Include="..\AndroidPlusPlus.MsBuild.DeployTasks\AndroidPlusPlus.MsBuild.DeployTasks.csproj" />
+  </ItemGroup>
+
+</Project>

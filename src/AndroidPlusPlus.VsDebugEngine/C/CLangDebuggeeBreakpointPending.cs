@@ -57,19 +57,9 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           case (uint) enum_BP_LOCATION_TYPE.BPLT_CODE_FILE_LINE:
           {
-            codeContext = CLangDebuggeeCodeContext.GetCodeContextForLocation (m_debugger, location);
+            codeContext = CLangDebuggeeCodeContext.GetCodeContextForLocation (m_debugger, location) ?? throw new InvalidOperationException ();
 
-            if (codeContext == null)
-            {
-              throw new InvalidOperationException ();
-            }
-
-            documentContext = codeContext.DocumentContext;
-
-            if (documentContext == null)
-            {
-              throw new InvalidOperationException ();
-            }
+            documentContext = codeContext.DocumentContext ?? throw new InvalidOperationException ();
 
             break;
           }
@@ -102,9 +92,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public override int CreateBoundBreakpoint (string location, DebuggeeDocumentContext documentContext, DebuggeeCodeContext codeContext)
     {
-      // 
+      //
       // Register a new GDB breakpoint.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -162,9 +152,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int CreateErrorBreakpoint (string errorReason, MiBreakpoint gdbBreakpoint, DebuggeeDocumentContext documentContext, DebuggeeCodeContext codeContext)
     {
-      // 
+      //
       // Create a C-language breakpoint. This is tied to a GDB/MI breakpoint object.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -213,14 +203,14 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (breakpoint == null)
         {
-          throw new ArgumentNullException ("breakpoint");
+          throw new ArgumentNullException (nameof(breakpoint));
         }
 
         if (breakpoint.IsPending ())
         {
-          // 
+          //
           // Address can't be satisfied. Unsatisfied likely indicates the modules or symbols associated with the context aren't loaded, yet.
-          // 
+          //
 
           DebuggeeAddress pendingAddress = new DebuggeeAddress (MiBreakpoint.Pending);
 
@@ -230,9 +220,9 @@ namespace AndroidPlusPlus.VsDebugEngine
         }
         else if (breakpoint.IsMultiple ())
         {
-          // 
+          //
           // Breakpoint satisfied to multiple locations, no single memory address available.
-          // 
+          //
 
           CLangDebuggeeBreakpointBound boundBreakpoint = new CLangDebuggeeBreakpointBound (m_debugger, m_breakpointManager, this, codeContext, breakpoint);
 
@@ -247,9 +237,9 @@ namespace AndroidPlusPlus.VsDebugEngine
         }
         else
         {
-          // 
+          //
           // Address satisfied, and the breakpoint is legitimately bound.
-          // 
+          //
 
           DebuggeeAddress boundAddress = new DebuggeeAddress (breakpoint.Address);
 
@@ -283,9 +273,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public override void RefreshBoundBreakpoints ()
     {
-      // 
+      //
       // Refresh the status of any active/satisfied breakpoints.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -301,9 +291,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public override void RefreshErrorBreakpoints ()
     {
-      // 
+      //
       // Refresh the status of any previously failed breakpoints. Ignore any DebuggeeBreakpointError base class objects.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -322,9 +312,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private void RefreshBreakpoint (object breakpoint)
     {
-      // 
+      //
       // Validate breakpoint input type. This function can be used for 'bound' and 'error' objects, so we need to handle this appropriately.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -338,7 +328,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (breakpoint == null)
       {
-        throw new ArgumentNullException ("breakpoint");
+        throw new ArgumentNullException (nameof(breakpoint));
       }
       else if (breakpoint is CLangDebuggeeBreakpointBound)
       {
@@ -386,61 +376,54 @@ namespace AndroidPlusPlus.VsDebugEngine
         throw new ArgumentException ("breakpoint");
       }
 
-      // 
+      //
       // Query breakpoint info/status directly from GDB/MI.
-      // 
+      //
 
-      try
+      string command = string.Format ("-break-info {0}", gdbBreakpoint.ID);
+
+      m_debugger.GdbClient.SendCommand (command, (MiResultRecord resultRecord) =>
       {
-        string command = string.Format ("-break-info {0}", gdbBreakpoint.ID);
-
-        m_debugger.GdbClient.SendCommand (command, delegate (MiResultRecord resultRecord)
+        if (resultRecord == null)
         {
-          if (resultRecord == null)
+          throw new InvalidOperationException ();
+        }
+        else if (resultRecord.IsError ())
+        {
+          //
+          // GDB/MI breakpoint info request failed.
+          //
+
+          gdbBreakpoint.Address = MiBreakpoint.Pending;
+
+          (resolution as DebuggeeBreakpointResolution).CodeContext.Address = new DebuggeeAddress (gdbBreakpoint.Address);
+
+          errorBreakpoint = new CLangDebuggeeBreakpointError (m_debugger, m_breakpointManager, this, (resolution as DebuggeeBreakpointResolution).CodeContext, gdbBreakpoint, resultRecord.Records [1].Stream);
+
+          lock (m_errorBreakpoints)
           {
-            throw new InvalidOperationException ();
+            m_errorBreakpoints.Add (errorBreakpoint);
           }
-          else if (resultRecord.IsError ())
-          {
-            // 
-            // GDB/MI breakpoint info request failed.
-            // 
 
-            gdbBreakpoint.Address = MiBreakpoint.Pending;
+          m_debugger.Engine.Broadcast (new DebugEngineEvent.BreakpointError (errorBreakpoint), m_debugger.NativeProgram.DebugProgram, m_debugger.NativeProgram.GetThread (m_debugger.NativeProgram.CurrentThreadId));
+        }
+        else
+        {
+          //
+          // We've probably got sane breakpoint information back. Update current breakpoint values and re-process.
+          //
 
-            (resolution as DebuggeeBreakpointResolution).CodeContext.Address = new DebuggeeAddress (gdbBreakpoint.Address);
+          MiResultValue breakpointData = resultRecord ["BreakpointTable"] [0] ["body"] [0] ["bkpt"] [0];
 
-            errorBreakpoint = new CLangDebuggeeBreakpointError (m_debugger, m_breakpointManager, this, (resolution as DebuggeeBreakpointResolution).CodeContext, gdbBreakpoint, resultRecord.Records [1].Stream);
+          MiBreakpoint currentGdbBreakpoint = new MiBreakpoint (breakpointData.Values);
 
-            lock (m_errorBreakpoints)
-            {
-              m_errorBreakpoints.Add (errorBreakpoint);
-            }
+          DebuggeeCodeContext codeContext = (resolution as DebuggeeBreakpointResolution).CodeContext;
 
-            m_debugger.Engine.Broadcast (new DebugEngineEvent.BreakpointError (errorBreakpoint), m_debugger.NativeProgram.DebugProgram, m_debugger.NativeProgram.GetThread (m_debugger.NativeProgram.CurrentThreadId));
-          }
-          else
-          {
-            // 
-            // We've probably got sane breakpoint information back. Update current breakpoint values and re-process.
-            // 
+          DebuggeeDocumentContext documentContext = codeContext.DocumentContext;
 
-            MiResultValue breakpointData = resultRecord ["BreakpointTable"] [0] ["body"] [0] ["bkpt"] [0];
-
-            MiBreakpoint currentGdbBreakpoint = new MiBreakpoint (breakpointData.Values);
-
-            DebuggeeCodeContext codeContext = (resolution as DebuggeeBreakpointResolution).CodeContext;
-
-            DebuggeeDocumentContext documentContext = codeContext.DocumentContext;
-
-            LoggingUtils.RequireOk (CreateBoundBreakpoint (currentGdbBreakpoint, documentContext, codeContext));
-          }
-        });
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-      }
+          LoggingUtils.RequireOk (CreateBoundBreakpoint (currentGdbBreakpoint, documentContext, codeContext));
+        }
+      });
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -449,9 +432,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public override int Bind ()
     {
-      // 
+      //
       // Binds this pending breakpoint to one or more code locations.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 

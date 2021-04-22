@@ -16,7 +16,7 @@ namespace AndroidPlusPlus.Common
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class InheritGuidAttribute : Attribute
+  public sealed class InheritGuidAttribute : Attribute
   {
     public InheritGuidAttribute (Type inheritFrom)
     {
@@ -43,9 +43,7 @@ namespace AndroidPlusPlus.Common
       // Search for 'inherited' or explicit COM Guid attributes. [Guid] clobbers [InheritGuid]
       // 
 
-      Guid result = Guid.Empty;
-
-      object [] attrs = t.GetCustomAttributes (typeof (GuidAttribute), false);
+      object[] attrs = t.GetCustomAttributes (typeof (GuidAttribute), false);
 
       if (attrs.Length > 0)
       {

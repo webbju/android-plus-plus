@@ -31,7 +31,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public sealed class Enumerator : DebugEnumerator<IDebugPendingBreakpoint2, IEnumDebugPendingBreakpoints2>, IEnumDebugPendingBreakpoints2
     {
-      public Enumerator (List<IDebugPendingBreakpoint2> breakpoints)
+      public Enumerator (ICollection<IDebugPendingBreakpoint2> breakpoints)
         : base (breakpoints)
       {
       }
@@ -86,9 +86,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void ClearBoundBreakpoints ()
     {
-      // 
+      //
       // Remove all of the bound breakpoints for this pending breakpoint.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -152,9 +152,9 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           case (uint)enum_BP_LOCATION_TYPE.BPLT_CODE_FILE_LINE:
           {
-            // 
+            //
             // Specifies the location type of the breakpoint as a line of source code.
-            // 
+            //
 
             string fileName;
 
@@ -186,9 +186,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           case (uint)enum_BP_LOCATION_TYPE.BPLT_CODE_FUNC_OFFSET:
           {
-            // 
+            //
             // Specifies the location type of the breakpoint as a code function offset.
-            // 
+            //
 
             string function = string.Empty;
 
@@ -210,9 +210,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           case (uint)enum_BP_LOCATION_TYPE.BPLT_CODE_CONTEXT:
           {
-            // 
+            //
             // Specifies the location type of the breakpoint as a code context.
-            // 
+            //
 
             codeContext = ((IDebugCodeContext2)Marshal.GetObjectForIUnknown (m_breakpointRequestInfo.bpLocation.unionmember1)) as DebuggeeCodeContext;
 
@@ -226,18 +226,18 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           case (uint)enum_BP_LOCATION_TYPE.BPLT_CODE_STRING:
           {
-            // 
+            //
             // Specifies the location type of the breakpoint as a code string.
-            // 
+            //
 
             throw new NotImplementedException ();
           }
 
           case (uint)enum_BP_LOCATION_TYPE.BPLT_CODE_ADDRESS:
           {
-            // 
+            //
             // Specifies the location type of the breakpoint as a code address.
-            // 
+            //
 
             string address = Marshal.PtrToStringBSTR (m_breakpointRequestInfo.bpLocation.unionmember4);
 
@@ -251,9 +251,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           case (uint)enum_BP_LOCATION_TYPE.BPLT_DATA_STRING:
           {
-            // 
+            //
             // Specifies the location type of the breakpoint as a data string.
-            // 
+            //
 
             string dataExpression = Marshal.PtrToStringBSTR (m_breakpointRequestInfo.bpLocation.unionmember3);
 
@@ -304,9 +304,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int CreateErrorBreakpoint (string errorReason, DebuggeeDocumentContext documentContext, DebuggeeCodeContext codeContext)
     {
-      // 
+      //
       // Create and broadcast a generic (non language-specific) errored breakpoint.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -375,9 +375,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int Bind ()
     {
-      // 
+      //
       // Binds this pending breakpoint to one or more code locations.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -416,9 +416,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int CanBind (out IEnumDebugErrorBreakpoints2 ppErrorEnum)
     {
-      // 
+      //
       // Determines whether this pending breakpoint can bind to a code location.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -454,9 +454,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int Delete ()
     {
-      // 
+      //
       // Deletes this pending breakpoint and all breakpoints bound from it.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -489,9 +489,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int Enable (int fEnable)
     {
-      // 
+      //
       // Toggles the enabled state of this pending breakpoint.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -520,15 +520,15 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int EnumBoundBreakpoints (out IEnumDebugBoundBreakpoints2 ppEnum)
     {
-      // 
+      //
       // Enumerates all breakpoints bound from this pending breakpoint.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
       try
       {
-        ppEnum = new DebuggeeBreakpointBound.Enumerator (m_boundBreakpoints.ToArray ());
+        ppEnum = new DebuggeeBreakpointBound.Enumerator (m_boundBreakpoints);
 
         return Constants.S_OK;
       }
@@ -548,15 +548,15 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int EnumErrorBreakpoints (enum_BP_ERROR_TYPE bpErrorType, out IEnumDebugErrorBreakpoints2 ppEnum)
     {
-      // 
+      //
       // Enumerates all error breakpoints that resulted from this pending breakpoint.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
       try
       {
-        ppEnum = new DebuggeeBreakpointError.Enumerator (m_errorBreakpoints.ToArray ());
+        ppEnum = new DebuggeeBreakpointError.Enumerator (m_errorBreakpoints);
 
         if (m_breakpointDeleted)
         {
@@ -581,9 +581,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetBreakpointRequest (out IDebugBreakpointRequest2 ppBPRequest)
     {
-      // 
+      //
       // Gets the breakpoint request that was used to create this pending breakpoint.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -619,9 +619,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetState (PENDING_BP_STATE_INFO [] pState)
     {
-      // 
+      //
       // Gets the state of this pending breakpoint.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -654,15 +654,15 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int SetCondition (BP_CONDITION bpCondition)
     {
-      // 
+      //
       // Sets or changes the condition associated with this pending breakpoint.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
       try
       {
-        foreach (DebuggeeBreakpointBound boundBreakpoint in m_boundBreakpoints.ToArray ())
+        foreach (var boundBreakpoint in m_boundBreakpoints)
         {
           LoggingUtils.RequireOk (boundBreakpoint.SetCondition (bpCondition));
         }
@@ -683,9 +683,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int SetPassCount (BP_PASSCOUNT bpPassCount)
     {
-      // 
+      //
       // Sets or changes the pass count associated with this pending breakpoint.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -696,7 +696,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           return Constants.E_BP_DELETED;
         }
 
-        foreach (DebuggeeBreakpointBound boundBreakpoint in m_boundBreakpoints.ToArray ())
+        foreach (var boundBreakpoint in m_boundBreakpoints)
         {
           LoggingUtils.RequireOk (boundBreakpoint.SetPassCount (bpPassCount));
         }
@@ -717,9 +717,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int Virtualize (int fVirtualize)
     {
-      // 
+      //
       // Toggles the virtualized state of this pending breakpoint.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 

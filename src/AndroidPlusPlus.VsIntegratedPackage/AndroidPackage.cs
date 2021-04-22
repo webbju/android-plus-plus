@@ -14,16 +14,16 @@ using System.IO;
 using System.Linq;
 using System.Security;
 
-using Microsoft.Win32;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Debugger.Interop;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.OLE.Interop;
 
 using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugCommon;
 using AndroidPlusPlus.VsDebugEngine;
+using System.Threading;
+using System.Threading.Tasks;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -40,26 +40,28 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
   [Guid(Guids.guidAndroidPlusPlusPackageStringCLSID)]
 
-  // 
+  //
   // Package registration
   // - Ensure the VSXI plugin is initialised on startup, not adhoc (on first use).
   // - Register the data needed to show the this package in the Help/About dialog of Visual Studio.
-  // 
+  //
 
   [ProvideObject(typeof(VsIntegratedPackage.AndroidPackage))]
 
-  [PackageRegistration(UseManagedResourcesOnly = true)]
+  [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
 
-  [ProvideAutoLoad(VSConstants.UICONTEXT.NoSolution_string)]
+  [ProvideAutoLoad(VSConstants.UICONTEXT.NoSolution_string, PackageAutoLoadFlags.BackgroundLoad)]
+
+  [ProvideService(typeof(IDebuggerConnectionService), IsAsyncQueryable = true)]
 
   [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)]
 
-  // 
+  //
   // VsDebugLauncher registration.
-  // 
+  //
 
   [ProvideDebugLauncher("A7A96E37-9D90-489A-84CB-14BBBE5686D2",
-    "AndroidPlusPlus.VsDebugLauncher.Launcher",
+    "AndroidPlusPlus.VsDebugLauncher.DebugLauncher",
     "$PackageFolder$\\AndroidPlusPlus.VsDebugLauncher.dll",
     "AndroidPlusPlus.VsDebugLauncher")]
 
@@ -67,9 +69,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
   //[ProvideExternObject(typeof(VsIntegratedPackage.DebugLauncher))]
 
-  // 
+  //
   // VsDebugEngine registration.
-  // 
+  //
 
   [ProvideExternObject(typeof(DebugEngine))]
 
@@ -80,8 +82,8 @@ namespace AndroidPlusPlus.VsIntegratedPackage
   [ProvideDebugPortSupplier(DebugEngineGuids.guidDebugPortSupplierStringID, "Android++", typeof(DebugPortSupplier))]
 
   [ProvideDebugEngine(DebugEngineGuids.guidDebugEngineStringID, "Android++", typeof(DebugEngine),
-    IncompatibleList = new string [] 
-    { 
+    IncompatibleList = new string []
+    {
       DebugEngineGuids.guidIncompatibleDebugEngineSilverlightStringID,
       DebugEngineGuids.guidIncompatibleDebugEngineTSql2000StringID,
       DebugEngineGuids.guidIncompatibleDebugEngineTSql2005StringID,
@@ -100,16 +102,16 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     },
     //ProgramProvider = typeof(VsDebugEngine.DebugProgramProvider),
     Attach = true,
-    Disassembly = true, 
-    RemoteDebugging = true, 
-    AlwaysLoadLocal = true, 
-    AutoSelectPriority = 4, 
-    AddressBP = true, 
+    Disassembly = true,
+    RemoteDebugging = true,
+    AlwaysLoadLocal = true,
+    AutoSelectPriority = 4,
+    AddressBP = true,
     SetNextStatement = true,
     Exceptions = true,
     DataBP = true)]
 
-  [ProvideDebugExtension (DebugEngineGuids.guidDebugEngineStringID, 
+  [ProvideDebugExtension (DebugEngineGuids.guidDebugEngineStringID,
     "Android++",
     (uint) 0,
     (uint) (enum_EXCEPTION_STATE.EXCEPTION_STOP_FIRST_CHANCE | enum_EXCEPTION_STATE.EXCEPTION_STOP_SECOND_CHANCE),
@@ -117,7 +119,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     {
       // 0x4002 (enum_EXCEPTION_STATE.EXCEPTION_STOP_SECOND_CHANCE | enum_EXCEPTION_STATE.EXCEPTION_JUST_MY_CODE_SUPPORTED)
       // 0x4020 (enum_EXCEPTION_STATE.EXCEPTION_JUST_MY_CODE_SUPPORTED | enum_EXCEPTION_STATE.EXCEPTION_STOP_USER_UNCAUGHT))
-      "SIGHUP (Hangup)|0x0001|0x0001", 
+      "SIGHUP (Hangup)|0x0001|0x0001",
 #if false
       "SIGINT (Interrupt)|0x0002|0x0001",
 #endif
@@ -216,13 +218,11 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     }
   )]
 
-  [ProvideService(typeof(IDebuggerConnectionService))]
-
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public sealed class AndroidPackage : Package, IVsInstalledProduct, IDisposable
+  public sealed class AndroidPackage : AsyncPackage
     {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -258,21 +258,22 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected override void Initialize () 
+    protected override async System.Threading.Tasks.Task InitializeAsync (CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
     {
-      LoggingUtils.PrintFunction ();
+      await base.InitializeAsync(cancellationToken, progress);
 
-      base.Initialize ();
+      LoggingUtils.PrintFunction ();
 
       InitialiseTraceListeners ();
 
-      InitialisePackageServices ();
+      AddService(typeof(IDebuggerConnectionService), CreateDebuggerConnectionServiceAsync);
 
-      InitialiseEventListeners ();
 
-      // 
+      //InitialiseEventListeners ();
+
+      //
       // Sanity type checking.
-      // 
+      //
 #if false
       try
       {
@@ -295,9 +296,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
       /*try
       {
-        // 
+        //
         // Evaluate the current target HKLM registry location for this version of VisualStudio.
-        // 
+        //
 
         RegistryKey visualStudioPlatformRoot = Registry.LocalMachine.OpenSubKey (@"SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0");
 
@@ -308,9 +309,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
           visualStudioPlatformRoot = Registry.LocalMachine.OpenSubKey (@"SOFTWARE\Microsoft\VisualStudio\10.0");
         }
 
-        // 
+        //
         // Traverse custom RegisterAttributes explictly registering their data within HKLM due to limitiations with DE architecture.
-        // 
+        //
 
         IEnumerable<ProvideExternObjectAttribute> provideExternObjectAttributes = typeof (AndroidMTPackage).GetCustomAttributes (typeof (ProvideExternObjectAttribute), false).Cast<ProvideExternObjectAttribute> ();
 
@@ -344,36 +345,31 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void Dispose ()
+    protected override void Dispose (bool disposing)
     {
-      LoggingUtils.PrintFunction ();
+      if (disposing)
+      {
+        DisposeTraceListeners();
 
-      //DiposeEventListeners ();
-
-      //DiposeInterfaceListeners ();
-
-      //DiposePackageServices ();
-
-      DisposeTraceListeners ();
+        base.Dispose(disposing);
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    void InitialisePackageServices ()
+    private async Task<object> CreateDebuggerConnectionServiceAsync(IAsyncServiceContainer container, CancellationToken cancellationToken, Type serviceType)
     {
-      LoggingUtils.PrintFunction ();
-
-      // 
+      //
       // Create a service to manage the 'attach' status dialog. As we need to access this via VsDebugLauncher/VsDebugEngine.
-      // 
+      //
 
-      IServiceContainer serviceContainer = this as IServiceContainer;
+      var launchService = new DebuggerConnectionService ();
 
-      DebuggerConnectionService launchService = new DebuggerConnectionService ();
+      await launchService.InitializeAsync(this, cancellationToken);
 
-      serviceContainer.AddService (typeof (IDebuggerConnectionService), launchService, true);
+      return launchService;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -421,9 +417,11 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     void InitialiseEventListeners ()
     {
-      // 
+      ThreadHelper.ThrowIfNotOnUIThread();
+
+      //
       // Acquire VisualStudio service references.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -439,9 +437,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
       IDebuggerConnectionService debuggerConnectionService = GetService (typeof (IDebuggerConnectionService)) as IDebuggerConnectionService;
 
-      // 
+      //
       // Register service listeners.
-      // 
+      //
 
       if (dteService == null)
       {
@@ -474,79 +472,11 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
       m_solutionEventListener = new SolutionEventListener (dteService, solutionService);
 
-      // 
+      //
       // Register a new listener to assist finding assemblies placed within the package's current directory.
-      // 
+      //
 
       m_assemblyResolveListener = new AssemblyResolveListener ();
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    #endregion
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    #region IVsInstalledProduct Members
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    [Obsolete("Visual Studio 2005+ no longer calls this method.")]
-    int IVsInstalledProduct.IdBmpSplash (out uint pIdBmp) 
-    {
-      pIdBmp = 400;
-
-      return VSConstants.S_OK;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    int IVsInstalledProduct.OfficialName(out string pbstrName)
-    {
-      pbstrName = "Android++";
-
-      return VSConstants.S_OK;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    int IVsInstalledProduct.ProductID (out string pbstrPID)
-    {
-      pbstrPID = Assembly.GetExecutingAssembly ().GetName ().Version.ToString ();
-
-      return VSConstants.S_OK;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    int IVsInstalledProduct.ProductDetails (out string pbstrProductDetails)
-    {
-      pbstrProductDetails = "Native development and debugging extension for Visual Studio.";
-
-      return VSConstants.S_OK;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    int IVsInstalledProduct.IdIcoLogoForAboutbox (out uint pIdIco)
-    {
-      pIdIco = 400;
-
-      return VSConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

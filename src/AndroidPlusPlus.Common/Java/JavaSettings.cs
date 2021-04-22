@@ -67,12 +67,9 @@ namespace AndroidPlusPlus.Common
 
           foreach (string location in jdkPossibleLocations)
           {
-            if (!string.IsNullOrEmpty (location))
+            if (!string.IsNullOrEmpty(location) && File.Exists(location + @"\bin\java.exe"))
             {
-              if (File.Exists (location + @"\bin\java.exe"))
-              {
-                return location;
-              }
+              return location;
             }
           }
         }

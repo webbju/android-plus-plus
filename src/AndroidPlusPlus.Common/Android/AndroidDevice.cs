@@ -89,9 +89,7 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      string prop;
-
-      if (m_deviceProperties.TryGetValue (property, out prop))
+      if (m_deviceProperties.TryGetValue (property, out string prop))
       {
         return prop;
       }
@@ -107,9 +105,7 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      AndroidProcess process;
-
-      if (m_deviceProcessesByPid.TryGetValue (processId, out process))
+      if (m_deviceProcessesByPid.TryGetValue(processId, out AndroidProcess process))
       {
         return process;
       }
@@ -125,11 +121,9 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      HashSet<uint> processPidSet;
+      uint [] processesArray = Array.Empty<uint>();
 
-      uint [] processesArray = new uint [] { };
-
-      if (m_devicePidsByName.TryGetValue (processName, out processPidSet))
+      if (m_devicePidsByName.TryGetValue (processName, out HashSet<uint> processPidSet))
       {
         processesArray = new uint [processPidSet.Count];
 
@@ -147,11 +141,9 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      HashSet<uint> processPpidSiblingSet;
+      uint [] processesArray = Array.Empty<uint>();
 
-      uint [] processesArray = new uint [] { };
-
-      if (m_devicePidsByPpid.TryGetValue (parentProcessId, out processPpidSiblingSet))
+      if (m_devicePidsByPpid.TryGetValue (parentProcessId, out HashSet<uint> processPpidSiblingSet))
       {
         processesArray = new uint [processPpidSiblingSet.Count];
 
@@ -250,10 +242,10 @@ namespace AndroidPlusPlus.Common
 
       try
       {
-        // 
+        //
         // Check if the remote path is a symbolic link, and adjust the target file.
         // (ADB Pull doesn't follow these links)
-        // 
+        //
 
         try
         {
@@ -282,9 +274,9 @@ namespace AndroidPlusPlus.Common
            // Ignore. Not a relative link.
         }
 
-        // 
+        //
         // Pull the requested file.
-        // 
+        //
 
         int exitCode = -1;
 
@@ -324,7 +316,7 @@ namespace AndroidPlusPlus.Common
 
         Regex regExMatcher = new Regex (pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        string [] properties = getPropOutput.Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        var properties = getPropOutput.Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
         for (int i = 0; i < properties.Length; ++i)
         {
@@ -351,7 +343,7 @@ namespace AndroidPlusPlus.Common
             {
               continue;
             }
-            else 
+            else
             {
               m_deviceProperties [key] = value;
             }
@@ -366,17 +358,17 @@ namespace AndroidPlusPlus.Common
 
     public void RefreshProcesses (uint processIdFilter = 0)
     {
-      // 
+      //
       // Skip the first line, and read in tab-separated process data.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
       string deviceProcessList = Shell ("ps", string.Format ("-t {0}", ((processIdFilter == 0) ? "" : processIdFilter.ToString ())));
 
-      if (!String.IsNullOrEmpty (deviceProcessList))
+      if (!string.IsNullOrEmpty (deviceProcessList))
       {
-        string [] processesOutputLines = deviceProcessList.Replace ("\r", "").Split (new char [] { '\n' });
+        var processesOutputLines = deviceProcessList.Replace ("\r", "").Split (new char [] { '\n' });
 
         string processesRegExPattern = @"(?<user>[^ ]+)[ ]*(?<pid>[0-9]+)[ ]*(?<ppid>[0-9]+)[ ]*(?<vsize>[0-9]+)[ ]*(?<rss>[0-9]+)[ ]*(?<wchan>[^ ]+)[ ]*(?<pc>[A-Za-z0-9]+)[ ]*(?<s>[^ ]+)[ ]*(?<name>[^\r\n]+)";
 
@@ -390,7 +382,7 @@ namespace AndroidPlusPlus.Common
 
         for (uint i = 1; i < processesOutputLines.Length; ++i)
         {
-          if (!String.IsNullOrEmpty (processesOutputLines [i]))
+          if (!string.IsNullOrEmpty (processesOutputLines [i]))
           {
             Match regExLineMatches = regExMatcher.Match (processesOutputLines [i]);
 
@@ -416,13 +408,11 @@ namespace AndroidPlusPlus.Common
 
             m_deviceProcessesByPid [processPid] = process;
 
-            // 
+            //
             // Add new process to a fast-lookup collection organised by process name.
-            // 
+            //
 
-            HashSet<uint> processPidsList;
-
-            if (!m_devicePidsByName.TryGetValue (processName, out processPidsList))
+            if (!m_devicePidsByName.TryGetValue (processName, out HashSet<uint> processPidsList))
             {
               processPidsList = new HashSet<uint> ();
             }
@@ -434,13 +424,11 @@ namespace AndroidPlusPlus.Common
 
             m_devicePidsByName [processName] = processPidsList;
 
-            // 
+            //
             // Check whether this process is sibling of another; keep ppids-pid relationships tracked.
-            // 
+            //
 
-            HashSet<uint> processPpidSiblingList;
-
-            if (!m_devicePidsByPpid.TryGetValue (processPpid, out processPpidSiblingList))
+            if (!m_devicePidsByPpid.TryGetValue (processPpid, out HashSet<uint> processPpidSiblingList))
             {
               processPpidSiblingList = new HashSet<uint> ();
             }
@@ -466,13 +454,13 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public uint SdkVersion 
+    public uint SdkVersion
     {
       get
       {
-        // 
+        //
         // Query device's current SDK level. If it's not an integer (like some custom ROMs) fall-back to ICS.
-        // 
+        //
 
         try
         {
@@ -491,13 +479,13 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public string [] SupportedCpuAbis
+    public IEnumerable<string> SupportedCpuAbis
     {
       get
       {
-        // 
+        //
         // Queries device's supported CPU ABIs. Fallback to using old-style primary/secondary props if list isn't available.
-        // 
+        //
 
         string abiList = GetProperty ("ro.product.cpu.abilist");
 

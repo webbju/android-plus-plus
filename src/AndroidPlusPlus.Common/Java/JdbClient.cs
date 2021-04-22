@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -21,7 +22,7 @@ namespace AndroidPlusPlus.Common
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class JdbClient : AsyncRedirectProcess.EventListener, IDisposable
+  public class JdbClient : AsyncRedirectProcess.IEventListener, IDisposable
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -39,7 +40,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public delegate void OnAsyncOutputDelegate (string [] output);
+    public delegate void OnAsyncOutputDelegate (ICollection<string> output);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -163,10 +164,10 @@ namespace AndroidPlusPlus.Common
       // Export an execution script ('jdb.ini') for standard start-up properties.
       // 
 
-      string [] execCommands = m_jdbSetup.CreateJdbExecutionScript ();
-
       using (StreamWriter writer = new StreamWriter (Path.Combine (m_jdbSetup.CacheDirectory, "jdb.ini"), false, Encoding.ASCII))
       {
+        var execCommands = m_jdbSetup.CreateJdbExecutionScript();
+
         foreach (string command in execCommands)
         {
           writer.WriteLine (command);
@@ -301,18 +302,14 @@ namespace AndroidPlusPlus.Common
         case StepType.Statement:
         case StepType.Line:
         {
-          string command = "step";
-
-          SendCommand (command);
+          SendCommand ("step");
 
           break;
         }
 
         case StepType.Instruction:
         {
-          string command = "stepi";
-
-          SendCommand (command);
+          SendCommand ("stepi");
 
           break;
         }
@@ -333,9 +330,7 @@ namespace AndroidPlusPlus.Common
         case StepType.Line:
         case StepType.Instruction:
         {
-          string command = "step up";
-
-          SendCommand (command);
+          SendCommand ("step up");
 
           break;
         }
@@ -356,9 +351,7 @@ namespace AndroidPlusPlus.Common
         case StepType.Line:
         case StepType.Instruction:
         {
-          string command = "next";
-
-          SendCommand (command);
+          SendCommand ("next");
 
           break;
         }
@@ -369,7 +362,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public string [] SendCommand (string command, int timeout = 30000)
+    public ICollection<string> SendCommand (string command, int timeout = 30000)
     {
       // 
       // Perform a synchronous command request.
@@ -379,10 +372,10 @@ namespace AndroidPlusPlus.Common
 
       if (string.IsNullOrWhiteSpace (command))
       {
-        throw new ArgumentNullException ("command");
+        throw new ArgumentNullException (nameof(command));
       }
 
-      string [] syncOutput = null;
+      ICollection<string> syncOutput = null;
 
       if (m_jdbClientInstance == null)
       {
@@ -393,7 +386,7 @@ namespace AndroidPlusPlus.Common
 
       m_syncCommandLocks [command] = syncCommandLock;
 
-      SendAsyncCommand (command, delegate (string [] output)
+      SendAsyncCommand (command, (ICollection<string> output) =>
       {
         syncOutput = output;
 
@@ -436,7 +429,7 @@ namespace AndroidPlusPlus.Common
 
       if (string.IsNullOrWhiteSpace (command))
       {
-        throw new ArgumentNullException ("command");
+        throw new ArgumentNullException (nameof(command));
       }
 
       if (m_jdbClientInstance == null)
@@ -446,11 +439,12 @@ namespace AndroidPlusPlus.Common
 
       m_timeSinceLastOperation.Restart ();
 
-      AsyncCommandData commandData = new AsyncCommandData ();
+      AsyncCommandData commandData = new AsyncCommandData
+      {
+        Command = command,
 
-      commandData.Command = command;
-
-      commandData.OutputDelegate = asyncDelegate;
+        OutputDelegate = asyncDelegate
+      };
 
       ++m_sessionCommandToken;
 
@@ -579,9 +573,9 @@ namespace AndroidPlusPlus.Common
     {
       try
       {
-        m_timeSinceLastOperation.Restart ();
+        LoggingUtils.Print(string.Format("[JdbClient] ProcessExited"));
 
-        LoggingUtils.Print (string.Format ("[JdbClient] ProcessExited"));
+        m_timeSinceLastOperation.Restart ();
 
         m_jdbClientInstance = null;
 

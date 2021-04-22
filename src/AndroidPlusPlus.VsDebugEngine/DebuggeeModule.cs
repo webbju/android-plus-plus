@@ -38,11 +38,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public class Enumerator : DebugEnumerator<IDebugModule2, IEnumDebugModules2>, IEnumDebugModules2
     {
-      public Enumerator (List<IDebugModule2> modules)
-        : base (modules)
-      {
-      }
-      public Enumerator (IDebugModule2 [] modules)
+      public Enumerator (ICollection<IDebugModule2> modules)
         : base (modules)
       {
       }

@@ -28,11 +28,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public sealed class Enumerator : DebugEnumerator<IDebugBoundBreakpoint2, IEnumDebugBoundBreakpoints2>, IEnumDebugBoundBreakpoints2
     {
-      public Enumerator (List<IDebugBoundBreakpoint2> breakpoints)
-        : base (breakpoints)
-      {
-      }
-      public Enumerator (IDebugBoundBreakpoint2 [] breakpoints)
+      public Enumerator (ICollection<IDebugBoundBreakpoint2> breakpoints)
         : base (breakpoints)
       {
       }
@@ -96,26 +92,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public DebuggeeBreakpointBound (DebugBreakpointManager breakpointManager, DebuggeeBreakpointPending pendingBreakpoint, DebuggeeCodeContext codeContext)
     {
-      if (breakpointManager == null)
-      {
-        throw new ArgumentNullException ("breakpointManager");
-      }
+      m_breakpointManager = breakpointManager ?? throw new ArgumentNullException (nameof(breakpointManager));
 
-      if (pendingBreakpoint == null)
-      {
-        throw new ArgumentNullException ("pendingBreakpoint");
-      }
+      m_pendingBreakpoint = pendingBreakpoint ?? throw new ArgumentNullException (nameof(pendingBreakpoint));
 
-      if (codeContext == null)
-      {
-        throw new ArgumentNullException ("codeContext");
-      }
-
-      m_breakpointManager = breakpointManager;
-
-      m_pendingBreakpoint = pendingBreakpoint;
-
-      m_codeContext = codeContext;
+      m_codeContext = codeContext ?? throw new ArgumentNullException (nameof(codeContext));
 
       m_breakpointResolution = new DebuggeeBreakpointResolution (m_codeContext, "<bound breakpoint>");
 
@@ -138,9 +119,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int Delete ()
     {
-      // 
+      //
       // Deletes the breakpoint.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -175,9 +156,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int Enable (int fEnable)
     {
-      // 
+      //
       // Enables or disables the breakpoint.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -197,9 +178,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int GetBreakpointResolution (out IDebugBreakpointResolution2 ppBPResolution)
     {
-      // 
+      //
       // Gets the breakpoint resolution that describes this breakpoint.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -219,9 +200,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int GetHitCount (out uint pdwHitCount)
     {
-      // 
+      //
       // Gets the current hit count for this bound breakpoint.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -241,9 +222,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int GetPendingBreakpoint (out IDebugPendingBreakpoint2 ppPendingBreakpoint)
     {
-      // 
+      //
       // Gets the pending breakpoint from which the specified bound breakpoint was created.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -263,9 +244,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int GetState (enum_BP_STATE [] pState)
     {
-      // 
+      //
       // Gets the state of this bound breakpoint.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -298,9 +279,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int SetCondition (BP_CONDITION bpCondition)
     {
-      // 
+      //
       // Sets or changes the condition associated with this bound breakpoint.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -318,9 +299,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int SetHitCount (uint dwHitCount)
     {
-      // 
+      //
       // Sets the hit count for this bound breakpoint.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -340,9 +321,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int SetPassCount (BP_PASSCOUNT bpPassCount)
     {
-      // 
+      //
       // Sets or change the pass count associated with this bound breakpoint.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 

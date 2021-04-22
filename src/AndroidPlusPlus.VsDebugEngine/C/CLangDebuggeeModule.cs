@@ -32,35 +32,26 @@ namespace AndroidPlusPlus.VsDebugEngine
     public CLangDebuggeeModule (DebugEngine engine, MiAsyncRecord asyncRecord)
       : base (engine)
     {
-      try
+      if (asyncRecord == null)
       {
-        if (asyncRecord == null)
-        {
-          throw new ArgumentNullException ("asyncRecord");
-        }
-
-        Name = asyncRecord ["id"] [0].GetString ();
-
-        RemotePath = asyncRecord ["target-name"] [0].GetString ();
-
-        RemoteLoadAddress = 0;
-
-        SymbolsPath = asyncRecord ["host-name"] [0].GetString ();
-
-        // 
-        // The 'symbols-loaded' field is emitted only for backward compatibility and should not be relied on to convey any useful information.
-        // 
-
-        if ((!string.IsNullOrEmpty (SymbolsPath)) && File.Exists (SymbolsPath))
-        {
-          SymbolsLoaded = true;
-        }
+        throw new ArgumentNullException (nameof(asyncRecord));
       }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
 
-        throw;
+      Name = asyncRecord ["id"] [0].GetString ();
+
+      RemotePath = asyncRecord ["target-name"] [0].GetString ();
+
+      RemoteLoadAddress = 0;
+
+      SymbolsPath = asyncRecord ["host-name"] [0].GetString ();
+
+      //
+      // The 'symbols-loaded' field is emitted only for backward compatibility and should not be relied on to convey any useful information.
+      //
+
+      if ((!string.IsNullOrEmpty (SymbolsPath)) && File.Exists (SymbolsPath))
+      {
+        SymbolsLoaded = true;
       }
     }
 
@@ -76,16 +67,16 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public override int GetInfo (enum_MODULE_INFO_FIELDS requestedFields, MODULE_INFO [] infoArray)
     {
-      // 
+      //
       // Retrieve relevant requested data for this module.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
       try
       {
         LoggingUtils.RequireOk (base.GetInfo (requestedFields, infoArray));
-        
+
         return Constants.S_OK;
       }
       catch (Exception e)
@@ -114,10 +105,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public override int GetSymbolInfo (enum_SYMBOL_SEARCH_INFO_FIELDS requestedFields, MODULE_SYMBOL_SEARCH_INFO [] infoArray)
     {
-      // 
+      //
       // Returns a list of paths searched for symbols, and the results of searching path.
       // This is not currently supported.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 

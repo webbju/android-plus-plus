@@ -11,6 +11,9 @@ using Microsoft.VisualStudio;
 using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugCommon;
 using AndroidPlusPlus.VsDebugEngine;
+using System.Threading.Tasks;
+using System.Threading;
+using Microsoft.VisualStudio.Shell;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -30,7 +33,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private DebuggerConnectionWindow m_debuggerConnectionWindow = null;
+    private DebuggerConnectionWindow m_debuggerConnectionWindow;
+
+    private object m_debuggerConnectionWindowLock = new object();
 
     private StringBuilder m_textBuffer = new StringBuilder ();
 
@@ -38,7 +43,15 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public DebuggerConnectionService ()
+    public void Initialize(IServiceProvider provider)
+    {
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public async System.Threading.Tasks.Task InitializeAsync(IAsyncServiceProvider provider, CancellationToken cancellationToken)
     {
     }
 
@@ -48,18 +61,11 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     private void LaunchWindowClosed (object sender, EventArgs e)
     {
-      try
-      {
-        m_textBuffer.Clear ();
+      m_textBuffer.Clear ();
 
-        lock (m_debuggerConnectionWindow)
-        {
-          m_debuggerConnectionWindow = null;
-        }
-      }
-      catch (Exception ex)
+      lock (m_debuggerConnectionWindowLock)
       {
-        LoggingUtils.HandleException (ex);
+        m_debuggerConnectionWindow = null;
       }
     }
 
@@ -73,130 +79,97 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int LaunchDialogShow ()
+    public async Task<int> LaunchDialogShow ()
     {
       LoggingUtils.PrintFunction ();
 
-      try
+      if (m_debuggerConnectionWindow == null)
       {
-        if (m_debuggerConnectionWindow == null)
-        {
-          m_debuggerConnectionWindow = new DebuggerConnectionWindow ();
+        m_debuggerConnectionWindow = new DebuggerConnectionWindow ();
 
-          m_debuggerConnectionWindow.Closed += LaunchWindowClosed;
-        }
-
-        if (m_debuggerConnectionWindow == null)
-        {
-          throw new InvalidOperationException ("Failed to create connection window");
-        }
-
-        lock (m_debuggerConnectionWindow)
-        {
-          m_debuggerConnectionWindow.Dispatcher.Invoke ((Action) (() =>
-          {
-            m_debuggerConnectionWindow.textBox1.BeginChange ();
-
-            m_debuggerConnectionWindow.textBox1.Text = m_textBuffer.ToString ();
-
-            m_debuggerConnectionWindow.textBox1.EndChange ();
-
-            m_debuggerConnectionWindow.textBox1.ScrollToEnd ();
-
-            m_debuggerConnectionWindow.progressBar1.IsIndeterminate = true;
-
-            m_debuggerConnectionWindow.Show ();
-
-            m_debuggerConnectionWindow.Activate ();
-          }));
-        }
-
-        return VSConstants.S_OK;
+        m_debuggerConnectionWindow.Closed += LaunchWindowClosed;
       }
-      catch (Exception e)
+
+      if (m_debuggerConnectionWindow == null)
       {
-        LoggingUtils.HandleException (e);
-
-        return VSConstants.E_FAIL;
+        throw new InvalidOperationException ("Failed to create connection window");
       }
+
+      lock (m_debuggerConnectionWindowLock)
+      {
+        m_debuggerConnectionWindow.Dispatcher.Invoke (() =>
+        {
+          m_debuggerConnectionWindow.textBox1.BeginChange ();
+
+          m_debuggerConnectionWindow.textBox1.Text = m_textBuffer.ToString ();
+
+          m_debuggerConnectionWindow.textBox1.EndChange ();
+
+          m_debuggerConnectionWindow.textBox1.ScrollToEnd ();
+
+          m_debuggerConnectionWindow.progressBar1.IsIndeterminate = true;
+
+          m_debuggerConnectionWindow.Show ();
+
+          m_debuggerConnectionWindow.Activate ();
+        });
+      }
+
+      return VSConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int LaunchDialogUpdate (string status, bool isError)
+    public async Task<int> LaunchDialogUpdate (string status, bool isError)
     {
       LoggingUtils.PrintFunction ();
 
-      try
+      string line = string.Format ("[{0}] {1}", ((isError) ? "error" : "status"), status);
+
+      LoggingUtils.Print (line);
+
+      m_textBuffer.AppendLine (line);
+
+      m_debuggerConnectionWindow?.Dispatcher.Invoke (() =>
       {
-        string line = string.Format ("[{0}] {1}", ((isError) ? "error" : "status"), status);
-
-        LoggingUtils.Print (line);
-
-        m_textBuffer.AppendLine (line);
-
-        if (m_debuggerConnectionWindow != null)
+        lock (m_debuggerConnectionWindowLock)
         {
-          m_debuggerConnectionWindow.Dispatcher.Invoke ((Action) (() =>
-          {
-            lock (m_debuggerConnectionWindow)
-            {
-              m_debuggerConnectionWindow.textBox1.BeginChange ();
+          m_debuggerConnectionWindow.textBox1.BeginChange ();
 
-              m_debuggerConnectionWindow.textBox1.Text = m_textBuffer.ToString ();
+          m_debuggerConnectionWindow.textBox1.Text = m_textBuffer.ToString ();
 
-              m_debuggerConnectionWindow.textBox1.EndChange ();
+          m_debuggerConnectionWindow.textBox1.EndChange ();
 
-              m_debuggerConnectionWindow.textBox1.ScrollToEnd ();
+          m_debuggerConnectionWindow.textBox1.ScrollToEnd ();
 
-              m_debuggerConnectionWindow.progressBar1.IsIndeterminate = !isError;
+          m_debuggerConnectionWindow.progressBar1.IsIndeterminate = !isError;
 
-              m_debuggerConnectionWindow.Activate ();
-            }
-          }));
+          m_debuggerConnectionWindow.Activate ();
         }
+      });
 
-        return VSConstants.S_OK;
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-
-        return VSConstants.E_FAIL;
-      }
+      return VSConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int LaunchDialogClose ()
+    public async Task<int> LaunchDialogClose ()
     {
       LoggingUtils.PrintFunction ();
 
-      try
+      m_debuggerConnectionWindow?.Dispatcher.InvokeAsync(() =>
       {
-        if (m_debuggerConnectionWindow != null)
+        lock (m_debuggerConnectionWindowLock)
         {
-          m_debuggerConnectionWindow.Dispatcher.Invoke ((Action) (() =>
-          {
-            lock (m_debuggerConnectionWindow)
-            {
-              m_debuggerConnectionWindow.Close ();
-            }
-          }));
+          m_debuggerConnectionWindow.Close ();
         }
+      });
 
-        return VSConstants.S_OK;
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-
-        return VSConstants.E_FAIL;
-      }
+      return VSConstants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

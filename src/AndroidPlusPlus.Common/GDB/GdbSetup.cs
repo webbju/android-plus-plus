@@ -75,7 +75,7 @@ namespace AndroidPlusPlus.Common
       {
         gdbProcess.StartAndWaitForExit ();
 
-        string [] versionDetails = gdbProcess.StandardOutput.Replace ("\r", "").Split (new char [] { '\n' });
+        var versionDetails = gdbProcess.StandardOutput.Replace ("\r", "").Split (new char [] { '\n' });
 
         string versionPrefix = "GNU gdb (GDB) ";
 
@@ -85,7 +85,7 @@ namespace AndroidPlusPlus.Common
           {
             string gdbVersion = versionDetails [i].Substring (versionPrefix.Length); ;
 
-            string [] gdbVersionComponents = gdbVersion.Split ('.');
+            var gdbVersionComponents = gdbVersion.Split ('.');
 
             if (gdbVersionComponents.Length > 0)
             {
@@ -218,7 +218,7 @@ namespace AndroidPlusPlus.Common
 
       LoggingUtils.PrintFunction ();
 
-      string [] deviceBinaries = new string []
+      var deviceBinaries = new string []
       {
         "/system/bin/app_process",
         "/system/bin/app_process32",
@@ -414,7 +414,7 @@ namespace AndroidPlusPlus.Common
           }
           finally
           {
-            string [] libraries = ls.Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            var libraries = ls.Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
             foreach (string file in libraries)
             {
@@ -480,7 +480,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public string [] CreateGdbExecutionScript ()
+    public ICollection<string> CreateGdbExecutionScript ()
     {
       LoggingUtils.PrintFunction ();
 
@@ -534,7 +534,7 @@ namespace AndroidPlusPlus.Common
       }
     #endif
 
-      return gdbExecutionCommands.ToArray ();
+      return gdbExecutionCommands;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
