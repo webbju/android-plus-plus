@@ -36,6 +36,8 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     private static IVsOutputWindow AquireOutputWindow ()
     {
+      ThreadHelper.ThrowIfNotOnUIThread();
+
       return Package.GetGlobalService (typeof (SVsOutputWindow)) as IVsOutputWindow;
     }
 

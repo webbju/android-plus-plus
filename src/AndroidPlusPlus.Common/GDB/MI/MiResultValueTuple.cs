@@ -30,7 +30,7 @@ namespace AndroidPlusPlus.Common
     {
       if (values == null)
       {
-        throw new ArgumentNullException ("values");
+        throw new ArgumentNullException (nameof(values));
       }
 
       m_valueList = values;

@@ -54,8 +54,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private DebugBreakpointManager m_breakpointManager;
 
-    private LaunchConfiguration m_launchConfiguration;
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -65,8 +63,6 @@ namespace AndroidPlusPlus.VsDebugEngine
       m_broadcastHandleLock = new AutoResetEvent (false);
 
       m_breakpointManager = new DebugBreakpointManager (this);
-
-      m_launchConfiguration = new LaunchConfiguration ();
 
       Program = null;
 
@@ -174,7 +170,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (callback == null)
       {
-        throw new ArgumentNullException ("callback");
+        throw new ArgumentNullException (nameof(callback));
       }
 
       Guid eventGuid = ComUtils.GuidOf (debugEvent);
@@ -185,7 +181,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (((eventAttributes & (uint) enum_EVENTATTRIBUTES.EVENT_STOPPING) != 0) && (thread == null))
       {
-        throw new ArgumentNullException ("thread", "For stopping events, this parameter cannot be a null value as the stack frame is obtained from this parameter.");
+        throw new ArgumentNullException (nameof(thread), "For stopping events, this parameter cannot be a null value as the stack frame is obtained from this parameter.");
       }
 
       try
@@ -317,7 +313,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus, string.Format ("Starting GDB client...")), null, null);
 
-        NativeDebugger = new CLangDebugger (this, m_launchConfiguration, Program);
+        NativeDebugger = new CLangDebugger (this, new LaunchConfiguration(), Program);
 
         Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus, string.Format ("Starting JDB client...")), null, null);
 
@@ -829,7 +825,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (!string.IsNullOrWhiteSpace (szSymbolSearchPath))
         {
-          string [] symbolsPaths = szSymbolSearchPath.Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+          var symbolsPaths = szSymbolSearchPath.Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
 
           foreach (string path in symbolsPaths)
           {
@@ -903,12 +899,12 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (port == null)
         {
-          throw new ArgumentNullException ("port");
+          throw new ArgumentNullException (nameof(port));
         }
 
         if (string.IsNullOrEmpty (exe))
         {
-          throw new ArgumentNullException ("exe");
+          throw new ArgumentNullException (nameof(exe));
         }
 
         if (!File.Exists (exe))
@@ -926,20 +922,15 @@ namespace AndroidPlusPlus.VsDebugEngine
         // Evaluate options; including current debugger target application.
         // 
 
-        if (m_launchConfiguration == null)
-        {
-          throw new InvalidOperationException ("No launch configuration found.");
-        }
+        var launchConfiguration = LaunchConfiguration.FromString (options);
 
-        m_launchConfiguration.FromString (options);
+        string packageName = launchConfiguration["PackageName"];
 
-        string packageName = m_launchConfiguration ["PackageName"];
+        string launchActivity = launchConfiguration["LaunchActivity"];
 
-        string launchActivity = m_launchConfiguration ["LaunchActivity"];
+        bool debugMode = launchConfiguration["DebugMode"].Equals ("true");
 
-        bool debugMode = m_launchConfiguration ["DebugMode"].Equals ("true");
-
-        bool openGlTrace = m_launchConfiguration ["OpenGlTrace"].Equals ("true");
+        bool openGlTrace = launchConfiguration["OpenGlTrace"].Equals ("true");
 
         bool appIsRunning = false;
 
@@ -947,11 +938,11 @@ namespace AndroidPlusPlus.VsDebugEngine
         // Cache any LaunchSuspended specific parameters.
         // 
 
-        m_launchConfiguration ["LaunchSuspendedExe"] = exe;
+        launchConfiguration["LaunchSuspendedExe"] = exe;
 
-        m_launchConfiguration ["LaunchSuspendedDir"] = dir;
+        launchConfiguration["LaunchSuspendedDir"] = dir;
 
-        m_launchConfiguration ["LaunchSuspendedEnv"] = env;
+        launchConfiguration["LaunchSuspendedEnv"] = env;
 
         // 
         // Prevent blocking the main VS thread when launching a suspended application.

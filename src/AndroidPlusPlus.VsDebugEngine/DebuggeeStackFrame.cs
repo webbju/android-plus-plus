@@ -31,12 +31,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public class Enumerator : DebugEnumerator<FRAMEINFO, IEnumDebugFrameInfo2>, IEnumDebugFrameInfo2
     {
-      public Enumerator (FRAMEINFO [] frames)
-        : base (frames)
-      {
-      }
-
-      public Enumerator (List<FRAMEINFO> frames)
+      public Enumerator (ICollection<FRAMEINFO> frames)
         : base (frames)
       {
       }
@@ -176,9 +171,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int EnumProperties (enum_DEBUGPROP_INFO_FLAGS requestedFields, uint radix, ref Guid guidFilter, uint timeout, out uint elementsReturned, out IEnumDebugPropertyInfo2 enumDebugProperty)
     {
-      // 
+      //
       // Creates an enumerator for properties associated with the stack frame, such as local variables.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -199,12 +194,12 @@ namespace AndroidPlusPlus.VsDebugEngine
 #if false
         //List<DEBUG_PROPERTY_INFO> filteredProperties;
 
-        if ((guidFilter == DebuggeeProperty.Filters.guidFilterRegisters) 
+        if ((guidFilter == DebuggeeProperty.Filters.guidFilterRegisters)
           || (guidFilter == DebuggeeProperty.Filters.guidFilterAutoRegisters))
         {
-          // 
+          //
           // Registers must be specified in a collection/list as children of a 'CPU' property.
-          // 
+          //
 
           DEBUG_PROPERTY_INFO [] debugProperties = new DEBUG_PROPERTY_INFO [numEnumeratedProperties];
 
@@ -237,9 +232,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if ((guidFilter == DebuggeeProperty.Filters.guidFilterRegisters) || (guidFilter == DebuggeeProperty.Filters.guidFilterAutoRegisters))
         {
-          // 
+          //
           // Registers must be specified in a collection/list as children of a 'CPU' property.
-          // 
+          //
 
           DebuggeeProperty registersProperty = new DebuggeeProperty (m_debugEngine, this, "CPU", string.Empty);
 
@@ -267,30 +262,30 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           for (uint i = 0; i < numProperties; ++i)
           {
-            // 
+            //
             // Determine whether this property should be filtered in/out.
-            // 
+            //
 
             bool displayProperty = false;
 
             DEBUG_PROPERTY_INFO prop = debugProperties [i];
 
-            if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals) 
+            if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals)
               || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs))
             {
               displayProperty |= true;
             }
 
-            if ((guidFilter == DebuggeeProperty.Filters.guidFilterArgs) 
-              || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs) 
+            if ((guidFilter == DebuggeeProperty.Filters.guidFilterArgs)
+              || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs)
               || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
             {
               displayProperty |= m_stackArguments.ContainsKey (prop.bstrName);
             }
 
-            if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals) 
+            if ((guidFilter == DebuggeeProperty.Filters.guidFilterAllLocals)
               || (guidFilter == DebuggeeProperty.Filters.guidFilterAllLocalsPlusArgs)
-              || (guidFilter == DebuggeeProperty.Filters.guidFilterLocals) 
+              || (guidFilter == DebuggeeProperty.Filters.guidFilterLocals)
               || (guidFilter == DebuggeeProperty.Filters.guidFilterLocalsPlusArgs))
             {
               displayProperty |= m_stackLocals.ContainsKey (prop.bstrName);
@@ -324,10 +319,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetCodeContext (out IDebugCodeContext2 codeContext)
     {
-      // 
-      // Gets the code context for this stack frame. 
+      //
+      // Gets the code context for this stack frame.
       // The code context represents the current instruction pointer in this stack frame.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -353,11 +348,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetDebugProperty (out IDebugProperty2 property)
     {
-      // 
+      //
       // Gets a description of the properties of a stack frame.
-      // Calling the IDebugProperty2::EnumChildren method with appropriate filters can retrieve the local variables, method parameters, registers, 
+      // Calling the IDebugProperty2::EnumChildren method with appropriate filters can retrieve the local variables, method parameters, registers,
       // and "this" pointer associated with the stack frame. The debugger calls EnumProperties to obtain these values in the sample.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -372,11 +367,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetDocumentContext (out IDebugDocumentContext2 documentContext)
     {
-      // 
-      // Gets the document context for this stack frame. 
+      //
+      // Gets the document context for this stack frame.
       // The debugger will call this when the current stack frame is changed
       // and will use it to open the correct source document for this stack frame.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -391,9 +386,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetExpressionContext (out IDebugExpressionContext2 expressionContext)
     {
-      // 
+      //
       // Gets an evaluation context for expression evaluation within the current context of a stack frame and thread.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -408,9 +403,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetInfo (enum_FRAMEINFO_FLAGS requestedFields, uint radix, FRAMEINFO [] frameInfoArray)
     {
-      // 
+      //
       // Gets a description of the stack frame.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -434,9 +429,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int GetLanguageInfo (ref string languageName, ref Guid languageGuid)
     {
-      // 
-      // Gets the language associated with this stack frame. 
-      // 
+      //
+      // Gets the language associated with this stack frame.
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -471,10 +466,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetName (out string name)
     {
-      // 
+      //
       // Gets the name of the stack frame.
       // The name of a stack frame is typically the name of the method being executed.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -511,9 +506,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetPhysicalStackRange (out ulong addrMin, out ulong addrMax)
     {
-      // 
+      //
       // Gets a machine-dependent representation of the range of physical addresses associated with a stack frame.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -539,9 +534,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetThread (out IDebugThread2 thread)
     {
-      // 
+      //
       // Gets the thread associated with a stack frame.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -573,9 +568,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int GetUnwindCodeContext (out IDebugCodeContext2 ppCodeContext)
     {
-      // 
+      //
       // Returns the code context representing a location if a stack unwind operation occurred.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -599,9 +594,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int InterceptCurrentException (enum_INTERCEPT_EXCEPTION_ACTION dwFlags, out ulong pqwCookie)
     {
-      // 
+      //
       // Called by the debugger on the current stack frame when it wants to intercept the current exception.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -637,12 +632,12 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     int IDebugExpressionContext2.GetName (out string name)
     {
-      // 
-      // Retrieves the name of the evaluation context. 
-      // The name is the description of this evaluation context. It is typically something that can be parsed by an expression evaluator 
-      // that refers to this exact evaluation context. For example, in C++ the name is as follows: 
+      //
+      // Retrieves the name of the evaluation context.
+      // The name is the description of this evaluation context. It is typically something that can be parsed by an expression evaluator
+      // that refers to this exact evaluation context. For example, in C++ the name is as follows:
       // "{ function-name, source-file-name, module-file-name }"
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -668,9 +663,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public int ParseText (string pszCode, enum_PARSEFLAGS dwFlags, uint nRadix, out IDebugExpression2 ppExpr, out string pbstrError, out uint pichError)
     {
-      // 
+      //
       // Parses an expression in text form for later evaluation.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 

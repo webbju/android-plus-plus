@@ -6,8 +6,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugCommon;
+using Microsoft.VisualStudio.ProjectSystem.VS.Debug;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -24,17 +26,17 @@ namespace AndroidPlusPlus.VsDebugLauncher
   {
     IDebuggerConnectionService GetConnectionService ();
 
-    bool CanLaunch (int launchOptions);
+    Task<bool> CanLaunch (int launchOptions);
 
-    void PrepareLaunch ();
+    Task<int> PrepareLaunch ();
 
-    object StartWithoutDebugging (int launchOptions, LaunchConfiguration launchConfig, LaunchProps [] launchProps, IDictionary<string, string> projectProperties);
+    Task<DebugLaunchSettings> StartWithoutDebugging (int launchOptions, LaunchConfiguration launchConfig, ICollection<LaunchProps> launchProps, IDictionary<string, string> projectProperties);
 
-    object StartWithDebugging (int launchOptions, LaunchConfiguration launchConfig, LaunchProps [] launchProps, IDictionary<string, string> projectProperties);
+    Task<DebugLaunchSettings> StartWithDebugging (int launchOptions, LaunchConfiguration launchConfig, ICollection<LaunchProps> launchProps, IDictionary<string, string> projectProperties);
 
     LaunchConfiguration GetLaunchConfigurationFromProjectProperties (IDictionary<string, string> projectProperties);
 
-    LaunchProps [] GetLaunchPropsFromProjectProperties (IDictionary<string, string> projectProperties);
+    ICollection<LaunchProps> GetLaunchPropsFromProjectProperties (IDictionary<string, string> projectProperties);
   }
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

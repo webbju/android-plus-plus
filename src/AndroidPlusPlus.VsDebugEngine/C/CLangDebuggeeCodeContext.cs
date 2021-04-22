@@ -165,7 +165,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (string.IsNullOrEmpty (location))
         {
-          throw new ArgumentNullException ("location");
+          throw new ArgumentNullException (nameof(location));
         }
 
         if (location.StartsWith ("0x"))

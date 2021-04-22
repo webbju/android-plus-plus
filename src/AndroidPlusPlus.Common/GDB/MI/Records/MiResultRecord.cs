@@ -34,19 +34,14 @@ namespace AndroidPlusPlus.Common
     {
       if (string.IsNullOrWhiteSpace (clazz))
       {
-        throw new ArgumentNullException ("clazz");
-      }
-
-      if (results == null)
-      {
-        throw new ArgumentNullException ("results");
+        throw new ArgumentNullException (nameof(clazz));
       }
 
       Token = token;
 
       Class = clazz;
 
-      Results = results;
+      Results = results ?? throw new ArgumentNullException (nameof(results));
 
       Records = new List<MiStreamRecord> ();
 
@@ -58,9 +53,7 @@ namespace AndroidPlusPlus.Common
 
       foreach (MiResultValue value in results)
       {
-        List<MiResultValue> fieldList;
-
-        if (!m_fieldDictionary.TryGetValue (value.Variable, out fieldList))
+        if (!m_fieldDictionary.TryGetValue (value.Variable, out List<MiResultValue> fieldList))
         {
           fieldList = new List<MiResultValue> ();
         }
@@ -112,7 +105,7 @@ namespace AndroidPlusPlus.Common
     {
       if (resultRecord == null)
       {
-        throw new ArgumentNullException ("resultRecord");
+        throw new ArgumentNullException (nameof(resultRecord));
       }
       else if (!CheckOk (resultRecord))
       {

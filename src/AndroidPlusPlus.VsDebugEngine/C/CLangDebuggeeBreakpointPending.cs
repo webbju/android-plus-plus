@@ -213,7 +213,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (breakpoint == null)
         {
-          throw new ArgumentNullException ("breakpoint");
+          throw new ArgumentNullException (nameof(breakpoint));
         }
 
         if (breakpoint.IsPending ())
@@ -338,7 +338,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (breakpoint == null)
       {
-        throw new ArgumentNullException ("breakpoint");
+        throw new ArgumentNullException (nameof(breakpoint));
       }
       else if (breakpoint is CLangDebuggeeBreakpointBound)
       {

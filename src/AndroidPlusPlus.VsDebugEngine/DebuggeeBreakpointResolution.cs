@@ -40,7 +40,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       if (codeContext == null)
       {
-        throw new ArgumentNullException ("codeContext");
+        throw new ArgumentNullException (nameof(codeContext));
       }
 
       m_codeContext = codeContext;

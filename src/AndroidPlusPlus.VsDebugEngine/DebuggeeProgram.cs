@@ -39,12 +39,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public class Enumerator : DebugEnumerator<IDebugProgram2, IEnumDebugPrograms2>, IEnumDebugPrograms2
     {
-      public Enumerator (List<IDebugProgram2> programs)
-        : base (programs)
-      {
-      }
-
-      public Enumerator (IDebugProgram2 [] programs)
+      public Enumerator (ICollection<IDebugProgram2> programs)
         : base (programs)
       {
       }
@@ -56,12 +51,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public class EnumeratorCodePaths : DebugEnumerator<CODE_PATH, IEnumCodePaths2>, IEnumCodePaths2
     {
-      public EnumeratorCodePaths (List<CODE_PATH> codePaths)
-        : base (codePaths)
-      {
-      }
-
-      public EnumeratorCodePaths (CODE_PATH [] codePaths)
+      public EnumeratorCodePaths (ICollection<CODE_PATH> codePaths)
         : base (codePaths)
       {
       }

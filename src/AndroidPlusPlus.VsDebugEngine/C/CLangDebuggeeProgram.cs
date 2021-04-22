@@ -158,7 +158,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (string.IsNullOrWhiteSpace (moduleName))
       {
-        throw new ArgumentNullException ("moduleName");
+        throw new ArgumentNullException (nameof(moduleName));
       }
 
       DebuggeeModule module = null;
@@ -198,7 +198,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (string.IsNullOrWhiteSpace (moduleName))
       {
-        throw new ArgumentNullException ("moduleName");
+        throw new ArgumentNullException (nameof(moduleName));
       }
 
       DebuggeeModule module = null;
@@ -221,7 +221,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (string.IsNullOrWhiteSpace (moduleName))
       {
-        throw new ArgumentNullException ("moduleName");
+        throw new ArgumentNullException (nameof(moduleName));
       }
 
       DebuggeeModule module = null;

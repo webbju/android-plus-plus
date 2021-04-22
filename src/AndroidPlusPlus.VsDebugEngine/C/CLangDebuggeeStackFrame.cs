@@ -57,7 +57,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (frameTuple == null)
       {
-        throw new ArgumentNullException ("frameTuple");
+        throw new ArgumentNullException (nameof(frameTuple));
       }
 
       m_queriedRegisters = false;
@@ -112,7 +112,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (frameTuple == null)
         {
-          throw new ArgumentNullException ("frameTuple");
+          throw new ArgumentNullException (nameof(frameTuple));
         }
 
         if (frameTuple.HasField ("level"))

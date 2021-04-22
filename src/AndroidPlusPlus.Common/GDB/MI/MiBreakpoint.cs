@@ -59,7 +59,7 @@ namespace AndroidPlusPlus.Common
 
       if (breakpointValues == null)
       {
-        throw new ArgumentNullException ("breakpointValues");
+        throw new ArgumentNullException (nameof(breakpointValues));
       }
 
       foreach (MiResultValue resultValue in breakpointValues)

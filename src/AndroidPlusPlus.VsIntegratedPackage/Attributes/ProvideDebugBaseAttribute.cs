@@ -48,7 +48,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     public override void Register (RegistrationAttribute.RegistrationContext context)
     {
-      using (RegistrationAttribute.Key regKey = context.CreateKey (GetParentKey ()))
+      using (var regKey = context.CreateKey (GetParentKey ()))
       {
         RegisterWithKey (regKey, regKey.GetType ());
       }
@@ -62,7 +62,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     {
       try
       {
-        using (RegistryKey regKey = rootKey.CreateSubKey (GetParentKey (), RegistryKeyPermissionCheck.ReadWriteSubTree))
+        using (var regKey = rootKey.CreateSubKey (GetParentKey (), RegistryKeyPermissionCheck.ReadWriteSubTree))
         {
           RegisterWithKey (regKey, regKey.GetType ());
         }

@@ -56,12 +56,12 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (stackFrame == null)
         {
-          throw new ArgumentNullException ("stackFrame");
+          throw new ArgumentNullException (nameof(stackFrame));
         }
 
         if (variable == null)
         {
-          throw new ArgumentNullException ("variable");
+          throw new ArgumentNullException (nameof(variable));
         }
 
         /*CLangDebuggeeProperty [] childProperties = GetChildProperties (stackFrame, parentProperty);

@@ -25,21 +25,13 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public interface EventListener
+    public interface IEventListener
     {
       void ProcessStdout (object sendingProcess, DataReceivedEventArgs args);
 
       void ProcessStderr (object sendingProcess, DataReceivedEventArgs args);
 
       void ProcessExited (object sendingProcess, EventArgs args);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public class AsyncProcess : Process
-    {
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -58,7 +50,7 @@ namespace AndroidPlusPlus.Common
 
     protected AsyncProcess m_process;
 
-    protected EventListener m_listener = null;
+    protected IEventListener m_listener = null;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -68,7 +60,7 @@ namespace AndroidPlusPlus.Common
     {
       if (string.IsNullOrEmpty (filename))
       {
-        throw new ArgumentNullException ("filename");
+        throw new ArgumentNullException (nameof(filename));
       }
 
       if (!File.Exists (filename))
@@ -134,21 +126,22 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      ProcessStartInfo startInfo = new ProcessStartInfo ();
+      ProcessStartInfo startInfo = new ProcessStartInfo
+      {
+        CreateNoWindow = true,
 
-      startInfo.CreateNoWindow = true;
+        UseShellExecute = false,
 
-      startInfo.UseShellExecute = false;
+        LoadUserProfile = false,
 
-      startInfo.LoadUserProfile = false;
+        ErrorDialog = false,
 
-      startInfo.ErrorDialog = false;
+        RedirectStandardOutput = true,
 
-      startInfo.RedirectStandardOutput = true;
+        RedirectStandardError = true,
 
-      startInfo.RedirectStandardError = true;
-
-      startInfo.RedirectStandardInput = true;
+        RedirectStandardInput = true
+      };
 
       return startInfo;
     }
@@ -157,7 +150,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void Start (EventListener listener)
+    public void Start (IEventListener listener)
     {
       m_startTicks = Environment.TickCount;
 
@@ -167,9 +160,10 @@ namespace AndroidPlusPlus.Common
 
       m_listener = listener;
 
-      m_process = new AsyncProcess ();
-
-      m_process.StartInfo = StartInfo;
+      m_process = new AsyncProcess
+      {
+        StartInfo = StartInfo
+      };
 
       m_process.OutputDataReceived += new DataReceivedEventHandler (ProcessStdout);
 
@@ -226,7 +220,7 @@ namespace AndroidPlusPlus.Common
 
       if (string.IsNullOrWhiteSpace (command))
       {
-        throw new ArgumentNullException ("command");
+        throw new ArgumentNullException (nameof(command));
       }
 
       if (m_stdInputWriter == null)

@@ -36,7 +36,7 @@ namespace AndroidPlusPlus.Common
 
       if (string.IsNullOrEmpty (name))
       {
-        throw new ArgumentNullException ("name");
+        throw new ArgumentNullException (nameof(name));
       }
 
       Name = name;
@@ -54,7 +54,7 @@ namespace AndroidPlusPlus.Common
 
       if (string.IsNullOrEmpty (expression))
       {
-        throw new ArgumentNullException ("expression");
+        throw new ArgumentNullException (nameof(expression));
       }
 
       Expression = expression;
@@ -160,7 +160,7 @@ namespace AndroidPlusPlus.Common
 
       if (variableValues == null)
       {
-        throw new ArgumentNullException ("variableValues");
+        throw new ArgumentNullException (nameof(variableValues));
       }
 
       foreach (MiResultValue resultValue in variableValues)
@@ -229,7 +229,7 @@ namespace AndroidPlusPlus.Common
 
       if (variable == null)
       {
-        throw new ArgumentNullException ("variable");
+        throw new ArgumentNullException (nameof(variable));
       }
 
       m_children [variable.Name] = variable;

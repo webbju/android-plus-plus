@@ -43,12 +43,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public class Enumerator : DebugEnumerator<IDebugCodeContext2, IEnumDebugCodeContexts2>, IEnumDebugCodeContexts2
     {
-      public Enumerator (IDebugCodeContext2 [] contexts)
-        : base (contexts)
-      {
-      }
-
-      public Enumerator (List<IDebugCodeContext2> contexts)
+      public Enumerator (ICollection<IDebugCodeContext2> contexts)
         : base (contexts)
       {
       }
@@ -72,12 +67,12 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       if (documentContext == null)
       {
-        throw new ArgumentNullException ("documentContext");
+        throw new ArgumentNullException (nameof(documentContext));
       }
 
       if (address == null)
       {
-        throw new ArgumentNullException ("address");
+        throw new ArgumentNullException (nameof(address));
       }
 
       m_engine = engine;

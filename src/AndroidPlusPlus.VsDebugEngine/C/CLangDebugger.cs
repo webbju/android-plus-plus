@@ -173,7 +173,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       List<string> gdbToolPermutations = new List<string> ();
 
-      string [] availableHostArchitectures = new string [] { "x86_64" };
+      var availableHostArchitectures = new string [] { "x86_64" };
 
       foreach (string arch in availableHostArchitectures)
       {
@@ -184,11 +184,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         string gdbToolFilePattern = string.Format ("{0}-gdb.cmd", preferedGdbAbiToolPrefix);
 
-        string [] availableVersionPaths = Directory.GetDirectories (Path.Combine (androidPlusPlusRoot, "contrib", "gdb", "bin", arch), "*.*.*", SearchOption.TopDirectoryOnly);
+        var availableVersionPaths = Directory.GetDirectories (Path.Combine (androidPlusPlusRoot, "contrib", "gdb", "bin", arch), "*.*.*", SearchOption.TopDirectoryOnly);
 
         foreach (string versionPath in availableVersionPaths)
         {
-          string [] gdbToolMatches = Directory.GetFiles (versionPath, gdbToolFilePattern, SearchOption.TopDirectoryOnly);
+          var gdbToolMatches = Directory.GetFiles (versionPath, gdbToolFilePattern, SearchOption.TopDirectoryOnly);
 
           foreach (string tool in gdbToolMatches)
           {
@@ -375,7 +375,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (operation == null)
       {
-        throw new ArgumentNullException ("operation");
+        throw new ArgumentNullException (nameof(operation));
       }
 
       if (GdbClient == null)

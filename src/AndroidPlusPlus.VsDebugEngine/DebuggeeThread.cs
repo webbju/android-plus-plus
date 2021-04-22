@@ -30,7 +30,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public class Enumerator : DebugEnumerator<IDebugThread2, IEnumDebugThreads2>, IEnumDebugThreads2
     {
-      public Enumerator (List<IDebugThread2> threads)
+      public Enumerator (ICollection<IDebugThread2> threads)
         : base (threads)
       {
       }

@@ -31,12 +31,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public sealed class Enumerator : DebugEnumerator<DEBUG_PROPERTY_INFO, IEnumDebugPropertyInfo2>, IEnumDebugPropertyInfo2
     {
-      public Enumerator (DEBUG_PROPERTY_INFO [] properties)
-        : base (properties)
-      {
-      }
-
-      public Enumerator (List<DEBUG_PROPERTY_INFO> properties)
+      public Enumerator (ICollection<DEBUG_PROPERTY_INFO> properties)
         : base (properties)
       {
       }
@@ -104,7 +99,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       if (string.IsNullOrEmpty (expression))
       {
-        throw new ArgumentNullException ("expression");
+        throw new ArgumentNullException (nameof(expression));
       }
 
       m_expression = expression;
@@ -157,7 +152,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (children == null)
         {
-          throw new ArgumentNullException ("children");
+          throw new ArgumentNullException (nameof(children));
         }
 
         m_children.AddRange (children);

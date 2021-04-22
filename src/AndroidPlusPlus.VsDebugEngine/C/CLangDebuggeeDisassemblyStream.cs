@@ -291,7 +291,7 @@ namespace AndroidPlusPlus.VsDebugEngine
               {
                 string inst = instructionValue ["inst"] [0].GetString ();
 
-                string [] operations = inst.Split (new string [] { "\\t" }, StringSplitOptions.None);
+                var operations = inst.Split (new string [] { "\\t" }, StringSplitOptions.None);
 
                 if (operations.Length > 0)
                 {

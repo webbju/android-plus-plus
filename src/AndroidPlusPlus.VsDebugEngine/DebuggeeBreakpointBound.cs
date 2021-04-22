@@ -28,11 +28,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public sealed class Enumerator : DebugEnumerator<IDebugBoundBreakpoint2, IEnumDebugBoundBreakpoints2>, IEnumDebugBoundBreakpoints2
     {
-      public Enumerator (List<IDebugBoundBreakpoint2> breakpoints)
-        : base (breakpoints)
-      {
-      }
-      public Enumerator (IDebugBoundBreakpoint2 [] breakpoints)
+      public Enumerator (ICollection<IDebugBoundBreakpoint2> breakpoints)
         : base (breakpoints)
       {
       }
@@ -98,17 +94,17 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       if (breakpointManager == null)
       {
-        throw new ArgumentNullException ("breakpointManager");
+        throw new ArgumentNullException (nameof(breakpointManager));
       }
 
       if (pendingBreakpoint == null)
       {
-        throw new ArgumentNullException ("pendingBreakpoint");
+        throw new ArgumentNullException (nameof(pendingBreakpoint));
       }
 
       if (codeContext == null)
       {
-        throw new ArgumentNullException ("codeContext");
+        throw new ArgumentNullException (nameof(codeContext));
       }
 
       m_breakpointManager = breakpointManager;

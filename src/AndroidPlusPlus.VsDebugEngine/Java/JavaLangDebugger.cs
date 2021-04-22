@@ -57,11 +57,12 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       Engine.Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus, string.Format ("Configuring JDB for {0}:{1}...", m_jdbSetup.Host, m_jdbSetup.Port)), null, null);
 
-      JdbClient = new JdbClient (m_jdbSetup);
+      JdbClient = new JdbClient(m_jdbSetup)
+      {
+        OnAsyncStdout = OnClientAsyncOutput,
 
-      JdbClient.OnAsyncStdout = OnClientAsyncOutput;
-
-      JdbClient.OnAsyncStderr = OnClientAsyncOutput;
+        OnAsyncStderr = OnClientAsyncOutput
+      };
 
       JdbClient.Start ();
     }
@@ -105,13 +106,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           JdbClient = null;
         }
-
-        if (m_jdbSetup != null)
-        {
-          m_jdbSetup.Dispose ();
-
-          m_jdbSetup = null;
-        }
       }
     }
 
@@ -137,7 +131,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private void OnClientAsyncOutput (string [] output)
+    private void OnClientAsyncOutput (ICollection<string> output)
     {
       LoggingUtils.PrintFunction ();
 
@@ -202,7 +196,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (string.IsNullOrEmpty (location))
         {
-          throw new ArgumentNullException ("location");
+          throw new ArgumentNullException (nameof(location));
         }
 
         if (location.StartsWith ("0x"))

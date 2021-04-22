@@ -2,17 +2,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Security;
-using Microsoft.Win32;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 namespace AndroidPlusPlus.Common
 {
 
@@ -20,66 +9,40 @@ namespace AndroidPlusPlus.Common
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class JavaSettings
+  public partial class AndroidSettings
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public static string JdkRoot
+    public struct VersionCode
     {
-      get
-      {
-
-        // 
-        // Probe for possible JDK installation directories.
-        // 
-
-        List<string> jdkPossibleLocations = new List<string> (2);
-
-        try
-        {
-          jdkPossibleLocations.Add (Environment.GetEnvironmentVariable ("JAVA_HOME"));
-
-          using (RegistryKey localMachineJavaDevelopmentKit = Registry.LocalMachine.OpenSubKey (@"SOFTWARE\JavaSoft\Java Development Kit\"))
-          {
-            if (localMachineJavaDevelopmentKit != null)
-            {
-              string currentVersion = localMachineJavaDevelopmentKit.GetValue ("CurrentVersion") as string;
-
-              if (!string.IsNullOrEmpty (currentVersion))
-              {
-                using (RegistryKey localMachineJdkCurrentVersion = localMachineJavaDevelopmentKit.OpenSubKey (currentVersion))
-                {
-                  if (localMachineJdkCurrentVersion != null)
-                  {
-                    jdkPossibleLocations.Add (localMachineJdkCurrentVersion.GetValue ("JavaHome") as string);
-                  }
-                }
-              }
-            }
-          }
-
-          // 
-          // Search specified path the default 'java.exe' executable.
-          // 
-
-          foreach (string location in jdkPossibleLocations)
-          {
-            if (!string.IsNullOrEmpty(location) && File.Exists(location + @"\bin\java.exe"))
-            {
-              return location;
-            }
-          }
-        }
-        catch (Exception e)
-        {
-          LoggingUtils.HandleException (e);
-        }
-
-        return string.Empty;
-      }
+      public const uint BASE = 1;
+      public const uint BASE_1_1 = BASE + 1;
+      public const uint CUPCAKE = BASE_1_1 + 1;
+      public const uint DONUT = CUPCAKE + 1;
+      public const uint ECLAIR = DONUT + 1;
+      public const uint ECLAIR_0_1 = ECLAIR + 1;
+      public const uint ECLAIR_MR1 = ECLAIR_0_1 + 1;
+      public const uint FROYO = ECLAIR_MR1 + 1;
+      public const uint GINGERBREAD = FROYO + 1;
+      public const uint GINGERBREAD_MR1 = GINGERBREAD + 1;
+      public const uint HONEYCOMB = GINGERBREAD_MR1 + 1;
+      public const uint HONEYCOMB_MR1 = HONEYCOMB + 1;
+      public const uint HONEYCOMB_MR2 = HONEYCOMB_MR1 + 1;
+      public const uint ICE_CREAM_SANDWICH = HONEYCOMB_MR2 + 1;
+      public const uint ICE_CREAM_SANDWICH_MR1 = ICE_CREAM_SANDWICH + 1;
+      public const uint JELLY_BEAN = ICE_CREAM_SANDWICH_MR1 + 1;
+      public const uint JELLY_BEAN_MR1 = JELLY_BEAN + 1;
+      public const uint JELLY_BEAN_MR2 = JELLY_BEAN_MR1 + 1;
+      public const uint KITKAT = JELLY_BEAN_MR2 + 1;
+      public const uint KITKAT_WATCH = KITKAT + 1;
+      public const uint L_PREVIEW = KITKAT_WATCH;
+      public const uint LOLLIPOP = KITKAT_WATCH + 1;
+      public const uint LOLLIPOP_MR1 = LOLLIPOP + 1;
+      public const uint M = LOLLIPOP_MR1 + 1;
+      public const uint N = M + 1;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

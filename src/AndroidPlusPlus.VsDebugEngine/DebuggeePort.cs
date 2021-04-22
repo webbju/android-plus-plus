@@ -32,7 +32,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private class Enumerator : DebugEnumerator<IDebugPort2, IEnumDebugPorts2>, IEnumDebugPorts2
     {
-      public Enumerator (List<IDebugPort2> ports)
+      public Enumerator (ICollection<IDebugPort2> ports)
         : base (ports)
       {
       }
@@ -62,12 +62,12 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       if (portSupplier == null)
       {
-        throw new ArgumentNullException ("portSupplier");
+        throw new ArgumentNullException (nameof(portSupplier));
       }
 
       if (device == null)
       {
-        throw new ArgumentNullException ("device");
+        throw new ArgumentNullException (nameof(device));
       }
 
       m_portSupplier = portSupplier;

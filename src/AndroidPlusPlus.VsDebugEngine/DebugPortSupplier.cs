@@ -40,12 +40,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private class DebugPortEnumerator : DebugEnumerator <IDebugPort2, IEnumDebugPorts2>, IEnumDebugPorts2
     {
-      public DebugPortEnumerator (List <IDebugPort2> ports)
-        : base (ports)
-      {
-      }
-
-      public DebugPortEnumerator (IDebugPort2 [] ports)
+      public DebugPortEnumerator (ICollection<IDebugPort2> ports)
         : base (ports)
       {
       }
@@ -233,13 +228,11 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         AndroidAdb.Refresh ();
 
-        AndroidDevice [] connectedDevices = AndroidAdb.GetConnectedDevices ();
+        var connectedDevices = AndroidAdb.GetConnectedDevices ();
 
-        foreach (AndroidDevice device in connectedDevices)
+        foreach (var device in connectedDevices)
         {
-          IDebugPort2 ppPort;
-
-          LoggingUtils.RequireOk (AddPort (new DevicePortRequest (device), out ppPort));
+          LoggingUtils.RequireOk (AddPort (new DevicePortRequest (device), out IDebugPort2 ppPort));
         }
 
         IDebugPort2 [] ports = new IDebugPort2 [m_registeredPorts.Count];
@@ -339,9 +332,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        Guid portId;
-
-        LoggingUtils.RequireOk (pPort.GetPortId (out portId));
+        LoggingUtils.RequireOk (pPort.GetPortId (out Guid portId));
 
         m_registeredPorts.Remove (portId);
 

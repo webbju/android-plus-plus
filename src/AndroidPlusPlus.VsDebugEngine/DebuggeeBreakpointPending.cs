@@ -31,7 +31,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public sealed class Enumerator : DebugEnumerator<IDebugPendingBreakpoint2, IEnumDebugPendingBreakpoints2>, IEnumDebugPendingBreakpoints2
     {
-      public Enumerator (List<IDebugPendingBreakpoint2> breakpoints)
+      public Enumerator (ICollection<IDebugPendingBreakpoint2> breakpoints)
         : base (breakpoints)
       {
       }

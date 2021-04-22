@@ -20,41 +20,8 @@ namespace AndroidPlusPlus.Common
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class AndroidSettings
+  public partial class AndroidSettings
   {
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public struct VersionCode
-    {
-      public const uint BASE = 1;
-      public const uint BASE_1_1 = BASE + 1;
-      public const uint CUPCAKE = BASE_1_1 + 1;
-      public const uint DONUT = CUPCAKE + 1;
-      public const uint ECLAIR = DONUT + 1;
-      public const uint ECLAIR_0_1 = ECLAIR + 1;
-      public const uint ECLAIR_MR1 = ECLAIR_0_1 + 1;
-      public const uint FROYO = ECLAIR_MR1 + 1;
-      public const uint GINGERBREAD = FROYO + 1;
-      public const uint GINGERBREAD_MR1 = GINGERBREAD + 1;
-      public const uint HONEYCOMB = GINGERBREAD_MR1 + 1;
-      public const uint HONEYCOMB_MR1 = HONEYCOMB + 1;
-      public const uint HONEYCOMB_MR2 = HONEYCOMB_MR1 + 1;
-      public const uint ICE_CREAM_SANDWICH = HONEYCOMB_MR2 + 1;
-      public const uint ICE_CREAM_SANDWICH_MR1 = ICE_CREAM_SANDWICH + 1;
-      public const uint JELLY_BEAN = ICE_CREAM_SANDWICH_MR1 + 1;
-      public const uint JELLY_BEAN_MR1 = JELLY_BEAN + 1;
-      public const uint JELLY_BEAN_MR2 = JELLY_BEAN_MR1 + 1;
-      public const uint KITKAT = JELLY_BEAN_MR2 + 1;
-      public const uint KITKAT_WATCH = KITKAT + 1;
-      public const uint L_PREVIEW = KITKAT_WATCH;
-      public const uint LOLLIPOP = KITKAT_WATCH + 1;
-      public const uint LOLLIPOP_MR1 = LOLLIPOP + 1;
-      public const uint M = LOLLIPOP_MR1 + 1;
-      public const uint N = M + 1;
-    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -72,7 +39,7 @@ namespace AndroidPlusPlus.Common
 
         try
         {
-          string [] environmentPaths = new string [] 
+          var environmentPaths = new string [] 
           {
             Environment.GetEnvironmentVariable ("ANDROID_SDK"),
             Environment.GetEnvironmentVariable ("ANDROID_SDK_ROOT"),
@@ -116,12 +83,9 @@ namespace AndroidPlusPlus.Common
 
         foreach (string location in androidSdkPossibleLocations)
         {
-          if (location != null)
+          if (location != null && File.Exists(Path.Combine(location, "SDK Manager.exe")))
           {
-            if (File.Exists (Path.Combine(location, "SDK Manager.exe")))
-            {
-              return location;
-            }
+            return location;
           }
         }
 
@@ -147,7 +111,7 @@ namespace AndroidPlusPlus.Common
 
         if (File.Exists (platformSrcPath))
         {
-          string [] platformDirs = Directory.GetDirectories (platformSrcPath);
+          var platformDirs = Directory.GetDirectories (platformSrcPath);
 
           for (uint i = 0; i < platformDirs.Length; ++i)
           {
@@ -202,12 +166,9 @@ namespace AndroidPlusPlus.Common
 
         foreach (string location in androidNdkPossibleLocations)
         {
-          if (location != null)
+          if (location != null && File.Exists(Path.Combine(location, "ndk-build")))
           {
-            if (File.Exists (Path.Combine (location, "ndk-build")))
-            {
-              return location;
-            }
+            return location;
           }
         }
 
@@ -233,7 +194,7 @@ namespace AndroidPlusPlus.Common
 
         if (File.Exists (platformSrcPath))
         {
-          string [] platformDirs = Directory.GetDirectories (platformSrcPath);
+          var platformDirs = Directory.GetDirectories (platformSrcPath);
 
           for (uint i = 0; i < platformDirs.Length; ++i)
           {
