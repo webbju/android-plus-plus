@@ -12,29 +12,34 @@ using System.IO;
 using System.Reflection;
 using System.Resources;
 using System.Threading;
-using System.Xml;
+
+using Microsoft.Build.Framework;
+using Microsoft.Win32;
+using Microsoft.Build.Utilities;
 
 using AndroidPlusPlus.MsBuild.Common;
+using AndroidPlusPlus.Common;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace AndroidPlusPlus.MsBuild.Common
+namespace AndroidPlusPlus.MsBuild.CppTasks
 {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class AndroidManifestDocument : XmlDocument
+  public class NativeCompile : TrackedOutOfDateToolTask, ITask
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public AndroidManifestDocument ()
+    public NativeCompile ()
+      : base (new ResourceManager ("AndroidPlusPlus.MsBuild.CppTasks.Properties.Resources", Assembly.GetExecutingAssembly ()))
     {
     }
 
@@ -42,32 +47,124 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public string PackageName { get; protected set; }
-
-    public bool IsApplication { get; protected set; }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public override void Load (string manifestFile)
+    protected override void TrackedExecuteToolOutput (KeyValuePair<string, List<ITaskItem>> commandAndSourceFiles, string singleLine)
     {
-      base.Load (manifestFile);
+      if (ToolExe.StartsWith ("clang"))
+      {
+        LogEventsFromTextOutput (singleLine, MessageImportance.High);
+      }
+      else
+      {
+        // 
+        // GCC output differs from a Visual Studio's "jump to line" format, we transform that output here.
+        // 
 
-      PopulateProperties ();
+        LogEventsFromTextOutput (GccUtilities.ConvertGccOutputToVS (singleLine), MessageImportance.High);
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private void PopulateProperties ()
+    protected override string GenerateCommandLineFromProps (ITaskItem source)
     {
-      PackageName = DocumentElement.GetAttribute ("package");
+      // 
+      // Build a command-line based on parsing switches from the registered property sheet, and any additional flags.
+      // 
 
-      XmlNode applicationNode = SelectSingleNode ("/manifest/application");
+      try
+      {
+        if (source == null)
+        {
+          throw new ArgumentNullException ();
+        }
 
-      IsApplication = (applicationNode != null) && (applicationNode.Attributes.Count > 0);
+        StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
+
+        builder.Append (m_parsedProperties.Parse (source));
+
+        builder.Append (" -c "); // compile the C/C++ file
+
+        return builder.ToString ();
+      }
+      catch (Exception e)
+      {
+        Log.LogErrorFromException (e, true);
+      }
+
+      return string.Empty;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override void AddTaskSpecificDependencies (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
+    {
+      // 
+      // Register additional 'forced include' usage for each of the sources.
+      // 
+
+      foreach (ITaskItem source in sources)
+      {
+        try
+        {
+          if (!string.IsNullOrWhiteSpace (source.GetMetadata ("ForcedIncludeFiles")))
+          {
+            string [] forcedIncludeFiles = source.GetMetadata ("ForcedIncludeFiles").Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+
+            List<ITaskItem> forcedIncludeItems = new List<ITaskItem> ();
+
+            foreach (string file in forcedIncludeFiles)
+            {
+              // 
+              // Supports including pre-compiled headers via '-include' when they need to be referenced without '.pch'/'.gch'. Fix this.
+              // 
+
+              string fileFullPath = Path.GetFullPath (file);
+
+              if ((ToolExe.StartsWith ("clang")) && (File.Exists (fileFullPath + ".pch")))
+              {
+                fileFullPath = fileFullPath + ".pch";
+              }
+              else if (File.Exists (fileFullPath + ".gch"))
+              {
+                fileFullPath = fileFullPath + ".gch";
+              }
+
+              // 
+              // Also validate that we don't try adding dependencies to missing files, as this breaks tracking.
+              // 
+
+              if (!File.Exists (fileFullPath))
+              {
+                throw new FileNotFoundException ("Could not find 'forced include' dependency: " + fileFullPath);
+              }
+
+              forcedIncludeItems.Add (new TaskItem (fileFullPath));
+            }
+
+            trackedFileManager.AddDependencyForSources (forcedIncludeItems.ToArray (), new ITaskItem [] { source });
+          }
+        }
+        catch (Exception e)
+        {
+          Log.LogWarningFromException (e, false);
+        }
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override string ToolName
+    {
+      get
+      {
+        return "NativeCompile";
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

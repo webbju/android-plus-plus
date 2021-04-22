@@ -17,26 +17,27 @@ using Microsoft.Win32;
 using Microsoft.Build.Utilities;
 
 using AndroidPlusPlus.MsBuild.Common;
+using AndroidPlusPlus.Common;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace AndroidPlusPlus.MsBuild.DeployTasks
+namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
 {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class JavaArchive : TrackedOutOfDateToolTask, ITask
+  public class JavaSigner : TrackedToolTask, ITask
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public JavaArchive ()
+    public JavaSigner ()
       : base (new ResourceManager ("AndroidPlusPlus.MsBuild.DeployTasks.Properties.Resources", Assembly.GetExecutingAssembly ()))
     {
     }
@@ -46,12 +47,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     [Required]
-    public string JavaHomeDir { get; set; }
-
-    [Required]
-    public ITaskItem OutputFile { get; set; }
-
-    public ITaskItem ManifestFile { get; set; }
+    public ITaskItem SignedOutputFile { get; set; }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -64,19 +60,33 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
       try
       {
         retCode = base.TrackedExecuteTool (pathToTool, responseFileCommands, commandLineCommands);
+
+        if (retCode == 0)
+        {
+          // 
+          // Construct a simple dependency file for tracking purposes.
+          // 
+
+          string signedOutputPath = SignedOutputFile.GetMetadata ("FullPath");
+
+          using (StreamWriter writer = new StreamWriter (signedOutputPath + ".d", false, Encoding.Unicode))
+          {
+            writer.WriteLine (string.Format ("{0}: \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (signedOutputPath)));
+
+            foreach (ITaskItem source in Sources)
+            {
+              string sourcePath = source.GetMetadata ("FullPath");
+
+              writer.WriteLine (string.Format ("  {0} \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (sourcePath)));
+            }
+          }
+        }
       }
       catch (Exception e)
       {
         Log.LogErrorFromException (e, true);
 
         retCode = -1;
-      }
-      finally
-      {
-        if (retCode == 0)
-        {
-          OutputFiles = new ITaskItem [] { OutputFile };
-        }
       }
 
       return retCode;
@@ -88,16 +98,13 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
     protected override string GenerateCommandLineCommands ()
     {
+      // 
+      // Build a command-line based on parsing switches from the registered property sheet, and any additional flags.
+      // 
+
       StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
 
-      builder.Append (string.Format ("--jdk-home {0} ", PathUtils.QuoteIfNeeded (JavaHomeDir)));
-
-      builder.Append (string.Format ("--jar-output {0} ", PathUtils.QuoteIfNeeded (OutputFile.GetMetadata ("FullPath"))));
-
-      if (ManifestFile != null)
-      {
-        builder.Append (string.Format ("--jar-manifest {0} ", PathUtils.QuoteIfNeeded (ManifestFile.GetMetadata ("FullPath"))));
-      }
+      builder.Append (m_parsedProperties.Parse (Sources [0]));
 
       return builder.ToString ();
     }
@@ -106,46 +113,62 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected override string GenerateResponseFileCommands ()
+    protected override bool ValidateParameters ()
     {
-      try
-      {
-        StringBuilder builder = new StringBuilder ();
+      // 
+      // Check for existence of a valid keystore file before attempting signing.
+      // 
 
-        foreach (ITaskItem source in Sources)
+      string keystorePath = Sources [0].GetMetadata ("Keystore");
+
+      if (string.IsNullOrWhiteSpace (keystorePath) || !File.Exists (keystorePath))
+      {
+        Log.LogError (string.Format ("Could not find specified .keystore file. Expected: {0}", keystorePath), MessageImportance.High);
+
+        return false;
+      }
+
+      // 
+      // This tool expects a single ZIP-compatible archive as input.
+      // 
+
+      if (Sources.Length == 0)
+      {
+        Log.LogError ("No inputs specified - Please provide a single ZIP-compatible archive.");
+
+        return false;
+      }
+      else if (Sources.Length > 1)
+      {
+        Log.LogError ("Multiple inputs specified - Please provide a single ZIP-compatible archive.");
+
+        return false;
+      }
+      else
+      {
+        string sourcePath = Sources [0].GetMetadata ("FullPath");
+
+        string sourceExtension = Path.GetExtension (sourcePath);
+
+        switch (sourceExtension)
         {
-          builder.Append (PathUtils.QuoteIfNeeded (source.GetMetadata ("Identity")) + " ");
+          case ".jar":
+          case ".apk":
+          case ".zip":
+          {
+            break;
+          }
+
+          default:
+          {
+            Log.LogError (string.Format ("{0} is not a ZIP-compatible archive. Must be .jar, .apk, or .zip.", sourcePath));
+
+            return false;
+          }
         }
-
-        return builder.ToString ();
-      }
-      catch (Exception e)
-      {
-        Log.LogErrorFromException (e);
       }
 
-      return string.Empty;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override string GetResponseFileSwitch (string responseFilePath)
-    {
-      return '@' + PathUtils.SantiseWindowsPath (responseFilePath);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override void AddTaskSpecificDependencies (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
-    {
-      if (ManifestFile != null)
-      {
-        trackedFileManager.AddDependencyForSources (new ITaskItem [] { ManifestFile }, sources);
-      }
+      return base.ValidateParameters ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -154,10 +177,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
     protected override void AddTaskSpecificOutputFiles (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
     {
-      if (OutputFile != null)
-      {
-        trackedFileManager.AddDependencyForSources (new ITaskItem [] { OutputFile }, sources);
-      }
+      trackedFileManager.AddDependencyForSources (new ITaskItem [] { SignedOutputFile }, sources);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -180,7 +200,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     {
       get
       {
-        return "JavaArchive";
+        return "JavaSigner";
       }
     }
 

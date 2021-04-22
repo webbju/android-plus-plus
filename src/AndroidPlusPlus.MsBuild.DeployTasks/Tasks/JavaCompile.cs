@@ -17,26 +17,35 @@ using Microsoft.Win32;
 using Microsoft.Build.Utilities;
 
 using AndroidPlusPlus.MsBuild.Common;
+using AndroidPlusPlus.Common;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
+namespace AndroidPlusPlus.MsBuild.DeployTasks
 {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class JavaSigner : TrackedToolTask, ITask
+  public class JavaCompile : TrackedOutOfDateToolTask, ITask
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public JavaSigner ()
+    HashSet<string> m_outputClassPackages;
+
+    List<ITaskItem> m_outputClassSourceFiles;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public JavaCompile ()
       : base (new ResourceManager ("AndroidPlusPlus.MsBuild.DeployTasks.Properties.Resources", Assembly.GetExecutingAssembly ()))
     {
     }
@@ -46,7 +55,28 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     [Required]
-    public ITaskItem SignedOutputFile { get; set; }
+    public string JavaHomeDir { get; set; }
+
+    [Output]
+    public ITaskItem [] OutputClassPaths { get; set; }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override bool Setup ()
+    {
+      if (base.Setup ())
+      {
+        m_outputClassPackages = new HashSet<string> ();
+
+        m_outputClassSourceFiles = new List<ITaskItem> ();
+
+        return true;
+      }
+
+      return false;
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -58,28 +88,11 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
 
       try
       {
+        m_outputClassPackages.Clear ();
+
+        m_outputClassSourceFiles.Clear ();
+
         retCode = base.TrackedExecuteTool (pathToTool, responseFileCommands, commandLineCommands);
-
-        if (retCode == 0)
-        {
-          // 
-          // Construct a simple dependency file for tracking purposes.
-          // 
-
-          string signedOutputPath = SignedOutputFile.GetMetadata ("FullPath");
-
-          using (StreamWriter writer = new StreamWriter (signedOutputPath + ".d", false, Encoding.Unicode))
-          {
-            writer.WriteLine (string.Format ("{0}: \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (signedOutputPath)));
-
-            foreach (ITaskItem source in Sources)
-            {
-              string sourcePath = source.GetMetadata ("FullPath");
-
-              writer.WriteLine (string.Format ("  {0} \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (sourcePath)));
-            }
-          }
-        }
       }
       catch (Exception e)
       {
@@ -87,8 +100,94 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
 
         retCode = -1;
       }
+      finally
+      {
+        if (retCode == 0)
+        {
+          // 
+          // Export listing of compiled .class outputs and the default class path.
+          // 
+
+          string defaultClassPath = Sources [0].GetMetadata ("ClassOutputDirectory");
+
+          ITaskItem defaultClassPathItem = new TaskItem (defaultClassPath);
+
+          defaultClassPathItem.SetMetadata ("ClassPaths", defaultClassPath);
+
+          OutputClassPaths = new ITaskItem [] { defaultClassPathItem };
+
+          OutputFiles = m_outputClassSourceFiles.ToArray ();
+        }
+      }
 
       return retCode;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override void TrackedExecuteToolOutput (KeyValuePair<string, List<ITaskItem>> commandAndSourceFiles, string singleLine)
+    {
+      try
+      {
+        if (!string.IsNullOrWhiteSpace (singleLine))
+        {
+          // 
+          // Intercept output class filenames and package addresses
+          // .
+          // e.g.
+          //  [checking com.example.nativemedia.MyRenderer]
+          //  [wrote AndroidMT\Debug\bin\classes\com\example\nativemedia\MyRenderer.class]
+          // 
+
+          if (singleLine.StartsWith ("["))
+          {
+            if (Sources [0].GetMetadata ("Verbose") == "true")
+            {
+              LogEventsFromTextOutput (string.Format ("[{0}] {1}", ToolName, singleLine), MessageImportance.High);
+            }
+
+            string sanitisedOutput = singleLine.Trim (new char [] { ' ', '[', ']' });
+
+            if (sanitisedOutput.StartsWith ("checking "))
+            {
+              string packageNameWithClassName = sanitisedOutput.Substring ("checking ".Length);
+
+              string packageNameWithoutClass = packageNameWithClassName.Substring (0, packageNameWithClassName.LastIndexOf ('.'));
+
+              if (!m_outputClassPackages.Contains (packageNameWithoutClass))
+              {
+                m_outputClassPackages.Add (packageNameWithoutClass);
+              }
+            }
+            else if (sanitisedOutput.StartsWith ("wrote "))
+            {
+              string fileWritten = sanitisedOutput.Substring ("wrote ".Length);
+
+              fileWritten = StripFileObjectDescriptor (fileWritten);
+
+              ITaskItem classFileItem = new TaskItem (fileWritten);
+
+              classFileItem.SetMetadata ("ClassOutputDirectory", Sources [0].GetMetadata ("ClassOutputDirectory"));
+
+              m_outputClassSourceFiles.Add (classFileItem);
+            }
+          }
+          else
+          {
+            // 
+            // Java output differs from a Visual Studio's "jump to line" format, we transform that output here.
+            // 
+
+            LogEventsFromTextOutput (JavaUtilities.ConvertJavaOutputToVS (singleLine), MessageImportance.High);
+          }
+        }
+      }
+      catch (Exception e)
+      {
+        Log.LogErrorFromException (e, true);
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -103,7 +202,7 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
 
       StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
 
-      builder.Append (m_parsedProperties.Parse (Sources [0]));
+      builder.Append ("--jdk-home " + PathUtils.QuoteIfNeeded (JavaHomeDir) + " ");
 
       return builder.ToString ();
     }
@@ -112,62 +211,51 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected override bool ValidateParameters ()
+    protected override string GenerateResponseFileCommands ()
+    {
+      try
+      {
+        StringBuilder builder = new StringBuilder ();
+
+        builder.Append ("-verbose" + " ");
+
+        builder.Append (m_parsedProperties.Parse (Sources [0]) + " ");
+
+        foreach (ITaskItem source in Sources)
+        {
+          builder.Append (PathUtils.QuoteIfNeeded (source.GetMetadata ("Identity")) + " ");
+        }
+
+        return builder.ToString ();
+      }
+      catch (Exception e)
+      {
+        Log.LogErrorFromException (e, true);
+      }
+
+      return string.Empty;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private static string StripFileObjectDescriptor (string fileObjectDescription)
     {
       // 
-      // Check for existence of a valid keystore file before attempting signing.
+      // Convert from JDK 7-style verbose file output to the raw filename.
+      // 
+      // e.g: [wrote RegularFileObject[..\..\build\obj\android\vs10.0\NMG_System\debug_no_assets\bin\classes\com\google\android\gms\R$attr.class]]
       // 
 
-      string keystorePath = Sources [0].GetMetadata ("Keystore");
+      int filenameStart = fileObjectDescription.LastIndexOf ('[');
 
-      if (string.IsNullOrWhiteSpace (keystorePath) || !File.Exists (keystorePath))
+      if (filenameStart != -1)
       {
-        Log.LogError (string.Format ("Could not find specified .keystore file. Expected: {0}", keystorePath), MessageImportance.High);
-
-        return false;
+        fileObjectDescription = fileObjectDescription.Substring (filenameStart).Trim (new char [] { '[', ']' });
       }
 
-      // 
-      // This tool expects a single ZIP-compatible archive as input.
-      // 
-
-      if (Sources.Length == 0)
-      {
-        Log.LogError ("No inputs specified - Please provide a single ZIP-compatible archive.");
-
-        return false;
-      }
-      else if (Sources.Length > 1)
-      {
-        Log.LogError ("Multiple inputs specified - Please provide a single ZIP-compatible archive.");
-
-        return false;
-      }
-      else
-      {
-        string sourcePath = Sources [0].GetMetadata ("FullPath");
-
-        string sourceExtension = Path.GetExtension (sourcePath);
-
-        switch (sourceExtension)
-        {
-          case ".jar":
-          case ".apk":
-          case ".zip":
-          {
-            break;
-          }
-
-          default:
-          {
-            Log.LogError (string.Format ("{0} is not a ZIP-compatible archive. Must be .jar, .apk, or .zip.", sourcePath));
-
-            return false;
-          }
-        }
-      }
-
-      return base.ValidateParameters ();
+      return fileObjectDescription;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -176,7 +264,7 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
 
     protected override void AddTaskSpecificOutputFiles (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
     {
-      trackedFileManager.AddDependencyForSources (new ITaskItem [] { SignedOutputFile }, sources);
+      trackedFileManager.AddDependencyForSources (m_outputClassSourceFiles.ToArray (), sources);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -199,7 +287,7 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
     {
       get
       {
-        return "JavaSigner";
+        return "JavaCompile";
       }
     }
 

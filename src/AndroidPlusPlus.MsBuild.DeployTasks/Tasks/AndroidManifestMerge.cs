@@ -11,32 +11,35 @@ using System.Text;
 using System.IO;
 using System.Reflection;
 using System.Resources;
+using System.Threading;
+using System.Linq;
 
 using Microsoft.Build.Framework;
 using Microsoft.Win32;
 using Microsoft.Build.Utilities;
 
 using AndroidPlusPlus.MsBuild.Common;
+using AndroidPlusPlus.Common;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
+namespace AndroidPlusPlus.MsBuild.DeployTasks
 {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class AndroidZipAlign : TrackedToolTask, ITask
+  public class AndroidManifestMerge : Task
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public AndroidZipAlign ()
+    public AndroidManifestMerge ()
       : base (new ResourceManager ("AndroidPlusPlus.MsBuild.DeployTasks.Properties.Resources", Assembly.GetExecutingAssembly ()))
     {
     }
@@ -46,103 +49,154 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     [Required]
-    public ITaskItem AlignedZip { get; set; }
+    public ITaskItem [] PrimaryManifest { get; set; }
+
+    [Required]
+    public ITaskItem [] ProjectManifests { get; set; }
+
+    [Output]
+    public ITaskItem MergedManifest { get; set; }
+
+    [Output]
+    public string PackageName { get; set; }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected override int TrackedExecuteTool (string pathToTool, string responseFileCommands, string commandLineCommands)
+    public override bool Execute ()
     {
-      int retCode = -1;
-
       try
       {
-        retCode = base.TrackedExecuteTool (pathToTool, responseFileCommands, commandLineCommands);
-
-        if (retCode == 0)
+        if (PrimaryManifest.Length == 0)
         {
-          OutputFiles = new ITaskItem [] { AlignedZip };
+          Log.LogError ("No 'PrimaryManifest' file(s) specified.");
 
-          // 
-          // Construct a simple dependency file for tracking purposes.
-          // 
+          return false;
+        }
 
-          string alignedZipPath = AlignedZip.GetMetadata ("FullPath");
+        if (PrimaryManifest.Length > 1)
+        {
+          Log.LogError ("Too many 'PrimaryManifest' files specified. Expected one.");
 
-          using (StreamWriter writer = new StreamWriter (alignedZipPath + ".d", false, Encoding.Unicode))
+          return false;
+        }
+
+        if (ProjectManifests.Length == 0)
+        {
+          Log.LogError ("No 'ProjectManifests' file(s) specified.");
+
+          return false;
+        }
+
+        // 
+        // Identify which is the primary AndroidManifest.xml provided.
+        // 
+
+        MergedManifest = null;
+
+        string primaryManifestFullPath = PrimaryManifest [0].GetMetadata ("FullPath");
+
+        foreach (ITaskItem manifestItem in ProjectManifests)
+        {
+          string manifestItemFullPath = manifestItem.GetMetadata ("FullPath");
+
+          if (primaryManifestFullPath.Equals (manifestItemFullPath))
           {
-            writer.WriteLine (string.Format ("{0}: \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (alignedZipPath)));
+            MergedManifest = manifestItem;
 
-            foreach (ITaskItem source in Sources)
+            break;
+          }
+        }
+
+        if (MergedManifest == null)
+        {
+          Log.LogError ("Could not find 'primary' manifest in provided list of project manifests. Expected: " + primaryManifestFullPath);
+
+          return false;
+        }
+
+        // 
+        // Sanity check all manifests to ensure that there's not another which defines <application> that's not 'primary'.
+        // 
+
+        ITaskItem applicationManifest = null;
+
+        foreach (ITaskItem manifestItem in ProjectManifests)
+        {
+          var androidManifestDocument = new AndroidManifest (manifestItem.GetMetadata("FullPath"));
+
+          if (androidManifestDocument.IsApplication)
+          {
+            if (applicationManifest == null)
             {
-              string sourcePath = source.GetMetadata ("FullPath");
+              applicationManifest = manifestItem;
 
-              writer.WriteLine (string.Format ("  {0} \\", GccUtilities.DependencyParser.ConvertPathWindowsToDependencyFormat (sourcePath)));
+              break;
+            }
+            else
+            {
+              Log.LogError ("Found multiple AndroidManifest files which define an <application> node.");
+
+              return false;
             }
           }
+        }
+
+        if ((applicationManifest != null) && (applicationManifest != MergedManifest))
+        {
+          Log.LogError ("Specified project manifest does not define an <application> node.");
+
+          return false;
+        }
+
+        // 
+        // Process other 'third-party' manifests merging required metadata.
+        // 
+
+        if (MergedManifest != null)
+        {
+          HashSet<string> extraPackages = new HashSet<string> ();
+
+          HashSet<string> extraResourcePaths = new HashSet<string> ();
+
+          extraResourcePaths.Add (MergedManifest.GetMetadata ("IncludeResourceDirectories"));
+
+          foreach (ITaskItem item in ProjectManifests)
+          {
+            var androidManifest = new AndroidManifest(item.GetMetadata("FullPath"));
+
+            if (item == MergedManifest)
+            {
+              PackageName = androidManifest.PackageName;
+            }
+            else
+            {
+              if (!extraPackages.Contains (androidManifest.PackageName))
+              {
+                extraPackages.Add (androidManifest.PackageName);
+              }
+
+              if (!extraResourcePaths.Contains (item.GetMetadata ("IncludeResourceDirectories")))
+              {
+                extraResourcePaths.Add (item.GetMetadata ("IncludeResourceDirectories"));
+              }
+            }
+          }
+
+          MergedManifest.SetMetadata ("ExtraPackages", String.Join (":", extraPackages.ToArray ()));
+
+          MergedManifest.SetMetadata ("IncludeResourceDirectories", String.Join (";", extraResourcePaths.ToArray ()));
+
+          return true;
         }
       }
       catch (Exception e)
       {
         Log.LogErrorFromException (e, true);
-
-        retCode = -1;
       }
-
-      return retCode;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override string GenerateCommandLineCommands ()
-    {
-      return "-f 4 " + PathUtils.QuoteIfNeeded (Sources [0].GetMetadata ("FullPath")) + " " + PathUtils.QuoteIfNeeded (AlignedZip.GetMetadata ("FullPath"));
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override bool ValidateParameters ()
-    {
-      if (Sources.Length == 1)
-      {
-        if (Sources [0].GetMetadata ("Extension") == ".apk")
-        {
-          return base.ValidateParameters ();
-        }
-      }
-
-      Log.LogError ("Expecting a single .apk file as input.", MessageImportance.High);
 
       return false;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override bool AppendSourcesToCommandLine
-    {
-      get
-      {
-        return false;
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override string ToolName
-    {
-      get
-      {
-        return "AndroidZipAlign";
-      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -160,3 +214,4 @@ namespace AndroidPlusPlus.MsBuild.MSBuild.DeployTasks
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+

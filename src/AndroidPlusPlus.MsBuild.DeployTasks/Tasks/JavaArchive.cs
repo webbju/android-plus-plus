@@ -11,34 +11,34 @@ using System.Text;
 using System.IO;
 using System.Reflection;
 using System.Resources;
-using System.Threading;
 
 using Microsoft.Build.Framework;
 using Microsoft.Win32;
 using Microsoft.Build.Utilities;
 
 using AndroidPlusPlus.MsBuild.Common;
+using AndroidPlusPlus.Common;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace AndroidPlusPlus.MsBuild.CppTasks
+namespace AndroidPlusPlus.MsBuild.DeployTasks
 {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class NativeCompile : TrackedOutOfDateToolTask, ITask
+  public class JavaArchive : TrackedOutOfDateToolTask, ITask
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public NativeCompile ()
-      : base (new ResourceManager ("AndroidPlusPlus.MsBuild.CppTasks.Properties.Resources", Assembly.GetExecutingAssembly ()))
+    public JavaArchive ()
+      : base (new ResourceManager ("AndroidPlusPlus.MsBuild.DeployTasks.Properties.Resources", Assembly.GetExecutingAssembly ()))
     {
     }
 
@@ -46,50 +46,83 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected override void TrackedExecuteToolOutput (KeyValuePair<string, List<ITaskItem>> commandAndSourceFiles, string singleLine)
+    [Required]
+    public string JavaHomeDir { get; set; }
+
+    [Required]
+    public ITaskItem OutputFile { get; set; }
+
+    public ITaskItem ManifestFile { get; set; }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override int TrackedExecuteTool (string pathToTool, string responseFileCommands, string commandLineCommands)
     {
-      if (ToolExe.StartsWith ("clang"))
-      {
-        LogEventsFromTextOutput (singleLine, MessageImportance.High);
-      }
-      else
-      {
-        // 
-        // GCC output differs from a Visual Studio's "jump to line" format, we transform that output here.
-        // 
-
-        LogEventsFromTextOutput (GccUtilities.ConvertGccOutputToVS (singleLine), MessageImportance.High);
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override string GenerateCommandLineFromProps (ITaskItem source)
-    {
-      // 
-      // Build a command-line based on parsing switches from the registered property sheet, and any additional flags.
-      // 
+      int retCode = -1;
 
       try
       {
-        if (source == null)
+        retCode = base.TrackedExecuteTool (pathToTool, responseFileCommands, commandLineCommands);
+      }
+      catch (Exception e)
+      {
+        Log.LogErrorFromException (e, true);
+
+        retCode = -1;
+      }
+      finally
+      {
+        if (retCode == 0)
         {
-          throw new ArgumentNullException ();
+          OutputFiles = new ITaskItem [] { OutputFile };
         }
+      }
 
-        StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
+      return retCode;
+    }
 
-        builder.Append (m_parsedProperties.Parse (source));
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        builder.Append (" -c "); // compile the C/C++ file
+    protected override string GenerateCommandLineCommands ()
+    {
+      StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
+
+      builder.Append (string.Format ("--jdk-home {0} ", PathUtils.QuoteIfNeeded (JavaHomeDir)));
+
+      builder.Append (string.Format ("--jar-output {0} ", PathUtils.QuoteIfNeeded (OutputFile.GetMetadata ("FullPath"))));
+
+      if (ManifestFile != null)
+      {
+        builder.Append (string.Format ("--jar-manifest {0} ", PathUtils.QuoteIfNeeded (ManifestFile.GetMetadata ("FullPath"))));
+      }
+
+      return builder.ToString ();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override string GenerateResponseFileCommands ()
+    {
+      try
+      {
+        StringBuilder builder = new StringBuilder ();
+
+        foreach (ITaskItem source in Sources)
+        {
+          builder.Append (PathUtils.QuoteIfNeeded (source.GetMetadata ("Identity")) + " ");
+        }
 
         return builder.ToString ();
       }
       catch (Exception e)
       {
-        Log.LogErrorFromException (e, true);
+        Log.LogErrorFromException (e);
       }
 
       return string.Empty;
@@ -99,58 +132,44 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    protected override string GetResponseFileSwitch (string responseFilePath)
+    {
+      return '@' + PathUtils.SantiseWindowsPath (responseFilePath);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     protected override void AddTaskSpecificDependencies (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
     {
-      // 
-      // Register additional 'forced include' usage for each of the sources.
-      // 
-
-      foreach (ITaskItem source in sources)
+      if (ManifestFile != null)
       {
-        try
-        {
-          if (!string.IsNullOrWhiteSpace (source.GetMetadata ("ForcedIncludeFiles")))
-          {
-            string [] forcedIncludeFiles = source.GetMetadata ("ForcedIncludeFiles").Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+        trackedFileManager.AddDependencyForSources (new ITaskItem [] { ManifestFile }, sources);
+      }
+    }
 
-            List<ITaskItem> forcedIncludeItems = new List<ITaskItem> ();
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-            foreach (string file in forcedIncludeFiles)
-            {
-              // 
-              // Supports including pre-compiled headers via '-include' when they need to be referenced without '.pch'/'.gch'. Fix this.
-              // 
+    protected override void AddTaskSpecificOutputFiles (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
+    {
+      if (OutputFile != null)
+      {
+        trackedFileManager.AddDependencyForSources (new ITaskItem [] { OutputFile }, sources);
+      }
+    }
 
-              string fileFullPath = Path.GetFullPath (file);
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-              if ((ToolExe.StartsWith ("clang")) && (File.Exists (fileFullPath + ".pch")))
-              {
-                fileFullPath = fileFullPath + ".pch";
-              }
-              else if (File.Exists (fileFullPath + ".gch"))
-              {
-                fileFullPath = fileFullPath + ".gch";
-              }
-
-              // 
-              // Also validate that we don't try adding dependencies to missing files, as this breaks tracking.
-              // 
-
-              if (!File.Exists (fileFullPath))
-              {
-                throw new FileNotFoundException ("Could not find 'forced include' dependency: " + fileFullPath);
-              }
-
-              forcedIncludeItems.Add (new TaskItem (fileFullPath));
-            }
-
-            trackedFileManager.AddDependencyForSources (forcedIncludeItems.ToArray (), new ITaskItem [] { source });
-          }
-        }
-        catch (Exception e)
-        {
-          Log.LogWarningFromException (e, false);
-        }
+    protected override bool AppendSourcesToCommandLine
+    {
+      get
+      {
+        return false;
       }
     }
 
@@ -162,7 +181,7 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
     {
       get
       {
-        return "NativeCompile";
+        return "JavaArchive";
       }
     }
 

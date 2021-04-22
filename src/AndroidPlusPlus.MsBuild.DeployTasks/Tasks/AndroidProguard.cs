@@ -16,33 +16,28 @@ using Microsoft.Win32;
 using Microsoft.Build.Utilities;
 
 using AndroidPlusPlus.MsBuild.Common;
+using AndroidPlusPlus.Common;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace AndroidPlusPlus.MsBuild.CppTasks.Tasks
+namespace AndroidPlusPlus.MsBuild.DeployTasks
 {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class NativeBuildId : Microsoft.Build.Utilities.ToolTask
+  public class AndroidProguard : TrackedOutOfDateToolTask, ITask
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private StringBuilder m_readElfOutput = new StringBuilder ();
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public NativeBuildId ()
-      : base (new ResourceManager ("AndroidPlusPlus.MsBuild.CppTasks.Properties.Resources", Assembly.GetExecutingAssembly ()))
+    public AndroidProguard ()
+      : base (new ResourceManager ("AndroidPlusPlus.MsBuild.DeployTasks.Properties.Resources", Assembly.GetExecutingAssembly ()))
     {
     }
 
@@ -51,70 +46,50 @@ namespace AndroidPlusPlus.MsBuild.CppTasks.Tasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     [Required]
-    public ITaskItem TargetElf { get; set; }
+    public string ProguardJar { get; set; }
 
-    [Output]
-    public string BuildId { get; set; }
-
-    public bool OutputCommandLine { get; set; }
+    private Dictionary<string, ITaskItem> m_qualifiedOutputJars = new Dictionary<string, ITaskItem> ();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected override int ExecuteTool (string pathToTool, string responseFileCommands, string commandLineCommands)
+    protected override int TrackedExecuteTool (string pathToTool, string responseFileCommands, string commandLineCommands)
     {
       int retCode = -1;
 
       try
       {
-        retCode = base.ExecuteTool (pathToTool, responseFileCommands, commandLineCommands);
+        retCode = base.TrackedExecuteTool (pathToTool, responseFileCommands, commandLineCommands);
 
-        if (retCode == 0)
+        // 
+        // Evaluate a distinct (unique) list of registered output jar files.
+        // 
+
+        foreach (ITaskItem source in OutOfDateSources)
         {
-          // 
-          // Parse readelf tool output to identify the build-id from a hex section dump.
-          // 
+          string outJarPath = source.GetMetadata ("OutJars");
 
-          /*
-           
-           Hex dump of section '.note.gnu.build-id':
-            0x00000134 04000000 14000000 03000000 474e5500 ............GNU.
-            0x00000144 ab9455ce ade577bb 423edaa0 e986585b ..U...w.B>....X[
-            0x00000154 900c47cd                            ..G.
-           
-          */
-
-          StringBuilder buildIdBuilder = new StringBuilder (40);
-
-          string [] readElfOutputLines = m_readElfOutput.ToString ().Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-
-          for (int i = 2; i < readElfOutputLines.Length; ++i) // Skip the first 3 lines of output
+          if (!m_qualifiedOutputJars.ContainsKey (outJarPath))
           {
-            string santisedLine = readElfOutputLines [i].TrimStart (new char [] { ' ' } );
-
-            for (int wordId = 0; wordId < 4; ++wordId)
-            {
-              string longWord = santisedLine.Substring (11 + (9 * wordId), 8);
-
-              if (!string.IsNullOrWhiteSpace (longWord))
-              {
-                buildIdBuilder.Append (longWord);
-              }
-            }
-          }
-
-          BuildId = buildIdBuilder.ToString ();
-
-          if (string.IsNullOrWhiteSpace (BuildId))
-          {
-            throw new InvalidOperationException ();
+            m_qualifiedOutputJars [outJarPath] = new TaskItem (outJarPath);
           }
         }
+
+        if (m_qualifiedOutputJars.Count == 0)
+        {
+          throw new ArgumentException ("No valid 'OutJars' evaluated.");
+        }
+
+        OutputFiles = new ITaskItem [m_qualifiedOutputJars.Count];
+
+        m_qualifiedOutputJars.Values.CopyTo (OutputFiles, 0);
       }
       catch (Exception e)
       {
         Log.LogErrorFromException (e, true);
+
+        retCode = -1;
       }
 
       return retCode;
@@ -124,17 +99,45 @@ namespace AndroidPlusPlus.MsBuild.CppTasks.Tasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected override void LogEventsFromTextOutput (string singleLine, MessageImportance messageImportance)
+    protected override void AddTaskSpecificDependencies (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
     {
       // 
-      // Cache all tool output to be parsed upon successful execution.
+      // Mark additional dependencies for .class files contained within specified class paths.
       // 
 
-      m_readElfOutput.AppendLine (singleLine);
-
-      if (OutputCommandLine)
+      foreach (ITaskItem source in sources)
       {
-        base.LogEventsFromTextOutput (string.Format ("[{0}] {1}", ToolName, singleLine), messageImportance);
+        string sourceFullPath = source.GetMetadata ("FullPath");
+
+        if (Directory.Exists (sourceFullPath))
+        {
+          string [] classPathFiles = Directory.GetFiles (sourceFullPath, "*.class", SearchOption.AllDirectories);
+
+          List<ITaskItem> classPathFileItems = new List<ITaskItem> (classPathFiles.Length);
+
+          foreach (string classpath in classPathFiles)
+          {
+            classPathFileItems.Add (new TaskItem (classpath));
+          }
+
+          trackedFileManager.AddDependencyForSources (classPathFileItems.ToArray (), new ITaskItem [] { source });
+        }
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override void AddTaskSpecificOutputFiles (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
+    {
+      if (m_qualifiedOutputJars.Count > 0)
+      {
+        ITaskItem [] outputFiles = new ITaskItem [m_qualifiedOutputJars.Count];
+
+        m_qualifiedOutputJars.Values.CopyTo (outputFiles, 0);
+
+        trackedFileManager.AddDependencyForSources (outputFiles, sources);
       }
     }
 
@@ -144,16 +147,56 @@ namespace AndroidPlusPlus.MsBuild.CppTasks.Tasks
 
     protected override string GenerateCommandLineCommands ()
     {
-      return "--hex-dump=.note.gnu.build-id " + PathUtils.QuoteIfNeeded (TargetElf.GetMetadata ("FullPath"));
-    }
+      // 
+      // Build a command-line based on parsing switches from the registered property sheet, and any additional flags.
+      // 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
 
-    protected override string GenerateFullPathToTool ()
-    {
-      return Path.Combine (ToolPath, ToolExe);
+      // 
+      // JavaVM options need to go at the start of the command line.
+      // 
+
+      string jvmInitialHeapSize = m_parsedProperties.ParseProperty (Sources [0], "JvmInitialHeapSize");
+
+      string jvmMaximumHeapSize = m_parsedProperties.ParseProperty (Sources [0], "JvmMaximumHeapSize");
+
+      string jvmThreadStackSize = m_parsedProperties.ParseProperty (Sources [0], "JvmThreadStackSize");
+
+      builder.Append (jvmInitialHeapSize + " ");
+
+      builder.Append (jvmMaximumHeapSize + " ");
+
+      builder.Append (jvmThreadStackSize + " ");
+
+      string frameworkDir = Path.GetDirectoryName (ProguardJar);
+
+      builder.Append ("-jar \"" + ProguardJar + "\" ");
+
+      // 
+      // Ensure the JVM options aren't duplicated.
+      // 
+
+      StringBuilder parsedProperties = new StringBuilder (m_parsedProperties.Parse (Sources [0]));
+
+      if (!string.IsNullOrEmpty (jvmInitialHeapSize))
+      {
+        parsedProperties.Replace (jvmInitialHeapSize, "");
+      }
+
+      if (!string.IsNullOrEmpty (jvmMaximumHeapSize))
+      {
+        parsedProperties.Replace (jvmMaximumHeapSize, "");
+      }
+
+      if (!string.IsNullOrEmpty (jvmThreadStackSize))
+      {
+        parsedProperties.Replace (jvmThreadStackSize, "");
+      }
+
+      builder.Append (parsedProperties.ToString ());
+
+      return builder.ToString ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -164,7 +207,19 @@ namespace AndroidPlusPlus.MsBuild.CppTasks.Tasks
     {
       get
       {
-        return "GccBuildId";
+        return "AndroidProguard";
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override bool AppendSourcesToCommandLine
+    {
+      get
+      {
+        return false;
       }
     }
 

@@ -18,6 +18,7 @@ using Microsoft.Win32;
 using Microsoft.Build.Utilities;
 
 using AndroidPlusPlus.MsBuild.Common;
+using AndroidPlusPlus.Common;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -81,9 +82,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
 
             if (retCode == 0)
             {
-              AndroidManifestDocument sourceManifest = new AndroidManifestDocument ();
-
-              sourceManifest.Load (sourcePath);
+              AndroidManifest sourceManifest = new AndroidManifest(sourcePath);
 
               // 
               // Determine if this manifest requested APK generation, add to output list.
@@ -275,9 +274,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
         {
           if (validParameters)
           {
-            AndroidManifestDocument sourceManifest = new AndroidManifestDocument ();
-
-            sourceManifest.Load (sourcePath);
+            var sourceManifest = new AndroidManifest (sourcePath);
           }
         }
         catch (Exception e)

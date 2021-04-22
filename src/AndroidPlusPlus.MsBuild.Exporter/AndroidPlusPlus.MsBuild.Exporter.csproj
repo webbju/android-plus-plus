@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>net472</TargetFrameworks>
-    <Platforms>x86</Platforms>
+    <Platforms>AnyCPU</Platforms>
     <OutputType>Exe</OutputType>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
