@@ -28,7 +28,7 @@ namespace AndroidPlusPlus.VsDebugEngine
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public interface CLangDebuggerEventInterface
+  public interface ICLangDebuggerEvent
   {
     int OnStartServer (CLangDebugger debugger);
 
@@ -49,7 +49,7 @@ namespace AndroidPlusPlus.VsDebugEngine
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class CLangDebuggerCallback : CLangDebuggerEventInterface, IDebugEventCallback2
+  public class CLangDebuggerCallback : ICLangDebuggerEvent, IDebugEventCallback2
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -72,21 +72,22 @@ namespace AndroidPlusPlus.VsDebugEngine
       // Register function handlers for specific events.
       // 
 
-      m_debuggerCallback = new Dictionary<Guid, CLangDebuggerEventDelegate> ();
+      m_debuggerCallback = new Dictionary<Guid, CLangDebuggerEventDelegate>
+      {
+        { ComUtils.GuidOf(typeof(CLangDebuggerEvent.StartServer)), OnStartServer },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (CLangDebuggerEvent.StartServer)), OnStartServer);
+        { ComUtils.GuidOf(typeof(CLangDebuggerEvent.TerminateServer)), OnTerminateServer },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (CLangDebuggerEvent.TerminateServer)), OnTerminateServer);
+        { ComUtils.GuidOf(typeof(CLangDebuggerEvent.AttachClient)), OnAttachClient },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (CLangDebuggerEvent.AttachClient)), OnAttachClient);
+        { ComUtils.GuidOf(typeof(CLangDebuggerEvent.DetachClient)), OnDetachClient },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (CLangDebuggerEvent.DetachClient)), OnDetachClient);
+        { ComUtils.GuidOf(typeof(CLangDebuggerEvent.StopClient)), OnStopClient },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (CLangDebuggerEvent.StopClient)), OnStopClient);
+        { ComUtils.GuidOf(typeof(CLangDebuggerEvent.ContinueClient)), OnContinueClient },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (CLangDebuggerEvent.ContinueClient)), OnContinueClient);
-
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (CLangDebuggerEvent.TerminateClient)), OnTerminateClient);
+        { ComUtils.GuidOf(typeof(CLangDebuggerEvent.TerminateClient)), OnTerminateClient }
+      };
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -114,9 +115,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.Print ("[CLangDebuggerCallback] Event: " + riidEvent.ToString ());
 
-        CLangDebuggerEventDelegate eventCallback;
-
-        if (!m_debuggerCallback.TryGetValue (riidEvent, out eventCallback))
+        if (!m_debuggerCallback.TryGetValue (riidEvent, out CLangDebuggerEventDelegate eventCallback))
         {
           return Constants.E_NOTIMPL;
         }

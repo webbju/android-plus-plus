@@ -1145,9 +1145,7 @@ namespace AndroidPlusPlus.Common
           // Call the corresponding registered delegate for the token response.
           // 
 
-          MiResultRecord callbackRecord = record as MiResultRecord;
-
-          if ((callbackRecord != null) && (callbackRecord.Token != 0))
+          if (record is MiResultRecord callbackRecord && (callbackRecord.Token != 0))
           {
             AsyncCommandData callbackCommandData = null;
 

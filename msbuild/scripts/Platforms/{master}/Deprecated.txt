@@ -1,3 +1,0 @@
-This platform is deprecated and will be removed in future releases.
-
-Platform rules here currently redirect automatically to '{master}.armv7-a'.

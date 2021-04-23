@@ -1,98 +1,26 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug|Android++.arm64-v8a">
+<Project DefaultTargets="Build" ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ProjectConfiguration Include="Debug|I686">
       <Configuration>Debug</Configuration>
-      <Platform>Android++.arm64-v8a</Platform>
+      <Platform>I686</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Debug|Android++.armv7-a">
-      <Configuration>Debug</Configuration>
-      <Platform>Android++.armv7-a</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Debug|Android++.x86">
-      <Configuration>Debug</Configuration>
-      <Platform>Android++.x86</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Android++.arm64-v8a">
+    <ProjectConfiguration Include="Release|I686">
       <Configuration>Release</Configuration>
-      <Platform>Android++.arm64-v8a</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Android++.armv7-a">
-      <Configuration>Release</Configuration>
-      <Platform>Android++.armv7-a</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Android++.x86">
-      <Configuration>Release</Configuration>
-      <Platform>Android++.x86</Platform>
+      <Platform>I686</Platform>
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectName>hello-gdbserver</ProjectName>
-    <ProjectGuid>{36324E8C-BC78-4B9E-A9E4-C6DC98158C80}</ProjectGuid>
-    <RootNamespace>hellogdbserver</RootNamespace>
-    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+    <ApplicationType>Android++</ApplicationType>
+    <ApplicationTypeRevision>1.0</ApplicationTypeRevision>
+    <ProjectGuid>{E2105187-D63B-4E42-9A57-AC5C019B60C5}</ProjectGuid>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.armv7-a'" Label="Configuration">
-    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</IntDir>
-    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
+  <PropertyGroup>
     <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.x86'" Label="Configuration">
-    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</IntDir>
-    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <CharacterSet>Unicode</CharacterSet>
-    <AndroidSdkBuildToolsVersion>23.0.2</AndroidSdkBuildToolsVersion>
-    <AndroidSdkLevel>22</AndroidSdkLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.arm64-v8a'" Label="Configuration">
-    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</IntDir>
-    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\debug\$(TargetPlatformArchitectureEabi)\</OutDir>
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.armv7-a'" Label="Configuration">
-    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</IntDir>
-    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.x86'" Label="Configuration">
-    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</IntDir>
-    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android++.arm64-v8a'" Label="Configuration">
-    <IntDir>..\..\build\obj\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</IntDir>
-    <OutDir>..\..\build\bin\android\vs$(VisualStudioVersion)\$(ProjectName)\release\$(TargetPlatformArchitectureEabi)\</OutDir>
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>Clang11.0</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  <ImportGroup Label="ExtensionSettings">
-    <Import Condition="'$(VisualStudioVersion)' == '14.0' and exists('$(VCTargetsPath)\V140\BuildCustomizations\Android++.DeployViaMsBuild.props') and '$(__DeployViaMsBuildImported_Props)' != 'true'" Project="$(VCTargetsPath)\V140\BuildCustomizations\Android++.DeployViaMsBuild.props" />
-    <Import Condition="'$(VisualStudioVersion)' == '12.0' and exists('$(VCTargetsPath)\V120\BuildCustomizations\Android++.DeployViaMsBuild.props') and '$(__DeployViaMsBuildImported_Props)' != 'true'" Project="$(VCTargetsPath)\V120\BuildCustomizations\Android++.DeployViaMsBuild.props" />
-    <Import Condition="exists('$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.props') and '$(__DeployViaMsBuildImported_Props)' != 'true'" Project="$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.props" />
-  </ImportGroup>
-  <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android++.x86'">
-    <AndroidJava>
-      <OutputCommandLine>true</OutputCommandLine>
-    </AndroidJava>
-  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="jni\hello-gdbserver.c" />
   </ItemGroup>
@@ -103,9 +31,4 @@
     <AndroidManifest Include="AndroidManifest.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-    <Import Condition="'$(VisualStudioVersion)' == '14.0' and exists('$(VCTargetsPath)\V140\BuildCustomizations\Android++.DeployViaMsBuild.targets') and '$(__DeployViaMsBuildImported_Targets)' != 'true'" Project="$(VCTargetsPath)\V140\BuildCustomizations\Android++.DeployViaMsBuild.targets" />
-    <Import Condition="'$(VisualStudioVersion)' == '12.0' and exists('$(VCTargetsPath)\V120\BuildCustomizations\Android++.DeployViaMsBuild.targets') and '$(__DeployViaMsBuildImported_Targets)' != 'true'" Project="$(VCTargetsPath)\V120\BuildCustomizations\Android++.DeployViaMsBuild.targets" />
-    <Import Condition="exists('$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.targets') and '$(__DeployViaMsBuildImported_Targets)' != 'true'" Project="$(VCTargetsPath)\BuildCustomizations\Android++.DeployViaMsBuild.targets" />
-  </ImportGroup>
 </Project>

@@ -41,7 +41,9 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // Specified here to avoid referencing EnvDTE90 assembly.
+#pragma warning disable IDE1006 // Naming Styles
     public enum enum_THREADCATEGORY
+#pragma warning restore IDE1006 // Naming Styles
     {
       THREADCATEGORY_Worker = 0,
       THREADCATEGORY_UI = (THREADCATEGORY_Worker + 1),

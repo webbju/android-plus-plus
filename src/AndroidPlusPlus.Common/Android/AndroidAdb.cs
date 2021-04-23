@@ -64,126 +64,125 @@ namespace AndroidPlusPlus.Common
           adbStartServer.StartAndWaitForExit (30000);
         }
 
-        using (SyncRedirectProcess adbDevices = new SyncRedirectProcess (AndroidSettings.SdkRoot + @"\platform-tools\adb.exe", "devices"))
+        using SyncRedirectProcess adbDevices = new SyncRedirectProcess(AndroidSettings.SdkRoot + @"\platform-tools\adb.exe", "devices");
+
+        adbDevices.StartAndWaitForExit(30000);
+
+        // 
+        // Parse 'devices' output, skipping headers and potential 'start-server' output.
+        // 
+
+        Dictionary<string, string> currentAdbDevices = new Dictionary<string, string>();
+
+        LoggingUtils.Print(string.Concat("[AndroidAdb] Devices output: ", adbDevices.StandardOutput));
+
+        if (!string.IsNullOrEmpty(adbDevices.StandardOutput))
         {
-          adbDevices.StartAndWaitForExit (30000);
+          var deviceOutputLines = adbDevices.StandardOutput.Replace("\r", "").Split(new char[] { '\n' });
 
-          // 
-          // Parse 'devices' output, skipping headers and potential 'start-server' output.
-          // 
-
-          Dictionary<string, string> currentAdbDevices = new Dictionary<string, string> ();
-
-          LoggingUtils.Print (string.Concat ("[AndroidAdb] Devices output: ", adbDevices.StandardOutput));
-
-          if (!string.IsNullOrEmpty (adbDevices.StandardOutput))
+          foreach (string line in deviceOutputLines)
           {
-            var deviceOutputLines = adbDevices.StandardOutput.Replace ("\r", "").Split (new char [] { '\n' });
-
-            foreach (string line in deviceOutputLines)
+            if (Regex.IsMatch(line, "^[A-Za-z0-9.:\\-]+[\t][A-Za-z]+$"))
             {
-              if (Regex.IsMatch (line, "^[A-Za-z0-9.:\\-]+[\t][A-Za-z]+$"))
-              {
-                var segments = line.Split (new char [] { '\t' });
+              var segments = line.Split(new char[] { '\t' });
 
-                string deviceName = segments [0];
+              string deviceName = segments[0];
 
-                string deviceType = segments [1];
+              string deviceType = segments[1];
 
-                currentAdbDevices.Add (deviceName, deviceType);
-              }
+              currentAdbDevices.Add(deviceName, deviceType);
             }
           }
+        }
 
-          // 
-          // First identify any previously tracked devices which aren't in 'devices' output.
-          // 
+        // 
+        // First identify any previously tracked devices which aren't in 'devices' output.
+        // 
 
-          HashSet<string> disconnectedDevices = new HashSet<string> ();
+        HashSet<string> disconnectedDevices = new HashSet<string>();
 
-          foreach (string key in m_connectedDevices.Keys)
+        foreach (string key in m_connectedDevices.Keys)
+        {
+          string deviceName = (string)key;
+
+          if (!currentAdbDevices.ContainsKey(deviceName))
           {
-            string deviceName = (string) key;
-
-            if (!currentAdbDevices.ContainsKey (deviceName))
-            {
-              disconnectedDevices.Add (deviceName);
-            }
+            disconnectedDevices.Add(deviceName);
           }
+        }
 
-          // 
-          // Identify whether any devices have changed state; connected/persisted/disconnected.
-          // 
+        // 
+        // Identify whether any devices have changed state; connected/persisted/disconnected.
+        // 
 
-          foreach (KeyValuePair <string, string> devicePair in currentAdbDevices)
+        foreach (KeyValuePair<string, string> devicePair in currentAdbDevices)
+        {
+          string deviceName = devicePair.Key;
+
+          string deviceType = devicePair.Value;
+
+          if (deviceType.Equals("offline", StringComparison.InvariantCultureIgnoreCase))
           {
-            string deviceName = devicePair.Key;
-
-            string deviceType = devicePair.Value;
-
-            if (deviceType.Equals ("offline", StringComparison.InvariantCultureIgnoreCase))
-            {
-              disconnectedDevices.Add (deviceName);
-            }
-            else if (deviceType.Equals ("unauthorized", StringComparison.InvariantCultureIgnoreCase))
-            {
-              // User needs to allow USB debugging.
-            }
-            else
-            {
-              if (m_connectedDevices.TryGetValue(deviceName, out AndroidDevice connectedDevice))
-              {
-                // 
-                // Device is pervasive. Refresh internal properties.
-                // 
-
-                LoggingUtils.Print(string.Format("[AndroidAdb] Device pervaded: {0} - {1}", deviceName, deviceType));
-
-                connectedDevice.Refresh();
-
-                foreach (IStateListener deviceListener in m_registeredDeviceStateListeners)
-                {
-                  deviceListener.DevicePervasive(connectedDevice);
-                }
-              }
-              else
-              {
-                // 
-                // Device connected.
-                // 
-
-                LoggingUtils.Print(string.Format("[AndroidAdb] Device connected: {0} - {1}", deviceName, deviceType));
-
-                connectedDevice = new AndroidDevice(deviceName);
-
-                connectedDevice.Refresh();
-
-                m_connectedDevices.Add(deviceName, connectedDevice);
-
-                foreach (IStateListener deviceListener in m_registeredDeviceStateListeners)
-                {
-                  deviceListener.DeviceConnected(connectedDevice);
-                }
-              }
-            }
+            disconnectedDevices.Add(deviceName);
           }
-
-          // 
-          // Finally, handle device disconnection.
-          // 
-
-          foreach (string deviceName in disconnectedDevices)
+          else if (deviceType.Equals("unauthorized", StringComparison.InvariantCultureIgnoreCase))
           {
-            if (m_connectedDevices.TryGetValue (deviceName, out AndroidDevice disconnectedDevice))
+            // User needs to allow USB debugging.
+          }
+          else
+          {
+            if (m_connectedDevices.TryGetValue(deviceName, out AndroidDevice connectedDevice))
             {
-              LoggingUtils.Print (string.Concat ("[AndroidAdb] Device disconnected: ", deviceName));
+              // 
+              // Device is pervasive. Refresh internal properties.
+              // 
 
-              m_connectedDevices.Remove (deviceName);
+              LoggingUtils.Print(string.Format("[AndroidAdb] Device pervaded: {0} - {1}", deviceName, deviceType));
+
+              connectedDevice.Refresh();
 
               foreach (IStateListener deviceListener in m_registeredDeviceStateListeners)
               {
-                deviceListener.DeviceDisconnected (disconnectedDevice);
+                deviceListener.DevicePervasive(connectedDevice);
               }
+            }
+            else
+            {
+              // 
+              // Device connected.
+              // 
+
+              LoggingUtils.Print(string.Format("[AndroidAdb] Device connected: {0} - {1}", deviceName, deviceType));
+
+              connectedDevice = new AndroidDevice(deviceName);
+
+              connectedDevice.Refresh();
+
+              m_connectedDevices.Add(deviceName, connectedDevice);
+
+              foreach (IStateListener deviceListener in m_registeredDeviceStateListeners)
+              {
+                deviceListener.DeviceConnected(connectedDevice);
+              }
+            }
+          }
+        }
+
+        // 
+        // Finally, handle device disconnection.
+        // 
+
+        foreach (string deviceName in disconnectedDevices)
+        {
+          if (m_connectedDevices.TryGetValue(deviceName, out AndroidDevice disconnectedDevice))
+          {
+            LoggingUtils.Print(string.Concat("[AndroidAdb] Device disconnected: ", deviceName));
+
+            m_connectedDevices.Remove(deviceName);
+
+            foreach (IStateListener deviceListener in m_registeredDeviceStateListeners)
+            {
+              deviceListener.DeviceDisconnected(disconnectedDevice);
             }
           }
         }

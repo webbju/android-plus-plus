@@ -1,0 +1,11 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName)\*.props" Condition="'$(__DeployViaMsBuildTargetsProps)' != 'true'" />
+
+  <PropertyGroup>
+
+    <__DeployViaMsBuildTargetsProps>true</__DeployViaMsBuildTargetsProps>
+
+  </PropertyGroup>
+
+</Project>

@@ -179,13 +179,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        uint numEnumeratedProperties;
+        LoggingUtils.RequireOk (m_property.EnumChildren (requestedFields, radix, ref guidFilter, enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_ALL, string.Empty, timeout, out IEnumDebugPropertyInfo2 enumeratedProperties));
 
-        IEnumDebugPropertyInfo2 enumeratedProperties;
-
-        LoggingUtils.RequireOk (m_property.EnumChildren (requestedFields, radix, ref guidFilter, enum_DBG_ATTRIB_FLAGS.DBG_ATTRIB_ALL, string.Empty, timeout, out enumeratedProperties));
-
-        LoggingUtils.RequireOk (enumeratedProperties.GetCount (out numEnumeratedProperties));
+        LoggingUtils.RequireOk (enumeratedProperties.GetCount (out uint numEnumeratedProperties));
 
         elementsReturned = numEnumeratedProperties;
 
@@ -437,13 +433,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        IDebugDocumentContext2 documentContext;
-
         languageGuid = DebugEngineGuids.guidLanguageUnknown;
 
         languageName = DebugEngineGuids.GetLanguageName (languageGuid);
 
-        LoggingUtils.RequireOk (GetDocumentContext (out documentContext));
+        LoggingUtils.RequireOk (GetDocumentContext (out IDebugDocumentContext2 documentContext));
 
         if (documentContext != null)
         {

@@ -50,12 +50,11 @@ namespace AndroidPlusPlus.Common
 
               if (!string.IsNullOrEmpty (currentVersion))
               {
-                using (RegistryKey localMachineJdkCurrentVersion = localMachineJavaDevelopmentKit.OpenSubKey (currentVersion))
+                using RegistryKey localMachineJdkCurrentVersion = localMachineJavaDevelopmentKit.OpenSubKey(currentVersion);
+
+                if (localMachineJdkCurrentVersion != null)
                 {
-                  if (localMachineJdkCurrentVersion != null)
-                  {
-                    jdkPossibleLocations.Add (localMachineJdkCurrentVersion.GetValue ("JavaHome") as string);
-                  }
+                  jdkPossibleLocations.Add(localMachineJdkCurrentVersion.GetValue("JavaHome") as string);
                 }
               }
             }

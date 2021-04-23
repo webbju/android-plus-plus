@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ProjectSchemaDefinitions
+  xmlns="http://schemas.microsoft.com/build/2009/properties">
+
+  <ContentType Name="CppCode" DisplayName="C/C++ Code" ItemType="ClCompile" />
+  <ContentType Name="CppHeader" DisplayName="C/C++ Header" ItemType="ClInclude"/>
+  <ContentType Name="Makefile" DisplayName="Makefile" ItemType="None" />
+  <ContentType Name="OBJ" DisplayName="Object file" ItemType="Object" />
+  <ContentType Name="LIB" DisplayName="Library file" ItemType="Library" />
+
+  <ContentType Name="AndroidManifest" DisplayName="Android Manifest" ItemType="AndroidManifest" />
+  <ContentType Name="AndroidJava" DisplayName="Android Java" ItemType="AndroidJava" />
+  <ContentType Name="AndroidDalvik" DisplayName="Android Dalvik" ItemType="AndroidDalvik" />
+
+  <ItemType Name="None" DisplayName="Does not participate in build"/>
+  <ItemType Name="ClCompile" DisplayName="C/C++ Compiler"/>
+  <ItemType Name="ClInclude" DisplayName="C/C++ Header"/>
+  <ItemType Name="CustomBuild" DisplayName="Custom Build Tool"/>
+  <ItemType Name="Object" DisplayName="Object"/>
+  <ItemType Name="Library" DisplayName="Library"/>
+
+  <ItemType Name="AndroidManifest" DisplayName="Android Manifest Tool" />
+  <ItemType Name="AndroidJava" DisplayName="Android Java Tool" />
+  <ItemType Name="AndroidDalvik" DisplayName="Android Dalvik Tool" />
+
+  <FileExtension Name=".c" ContentType="CppCode"/>
+  <FileExtension Name=".cc" ContentType="CppCode"/>
+  <FileExtension Name=".cpp" ContentType="CppCode"/>
+  <FileExtension Name=".cxx" ContentType="CppCode"/>
+  <FileExtension Name=".s" ContentType="CppCode"/>
+  <FileExtension Name=".asm" ContentType="CppCode"/>
+
+  <FileExtension Name=".h" ContentType="CppHeader"/>
+  <FileExtension Name=".hpp" ContentType="CppHeader"/>
+  <FileExtension Name=".hxx" ContentType="CppHeader"/>
+
+  <FileExtension Name="*.java" ContentType="AndroidJava" />
+  <FileExtension Name="*.jar" ContentType="AndroidJava" />
+  <FileExtension Name="*.dex" ContentType="AndroidDalvik" />
+
+  <FileExtension Name=".mk" ContentType="MakeFile"/>
+  <FileExtension Name=".txt" ContentType="Text"/>
+  <FileExtension Name=".xml" ContentType="XML"/>
+  <FileExtension Name=".o" ContentType="OBJ"/>
+  <FileExtension Name=".obj" ContentType="OBJ"/>
+  <FileExtension Name=".a" ContentType="LIB"/>
+  <FileExtension Name=".so" ContentType="LIB"/>
+  <FileExtension Name=".lib" ContentType="LIB"/>
+
+</ProjectSchemaDefinitions>

@@ -2,20 +2,13 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Diagnostics;
-using System.Text;
-using System.IO;
-using System.Reflection;
-using System.Resources;
-using System.Threading;
-
+using AndroidPlusPlus.Common;
 using Microsoft.Build.Framework;
-using Microsoft.Win32;
 using Microsoft.Build.Utilities;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -35,6 +28,60 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#if false
+    public static Dictionary<string, HashSet<ITaskItem>> ParseTrackerLogForCommandMapping(ICollection<ITaskItem> trackerLogs)
+    {
+      // 
+      // Parse TLog files (exported from Tracker.exe) to produce file modifications grouped by command.
+      // 
+
+      var commandLookup = new Dictionary<string, HashSet<ITaskItem>>();
+
+      if (trackerLogs?.Count == 0)
+      {
+        return commandLookup;
+      }
+
+      foreach (var log in trackerLogs)
+      {
+        using StreamReader reader = File.OpenText(log.ItemSpec);
+
+        string command = "";
+
+        for (string line = reader.ReadLine(); !string.IsNullOrEmpty(line); line = reader.ReadLine())
+        {
+          if (line.StartsWith("#Command:"))
+          {
+            command = line.Substring("#Command:".Length);
+
+            continue;
+          }
+
+          if (line.StartsWith("^"))
+          {
+            continue; //throw new InvalidOperationException($"Log ({log}) contains a rooted element: {line}");
+          }
+
+          if (!commandLookup.TryGetValue(command, out HashSet<ITaskItem> taskItems))
+          {
+            taskItems = new HashSet<ITaskItem>();
+          }
+
+          taskItems.Add(new TaskItem(PathUtils.NormalizePath(line)));
+
+          commandLookup[command] = taskItems;
+        }
+      }
+
+      return commandLookup;
+    }
+#endif
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#if false
     public static Dictionary<string, HashSet <string>> GetDependencyTableFromTLog (ITaskItem tlog)
     {
       // 
@@ -51,7 +98,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
       if (tlog == null)
       {
-        throw new ArgumentNullException ("tlog");
+        throw new ArgumentNullException (nameof(tlog));
       }
 
       string tlogFullPath = (!string.IsNullOrEmpty (tlog.GetMetadata ("FullPath")) ? tlog.GetMetadata ("FullPath") : Path.GetFullPath (tlog.ItemSpec));
@@ -68,7 +115,7 @@ namespace AndroidPlusPlus.MsBuild.Common
         return trackedDependencyTable; // Don't error as sometimes this is expected; full rebuilds for example.
       }
 
-      using (StreamReader reader = new StreamReader (tlogFullPath, Encoding.Unicode))
+      using (StreamReader reader = new StreamReader (tlogFullPath, Encoding.UTF8))
       {
         string trackedSourceLineData = reader.ReadLine ();
 
@@ -82,9 +129,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
             while (!string.IsNullOrWhiteSpace (trackedDependencyEntriesLineData))
             {
-              HashSet<string> dependentSources;
-
-              if (trackedDependencyTable.TryGetValue (trackedDependencyEntriesLineData, out dependentSources))
+              if (trackedDependencyTable.TryGetValue (trackedDependencyEntriesLineData, out HashSet<string> dependentSources))
               {
                 foreach (string source in trackedSources)
                 {
@@ -109,7 +154,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
       return trackedDependencyTable;
     }
-
+#endif
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

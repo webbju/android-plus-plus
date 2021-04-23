@@ -169,7 +169,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           m_codeContext = CLangDebuggeeCodeContext.GetCodeContextForLocation (m_debugger, m_locationAddress.ToString ());
 
-          m_documentContext = (m_codeContext != null) ? m_codeContext.DocumentContext : null;
+          m_documentContext = m_codeContext?.DocumentContext;
         }
       }
       catch (Exception e)
@@ -189,9 +189,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (!m_queriedArgumentsAndLocals)
         {
-          uint threadId;
-
-          LoggingUtils.RequireOk (m_thread.GetThreadId (out threadId));
+          LoggingUtils.RequireOk (m_thread.GetThreadId (out uint threadId));
 
           string command = string.Format ("-stack-list-variables --thread {0} --frame {1} --no-values", threadId, StackLevel);
 
@@ -263,9 +261,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (!m_queriedRegisters)
         {
-          uint threadId;
-
-          LoggingUtils.RequireOk (m_thread.GetThreadId (out threadId));
+          LoggingUtils.RequireOk(m_thread.GetThreadId(out uint threadId));
 
           string command = string.Format ("-data-list-register-values --thread {0} --frame {1} r", threadId, StackLevel);
 
@@ -492,17 +488,11 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           if (!string.IsNullOrEmpty (m_locationModule))
           {
-            IDebugProgram2 debugProgram;
+            LoggingUtils.RequireOk(m_thread.GetProgram(out IDebugProgram2 debugProgram));
 
-            IEnumDebugModules2 debugProgramModules;
+            LoggingUtils.RequireOk (debugProgram.EnumModules (out IEnumDebugModules2 debugProgramModules));
 
-            uint debugModulesCount = 0;
-
-            LoggingUtils.RequireOk (m_thread.GetProgram (out debugProgram));
-
-            LoggingUtils.RequireOk (debugProgram.EnumModules (out debugProgramModules));
-
-            LoggingUtils.RequireOk (debugProgramModules.GetCount (out debugModulesCount));
+            LoggingUtils.RequireOk (debugProgramModules.GetCount (out uint debugModulesCount));
 
             DebuggeeModule [] debugModules = new DebuggeeModule [debugModulesCount];
 
@@ -586,13 +576,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        IDebugDocumentContext2 documentContext;
-
         languageGuid = DebugEngineGuids.guidLanguageUnknown;
 
         languageName = DebugEngineGuids.GetLanguageName (languageGuid);
 
-        LoggingUtils.RequireOk (GetDocumentContext (out documentContext));
+        LoggingUtils.RequireOk (GetDocumentContext (out IDebugDocumentContext2 documentContext));
 
         if (documentContext != null)
         {

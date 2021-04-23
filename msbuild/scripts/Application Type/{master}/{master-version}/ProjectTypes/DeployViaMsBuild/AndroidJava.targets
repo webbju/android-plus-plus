@@ -1,0 +1,557 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <ItemGroup>
+    <PropertyPageSchema Include="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml" />
+  </ItemGroup>
+
+  <UsingTask TaskName="AndroidDex" AssemblyFile="$(ANDROID_PLUS_PLUS)\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
+
+  <UsingTask TaskName="AndroidProguard" AssemblyFile="$(ANDROID_PLUS_PLUS)\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
+
+  <UsingTask TaskName="JavaCompile" AssemblyFile="$(ANDROID_PLUS_PLUS)\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <!--
+    Evaluate Proguard installation version and directory.
+  -->
+
+  <PropertyGroup>
+
+    <ProguardRoot Condition="'$(ProguardRoot)' == ''">$(ANDROID_PLUS_PLUS)\contrib\proguard5.2.1</ProguardRoot>
+
+    <ProguardRoot Condition="'$(ProguardRoot)' == ''">$(AndroidSdkRoot)\tools\proguard</ProguardRoot>
+
+    <ProguardJar Condition="'$(ProguardJar)' == ''">$(ProguardRoot)\lib\proguard.jar</ProguardJar>
+
+    <ProguardRunnerToolPath Condition="'$(ProguardRunnerToolPath)' == ''">$(JavaHomeDir)\bin</ProguardRunnerToolPath>
+
+    <ProguardRunnerToolExe Condition="'$(ProguardRunnerToolExe)' == ''">java.exe</ProguardRunnerToolExe>
+
+    <DxJar Condition="'$(DxJar)' == ''">$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\lib\dx.jar</DxJar>
+
+    <DxRunnerToolPath Condition="'$(DxRunnerToolPath)' == ''">$(JavaHomeDir)\bin</DxRunnerToolPath>
+
+    <DxRunnerToolExe Condition="'$(DxRunnerToolExe)' == ''">java.exe</DxRunnerToolExe>
+
+  </PropertyGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target
+    Name="AndroidJava"
+    BeforeTargets="$(AndroidJavaBeforeTargets)"
+    AfterTargets="$(AndroidJavaAfterTargets)"
+    DependsOnTargets="$(ComputeAndroidJavaInputsTargets)">
+
+    <!--
+      Ensure requested output directories exist
+    -->
+
+    <MakeDir
+      Condition="'@(AndroidJava)' != ''"
+      Directories=";
+        %(AndroidJava.GeneratedClassFileOutputPath);
+        %(AndroidJava.GeneratedSourceFileOutputPath);
+        %(AndroidJava.GeneratedNativeHeaderOutputPath)"
+    />
+
+    <!--
+      Collate any registered .jar archives to be automatically referenced in the compilation class path.
+      - Segment class paths for 'Dalvik Executable' processing as some libraries are designed to skip this step.
+    -->
+
+    <ItemGroup Condition="'@(AndroidJava)' != ''">
+      <_ClassPathJars Include="@(AndroidJava)" Condition="'%(Extension)' == '.jar'" />
+      <_DexClassPathJars Include="@(AndroidJava)" Condition="('%(Extension)' == '.jar' AND '%(DisableDexExport)' == 'false')" />
+      <AndroidJava Remove="@(_ClassPathJars)" />
+      <AndroidJava>
+        <!-- Promote any property specified class path data so it may be DEX processed -->
+        <DexClassPaths>%(AndroidJava.ClassPaths);%(AndroidJava.DexClassPaths)</DexClassPaths>
+      </AndroidJava>
+      <AndroidJava>
+        <!-- Add any .jar files which have been added to the project to their respective class path category -->
+        <ClassPaths>@(_ClassPathJars->Metadata('FullPath')->Distinct());%(AndroidJava.ClassPaths)</ClassPaths>
+        <DexClassPaths>@(_DexClassPathJars->Metadata('FullPath')->Distinct());%(AndroidJava.DexClassPaths)</DexClassPaths>
+      </AndroidJava>
+    </ItemGroup>
+
+    <!--
+      Pre-process AndroidManifest generated sources first. This allows us to segment which outputs should be archived.
+    -->
+
+    <JavaCompile
+      BuildingInIDE="$(BuildingInsideVisualStudio)"
+      Condition="('@(AndroidJava)' != '' and '%(DisableJarExport)' == 'true')"
+      TrackerLogDirectory="$(TLogLocation)"
+      ToolPath="$(JavaHomeDir)\bin"
+      ToolExe="javac.exe"
+      SourceFiles="@(AndroidJava)">
+    </JavaCompile>
+
+    <!--
+      Compile all other explicit sources. Outputs a list of absolute locations to generated .class files to be archived.
+
+      When requested, archive the exported class files. This is only usually relevant for building library projects.
+      - Ignore any per-Manifest resource classes (i.e. R.class, R$styleable.class, etc) as these can cause DEX conflicts.
+    -->
+
+    <JavaCompile
+      BuildingInIDE="$(BuildingInsideVisualStudio)"
+      Condition="('@(AndroidJava)' != '' and '%(DisableJarExport)' != 'true')"
+      TrackerLogDirectory="$(TLogLocation)"
+      ToolPath="$(JavaHomeDir)\bin"
+      ToolExe="javac.exe"
+      SourceFiles="@(AndroidJava)">
+    </JavaCompile>
+
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target
+    Name="ComputeAndroidJavaOutput"
+    DependsOnTargets="AndroidJava">
+
+    <!--
+      Pass-through required 'class paths' to be DEXed.
+    -->
+
+    <ItemGroup>
+      <__AndroidJava_EvaluateDexClassPaths Include="%(AndroidJava.DexClassPaths)" />
+      <AndroidProguard Include="@(__AndroidJava_EvaluateDexClassPaths->Distinct())" />
+      <__AndroidJava_EvaluateDexClassPaths Remove="@(__AndroidJava_EvaluateDexClassPaths)"/>
+    </ItemGroup>
+
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target Name="CleanAndroidJava">
+
+    <ItemGroup>
+      <CleanAndroidJavaCacheFiles
+        Include="
+        $(IntDir)bin\classes\**\*.class;
+        $(IntDir)bin\classes\**\*.class.d;
+        $(IntDir)gen\**\*.class;
+        $(IntDir)gen\**\*.class.d;"
+      />
+    </ItemGroup>
+
+    <Delete Files="@(CleanAndroidJavaCacheFiles)" />
+
+    <RemoveDir Directories="%(CleanAndroidJavaCacheFiles.RelativeDir)" />
+
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <UsingTask TaskName="AndroidProguard" AssemblyFile="$(ANDROID_PLUS_PLUS)\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target
+    Name="_AndroidProguard"
+    DependsOnTargets="$(ComputeAndroidProguardInputsTargets)">
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target
+    Name="AndroidProguard"
+    Condition="'$(ConfigurationType)' == 'Application'"
+    BeforeTargets="$(AndroidProguardBeforeTargets)"
+    AfterTargets="$(AndroidProguardAfterTargets)"
+    DependsOnTargets="_AndroidProguard">
+
+    <!--
+      Run the entire application's code-base through ProGuard.
+      - Optimising at this late stage (whole program optimisation) is slightly more simplistic than doing it on a per-library basis.
+      - For ease of native development, obfuscation has been disabled.
+    -->
+
+    <ItemGroup>
+      <_ProGuardOutputLog Include="$(ProjectDir)$(IntDir)bin\proguard-output.txt"/>
+      <_ProGuardOutputSeeds Include="$(ProjectDir)$(IntDir)bin\proguard-seeds.txt"/>
+      <_ProGuardOutputUsage Include="$(ProjectDir)$(IntDir)bin\proguard-usage.txt"/>
+      <_ProGuardOutputMapping Include="$(ProjectDir)$(IntDir)bin\proguard-mapping.txt"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- Default configuration script(s). -->
+      <_CollatedProGuardProjectScripts
+        Include="$(AndroidSdkRoot)\tools\proguard\proguard-android.txt"
+      />
+      <!--
+      TODO: Resolve why using the optimised configuration massively breaks the ability to output to multiDex.
+      <_CollatedProGuardProjectScripts
+        Include="$(AndroidSdkRoot)\tools\proguard\proguard-android.txt"
+        Condition="'$(UseDebugLibraries)' == 'true'"
+      />
+      <_CollatedProGuardProjectScripts
+        Include="$(AndroidSdkRoot)\tools\proguard\proguard-android-optimize.txt"
+        Condition="'$(UseDebugLibraries)' != 'true'"
+      />
+      -->
+      <_CollatedProGuardProjectScripts
+        Include="$(AndroidSdkRoot)\tools\proguard\proguard-android-project.txt"
+        Condition="Exists('$(AndroidSdkRoot)\tools\proguard\proguard-android-project.txt')"
+      />
+      <!-- ProGuard configuration exported from processing the 'merged' AndroidManifest.xml -->
+      <_CollatedProGuardProjectScripts
+        Include="%(AndroidManifestMergedManifest.ProguardOptionsOutputFile)"
+        Condition="Exists('%(AndroidManifestMergedManifest.ProguardOptionsOutputFile)')"
+      />
+      <!-- Look alongside *this* project's AndroidManfiest.xml files for ProGuard scripts. -->
+      <_CollatedProGuardProjectScripts
+        Include="@(_ProjectAndroidManifests->'%(RootDir)%(Directory)proguard.txt')"
+        Condition="Exists('%(RootDir)%(Directory)proguard.txt')"
+      />
+      <_CollatedProGuardProjectScripts
+        Include="@(_ProjectAndroidManifests->'%(RootDir)%(Directory)proguard-project.txt')"
+        Condition="Exists('%(RootDir)%(Directory)proguard-project.txt')"
+      />
+      <!-- Look alongside *included* (third-party) projects' AndroidManifest.xml files for ProGuard scripts. -->
+      <_CollatedProGuardProjectScripts
+        Include="@(_DependencyAndroidManifests->'%(RootDir)%(Directory)proguard.txt')"
+        Condition="Exists('%(RootDir)%(Directory)proguard.txt')"
+      />
+      <_CollatedProGuardProjectScripts
+        Include="@(_DependencyAndroidManifests->'%(RootDir)%(Directory)proguard-project.txt')"
+        Condition="Exists('%(RootDir)%(Directory)proguard-project.txt')"
+      />
+      <!-- Always include support for ProGuard-specific annotations. -->
+      <_CollatedProGuardProjectScripts
+        Include="$(ProguardPlatformRoot)\examples\annotations\lib\annotations.pro"
+        Condition="Exists('$(ProguardPlatformRoot)\examples\annotations\lib\annotations.pro')"
+      />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <!-- Characters required to construct command file -->
+      <Semicolon>%3B</Semicolon>
+      <!-- Custom command file options and flattened arguments -->
+      <_ProGuardCommandFile>$(ProjectDir)$(IntDir)bin\proguard-commands.txt</_ProGuardCommandFile>
+      <_ProGuardInJars>@(AndroidProguard->Distinct()->'-injars &quot;%(FullPath)&quot;(!META-INF/**.*,**.class,!**.class.d)')</_ProGuardInJars>
+      <_ProGuardCommandPrintSeeds>@(_ProGuardOutputSeeds->Distinct()->'-printseeds &quot;%(FullPath)&quot;')</_ProGuardCommandPrintSeeds>
+      <_ProGuardCommandPrintUsage>@(_ProGuardOutputUsage->Distinct()->'-printusage &quot;%(FullPath)&quot;')</_ProGuardCommandPrintUsage>
+      <_ProGuardCommandPrintMapping>@(_ProGuardOutputMapping->Distinct()->'-printmapping &quot;%(FullPath)&quot;')</_ProGuardCommandPrintMapping>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+      Condition="'$(_ProGuardCommandFile)' != ''"
+      File="$(_ProGuardCommandFile)"
+      WriteOnlyWhenDifferent="true"
+      Overwrite="true"
+      Lines=";
+# Output a collection of reports to help debugging.;
+$(_ProGuardCommandPrintSeeds);
+$(_ProGuardCommandPrintUsage);
+$(_ProGuardCommandPrintMapping);
+;
+# Explicitly don't obfuscate classes and methods.;
+# Doing so means that probing for class members\fields will fail on the native side.;
+-dontobfuscate;
+;
+# Specifies not to preverify the processed class files.;
+# - See: http://proguard.sourceforge.net/manual/usage.html;
+# - &quot;Only when eventually targeting Android, it is not necessary, so you can then switch it off to reduce the processing time a bit.&quot;;
+-dontpreverify;
+;
+# Skip all warnings, as we've already compiled all the sources via AndroidJava anyway.;
+# Most of the warnings produced refer to unknown classes, which are present on device but not in libraries.;
+# TODO: It might be wise to have this toggled. Especially considering this script now supports importing external proguard configs.;
+-ignorewarnings;
+;
+# Retain all classes with native members (http://proguard.sourceforge.net/manual/examples.html#native);
+# TODO: This should have 'includedescriptorclasses', but this isn't supported in ProGuard 4.7.;
+-keepclasseswithmembers class * {;
+  native &lt;methods&gt;$(Semicolon);
+};
+-keepclasseswithmembernames class * {;
+  native &lt;methods&gt;$(Semicolon);
+};
+;
+# Retain all default android.annotation attributes.;
+# This prevents projects failing when all classes have been stripped during the shrink process.;
+-keep public class android.annotation.** {;
+    public *$(Semicolon);
+};
+-dontnote android.annotation.**;"
+    />
+
+    <ItemGroup>
+      <AndroidProguardInJars Include="@(AndroidProguard->Distinct())">
+        <FileFilters>(!META-INF/**.*,**.class,!**.class.d)</FileFilters>
+      </AndroidProguardInJars>
+      <AndroidProguardOutJars Include="$(ProjectDir)$(IntDir)bin\proguard-optimised.jar" />
+      <AndroidProguardIncludeScripts Include="$(_ProGuardCommandFile);@(_CollatedProGuardProjectScripts->Distinct())">
+        <LibraryJars>$(AndroidSdkRoot)\platforms\android-$(AndroidSdkLevel)\android.jar</LibraryJars>
+        <InJars>@(AndroidProguardInJars)</InJars>
+        <OutJars>@(AndroidProguardOutJars)</OutJars>
+      </AndroidProguardIncludeScripts>
+    </ItemGroup>
+
+    <!-- Create an empty output jar. -->
+    <Exec Condition="!Exists('@(AndroidProguardOutJars)')" Command="REM.&gt;&quot;@(AndroidProguardOutJars)&quot;" />
+
+    <AndroidProguard
+      BuildingInIDE="$(BuildingInsideVisualStudio)"
+      Condition="'@(AndroidProguardIncludeScripts)' != ''"
+      TrackerLogDirectory="$(TLogLocation)"
+      ToolPath="$(ProguardRunnerToolPath)"
+      ToolExe="$(ProguardRunnerToolExe)"
+      JvmJar="$(ProguardJar)"
+      IncludeScripts="@(AndroidProguardIncludeScripts)"
+      LibraryJars="%(AndroidProguardIncludeScripts.LibraryJars)"
+      InJars="%(AndroidProguardIncludeScripts.InJars)"
+      OutJars="%(AndroidProguardIncludeScripts.OutJars)">
+    </AndroidProguard>
+
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target
+    Name="ComputeAndroidProguardOutput"
+    DependsOnTargets="AndroidProguard">
+
+    <ItemGroup>
+      <AndroidDalvik Include="@(AndroidProguardOutJars)"/>
+    </ItemGroup>
+
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target Name="CleanAndroidProguard">
+
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target
+    Name="_AndroidDalvik"
+    DependsOnTargets="$(ComputeAndroidDalvikInputsTargets);ComputeAndroidProguardOutput;">
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target
+    Name="AndroidDalvik"
+    Condition="'$(ConfigurationType)' == 'Application'"
+    BeforeTargets="$(AndroidDalvikBeforeTargets)"
+    AfterTargets="$(AndroidDalvikAfterTargets)"
+    DependsOnTargets="_AndroidDalvik">
+
+    <!--
+      The following is a work-around for a hard-limit of Java methods in the Dalvik Executable (DEX) format.
+      - Take the whole program optimised output and process this for a list of activities and native classes.
+      - Each of the flagged classes will need be prioritised into the first (primary) 'classes.dex' file.
+      - Other classes will either be packed into 'classes.dex', or overflow into 'classes#.dex' alternatives.
+      - There is a set of support library functionality to help with loading these files at runtime (Android L supports multi-dex natively).
+
+      More information: https://developer.android.com/tools/building/multidex.html
+    -->
+
+    <PropertyGroup>
+      <_DexOutputPath>$(ProjectDir)$(IntDir)bin\dex\</_DexOutputPath>
+      <!-- MultiDex script configuration -->
+      <_MainDexInputJars>@(AndroidDalvik->Distinct()->'&quot;%(FullPath)&quot;(!META-INF/**.*,**.class,!**.class.d)')</_MainDexInputJars>
+      <_MainDexScriptOutputJar>$(ProjectDir)$(IntDir)bin\mainDexClasses.tmp.jar</_MainDexScriptOutputJar>
+      <_MainDexScriptOutputMainList>$(ProjectDir)$(IntDir)bin\mainDexClasses.keep</_MainDexScriptOutputMainList>
+      <_MainDexClassPathArgument>@(AndroidDalvik->Distinct())</_MainDexClassPathArgument>
+      <_MainDexScriptCommandFile>$(ProjectDir)$(IntDir)bin\mainDex-commands.txt</_MainDexScriptCommandFile>
+      <_MainDexOutputLog>$(ProjectDir)$(IntDir)bin\mainDex-output.txt</_MainDexOutputLog>
+      <!-- and because Google love moving things for no reason -->
+      <_MainDexScriptRules>$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\multidex\mainDexClasses.rules</_MainDexScriptRules>
+      <_MainDexShrunkAndroidJar>$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\multidex\shrinkedAndroid.jar</_MainDexShrunkAndroidJar>
+      <_MainDexScriptRules Condition="!Exists('$_MainDexScriptRules)')">$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\mainDexClasses.rules</_MainDexScriptRules>
+      <_MainDexShrunkAndroidJar Condition="!Exists('$_MainDexShrunkAndroidJar)')">$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\lib\shrinkedAndroid.jar</_MainDexShrunkAndroidJar>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+      Condition="'$(_MainDexScriptCommandFile)' != ''"
+      File="$(_MainDexScriptCommandFile)"
+      WriteOnlyWhenDifferent="true"
+      Overwrite="true"
+      Lines=";
+# Configuration options copied from $(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\multidex\mainDexClasses.bat
+-dontwarn
+-forceprocessing
+-dontoptimize
+-dontobfuscate
+-dontpreverify
+#
+# Retain all classes with native members (http://proguard.sourceforge.net/manual/examples.html#native)
+# TODO: This should have 'includedescriptorclasses', but this isn't supported in ProGuard 4.7.
+#
+-keepclasseswithmembers class * {
+  native &lt;methods&gt;$(Semicolon)
+}
+-keepclasseswithmembernames class * {
+  native &lt;methods&gt;$(Semicolon)
+}"
+    />
+
+    <!-- Create an empty output jar. -->
+    <Exec
+      Condition="!Exists('$(_MainDexScriptOutputJar)')"
+      Command="REM.&gt;&quot;$(_MainDexScriptOutputJar)&quot;"
+    />
+
+    <!-- Run ProGuard. -->
+    <ItemGroup>
+      <AndroidDavlikMainDexScripts Include="$(_MainDexScriptRules);$(_MainDexScriptCommandFile)">
+          <LibraryJars>$(_MainDexShrunkAndroidJar)</LibraryJars>
+          <InJars>@(AndroidDalvik->Distinct())</InJars>
+          <OutJars>$(_MainDexScriptOutputJar)</OutJars>
+      </AndroidDavlikMainDexScripts>
+    </ItemGroup>
+
+    <AndroidProguard
+      BuildingInIDE="$(BuildingInsideVisualStudio)"
+      Condition="'@(AndroidDavlikMainDexScripts)' != ''"
+      TrackerLogDirectory="$(TLogLocation)"
+      MinimalRebuildFromTracking="true"
+      ToolPath="$(ProguardRunnerToolPath)"
+      ToolExe="$(ProguardRunnerToolExe)"
+      JvmJar="$(ProguardJar)"
+      IncludeScripts="@(AndroidDavlikMainDexScripts)"
+      LibraryJars="%(AndroidDavlikMainDexScripts.LibraryJars)"
+      InJars="%(AndroidDavlikMainDexScripts.InJars)"
+      OutJars="%(AndroidDavlikMainDexScripts.OutJars)">
+      <Output TaskParameter="OutputFiles" ItemName="_AndroidProguardOutputFiles" />
+      <Output TaskParameter="SkippedExecution" PropertyName="AndroidProguardSkippedExecution" />
+    </AndroidProguard>
+
+    <!-- Run Multi-dex processing. -->
+    <Exec
+      Condition="'@(AndroidDalvik)' != ''"
+      Command="&quot;$(JavaHomeDir)\bin\java.exe&quot; -Djava.ext.dirs=&quot;$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\lib&quot; com.android.multidex.ClassReferenceListBuilder &quot;$(_MainDexScriptOutputJar)&quot; &quot;$(_MainDexClassPathArgument)&quot; 1&gt;&quot;$(_MainDexScriptOutputMainList)&quot;"
+    />
+
+    <!--
+      Configure output path, and ensure requested output directories exist.
+    -->
+
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(_DexOutputPath)))" />
+
+    <!--
+      Process input class-paths and generate a Dalvik executable (i.e. classes.dex)
+    -->
+
+    <AndroidDex
+      BuildingInIDE="$(BuildingInsideVisualStudio)"
+      Condition="'@(AndroidDalvik)' != ''"
+      TrackerLogDirectory="$(TLogLocation)"
+      MinimalRebuildFromTracking="true"
+      ToolPath="$(DxRunnerToolPath)"
+      ToolExe="$(DxRunnerToolExe)"
+      JvmJar="$(DxJar)"
+      CreateDex="true"
+      MultiDex="true"
+      MultiDexMainList="$(_MainDexScriptOutputMainList)"
+      OutputPath="$(_DexOutputPath)"
+      SourceFiles="@(AndroidDalvik)">
+      <Output TaskParameter="OutputFiles" ItemName="AndroidDalvikOutputFiles" />
+      <Output TaskParameter="SkippedExecution" PropertyName="AndroidDalvikSkippedExecution" />
+    </AndroidDex>
+
+    <ItemGroup>
+      <!-- Ensure DEX output is referenced even when builds are skipped due to minimal rebuilds. -->
+      <AndroidDalvikOutputFiles Condition="'$(AndroidDalvikSkippedExecution)' == 'true'" Include="$(_DexOutputFile)" />
+    </ItemGroup>
+
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target
+    Name="ComputeAndroidDalvikOutput"
+    DependsOnTargets="AndroidDalvik">
+
+    <ItemGroup>
+      <AndroidApk Include="@(AndroidDalvikOutputFiles)" />
+    </ItemGroup>
+
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target Name="CleanAndroidDalvik">
+
+    <ItemGroup>
+      <CleanAndroidDalvikCache
+        Include="
+        $(IntDir)bin\**\*.dex;
+        $(IntDir)bin\**\*.dex.d;"
+      />
+    </ItemGroup>
+
+    <Delete Files="@(CleanAndroidDalvikCache)" />
+
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+
+</Project>

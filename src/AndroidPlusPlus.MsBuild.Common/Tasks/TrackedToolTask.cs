@@ -2,21 +2,19 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Diagnostics;
-using System.Text;
-using System.IO;
-using System.Reflection;
-using System.Resources;
-using System.Threading;
-
-using Microsoft.Build.Framework;
-using Microsoft.Win32;
-using Microsoft.Build.Utilities;
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.MsBuild.Common.Attributes;
+using AndroidPlusPlus.MsBuild.Common.Tasks;
+using Microsoft.Build.Framework;
+using Microsoft.Build.Framework.XamlTypes;
+using Microsoft.Build.Utilities;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Resources;
+using System.Text;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -25,27 +23,15 @@ using AndroidPlusPlus.Common;
 namespace AndroidPlusPlus.MsBuild.Common
 {
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  public abstract class TrackedToolTask : ToolTask
+  public class TrackedToolTask : SwitchToolTask
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected XamlParser m_parsedProperties;
-
-    protected Dictionary<string, List<ITaskItem>> m_commandBuffer = new Dictionary<string, List<ITaskItem>> ();
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public TrackedToolTask (ResourceManager taskResources)
-      : base (taskResources)
+    public TrackedToolTask(ResourceManager taskResources)
+      : base(taskResources)
     {
     }
 
@@ -53,51 +39,79 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    [Required]
-    public ITaskItem [] Sources { get; set; }
+    public ITaskItem[] InputFiles { get; set; }
+
+    public ITaskItem[] OutOfDateInputFiles { get; set; }
 
     [Required]
-    public bool OutputCommandLine { get; set; }
-
-    [Required]
-    public string PropertiesFile { get; set; }
-
-    [Required]
-    public string TrackerLogDirectory { get; set; }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    [SwitchString(Subtype = "folder", Description = "Tracker log directory.", IsRequired = true, IncludeInCommandLine = false)]
+    public ITaskItem TrackerLogDirectory { get; set; }
 
     [Output]
-    public ITaskItem [] OutputFiles { get; set; }
+    public ITaskItem[] OutputFiles { get; set; }
 
     [Output]
     public bool SkippedExecution { get; set; }
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public bool OutputCommandLine { get; set; } = false;
+
+    public bool MinimalRebuildFromTracking { get; set; }
+
+    public bool TrackFileAccess { get; set; } = true;
+
+    public string PropertiesFile { get; set; }
 
     public bool BuildingInIDE { get; set; }
 
-    public int ProcessorNumber { get; set; }
-
-    public bool MultiProcessorCompilation { get; set; }
-
-    public ITaskItem [] ExcludedInputPaths { get; set; }
-
-    public ITaskItem TLogCommandFile { get; set; }
-
-    public ITaskItem [] TLogReadFiles { get; set; }
-
-    public ITaskItem [] TLogWriteFiles { get; set; }
-
     protected CanonicalTrackedInputFiles TrackedInputFiles { get; set; }
 
-    public bool TrackFileAccess { get; set; }
+    protected CanonicalTrackedOutputFiles TrackedOutputFiles { get; set; }
 
-    public bool MinimalRebuildFromTracking { get; set; }
+    protected override MessageImportance StandardOutputLoggingImportance => MessageImportance.Normal;
+
+    protected override Encoding StandardOutputEncoding => Encoding.UTF8;
+
+    protected override Encoding ResponseFileEncoding => new UTF8Encoding(false);
+
+    protected override string ToolName => GetType().Name;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override bool ValidateParameters()
+    {
+      bool validParameters = base.ValidateParameters();
+
+      if (validParameters)
+      {
+        try
+        {
+          if (InputFiles == null || InputFiles.Length == 0)
+          {
+            Log.LogError($"Required parameter {nameof(InputFiles)} is {(InputFiles == null ? "(null)" : "empty")}.");
+
+            validParameters = false;
+          }
+
+          OutOfDateInputFiles = Array.Empty<ITaskItem>();
+
+          OutputFiles = Array.Empty<ITaskItem>();
+        }
+        catch (Exception e)
+        {
+          Log.LogWarningFromException(e, true);
+
+          return false;
+        }
+      }
+
+      return validParameters;
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -121,465 +135,286 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public override bool Execute ()
-    {
-      try
-      {
-        if (Setup ())
-        {
-          return base.Execute ();
-        }
-      }
-      catch (Exception e)
-      {
-        Log.LogErrorFromException (e, true);
-      }
-
-      return false;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     protected override int ExecuteTool (string pathToTool, string responseFileCommands, string commandLineCommands)
     {
-      int retCode = -1;
+      int exitCode = -1;
 
       try
       {
-        // 
-        // Construct list of target output files for all valid sources.
-        // 
-
-        HashSet<string> outputFiles = new HashSet<string> ();
-
-        foreach (ITaskItem source in Sources)
-        {
-          if (!string.IsNullOrWhiteSpace (source.GetMetadata ("OutputFile")))
-          {
-            if (!outputFiles.Contains (source.GetMetadata ("OutputFile")))
-            {
-              outputFiles.Add (source.GetMetadata ("OutputFile"));
-            }
-          }
-
-          if (!string.IsNullOrWhiteSpace (source.GetMetadata ("ObjectFileName")))
-          {
-            if (!outputFiles.Contains (source.GetMetadata ("ObjectFileName")))
-            {
-              outputFiles.Add (source.GetMetadata ("ObjectFileName"));
-            }
-          }
-
-          if (!string.IsNullOrWhiteSpace (source.GetMetadata ("OutputFiles")))
-          {
-            string [] files = source.GetMetadata ("OutputFiles").Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (string file in files)
-            {
-              if (!outputFiles.Contains (file))
-              {
-                outputFiles.Add (file);
-              }
-            }
-          }
-        }
-
-        // 
-        // Convert all output file paths to exportable items.
-        // 
-
-        List<ITaskItem> outputFileItems = new List<ITaskItem> ();
-
-        foreach (string outputFile in outputFiles)
-        {
-          outputFileItems.Add (new TaskItem (Path.GetFullPath (outputFile)));
-        }
-
-        OutputFiles = outputFileItems.ToArray ();
+        exitCode = TrackedExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
       }
       catch (Exception e)
       {
         Log.LogErrorFromException (e, true);
-      }
-
-      try
-      {
-        m_commandBuffer = GenerateCommandLineBuffer (Sources);
-
-        retCode = TrackedExecuteTool (pathToTool, responseFileCommands, commandLineCommands);
-      }
-      catch (Exception e)
-      {
-        Log.LogErrorFromException (e, true);
-
-        retCode = -1;
       }
       finally
       {
-#if DEBUG
-        foreach (ITaskItem outputFile in OutputFiles)
-        {
-          Log.LogMessageFromText (string.Format ("[{0}] --> Outputs: '{1}'", ToolName, outputFile), MessageImportance.Low);
-        }
-#endif
-
-        if (/*(retCode == 0) &&*/ TrackFileAccess)
-        {
-          OutputWriteTLog (m_commandBuffer, OutputFiles);
-
-          OutputReadTLog (m_commandBuffer, Sources);
-
-          OutputCommandTLog (m_commandBuffer);
-        }
+        exitCode = PostExecuteTool(exitCode, responseFileCommands, commandLineCommands);
       }
 
-      return retCode;
+      return exitCode;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected virtual int TrackedExecuteTool (string pathToTool, string responseFileCommands, string commandLineCommands)
+    protected virtual int PostExecuteTool(int exitCode, string responseFileCommands, string commandLineCommands)
     {
-      if (!File.Exists (pathToTool))
-      {
-        Log.LogError (string.Format ("[{0}] Couldn't locate target tool: {1}", ToolName, pathToTool));
+      TrackedOutputFiles = new CanonicalTrackedOutputFiles(this, TLogWriteFiles);
 
-        return -1;
+      TrackedInputFiles = new CanonicalTrackedInputFiles(this, TLogReadFiles, OutOfDateInputFiles, ExcludedInputPaths, TrackedOutputFiles, true, false);
+
+      switch (exitCode)
+      {
+        case 0:
+          {
+            //
+            // Successful build. Begin by collating known output files. (We have a manual workaround for instances where TrackedOutputFiles can't find rooted output.)
+            //
+
+            OutputFiles = TrackedOutputFiles.OutputsForSource(OutOfDateInputFiles);
+
+            /*if (OutputFiles?.Length == 0)
+            {
+              var fileWrites = TrackerUtilities.ParseTrackerLogForCommandMapping(TrackedDependencies.ExpandWildcards(TLogWriteFiles));
+
+              var writtenFiles = new HashSet<ITaskItem>();
+
+              foreach (var keypair in fileWrites)
+              {
+                writtenFiles.UnionWith(keypair.Value);
+              }
+
+              OutputFiles = writtenFiles.ToArray();
+            }*/
+
+            if (OutputFiles != null)
+            {
+              foreach (var outfile in OutputFiles)
+              {
+                outfile.ItemSpec = PathUtils.GetExactPathName(outfile.ItemSpec.ToLowerInvariant());
+              }
+            }
+
+            //
+            // Remove any instances where "input files" (sources which existed before this build) are shown as read/touched/written.
+            //
+
+            TrackedOutputFiles.RemoveDependenciesFromEntryIfMissing(OutOfDateInputFiles);
+
+            TrackedInputFiles.RemoveDependenciesFromEntryIfMissing(OutOfDateInputFiles);
+
+            //
+            // Crunch the logs. This will erradicate un-rooted tracking data.
+            //
+
+            TrackedOutputFiles.SaveTlog();
+
+            TrackedInputFiles.SaveTlog();
+
+            break;
+          }
+
+        default:
+          {
+            //
+            // Task failed. Remove any potentially processed file outputs to refresh clean state.
+            //
+
+            TrackedOutputFiles.RemoveEntriesForSource(OutOfDateInputFiles);
+
+            TrackedInputFiles.RemoveEntriesForSource(OutOfDateInputFiles);
+
+            TrackedOutputFiles.SaveTlog();
+
+            TrackedInputFiles.SaveTlog();
+
+            break;
+          }
       }
 
-      int returnCode = 0;
+      if (TLogCommandFiles != null)
+      {
+        OutputCommandTLog(TLogCommandFiles[0], responseFileCommands, commandLineCommands);
+      }
 
-      long numberOfThreads = (MultiProcessorCompilation && ProcessorNumber > 1) ? ProcessorNumber : 1;
+      return exitCode;
+    }
 
-      long numberOfActiveThreads = 0;
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-      Log.LogMessageFromText (string.Format ("[{0}] --> Preparing to execute with {1} thread(s).", ToolName, numberOfThreads), MessageImportance.Low);
+    protected virtual int TrackedExecuteTool(string pathToTool, string responseFileCommands, string commandLineCommands)
+    {
+      //
+      // Thread body. Generate required command line and launch tool.
+      //
 
-      // 
-      // Concurrency of multiple compilation jobs is achieved by creating an OS semaphore for restricting instances (across multiple MSBuild agents).
-      // 
-
-      Semaphore threadJobSemaphore;
+      int exitCode = -1;
 
       try
       {
-        threadJobSemaphore = Semaphore.OpenExisting (ToolName);
-      }
-      catch (WaitHandleCannotBeOpenedException)
-      {
-        threadJobSemaphore = new Semaphore ((int) numberOfThreads, (int) numberOfThreads, ToolName);
-      }
+        //
+        // If response files arguments are used/supported, migrate shared flags to a file and strip them from the command line.
+        //
 
-      Dictionary<string, int> threadJobQueue = new Dictionary<string, int> ();
+        var commandLineSwitchesBuffer = new StringBuilder(commandLineCommands);
 
-      foreach (KeyValuePair<string, List<ITaskItem>> commandKeyPair in m_commandBuffer)
-      {
-        bool gotSemaphore = false;
+        var responseFileSwitchesBuffer = new StringBuilder(responseFileCommands);
 
-        try
+        if (responseFileSwitchesBuffer.Length > 0)
         {
-          while (!gotSemaphore)
-          {
-            if (ToolCanceled.WaitOne (0))
-            {
-              returnCode = -1;
-
-              break;
-            }
-
-            gotSemaphore = threadJobSemaphore.WaitOne (0);
-
-            if (!gotSemaphore)
-            {
-              Thread.Sleep (10);
-            }
-          }
-
-          if (gotSemaphore)
-          {
-            lock (threadJobQueue)
-            {
-              threadJobQueue.Add (commandKeyPair.Key, int.MinValue);
-            }
-
-            Interlocked.Increment (ref numberOfActiveThreads);
-
-            new Thread (delegate (object arg)
-            {
-              // 
-              // Thread body. Generate required command line and launch tool.
-              // 
-
-              int threadExitCode = -1;
-
-              KeyValuePair<string, List<ITaskItem>> threadKeyPair = (KeyValuePair<string, List<ITaskItem>>) arg;
-
-              try
-              {
-                // 
-                // Append source files to each command in the buffer. Clear any matching response file commands so they can setup via a new process.
-                // 
-
-                StringBuilder bufferedCommandWithFiles = new StringBuilder ();
-
-                bufferedCommandWithFiles.Append (threadKeyPair.Key);
-
-                if (!string.IsNullOrWhiteSpace (responseFileCommands))
-                {
-                  bufferedCommandWithFiles.Replace (responseFileCommands, "");
-                }
-
-                foreach (ITaskItem threadSource in threadKeyPair.Value)
-                {
-                  Log.LogMessageFromText (string.Format ("[{0}] {1}", ToolName, Path.GetFileName (threadSource.GetMetadata ("Identity") ?? threadSource.ToString ())), MessageImportance.High);
-
-                  if (AppendSourcesToCommandLine)
-                  {
-                    string threadSourceFilePath = Path.GetFullPath (threadSource.GetMetadata ("FullPath") ?? threadSource.ToString ());
-
-                    bufferedCommandWithFiles.Append (" " + PathUtils.SantiseWindowsPath (threadSourceFilePath));
-                  }
-                }
-
-                if (OutputCommandLine)
-                {
-                  Log.LogMessageFromText (string.Format ("[{0}] Tool: {1}", ToolName, pathToTool), MessageImportance.High);
-
-                  Log.LogMessageFromText (string.Format ("[{0}] Command line: {1}", ToolName, bufferedCommandWithFiles.ToString ()), MessageImportance.High);
-
-                  Log.LogMessageFromText (string.Format ("[{0}] Response file commands: {1}", ToolName, responseFileCommands), MessageImportance.High);
-                }
-                
-                // 
-                // Create per-file response file cache. Use a customisable switch (e.g. '@').
-                // 
-                
-                if (!string.IsNullOrWhiteSpace (responseFileCommands))
-                {
-                  string responseFile = Path.Combine (TrackerLogDirectory, string.Format ("{0}_{1}.rcf", ToolName, Guid.NewGuid ().ToString ()));
-
-                  responseFile = Path.GetFullPath (responseFile);
-
-                  using (StreamWriter writer = new StreamWriter (responseFile, false, Encoding.ASCII))
-                  {
-                    writer.WriteLine (responseFileCommands);
-
-                    writer.Flush ();
-                  }
-
-                  string responseFileSwitch = GetResponseFileSwitch (responseFile);
-
-                  if (string.IsNullOrWhiteSpace (responseFileSwitch))
-                  {
-                    throw new InvalidOperationException ("Invalid or empty response file switch.");
-                  }
-
-                  responseFileCommands = responseFileSwitch;
-                }
-
-                if (OutputCommandLine)
-                {
-                  Log.LogMessageFromText (string.Format ("[{0}] Response file switch: {1}", ToolName, responseFileCommands), MessageImportance.High);
-                }
-
-                using (Process trackedProcess = new Process ())
-                {
-                  trackedProcess.StartInfo = base.GetProcessStartInfo (pathToTool, bufferedCommandWithFiles.ToString (), responseFileCommands ?? string.Empty);
-
-                  trackedProcess.StartInfo.CreateNoWindow = true;
-
-                  trackedProcess.StartInfo.UseShellExecute = false;
-
-                  trackedProcess.StartInfo.ErrorDialog = false;
-
-                  trackedProcess.StartInfo.RedirectStandardOutput = true;
-
-                  trackedProcess.StartInfo.RedirectStandardError = true;
-
-                  trackedProcess.OutputDataReceived += delegate (object sender, DataReceivedEventArgs args)
-                  {
-                    try
-                    {
-                      if (!string.IsNullOrWhiteSpace (args.Data))
-                      {
-                        TrackedExecuteToolOutput (threadKeyPair, args.Data);
-                      }
-                    }
-                    catch (Exception e)
-                    {
-                      Log.LogErrorFromException (e, true);
-                    }
-                  };
-
-                  trackedProcess.ErrorDataReceived += delegate (object sender, DataReceivedEventArgs args)
-                  {
-                    try
-                    {
-                      if (!string.IsNullOrWhiteSpace (args.Data))
-                      {
-                        TrackedExecuteToolOutput (threadKeyPair, args.Data);
-                      }
-                    }
-                    catch (Exception e)
-                    {
-                      Log.LogErrorFromException (e, true);
-                    }
-                  };
-
-                  trackedProcess.EnableRaisingEvents = true;
-
-                  if (!trackedProcess.Start ())
-                  {
-                    throw new InvalidOperationException ("Could not start tracked child process.");
-                  }
-
-                  trackedProcess.BeginOutputReadLine ();
-
-                  trackedProcess.BeginErrorReadLine ();
-
-                  trackedProcess.WaitForExit ();
-
-                  threadExitCode = trackedProcess.ExitCode;
-                }
-              }
-              catch (Exception e)
-              {
-                Log.LogErrorFromException (e, true);
-
-                threadExitCode = -1;
-              }
-              finally
-              {
-                try
-                {
-                  lock (threadJobQueue)
-                  {
-                    threadJobQueue [threadKeyPair.Key] = threadExitCode;
-                  }
-
-                  Interlocked.Decrement (ref numberOfActiveThreads);
-
-                  threadJobSemaphore.Release ();
-                }
-                catch (Exception e)
-                {
-                  Log.LogErrorFromException (e, true);
-                }
-              }
-            }).Start (commandKeyPair);
-          }
+          commandLineSwitchesBuffer.Replace(responseFileSwitchesBuffer.ToString(), "");
         }
-        catch (Exception e)
-        {
-          Log.LogErrorFromException (e, true);
-
-          returnCode = -1;
-        }
-
-        if (returnCode != 0)
-        {
-          break;
-        }
-      }
-
-      //
-      // Wait for active threads to complete, if the task wasn't terminated.
-      //
-
-      try
-      {
-        if (returnCode == 0)
-        {
-          while (Interlocked.Read (ref numberOfActiveThreads) > 0)
-          {
-            if (ToolCanceled.WaitOne (0))
-            {
-              returnCode = -1;
-
-              break;
-            }
-
-            Thread.Sleep (10);
-          }
-        }
-
-        if (returnCode == 0)
-        {
-          foreach (KeyValuePair<string, int> job in threadJobQueue)
-          {
-            if (job.Value != 0)
-            {
-              returnCode = job.Value;
-            }
-          }
-        }
-      }
-      catch (System.Exception ex)
-      {
-        Log.LogErrorFromException (ex, true);
-
-        returnCode = -1;
-      }
-
-      return returnCode;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected virtual void TrackedExecuteToolOutput (KeyValuePair<string, List<ITaskItem>> commandAndSourceFiles, string singleLine)
-    {
-      LogEventsFromTextOutput (string.Format ("[{0}] {1}", ToolName, singleLine), MessageImportance.High);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected virtual bool Setup ()
-    {
-      SkippedExecution = false;
-
-      if (!ValidateParameters ())
-      {
-        return false;
-      }
-
-      if (TrackFileAccess || MinimalRebuildFromTracking)
-      {
-        SetupTrackerLogPaths ();
-      }
-
-      if (ForcedRebuildRequired () || !MinimalRebuildFromTracking)
-      {
-        // 
-        // Check there are actually sources to build, otherwise we can skip execution.
-        // 
-
-        if ((Sources == null) || Sources.Length == 0)
-        {
-          SkippedExecution = true;
-        }
-      }
 
 #if DEBUG
-      for (int i = 0; i < Sources.Length; ++i)
-      {
-        Log.LogMessageFromText (string.Format ("[{0}] --> Sources: [{1}] {2}", ToolName, i, Sources [i].ToString ()), MessageImportance.Low);
+        Log.LogMessageFromText($"[{ToolName}] Tool: {pathToTool}", MessageImportance.High);
 
-        foreach (string metadataName in Sources [i].MetadataNames)
-        {
-          Log.LogMessageFromText (string.Format ("[{0}] ----> Metadata: '{1}' = '{2}' ", ToolName, metadataName, Sources [i].GetMetadata (metadataName)), MessageImportance.Low);
-        }
-      }
+        Log.LogMessageFromText($"[{ToolName}] Command line: {commandLineSwitchesBuffer}", MessageImportance.High);
+
+        Log.LogMessageFromText($"[{ToolName}] Response file commands: {responseFileSwitchesBuffer}", MessageImportance.High);
 #endif
 
-      return true;
+        var trackerToolPath = FileTracker.GetTrackerPath(ExecutableType.Native64Bit); // @"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\Tracker.exe";
+
+        var trackerCommandLineSwitches = FileTracker.TrackerCommandArguments(pathToTool, commandLineSwitchesBuffer.ToString());
+
+        if (!string.IsNullOrEmpty(trackerToolPath))
+        {
+          var trackerRootingMarker = OutOfDateInputFiles.Length > 0 ? FileTracker.FormatRootingMarker(OutOfDateInputFiles) : null;
+
+          var trackerResponseFileArguments = FileTracker.TrackerResponseFileArguments(FileTracker.GetFileTrackerPath(ExecutableType.Native64Bit), new TaskItemHelper(TrackerIntermediateDirectory).FullPath, trackerRootingMarker, null);
+
+          var trackerResponseFile = Path.GetTempFileName();
+
+          File.WriteAllText(trackerResponseFile, trackerResponseFileArguments, ResponseFileEncoding);
+
+          // /a : Enable extended tracking: GetFileAttributes, GetFileAttributesEx
+          // /e : Enable extended tracking: GetFileAttributes, GetFileAttributesEx, RemoveDirectory, CreateDirectory
+          // /k : Keep the full tool chain in tlog filenames.
+          // /t : Track command lines (will expand response files specified with the '@filename' syntax)
+          // (specifying /t will export *.command.*.tlog files)
+
+          trackerCommandLineSwitches = $"{PathUtils.QuoteIfNeeded("@" + trackerResponseFile)} /k {trackerCommandLineSwitches}";
+        }
+
+#if DEBUG
+        Log.LogMessageFromText($"[{ToolName}] Tracker tool: {trackerToolPath}", MessageImportance.High);
+
+        Log.LogMessageFromText($"[{ToolName}] Tracker command line: {trackerCommandLineSwitches}", MessageImportance.High);
+#endif
+
+        //
+        //
+        //
+
+        responseFileSwitchesBuffer.Replace("\\", "\\\\");
+
+        responseFileSwitchesBuffer.Replace("\\\\\\\\ ", "\\\\ ");
+
+        if (true)
+        {
+          exitCode = base.ExecuteTool(trackerToolPath, responseFileSwitchesBuffer.ToString(), trackerCommandLineSwitches);
+        }
+#if false
+        else
+        {
+          string responseFileSwitch = string.Empty;
+
+          if (responseFileSwitchesBuffer.Length > 0)
+          {
+            string responseFilePath = Path.Combine(TrackerLogDirectory, string.Format("{0}_{1}.rsp", ToolName, Guid.NewGuid().ToString()));
+
+            Directory.CreateDirectory(Path.GetDirectoryName(responseFilePath));
+
+            File.WriteAllText(responseFilePath, responseFileSwitchesBuffer.ToString(), ResponseFileEncoding);
+
+            responseFileSwitch = GetResponseFileSwitch(responseFilePath);
+          }
+
+          using var trackedProcess = new Process();
+
+          trackedProcess.StartInfo = base.GetProcessStartInfo(trackerToolPath, trackerCommandLineSwitches, responseFileSwitch);
+
+          trackedProcess.StartInfo.CreateNoWindow = true;
+
+          trackedProcess.StartInfo.UseShellExecute = false;
+
+          trackedProcess.StartInfo.ErrorDialog = false;
+
+          trackedProcess.StartInfo.RedirectStandardOutput = true;
+
+          trackedProcess.StartInfo.RedirectStandardError = true;
+
+          trackedProcess.OutputDataReceived += (object sender, DataReceivedEventArgs args) => LogEventsFromTextOutput(args.Data, MessageImportance.Low);
+
+          trackedProcess.ErrorDataReceived += (object sender, DataReceivedEventArgs args) => LogEventsFromTextOutput(args.Data, MessageImportance.Low);
+
+          trackedProcess.EnableRaisingEvents = true;
+
+          if (OutputCommandLine)
+          {
+            Log.LogMessageFromText(string.Format("[{0}] Process started: {1} {2}", ToolName, trackedProcess.StartInfo.FileName, trackedProcess.StartInfo.Arguments), MessageImportance.High);
+          }
+
+          if (!trackedProcess.Start())
+          {
+            throw new InvalidOperationException("Could not start tracked child process.");
+          }
+
+          trackedProcess.BeginOutputReadLine();
+
+          trackedProcess.BeginErrorReadLine();
+
+          trackedProcess.WaitForExit();
+
+          exitCode = trackedProcess.ExitCode;
+        }
+#endif
+      }
+      catch (Exception e)
+      {
+        Log.LogErrorFromException(e, true);
+
+        exitCode = -1;
+      }
+
+      return exitCode;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override void LogEventsFromTextOutput(string singleLine, MessageImportance messageImportance)
+    {
+      base.LogEventsFromTextOutput(singleLine, messageImportance);
+
+      Trace.WriteLine(singleLine);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override void LogPathToTool(string toolName, string pathToTool)
+    {
+      base.LogPathToTool(toolName, pathToTool);
+
+      Trace.WriteLine($"{toolName}: {pathToTool}");
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override void LogToolCommand(string message)
+    {
+      base.LogToolCommand(message);
+
+      Trace.WriteLine(message);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -588,30 +423,36 @@ namespace AndroidPlusPlus.MsBuild.Common
 
     protected override bool SkipTaskExecution ()
     {
-      return SkippedExecution;
-    }
+      //
+      // (MSBuild docs: Returns true if task execution is not necessary. Executed after ValidateParameters)
+      //
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected bool ForcedRebuildRequired ()
-    {
-      // 
-      // If we can't find a cached 'TLog Command' file, presume we have to force rebuild all sources.
-      // 
-
-      if (TLogCommandFile != null)
+      try
       {
-        string tLogCommandFilePath = TLogCommandFile.GetMetadata ("FullPath");
+        SetupTrackerLogPaths();
 
-        if (!string.IsNullOrEmpty (tLogCommandFilePath))
+#if DEBUG
+        for (int i = 0; i < InputFiles?.Length; ++i)
         {
-          return File.Exists (tLogCommandFilePath);
+          Log.LogMessageFromText($"[{ToolName}] {nameof(InputFiles)}: [{i}] {InputFiles[i]}", MessageImportance.Low);
+
+          foreach (string metadataName in InputFiles[i].MetadataNames)
+          {
+            Log.LogMessageFromText($"[{ToolName}] -- Metadata: '{metadataName}' = '{InputFiles[i].GetMetadata(metadataName)}' ", MessageImportance.Low);
+          }
         }
+#endif
+      }
+      catch (Exception e)
+      {
+        Log.LogWarningFromException(e, true);
       }
 
-      return false;
+      OutOfDateInputFiles = InputFiles;
+
+      SkippedExecution = false;
+
+      return SkippedExecution;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -620,183 +461,34 @@ namespace AndroidPlusPlus.MsBuild.Common
 
     protected virtual void SetupTrackerLogPaths ()
     {
-      // 
+      //
       // Create tracker tasks for each of the target output files; command, read and write logs.
-      // 
-
-      if (TLogCommandFile == null)
-      {
-        TLogCommandFile = new TaskItem (Path.Combine (TrackerLogDirectory, CommandTLogName));
-      }
-
-      if (TLogReadFiles == null)
-      {
-        TLogReadFiles = new ITaskItem [ReadTLogNames.Length];
-
-        for (int i = 0; i < ReadTLogNames.Length; ++i)
-        {
-          TLogReadFiles [i] = new TaskItem (Path.Combine (TrackerLogDirectory, ReadTLogNames [i]));
-        }
-      }
-
-      if (TLogWriteFiles == null)
-      {
-        TLogWriteFiles = new ITaskItem [WriteTLogNames.Length];
-
-        for (int i = 0; i < WriteTLogNames.Length; ++i)
-        {
-          TLogWriteFiles [i] = new TaskItem (Path.Combine (TrackerLogDirectory, WriteTLogNames [i]));
-        }
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected virtual Dictionary <string, List <ITaskItem>> GenerateCommandLineBuffer (ITaskItem [] inputSources)
-    {
-      if (inputSources == null)
-      {
-        throw new ArgumentNullException ("inputSources");
-      }
-
-      Dictionary<string, List<ITaskItem>> commandBuffer = new Dictionary<string, List<ITaskItem>> ();
-
-      // 
-      // Prefer command line and response file switches, prefixed to allow for appropriate processing.
-      // 
-
-      string commandLineCommands = GenerateCommandLineCommands ();
-
-      string responseFileCommands = GenerateResponseFileCommands ();
-
-      if (!string.IsNullOrWhiteSpace (commandLineCommands) || !string.IsNullOrWhiteSpace (responseFileCommands))
-      {
-        StringBuilder commandLineBuilder = new StringBuilder ();
-
-        if (!string.IsNullOrWhiteSpace (commandLineCommands))
-        {
-          commandLineBuilder.Append (commandLineCommands + " ");
-        }
-
-        if (!string.IsNullOrWhiteSpace (responseFileCommands))
-        {
-          commandLineBuilder.Append (responseFileCommands + " ");
-        }
-
-        commandBuffer.Add (commandLineBuilder.ToString (), new List<ITaskItem> (inputSources));
-      }
-      else
-      {
-        // 
-        // Group together provided sources based on their required command line. Sources with identical command lines can be handled at the same time.
-        // 
-
-        foreach (ITaskItem source in inputSources)
-        {
-          string commandLineFromProps = GenerateCommandLineFromProps (source);
-
-          if (!string.IsNullOrWhiteSpace (commandLineFromProps))
-          {
-            List<ITaskItem> bufferTasks = null;
-
-            if (!commandBuffer.TryGetValue (commandLineFromProps, out bufferTasks))
-            {
-              bufferTasks = new List<ITaskItem> ();
-
-              commandBuffer.Add (commandLineFromProps, bufferTasks);
-            }
-
-            bufferTasks.Add (source);
-
-            commandBuffer [commandLineFromProps] = bufferTasks;
-          }
-        }
-      }
-
-      return commandBuffer;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected virtual string GenerateCommandLineFromProps (ITaskItem source)
-    {
-      // 
-      // Build a command-line based on parsing switches from the registered property sheet, and any additional flags.
-      // 
-
-      StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
+      //
 
       try
       {
-        if (source == null)
+        var trackerLogDirectory = new TaskItemHelper(TrackerLogDirectory);
+
+        Directory.CreateDirectory(trackerLogDirectory.FullPath);
+
+        if (TLogCommandFiles == null)
         {
-          throw new ArgumentNullException ("source");
+          TLogCommandFiles = TLogCommandNames.Select(log => new TaskItem(Path.Combine(trackerLogDirectory.FullPath, log))).ToArray();
         }
 
-        builder.Append (m_parsedProperties.Parse (source));
+        if (TLogReadFiles == null)
+        {
+          TLogReadFiles = TLogReadNames.Select(log => new TaskItem(Path.Combine(trackerLogDirectory.FullPath, log))).ToArray();
+        }
+
+        if (TLogWriteFiles == null)
+        {
+          TLogWriteFiles = TLogWriteNames.Select(log => new TaskItem(Path.Combine(trackerLogDirectory.FullPath, log))).ToArray();
+        }
       }
       catch (Exception e)
       {
-        Log.LogErrorFromException (e, true);
-      }
-
-      return builder.ToString ();
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected virtual void OutputCommandTLog (Dictionary <string, List<ITaskItem>> commandDictionary)
-    {
-      // 
-      // Output a tracking file for each of the commands used in the previous build, and target sources to which they relate.
-      // 
-
-      if (!TrackFileAccess)
-      {
-        throw new InvalidOperationException ("'TrackFileAccess' is not set. Should not be attempting to output command TLog.");
-      }
-
-      if (commandDictionary == null)
-      {
-        throw new ArgumentNullException ("commandDictionary");
-      }
-
-      if (TLogCommandFile == null)
-      {
-        throw new InvalidOperationException ("TLogCommandFile is missing");
-      }
-
-      // 
-      // Export the current command execution command buffer in the style of a TLog. See 'TrackedFileManager' for more explaination.
-      // 
-
-      string commandFileFullPath = (!string.IsNullOrEmpty (TLogCommandFile.GetMetadata ("FullPath"))) ? TLogCommandFile.GetMetadata ("FullPath") : Path.GetFullPath (TLogCommandFile.ItemSpec);
-
-      using (StreamWriter writer = new StreamWriter (commandFileFullPath, false, Encoding.Unicode))
-      {
-        StringBuilder sourceFileList = new StringBuilder ();
-
-        foreach (KeyValuePair<string, List<ITaskItem>> keyPair in commandDictionary)
-        {
-          sourceFileList.Length = 0;
-
-          foreach (ITaskItem source in keyPair.Value)
-          {
-            sourceFileList.Append ("|" + source.GetMetadata ("FullPath").ToUpperInvariant ());
-          }
-
-          sourceFileList.Replace ('|', '^', 0, 1);
-
-          writer.WriteLine (sourceFileList.ToString ());
-
-          writer.WriteLine (keyPair.Key);
-        }
+        Log.LogWarningFromException(e, true);
       }
     }
 
@@ -804,468 +496,344 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected virtual void OutputReadTLog (Dictionary<string, List<ITaskItem>> commandDictionary, ITaskItem [] sources)
+    private readonly HashSet<string> _propertiesToIgnore = new HashSet<string>();
+
+    private CommandLineBuilder _commandLineSwitchesBuilder;
+
+    private CommandLineBuilder _responseFileSwitchesBuilder;
+
+    protected void GenerateToolSwitches()
     {
-      // 
-      // Output a tracking file detailing which files were read (or are dependencies) for the source files built. Changes in these files will invoke recompilation.
-      // 
+      //
+      // Evaluate command line and response file switches, caching them for lookup.
+      //
+
+      if (_commandLineSwitchesBuilder == null)
+      {
+        _commandLineSwitchesBuilder = new CommandLineBuilder();
+
+        GenerateCommandLineSwitches(_commandLineSwitchesBuilder, _propertiesToIgnore);
+      }
+
+      if (_responseFileSwitchesBuilder == null)
+      {
+        _responseFileSwitchesBuilder = new CommandLineBuilder();
+
+        GenerateResponseFileSwitches(_responseFileSwitchesBuilder, _propertiesToIgnore);
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override string GenerateCommandLineCommands()
+    {
+      //
+      // Check if there are no response file flags, or if the derived class explicitly turned them off.
+      // If true, we need to condense all intended response file switches and return them from this function instead.
+      //
 
       try
       {
-        if (!TrackFileAccess)
+        GenerateToolSwitches();
+
+        if (GenerateResponseFileCommands() == string.Empty)
         {
-          throw new InvalidOperationException ("'TrackFileAccess' is not set. Should not be attempting to output read TLog.");
+          return GenerateUnionFileCommands();
         }
 
-        if (commandDictionary == null)
+        return _commandLineSwitchesBuilder.ToString();
+      }
+      catch (Exception e)
+      {
+        Log.LogWarningFromException(e, true);
+      }
+
+      return string.Empty;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override string GenerateResponseFileCommands()
+    {
+      GenerateToolSwitches();
+
+      return _responseFileSwitchesBuilder.ToString();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected string GenerateUnionFileCommands()
+    {
+      GenerateToolSwitches();
+
+      return string.Join(" ", new string[] { _commandLineSwitchesBuilder.ToString(), _responseFileSwitchesBuilder.ToString() }.Where(str => !string.IsNullOrEmpty(str)));
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected virtual string GenerateCommandLineSwitches(CommandLineBuilder builder = default, HashSet<string> propertiesToIgnore = null)
+    {
+      builder ??= new CommandLineBuilder();
+
+      return builder?.ToString() ?? string.Empty;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected virtual string GenerateResponseFileSwitches(CommandLineBuilder builder = default, HashSet<string> propertiesToIgnore = null)
+    {
+      builder ??= new CommandLineBuilder();
+
+      propertiesToIgnore ??= new HashSet<string>();
+
+      //
+      // Generate a XAML rule based on [Switch...] attributes and any specified properties file.
+      //
+
+      Rule rule = new Rule();
+
+      var parser = new CommandLineGenerator();
+
+      if (SwitchAttributes?.Count > 0)
+      {
+        var attributeBasedProperties = SwitchAttributes.Select(attr => attr.Value.GetProperty());
+
+        foreach (var property in attributeBasedProperties)
         {
-          throw new ArgumentNullException ("commandDictionary");
+          rule.Properties.Add(property);
+
+          Log.LogMessage($"[{ToolName}] Added property from {GetType().Name}: {property.Name} | {property.GetType().Name}");
+        }
+      }
+
+      if (PropertiesFile != null)
+      {
+        var xamlFileRule = CommandLineGenerator.LoadXamlRule(PropertiesFile);
+
+        rule.Properties.AddRange(xamlFileRule.Properties);
+      }
+
+      //
+      // Evaluate parameter types and values for each of those attributed with a [ToolSwitch...] variant.
+      //
+
+      var propertyValues = new Dictionary<string, object>();
+
+      try
+      {
+        foreach (var attribute in SwitchAttributes)
+        {
+          string name = attribute.Key;
+
+          BaseProperty property = attribute.Value.GetProperty();
+
+          object value = attribute.Value.GetValue();
+
+          propertyValues.Add(name, value);
+
+          Log.LogMessage($"[{ToolName}] Property from {GetType().Name}: {name} | {property.GetType().Name} | {(value == null ? "(null)" : $"{value} ({value.GetType()})")}");
         }
 
-        if (sources == null)
+        if (OutOfDateInputFiles?.Length > 0)
         {
-          throw new ArgumentNullException ("sources");
+          GenerateSwitchesForTaskItem(ref propertyValues, OutOfDateInputFiles[0], rule, propertiesToIgnore);
         }
 
-        if ((TLogReadFiles == null) || (TLogReadFiles.Length != 1))
+        //
+        // Validate required parameters are present.
+        //
+
+        foreach (var prop in rule.Properties)
         {
-          throw new InvalidOperationException ("TLogReadFiles is missing or does not have a length of 1");
-        }
-
-        TrackedFileManager trackedFileManager = new TrackedFileManager ();
-
-        if (trackedFileManager != null)
-        {
-          // 
-          // Clear any old entries to sources which have just been processed.
-          // 
-
-          trackedFileManager.ImportFromExistingTLog (TLogReadFiles [0]);
-
-          trackedFileManager.RemoveSourcesFromTable (sources);
-
-          trackedFileManager.AddSourcesToTable (sources);
-
-          // 
-          // Add any explicit inputs registered by parent task.
-          // 
-
-          AddTaskSpecificDependencies (ref trackedFileManager, sources);
-
-          // 
-          // Create dependency mappings for 'global' task outputs. Assume these relate to all processed sources.
-          // 
-          //   Dependency files are exported/collated in various different ways:
-          // 
-          //   - C/C++ uses <filename>.d (alongside .o/.obj output)
-          //   - Java uses: <filename>.java.d
-          //   - Unix uses: <filename>.<ext>.d
-          // 
-
-          // 
-          // Check alongside the known output files for a dependency file.
-          // 
-
+          if (prop.IsRequired && !propertyValues.ContainsKey(prop.Name))
           {
-            Dictionary<string, string> outputDependencyFilePermutations = new Dictionary<string, string> (OutputFiles.Length * 2);
+            Log.LogError($"[{GetType().Name}] Required parameter {prop.Name} has no assigned property value.");
+          }
+        }
 
-            foreach (ITaskItem outputFile in OutputFiles)
+        string commandLine = parser.GenerateCommandLine(rule, propertyValues, propertiesToIgnore);
+
+        builder.AppendTextUnquoted(commandLine);
+      }
+      catch (Exception e)
+      {
+        Log.LogErrorFromException(e, true);
+      }
+
+      return builder?.ToString() ?? string.Empty;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected virtual void GenerateSwitchesForTaskItem(ref Dictionary<string, object> propertyValues, ITaskItem item, Rule rule, HashSet<string> propertiesToIgnore = null)
+    {
+      //
+      // Per-item switches. Most of these should be informed by property values and the XAML property sheet rules.
+      //
+
+      var metadata = item.CloneCustomMetadata();
+
+      if (metadata.Count == 0)
+      {
+        return;
+      }
+
+      foreach (var prop in rule.Properties)
+      {
+        if (!metadata.Contains(prop.Name))
+        {
+          continue;
+        }
+
+        object value = metadata[prop.Name];
+
+        if (value == null)
+        {
+          continue; // Early abort is metadata is missing.
+        }
+        else if (prop is BoolProperty)
+        {
+          value = CommandLineGenerator.ConvertToObject<bool?>(value);
+        }
+        else if (prop is IntProperty)
+        {
+          value = CommandLineGenerator.ConvertToObject<int?>(value);
+        }
+        else if (prop is EnumProperty)
+        {
+          value = CommandLineGenerator.ConvertToObject<string>(value);
+        }
+        else if (prop is StringProperty stringProperty)
+        {
+          if (string.Equals(stringProperty.Subtype, "file", StringComparison.OrdinalIgnoreCase) || string.Equals(stringProperty.Subtype, "folder"))
+          {
+            value = CommandLineGenerator.ConvertToObject<ITaskItem>(value);
+          }
+          else
+          {
+            value = CommandLineGenerator.ConvertToObject<string>(value);
+          }
+        }
+        else if (prop is StringListProperty stringList)
+        {
+          var strValue = CommandLineGenerator.ConvertToObject<string>(value);
+
+          if (strValue != null)
+          {
+            var values = strValue.Trim(new char[] { Path.PathSeparator, ' ' }).Split(new char[] { Path.PathSeparator }, StringSplitOptions.RemoveEmptyEntries);
+
+            if (string.Equals(stringList.Subtype, "file", StringComparison.OrdinalIgnoreCase) || string.Equals(stringList.Subtype, "folder") || (string.Equals(stringList.DataSource?.ItemType, "Item", StringComparison.OrdinalIgnoreCase)))
             {
-              string outputFileFullPath = outputFile.GetMetadata ("FullPath");
-
-              if (!string.IsNullOrWhiteSpace (outputFileFullPath))
-              {
-                string [] permutations = new string [] 
-                {
-                  Path.ChangeExtension (outputFileFullPath, ".d"),
-                  outputFileFullPath + ".d"
-                };
-
-                for (int i = 0; i < permutations.Length; ++i)
-                {
-                  if (!outputDependencyFilePermutations.ContainsKey (permutations [i]))
-                  {
-                    outputDependencyFilePermutations.Add (permutations [i], outputFileFullPath);
-                  }
-                }
-              }
+              value = values.Select(str => CommandLineGenerator.ConvertToObject<ITaskItem>(str)).ToArray();
             }
-
-            foreach (KeyValuePair<string, string> dependencyKeyPair in outputDependencyFilePermutations)
+            else if (values != null)
             {
-              // 
-              // Validate this permutation is something we'd expect.
-              // 
-
-              string dependencyFile = dependencyKeyPair.Key;
-
-              if (string.IsNullOrWhiteSpace (dependencyFile))
-              {
-                continue;
-              }
-              else if (string.IsNullOrWhiteSpace (Path.GetFileNameWithoutExtension (dependencyFile)))
-              {
-                continue;
-              }
-              else if (!File.Exists (dependencyFile))
-              {
-                continue;
-              }
-
-              // 
-              // Probe the dependency file. Evaluate & find parent source item and add dependencies.
-              // 
-
-              GccUtilities.DependencyParser parser = new GccUtilities.DependencyParser ();
-
-              parser.Parse (dependencyFile);
+              value = values.ToArray();
+            }
+          }
+          else
+          {
+            value = strValue;
+          }
+        }
+        else
+        {
+          throw new NotImplementedException($"{prop.Name} | {prop.GetType().Name} | {(value == null ? "(null)" : value)} ({value?.GetType()})");
+        }
 
 #if DEBUG
-              Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : {1} (Entries: {2})", ToolName, dependencyFile, parser.Dependencies.Count), MessageImportance.Low);
-
-              Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : [{1}] '{2}'", ToolName, "+", parser.OutputFile.GetMetadata ("FullPath")), MessageImportance.Low);
-
-              int index = 0;
-
-              foreach (var dependency in parser.Dependencies)
-              {
-                Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : [{1}] '{2}'", ToolName, ++index, dependency), MessageImportance.Low);
-              }
+        Log.LogMessage($"[{ToolName}] Property from metadata: {prop.Name} | {prop.GetType().Name} | {(value == null ? "(null)" : $"{value} ({value.GetType()})")}");
 #endif
 
-              if (parser.Dependencies.Count > 0)
-              {
-                Dictionary<string, ITaskItem> collatedFullPathSources = new Dictionary<string, ITaskItem> (sources.Length);
+        if (propertyValues.TryGetValue(prop.Name, out object existingValue) && existingValue != null && !Equals(value, existingValue))
+        {
+          Log.LogWarning($"[{ToolName}] Property {prop.Name} already has an assigned value: {(existingValue == null ? "(null)" : $"{existingValue} ({existingValue.GetType()})")}");
 
-                foreach (ITaskItem source in sources)
-                {
-                  collatedFullPathSources [source.GetMetadata ("FullPath")] = source;
-                }
+          Log.LogWarning($"[{ToolName}] Property {prop.Name} will be overwritten with source item metadata value: {(value == null ? "(null)" : $"{value} ({value.GetType()})")}");
+        }
 
-                ITaskItem parentSourceItem = null;
+        propertyValues[prop.Name] = value;
+      }
+    }
 
-                if (collatedFullPathSources.TryGetValue (parser.OutputFile.GetMetadata ("FullPath"), out parentSourceItem))
-                {
-                  // 
-                  // We managed to find a parent source file (the master file from which the output was generated),
-                  // just add of the evaluated dependencies as they are all relevant in this case.
-                  // 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-                  ITaskItem [] dependenciesItemArray = new ITaskItem [parser.Dependencies.Count];
+    protected virtual void OutputCommandTLog(ITaskItem commandFile, string responseFileCommands, string commandLineCommands)
+    {
+      if (commandFile == null)
+      {
+        throw new ArgumentNullException(nameof(commandFile));
+      }
 
-                  parser.Dependencies.CopyTo (dependenciesItemArray, 0);
+      HashSet<string> formatedOutOfDateFiles = new HashSet<string>(OutOfDateInputFiles.Select(ti => TrackedFileManager.ConvertToTrackerFormat(ti)));
 
-                  trackedFileManager.AddDependencyForSources (dependenciesItemArray, new ITaskItem [] { parentSourceItem });
-                }
-                else
-                {
-                  // 
-                  // If we can't determine a parent source file (the master file from which the output was generated),
-                  // we'll want to add entries for all the dependencies which aren't already flagged as sources.
-                  // NOTE: This isn't ideal, but should reduce likelyhood of required dependencies being missed.
-                  // 
+      Dictionary<string, HashSet<string>> collatedTrackedFileSets = new Dictionary<string, HashSet<string>>();
 
-                  Dictionary<string, ITaskItem> nonSourceDependencies = new Dictionary<string, ITaskItem> (parser.Dependencies.Count);
+      string commandLine = (commandLineCommands.Length > 0) ? commandLineCommands + " " + responseFileCommands : responseFileCommands;
 
-                  foreach (ITaskItem dependency in parser.Dependencies)
-                  {
-                    string dependencyFullPath = dependency.GetMetadata ("FullPath");
+      collatedTrackedFileSets[commandLine] = formatedOutOfDateFiles;
 
-                    if (collatedFullPathSources.ContainsKey (dependencyFullPath))
-                    {
-                      continue;
-                    }
+      // 
+      // Parse the existing command log (if available).
+      // 
 
-                    if (nonSourceDependencies.ContainsKey (dependencyFullPath))
-                    {
-                      continue;
-                    }
+      if (File.Exists(commandFile.GetMetadata("FullPath")))
+      {
+        using StreamReader reader = new StreamReader(commandFile.GetMetadata("FullPath"), ResponseFileEncoding);
 
-                    nonSourceDependencies.Add (dependencyFullPath, dependency);
-                  }
-
-                  ITaskItem [] nonSourceDependenciesArray = new ITaskItem [nonSourceDependencies.Count];
-
-                  nonSourceDependencies.Values.CopyTo (nonSourceDependenciesArray, 0);
-
-                  trackedFileManager.AddDependencyForSources (nonSourceDependenciesArray, sources);
-                }
-              }
-            }
-          }
-
-          // 
-          // In some instances, we need to use metadata to search for dependency files in alternative locations.
-          // 
-
-          foreach (KeyValuePair<string, List<ITaskItem>> commandKeyPair in commandDictionary)
+        for (string line = reader.ReadLine(); !string.IsNullOrEmpty(line); line = reader.ReadLine())
+        {
+          if (line.StartsWith("^"))
           {
-            foreach (ITaskItem source in commandKeyPair.Value)
+            HashSet<string> trackedSources = new HashSet<string>(line.Substring(1).Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries));
+
+            string trackedCommand = reader.ReadLine();
+
+            if (collatedTrackedFileSets.TryGetValue(trackedCommand, out HashSet<string> trackedFiles))
             {
-              Dictionary<string, string> alternateDependencyFilePermutations = new Dictionary<string, string> (4);
-
-              string dependentOutputFile = source.GetMetadata ("OutputFile");
-
-              string dependentObjectFileName = source.GetMetadata ("ObjectFileName");
-
-              if (!string.IsNullOrWhiteSpace (dependentOutputFile))
-              {
-                string [] permutations = new string [] 
-                {
-                  Path.ChangeExtension (dependentOutputFile, ".d"),
-                  dependentOutputFile + ".d"
-                };
-
-                for (int i = 0; i < permutations.Length; ++i)
-                {
-                  if (!alternateDependencyFilePermutations.ContainsKey (permutations [i]))
-                  {
-                    alternateDependencyFilePermutations.Add (permutations [i], dependentOutputFile);
-                  }
-                }
-              }
-
-              if (!string.IsNullOrWhiteSpace (dependentObjectFileName))
-              {
-                string [] permutations = new string [] 
-                {
-                  Path.ChangeExtension (dependentObjectFileName, ".d"),
-                  dependentObjectFileName + ".d"
-                };
-
-                for (int i = 0; i < permutations.Length; ++i)
-                {
-                  if (!alternateDependencyFilePermutations.ContainsKey (permutations [i]))
-                  {
-                    alternateDependencyFilePermutations.Add (permutations [i], dependentObjectFileName);
-                  }
-                }
-              }
-
-              // 
-              // Iterate through each possible dependency file. Cache listings so that similar outputs aren't re-parsed (i.e. static/shared libraries from object files)
-              // 
-
-              foreach (KeyValuePair<string, string> dependencyKeyPair in alternateDependencyFilePermutations)
-              {
-                // 
-                // Validate this permutation is something we'd expect.
-                // 
-
-                string dependencyFile = dependencyKeyPair.Key;
-
-                if (string.IsNullOrWhiteSpace (dependencyFile))
-                {
-                  continue;
-                }
-                else if (string.IsNullOrWhiteSpace (Path.GetFileNameWithoutExtension (dependencyFile)))
-                {
-                  continue;
-                }
-                else if (!File.Exists (dependencyFile))
-                {
-                  continue;
-                }
-
-                // 
-                // Probe and cache each dependency file. Saves re-parsing identical file references each time.
-                // 
-
-                GccUtilities.DependencyParser parser = new GccUtilities.DependencyParser ();
-
-                parser.Parse (dependencyFile);
-
-#if DEBUG
-                Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : {1} (Entries: {2})", ToolName, dependencyFile, parser.Dependencies.Count), MessageImportance.Low);
-
-                Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : [{1}] '{2}'", ToolName, "+", parser.OutputFile.GetMetadata ("FullPath")), MessageImportance.Low);
-
-                int index = 0;
-
-                foreach (var dependency in parser.Dependencies)
-                {
-                  Log.LogMessageFromText (string.Format ("[{0}] --> Dependencies (Read) : [{1}] '{2}'", ToolName, ++index, dependency), MessageImportance.Low);
-                }
-#endif
-
-                ITaskItem [] dependenciesItemArray = new ITaskItem [parser.Dependencies.Count];
-
-                parser.Dependencies.CopyTo (dependenciesItemArray, 0);
-
-                trackedFileManager.AddDependencyForSources (dependenciesItemArray, new ITaskItem [] { source });
-              }
+              trackedSources.UnionWith(trackedFiles);
             }
+
+            trackedSources.RemoveWhere(str => formatedOutOfDateFiles.Contains(str));
+
+            collatedTrackedFileSets[trackedCommand] = trackedSources;
           }
-
-          trackedFileManager.Save (TLogReadFiles [0]);
         }
       }
-      catch (Exception e)
+      
+      // 
+      // Re-export the collated collection.
+      // 
+
+      using StreamWriter writer = new StreamWriter(commandFile.GetMetadata("FullPath"), false, ResponseFileEncoding);
+
+      foreach (var fileSet in collatedTrackedFileSets)
       {
-        Log.LogErrorFromException (e, true, true, null);
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected virtual void OutputWriteTLog (Dictionary<string, List<ITaskItem>> commandDictionary, ITaskItem [] sources)
-    {
-      try
-      {
-        if (!TrackFileAccess)
+        if (fileSet.Value.Count == 0)
         {
-          throw new InvalidOperationException ("'TrackFileAccess' is not set. Should not be attempting to output write TLog.");
+          continue;
         }
 
-        if (commandDictionary == null)
-        {
-          throw new ArgumentNullException ("commandDictionary");
-        }
+        writer.WriteLine("^" + FileTracker.FormatRootingMarker(fileSet.Value.Select(str => new TaskItem(str)).ToArray()));
 
-        if (sources == null)
-        {
-          throw new ArgumentNullException ("sources");
-        }
-
-        if ((TLogWriteFiles == null) || (TLogWriteFiles.Length != 1))
-        {
-          throw new InvalidOperationException ("TLogWriteFiles is missing or does not have a length of 1");
-        }
-
-        TrackedFileManager trackedFileManager = new TrackedFileManager ();
-
-        if (trackedFileManager != null)
-        {
-          // 
-          // Clear any old entries to sources which have just been processed.
-          // 
-
-          trackedFileManager.ImportFromExistingTLog (TLogWriteFiles [0]);
-
-          trackedFileManager.RemoveSourcesFromTable (sources);
-
-          trackedFileManager.AddSourcesToTable (sources);
-
-          // 
-          // Add any explicit outputs registered by parent task.
-          // 
-
-          AddTaskSpecificOutputFiles (ref trackedFileManager, sources);
-
-          // 
-          // Create dependency mappings between source and explicit output file (object-file type relationship).
-          // 
-
-          Dictionary<string, ITaskItem> dependantFiles = new Dictionary<string, ITaskItem> (5);
-
-          foreach (KeyValuePair<string, List<ITaskItem>> keyPair in commandDictionary)
-          {
-            foreach (ITaskItem source in keyPair.Value)
-            {
-              dependantFiles.Clear ();
-
-              string outputFile = source.GetMetadata ("OutputFile");
-
-              string objectFileName = source.GetMetadata ("ObjectFileName");
-
-              if (!string.IsNullOrWhiteSpace (outputFile))
-              {
-                string key = Path.GetFullPath (outputFile);
-
-                if (!dependantFiles.ContainsKey (key))
-                {
-                  dependantFiles.Add (key, new TaskItem (key));
-                }
-              }
-
-              if (!string.IsNullOrWhiteSpace (objectFileName))
-              {
-                string key = Path.GetFullPath (objectFileName);
-
-                if (!dependantFiles.ContainsKey (key))
-                {
-                  dependantFiles.Add (key, new TaskItem (key));
-                }
-              }
-
-              if (!string.IsNullOrWhiteSpace (source.GetMetadata ("OutputFiles")))
-              {
-                string [] files = source.GetMetadata ("OutputFiles").Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-
-                foreach (string file in files)
-                {
-                  string key = Path.GetFullPath (objectFileName);
-
-                  if (!dependantFiles.ContainsKey (key))
-                  {
-                    dependantFiles.Add (key, new TaskItem (key));
-                  }
-                }
-              }
-
-              ITaskItem [] dependencies = new ITaskItem [dependantFiles.Count];
-
-              dependantFiles.Values.CopyTo (dependencies, 0);
-
-              trackedFileManager.AddDependencyForSources (dependencies, new ITaskItem [] { source });
-            }
-          }
-
-          trackedFileManager.Save (TLogWriteFiles [0]);
-        }
-      }
-      catch (Exception e)
-      {
-        Log.LogErrorFromException (e, true, true, null);
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected virtual void AddTaskSpecificDependencies (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
-    {
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected virtual void AddTaskSpecificOutputFiles (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
-    {
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override bool ValidateParameters ()
-    {
-      try
-      {
-        m_parsedProperties = new XamlParser (PropertiesFile);
-
-        if (string.IsNullOrWhiteSpace (ToolPath))
-        {
-          throw new InvalidOperationException ("ToolPath is empty or invalid: " + ToolPath);
-        }
-
-        if (string.IsNullOrWhiteSpace (ToolExe))
-        {
-          throw new InvalidOperationException ("ToolExe is empty or invalid: " + ToolExe);
-        }
-
-        return base.ValidateParameters ();
-      }
-      catch (Exception e)
-      {
-        Log.LogErrorFromException (e, true);
+        writer.WriteLine(fileSet.Key);
       }
 
-      return false;
+      writer.Dispose();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1274,6 +842,15 @@ namespace AndroidPlusPlus.MsBuild.Common
 
     protected override string GenerateFullPathToTool ()
     {
+      //
+      // Gets the fully qualified tool name. Should return ToolExe if ToolTask should search for the tool in the system path. If ToolPath is set, this is ignored.
+      //
+
+      if (ToolPath == null)
+      {
+        return ToolExe; // go fish.
+      }
+
       return Path.Combine (ToolPath, ToolExe);
     }
 
@@ -1281,11 +858,31 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected virtual bool AppendSourcesToCommandLine
+    public ITaskItem[] TLogCommandFiles { get; set; }
+
+    public ITaskItem[] TLogReadFiles { get; set; }
+
+    public ITaskItem[] TLogWriteFiles { get; set; }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected virtual ITaskItem TrackerIntermediateDirectory
+    {
+      get => TrackerLogDirectory;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected virtual string [] TLogCommandNames
     {
       get
       {
-        return true;
+        string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(ToolExe);
+        return new string[] { $"{fileNameWithoutExtension}.command.1.tlog" };
       }
     }
 
@@ -1293,11 +890,17 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected virtual string TrackerIntermediateDirectory
+    protected virtual string [] TLogReadNames
     {
       get
       {
-        return string.Empty;
+        string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(ToolExe);
+        return new string[]
+        {
+          $"{fileNameWithoutExtension}.read.*.tlog",
+          $"{fileNameWithoutExtension}.*.read.*.tlog",
+          $"{fileNameWithoutExtension}-*.read.*.tlog",
+        };
       }
     }
 
@@ -1305,11 +908,17 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected virtual string CommandTLogName
+    protected virtual string [] TLogWriteNames
     {
       get
       {
-        return ToolName + ".command.1.tlog";
+        string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(ToolExe);
+        return new string[]
+        {
+          $"{fileNameWithoutExtension}.write.*.tlog",
+          $"{fileNameWithoutExtension}.*.write.*.tlog",
+          $"{fileNameWithoutExtension}-*.write.*.tlog",
+        };
       }
     }
 
@@ -1317,11 +926,17 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected virtual string [] ReadTLogNames
+    protected virtual string[] TLogDeleteNames
     {
       get
       {
-        return new string [] { ToolName + ".read.1.tlog" };
+        string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(ToolExe);
+        return new string[]
+        {
+          $"{fileNameWithoutExtension}.delete.*.tlog",
+          $"{fileNameWithoutExtension}.*.delete.*.tlog",
+          $"{fileNameWithoutExtension}-*.delete.*.tlog",
+        };
       }
     }
 
@@ -1329,51 +944,18 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected virtual string [] WriteTLogNames
+    public ITaskItem[] ExcludedInputPaths
     {
       get
       {
-        return new string [] { ToolName + ".write.1.tlog" };
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override MessageImportance StandardOutputLoggingImportance
-    {
-      get
-      {
-        // 
-        // Override default StandardOutputLoggingImportance so that we see the stdout from the toolchain from within visual studio.
-        // 
-
-        return MessageImportance.Normal;
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override Encoding StandardOutputEncoding
-    {
-      get
-      {
-        return Encoding.ASCII;
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override Encoding ResponseFileEncoding
-    {
-      get
-      {
-        return Encoding.Unicode;
+        return new ITaskItem[]
+        {
+          new TaskItem(TrackerIntermediateDirectory),
+          new TaskItem(Environment.GetFolderPath(Environment.SpecialFolder.System)),
+          new TaskItem(Environment.GetFolderPath(Environment.SpecialFolder.SystemX86)),
+          new TaskItem(Environment.GetFolderPath(Environment.SpecialFolder.Windows)),
+          new TaskItem(Environment.GetFolderPath(Environment.SpecialFolder.Windows) + "\\GLOBALIZATION\\SORTING")
+        };
       }
     }
 

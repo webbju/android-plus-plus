@@ -30,7 +30,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private List <DebuggeeBreakpointPending> m_pendingBreakpoints;
+    private readonly List <DebuggeeBreakpointPending> m_pendingBreakpoints;
 
     private bool m_requiresRefresh = false;
 
@@ -79,11 +79,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           // Query the associated document extension, and create a respective pending breakpoint type.
           // 
 
-          string fileName;
+          IDebugDocumentPosition2 documentPostion = (IDebugDocumentPosition2)Marshal.GetObjectForIUnknown(requestInfo[0].bpLocation.unionmember2);
 
-          IDebugDocumentPosition2 documentPostion = (IDebugDocumentPosition2)Marshal.GetObjectForIUnknown (requestInfo [0].bpLocation.unionmember2);
-
-          LoggingUtils.RequireOk (documentPostion.GetFileName (out fileName));
+          LoggingUtils.RequireOk (documentPostion.GetFileName (out string fileName));
 
           string fileExtension = Path.GetExtension (fileName).ToLower ();
 
@@ -273,9 +271,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (boundBreakpoint != null)
         {
-          IDebugPendingBreakpoint2 pendingBreakpoint;
-
-          LoggingUtils.RequireOk (boundBreakpoint.GetPendingBreakpoint (out pendingBreakpoint));
+          LoggingUtils.RequireOk(boundBreakpoint.GetPendingBreakpoint(out IDebugPendingBreakpoint2 pendingBreakpoint));
 
           return pendingBreakpoint as DebuggeeBreakpointPending;
         }
@@ -284,9 +280,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (errorBreakpoint != null)
         {
-          IDebugPendingBreakpoint2 pendingBreakpoint;
-
-          LoggingUtils.RequireOk (errorBreakpoint.GetPendingBreakpoint (out pendingBreakpoint));
+          LoggingUtils.RequireOk(errorBreakpoint.GetPendingBreakpoint(out IDebugPendingBreakpoint2 pendingBreakpoint));
 
           return pendingBreakpoint as DebuggeeBreakpointPending;
         }
@@ -319,13 +313,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           // Check for matching 'bound' breakpoints.
           // 
 
-          uint numBoundBreakpoints;
+          LoggingUtils.RequireOk(pending.EnumBoundBreakpoints(out IEnumDebugBoundBreakpoints2 enumeratedBoundBreakpoints));
 
-          IEnumDebugBoundBreakpoints2 enumeratedBoundBreakpoints;
-
-          LoggingUtils.RequireOk (pending.EnumBoundBreakpoints (out enumeratedBoundBreakpoints));
-
-          LoggingUtils.RequireOk (enumeratedBoundBreakpoints.GetCount (out numBoundBreakpoints));
+          LoggingUtils.RequireOk (enumeratedBoundBreakpoints.GetCount (out uint numBoundBreakpoints));
 
           if (numBoundBreakpoints > 0)
           {
@@ -381,9 +371,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           // Check for matching 'error' breakpoints.
           // 
 
-          IEnumDebugErrorBreakpoints2 enumeratedErrorBreakpoints;
-
-          int handle = pending.EnumErrorBreakpoints (enum_BP_ERROR_TYPE.BPET_ALL, out enumeratedErrorBreakpoints);
+          int handle = pending.EnumErrorBreakpoints(enum_BP_ERROR_TYPE.BPET_ALL, out IEnumDebugErrorBreakpoints2 enumeratedErrorBreakpoints);
 
           if (handle == Constants.E_BP_DELETED)
           {
@@ -392,9 +380,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           LoggingUtils.RequireOk (handle);
 
-          uint numErrorBreakpoints;
-
-          LoggingUtils.RequireOk (enumeratedErrorBreakpoints.GetCount (out numErrorBreakpoints));
+          LoggingUtils.RequireOk(enumeratedErrorBreakpoints.GetCount(out uint numErrorBreakpoints));
 
           if (numErrorBreakpoints > 0)
           {

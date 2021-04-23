@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <PropertyGroup Condition="'$(AndroidJavaBeforeTargets)' == '' and '$(AndroidJavaAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
+
+    <AndroidJavaBeforeTargets></AndroidJavaBeforeTargets>
+
+    <AndroidJavaAfterTargets>AndroidManifest</AndroidJavaAfterTargets>
+
+  </PropertyGroup>
+
+  <PropertyGroup>
+
+    <ComputeAndroidJavaInputsTargets>$(ComputeAndroidJavaInputsTargets);ComputeAndroidManifestOutput</ComputeAndroidJavaInputsTargets>
+
+    <CleanDependsOn>$(CleanDependsOn);CleanAndroidJava</CleanDependsOn>
+
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(AndroidProguardBeforeTargets)' == '' and '$(AndroidProguardAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
+
+    <AndroidProguardBeforeTargets></AndroidProguardBeforeTargets>
+
+    <AndroidProguardAfterTargets>AndroidJava</AndroidProguardAfterTargets>
+
+  </PropertyGroup>
+
+  <PropertyGroup>
+
+    <ComputeAndroidProguardInputsTargets>$(ComputeAndroidProguardInputsTargets);ComputeAndroidJavaOutput</ComputeAndroidProguardInputsTargets>
+
+    <CleanDependsOn>$(CleanDependsOn);CleanAndroidProguard</CleanDependsOn>
+
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(AndroidDalvikBeforeTargets)' == '' and '$(AndroidDalvikAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
+
+    <AndroidDalvikBeforeTargets></AndroidDalvikBeforeTargets>
+
+    <AndroidDalvikAfterTargets>AndroidProguard</AndroidDalvikAfterTargets>
+
+  </PropertyGroup>
+
+  <PropertyGroup>
+
+    <CleanDependsOn>$(CleanDependsOn);CleanAndroidDalvik</CleanDependsOn>
+
+  </PropertyGroup>
+
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <ItemDefinitionGroup Condition="'$(UseDebugLibraries)' == 'true'">
+
+    <AndroidJava>
+
+      <GenerateDebuggingInfo Condition="'%(AndroidJava.GenerateDebuggingInfo)' == ''">true</GenerateDebuggingInfo>
+
+    </AndroidJava>
+
+  </ItemDefinitionGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <ItemDefinitionGroup>
+
+    <AndroidJava>
+
+      <GeneratedClassFileOutputPath Condition="'%(AndroidJava.GeneratedClassFileOutputPath)' == ''">$(IntDir)bin\classes</GeneratedClassFileOutputPath>
+
+      <GeneratedSourceFileOutputPath Condition="'%(AndroidJava.GeneratedSourceFileOutputPath)' == ''">$(IntDir)gen</GeneratedSourceFileOutputPath>
+
+      <GeneratedNativeHeaderOutputPath Condition="'%(AndroidJava.GeneratedNativeHeaderOutputPath)' == ''">$(IntDir)gen</GeneratedNativeHeaderOutputPath>
+
+      <GenerateDebuggingInfo Condition="'%(AndroidJava.GenerateDebuggingInfo)' == ''">false</GenerateDebuggingInfo>
+
+      <NoWarnings Condition="'%(AndroidJava.NoWarnings)' == ''">false</NoWarnings>
+
+      <Verbose Condition="'%(AndroidJava.Verbose)' == ''">false</Verbose>
+
+      <Deprecation Condition="'%(AndroidJava.Deprecation)' == ''">true</Deprecation>
+
+      <ClassPaths Condition="'%(AndroidJava.ClassPaths)' == ''">$(AndroidSdkRoot)\tools\support\annotations.jar;%(GeneratedClassFileOutputPath)</ClassPaths>
+
+      <SourcePaths Condition="'%(AndroidJava.SourcePaths)' == ''">%(GeneratedSourceFileOutputPath)</SourcePaths>
+
+      <BootClassPaths Condition="'%(AndroidJava.BootClassPaths)' == ''">$(AndroidSdkRoot)\platforms\android-$(AndroidSdkLevel)\android.jar</BootClassPaths>
+
+      <Encoding Condition="'%(AndroidJava.Encoding)' == ''">UTF-8</Encoding>
+
+      <SourceVersion Condition="'%(AndroidJava.SourceVersion)' == ''">1.7</SourceVersion>
+
+      <TargetVersion Condition="'%(AndroidJava.TargetVersion)' == ''">1.7</TargetVersion>
+
+      <WarningsAsErrors Condition="'%(AndroidJava.TargetVersion)' == ''">true</WarningsAsErrors>
+
+  </AndroidJava>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <AndroidJava>
+
+      <DisableJarExport Condition="'%(AndroidJava.DisableJarExport)' == ''">false</DisableJarExport>
+
+      <DisableDexExport Condition="'%(AndroidJava.DisableDexExport)' == ''">false</DisableDexExport>
+
+      <DexClassPaths Condition="'%(AndroidJava.DexClassPaths)' == ''">%(ClassPaths)</DexClassPaths>
+
+      <JarOutputFile Condition="'%(AndroidJava.JarOutputFile)' == '' and '$(ConfigurationType)' != 'Application'">$(TargetDir)$(TargetName).jar</JarOutputFile>
+
+      <JarOutputFile Condition="'%(AndroidJava.JarOutputFile)' == ''"></JarOutputFile>
+
+    </AndroidJava>
+
+  </ItemDefinitionGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+</Project>

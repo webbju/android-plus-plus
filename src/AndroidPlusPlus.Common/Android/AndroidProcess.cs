@@ -112,14 +112,12 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      StringBuilder builder = new StringBuilder (256);
+      var builder = new StringBuilder (256);
 
       // 
       // Retrieves the install specific (coded) remote APK path.
       //   i.e: /data/app/com.example.hellogdbserver-2.apk
       // 
-
-      builder.Length = 0;
 
       builder.Append (HostDevice.Shell ("pm", string.Format ("path {0}", Name)));
 

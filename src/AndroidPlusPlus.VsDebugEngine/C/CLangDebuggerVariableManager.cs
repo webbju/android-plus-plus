@@ -31,7 +31,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private readonly CLangDebugger m_debugger;
 
-    private Dictionary<string, MiVariable> m_trackedVariables;
+    private readonly Dictionary<string, MiVariable> m_trackedVariables;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -97,13 +97,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        IDebugThread2 stackThread;
+        LoggingUtils.RequireOk (stackFrame.GetThread (out IDebugThread2 stackThread));
 
-        uint stackThreadId;
-
-        LoggingUtils.RequireOk (stackFrame.GetThread (out stackThread));
-
-        LoggingUtils.RequireOk (stackThread.GetThreadId (out stackThreadId));
+        LoggingUtils.RequireOk (stackThread.GetThreadId (out uint stackThreadId));
 
         string command = string.Format ("-var-create --thread {0} --frame {1} - * \"{2}\"", stackThreadId, stackFrame.StackLevel, expression);
 

@@ -374,13 +374,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        IDebugThread2 stackThread;
+        LoggingUtils.RequireOk(m_stackFrame.GetThread(out IDebugThread2 stackThread));
 
-        uint stackThreadId;
-
-        LoggingUtils.RequireOk (m_stackFrame.GetThread (out stackThread));
-
-        LoggingUtils.RequireOk (stackThread.GetThreadId (out stackThreadId));
+        LoggingUtils.RequireOk (stackThread.GetThreadId (out uint stackThreadId));
 
         string command = string.Format ("-data-evaluate-expression --thread {0} --frame {1} --language c \"sizeof({2})\"", stackThreadId, (m_stackFrame as CLangDebuggeeStackFrame).StackLevel, m_expression);
 

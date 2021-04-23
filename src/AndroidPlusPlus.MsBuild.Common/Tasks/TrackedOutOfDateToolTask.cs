@@ -2,19 +2,13 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Diagnostics;
-using System.Text;
-using System.IO;
-using System.Reflection;
-using System.Resources;
-
 using Microsoft.Build.Framework;
-using Microsoft.Win32;
 using Microsoft.Build.Utilities;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Resources;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -27,7 +21,7 @@ namespace AndroidPlusPlus.MsBuild.Common
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public abstract class TrackedOutOfDateToolTask : TrackedToolTask
+  public class TrackedOutOfDateToolTask : TrackedToolTask
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -43,245 +37,149 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public ITaskItem [] OutOfDateSources { get; set; }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override bool Setup ()
+    protected bool ForcedRebuildRequired()
     {
-      bool result = base.Setup ();
+      //
+      // If we can't find a cached 'TLog Command' file, presume we have to force rebuild all sources.
+      //
 
-      OutOfDateSources = Sources;
-
-      if (result && !SkippedExecution)
+      if (TLogCommandFiles == null || TLogCommandFiles.Length == 0)
       {
-        // 
-        // Retrieve list of sources considered out-of-date due to either command line changes or tracker flagging.
-        // TODO: Switch use of CanonicalTracked* helpers to TrackedFileManager.
-        // 
+        return true;
+      }
 
-        CanonicalTrackedOutputFiles trackedOutputFiles = new CanonicalTrackedOutputFiles (this, TLogWriteFiles);
+      return !File.Exists(TLogCommandFiles[0]?.GetMetadata("FullPath"));
+    }
 
-        TrackedInputFiles = new CanonicalTrackedInputFiles (this, TLogReadFiles, Sources, ExcludedInputPaths, trackedOutputFiles, true, false);//true);
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        ITaskItem [] outOfDateSourcesFromTracking = TrackedInputFiles.ComputeSourcesNeedingCompilation ();// (true);
+    protected override bool SkipTaskExecution()
+    {
+      //
+      // Check there are actually sources to build, otherwise we can skip execution.
+      //
 
-        ITaskItem [] outOfDateSourcesFromCommandLine = GetOutOfDateSourcesFromCmdLineChanges (Sources);
+      bool shouldSkipTaskExecution = base.SkipTaskExecution();
+
+      if (MinimalRebuildFromTracking && !ForcedRebuildRequired())
+      {
+        TrackedOutputFiles = new CanonicalTrackedOutputFiles(this, TLogWriteFiles);
+
+        TrackedInputFiles = new CanonicalTrackedInputFiles(this, TLogReadFiles, InputFiles, ExcludedInputPaths, TrackedOutputFiles, true, false);
+
+        var outOfDateSourcesFromTracking = TrackedInputFiles.ComputeSourcesNeedingCompilation(true);
+
+        var outOfDateSourcesFromCommandLine = GetOutOfDateSourcesFromCmdLineChanges(GenerateUnionFileCommands(), InputFiles);
 
 #if DEBUG
-        Log.LogMessageFromText (string.Format ("[{0}] --> No. out-of-date sources (from tracking): {1}", ToolName, outOfDateSourcesFromTracking.Length), MessageImportance.Low);
+        Log.LogMessageFromText($"[{GetType().Name}] Out of date sources (from tracking): {outOfDateSourcesFromTracking.Length}", MessageImportance.Low);
 
-        Log.LogMessageFromText (string.Format ("[{0}] --> No. out-of-date sources (command line differs): {1}", ToolName, outOfDateSourcesFromCommandLine.Length), MessageImportance.Low);
+        Log.LogMessageFromText($"[{GetType().Name}] Out of date sources (command line differs): {outOfDateSourcesFromCommandLine.Length}", MessageImportance.Low);
 #endif
 
         // 
         // Merge out-of-date lists from both sources and assign these for compilation.
         // 
 
-        HashSet<ITaskItem> mergedOutOfDateSources = new HashSet<ITaskItem> (outOfDateSourcesFromTracking);
+        var mergedOutOfDateSources = new HashSet<ITaskItem>(outOfDateSourcesFromTracking);
 
-        foreach (ITaskItem item in outOfDateSourcesFromCommandLine)
+        mergedOutOfDateSources.UnionWith(outOfDateSourcesFromCommandLine);
+
+        OutOfDateInputFiles = mergedOutOfDateSources.ToArray();
+
+        SkippedExecution = OutOfDateInputFiles == null || OutOfDateInputFiles.Length == 0;
+
+        if (SkippedExecution)
         {
-          if (!mergedOutOfDateSources.Contains (item))
-          {
-            mergedOutOfDateSources.Add (item);
-          }
+          return SkippedExecution;
         }
 
-        OutOfDateSources = new ITaskItem [mergedOutOfDateSources.Count];
+        // 
+        // Remove out-of-date files from tracked file list. Thus they are missing and need re-processing.
+        // 
 
-        mergedOutOfDateSources.CopyTo (OutOfDateSources);
+        TrackedInputFiles.RemoveEntriesForSource(OutOfDateInputFiles);
 
-        if ((OutOfDateSources == null) || (OutOfDateSources.Length == 0))
-        {
-          SkippedExecution = true;
-        }
-        else
-        {
-          // 
-          // Remove sources to compile from tracked file list.
-          // 
+        TrackedInputFiles.SaveTlog();
 
-          TrackedInputFiles.RemoveEntriesForSource (OutOfDateSources);
+        TrackedOutputFiles.RemoveEntriesForSource(OutOfDateInputFiles);
 
-          trackedOutputFiles.RemoveEntriesForSource (OutOfDateSources);
+        TrackedOutputFiles.SaveTlog();
 
-          TrackedInputFiles.SaveTlog ();
+        SkippedExecution = false;
 
-          trackedOutputFiles.SaveTlog ();
-        }
+        return SkippedExecution;
       }
 
-#if DEBUG
-      Log.LogMessageFromText (string.Format ("[{0}] --> Skipped execution: {1}", ToolName, SkippedExecution), MessageImportance.Low);
+      // 
+      // Consider nothing out of date. Process everything.
+      // 
 
-      for (int i = 0; i < OutOfDateSources.Length; ++i)
-      {
-        Log.LogMessageFromText (string.Format ("[{0}] --> Out-of-date Sources: [{1}] {2}", ToolName, i, OutOfDateSources [i].ToString ()), MessageImportance.Low);
-      }
-#endif
+      OutOfDateInputFiles = InputFiles;
 
-      return result;
+      SkippedExecution = false;
+
+      return SkippedExecution;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected override int ExecuteTool (string pathToTool, string responseFileCommands, string commandLineCommands)
-    {
-      int retCode = -1;
-
-      try
-      {
-        // 
-        // Construct list of target output files for all valid sources.
-        // 
-
-        HashSet<string> outputFiles = new HashSet<string> ();
-
-        foreach (ITaskItem source in OutOfDateSources)
-        {
-          if (!string.IsNullOrWhiteSpace (source.GetMetadata ("OutputFile")))
-          {
-            if (!outputFiles.Contains (source.GetMetadata ("OutputFile")))
-            {
-              outputFiles.Add (source.GetMetadata ("OutputFile"));
-            }
-          }
-
-          if (!string.IsNullOrWhiteSpace (source.GetMetadata ("ObjectFileName")))
-          {
-            if (!outputFiles.Contains (source.GetMetadata ("ObjectFileName")))
-            {
-              outputFiles.Add (source.GetMetadata ("ObjectFileName"));
-            }
-          }
-
-          if (!string.IsNullOrWhiteSpace (source.GetMetadata ("OutputFiles")))
-          {
-            string [] files = source.GetMetadata ("OutputFiles").Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (string file in files)
-            {
-              if (!outputFiles.Contains (file))
-              {
-                outputFiles.Add (file);
-              }
-            }
-          }
-        }
-
-        // 
-        // Convert all output file paths to exportable items.
-        // 
-
-        List<ITaskItem> outputFileItems = new List<ITaskItem> ();
-
-        foreach (string outputFile in outputFiles)
-        {
-          outputFileItems.Add (new TaskItem (Path.GetFullPath (outputFile)));
-        }
-
-        OutputFiles = outputFileItems.ToArray ();
-      }
-      catch (Exception e)
-      {
-        Log.LogErrorFromException (e, true);
-      }
-
-      try
-      {
-        m_commandBuffer = GenerateCommandLineBuffer (OutOfDateSources);
-
-        retCode = TrackedExecuteTool (pathToTool, responseFileCommands, commandLineCommands);
-      }
-      catch (Exception e)
-      {
-        Log.LogErrorFromException (e, true);
-
-        retCode = -1;
-      }
-      finally
-      {
-#if DEBUG
-        foreach (ITaskItem outputFile in OutputFiles)
-        {
-          Log.LogMessageFromText (string.Format ("[{0}] --> Outputs: '{1}'", ToolName, outputFile), MessageImportance.Low);
-        }
-#endif
-
-        if (/*(retCode == 0) &&*/ TrackFileAccess)
-        {
-          OutputWriteTLog (m_commandBuffer, OutOfDateSources);
-
-          OutputReadTLog (m_commandBuffer, OutOfDateSources);
-
-          OutputCommandTLog (m_commandBuffer);
-        }
-      }
-
-      return retCode;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected static Dictionary<string, List <ITaskItem>> GenerateCommandLinesFromTlog (ITaskItem tlog)
+    protected Dictionary<string, List <ITaskItem>> GenerateCommandLinesFromTlogs (IEnumerable<ITaskItem> tlogs)
     {
       // 
       // Extract command-line attributes for each saved file in the TLog.
       // 
 
-      if (tlog == null)
+      if (tlogs == null)
       {
-        throw new ArgumentNullException ("tlog");
+        throw new ArgumentNullException (nameof(tlogs));
       }
 
-      string tlogFullPath = (!string.IsNullOrEmpty (tlog.GetMetadata ("FullPath")) ? tlog.GetMetadata ("FullPath") : Path.GetFullPath (tlog.ItemSpec));
+      var commandLineSourceDictionary = new Dictionary<string, List<ITaskItem>>();
 
-      if (string.IsNullOrEmpty (tlogFullPath))
+      foreach (var tlog in tlogs)
       {
-        throw new ArgumentException ("Could not evaluate full path for TLog: " + tlog);
-      }
+        string tlogFullPath = tlog.GetMetadata("FullPath");
 
-      Dictionary<string, List<ITaskItem>> commandLineSourceDictionary = new Dictionary<string, List<ITaskItem>> ();
+        if (string.IsNullOrEmpty(tlogFullPath))
+        {
+          tlogFullPath = Path.GetFullPath(tlog.ItemSpec);
+        }
 
-      if (!File.Exists (tlogFullPath))
-      {
-        return commandLineSourceDictionary; // Don't error as sometimes this is expected; full rebuilds for example.
-      }
+        if (!File.Exists(tlogFullPath))
+        {
+          continue; // Don't error as sometimes this is expected; full rebuilds for example.
+        }
 
-      using (StreamReader reader = File.OpenText (tlogFullPath))
-      {
+        using StreamReader reader = File.OpenText(tlogFullPath);
+
         // 
         // Construct a dictionary for each unique tracked command, with an associated list of paired files (separated by '|').
         // 
 
-        for (string line = reader.ReadLine (); !string.IsNullOrEmpty (line); line = reader.ReadLine ())
+        for (string line = reader.ReadLine(); !string.IsNullOrEmpty(line); line = reader.ReadLine())
         {
-          if (line.StartsWith ("^"))
+          if (line.StartsWith("^"))
           {
-            string [] trackedFiles = line.Substring (1).Split ('|');
+            var trackedFiles = line.Substring(1).Split('|').Select(f => new TaskItem(f));
 
-            string command = reader.ReadLine ();
+            string command = reader.ReadLine();
 
-            List<ITaskItem> sourceList;
-
-            if (!commandLineSourceDictionary.TryGetValue (command, out sourceList))
+            if (!commandLineSourceDictionary.TryGetValue(command, out List<ITaskItem> sourceList))
             {
-              sourceList = new List<ITaskItem> ();
+              sourceList = new List<ITaskItem>();
             }
 
             foreach (string file in trackedFiles)
             {
-              sourceList.Add (new TaskItem (file));
+              sourceList.Add(new TaskItem(file));
             }
 
-            commandLineSourceDictionary [command] = sourceList;
+            commandLineSourceDictionary[command] = sourceList;
           }
         }
       }
@@ -293,76 +191,64 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected ITaskItem [] GetOutOfDateSourcesFromCmdLineChanges (ITaskItem [] uncheckedSources)
+    protected ITaskItem [] GetOutOfDateSourcesFromCmdLineChanges (string expectedCommandLine, ITaskItem [] uncheckedSources)
     {
       // 
-      // Evaluate a list of the currently saved commands, and check whether these are considered out-of-date.
+      // Evaluate which (if any) of the `uncheckedSources` are already present in the command TLog.
+      // If cached entries are found, identify whether this source should be considered "out of date".
       // 
 
-      if (TLogCommandFile == null)
+      if (TLogCommandFiles?.Length == 0)
       {
-        return new ITaskItem [] { };
+        return Array.Empty<ITaskItem>();
       }
 
-      Dictionary<string, List<ITaskItem>> commandLineFromTLog = GenerateCommandLinesFromTlog (TLogCommandFile);
+      Dictionary<string, ITaskItem> uncheckedSourcesRooted = new Dictionary<string, ITaskItem>();
 
-      Dictionary<string, List<ITaskItem>> commandLineFromSources = GenerateCommandLineBuffer (uncheckedSources);
-
-      List<ITaskItem> outOfDateSources = new List<ITaskItem> ();
-
-      // 
-      // Identify the command line to be used for a specific source file for the *current* build.
-      // 
-
-      foreach (ITaskItem source in uncheckedSources)
+      foreach (var uncheckedSource in uncheckedSources)
       {
-        string sourcePath = source.GetMetadata ("FullPath").ToUpperInvariant ();
+        uncheckedSourcesRooted.Add(TrackedFileManager.ConvertToTrackerFormat(uncheckedSource), uncheckedSource);
+      }
 
-        bool foundMatchingSource = false;
+      var outOfDateSources = new HashSet<ITaskItem>();
 
-        foreach (KeyValuePair<string, List<ITaskItem>> keyPair in commandLineFromSources)
+      using StreamReader reader = File.OpenText(TLogCommandFiles[0].ItemSpec);
+
+      for (string line = reader.ReadLine(); !string.IsNullOrEmpty(line); line = reader.ReadLine())
+      {
+        if (line.StartsWith("^"))
         {
-          List<ITaskItem> cachedSourcesUsingCommand = keyPair.Value;
+          var trackedFiles = line.Substring(1).Split('|');
 
-          foreach (ITaskItem cachedSource in cachedSourcesUsingCommand)
+          string trackedCommandLine = reader.ReadLine();
+
+          foreach (string trackedFile in trackedFiles)
           {
-            string cachedSourcePath = Path.GetFullPath (cachedSource.ItemSpec).ToUpperInvariant ();
-
-            if (cachedSourcePath.Equals (sourcePath))
+            if (uncheckedSourcesRooted.TryGetValue(trackedFile, out ITaskItem match) && !string.Equals(trackedCommandLine, expectedCommandLine))
             {
-              // 
-              // Found a matching source file. Check if this command is already cached in the TLog. 
-              // If not, it should be considered out-of-date.
-              // 
+#if DEBUG
+              Log.LogMessageFromText($"[{GetType().Name}] Out of date source identified: {trackedFile}. Command lines differed.", MessageImportance.Low);
 
-              foundMatchingSource = true;
+              Log.LogMessageFromText($"[{GetType().Name}] Out of date source identified: {trackedFile}. Expected: {expectedCommandLine} ", MessageImportance.Low);
 
-              List <ITaskItem> matchingCachedTLogSources = null;
+              Log.LogMessageFromText($"[{GetType().Name}] Out of date source identified: {trackedFile}. Cached: {trackedCommandLine} ", MessageImportance.Low);
+#endif
 
-              if (!commandLineFromTLog.TryGetValue (keyPair.Key, out matchingCachedTLogSources))
-              {
-                outOfDateSources.Add (source);
-              }
-
-              break;
+              outOfDateSources.Add(match);
             }
-          }
-
-          if (foundMatchingSource)
-          {
-            break;
           }
         }
       }
 
-      return outOfDateSources.ToArray ();
+      return outOfDateSources.ToArray();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected override void OutputCommandTLog (Dictionary<string, List<ITaskItem>> commandDictionary)
+#if false
+    protected override void OutputCommandTLog (ITaskItem commandFile, string responseFileCommands, string commandLineCommands)
     {
       // 
       // Output a tracking file for each of the commands used in the previous build, and target sources to which they relate.
@@ -370,7 +256,7 @@ namespace AndroidPlusPlus.MsBuild.Common
       // *Keeps existing entries in the command log. Updates entries for sources which have been compiled/modified.*
       // 
 
-      if (TLogCommandFile == null)
+      if (TLogCommandFiles?.Length == 0)
       {
         throw new InvalidOperationException ("TLogCommandFile is invalid");
       }
@@ -379,7 +265,7 @@ namespace AndroidPlusPlus.MsBuild.Common
       // Merge existing and new dictionaries. This is quite expensive, but means we can utilise a more simple base export implementation.
       // 
 
-      Dictionary<string, List<ITaskItem>> cachedCommandLogDictionary = GenerateCommandLinesFromTlog (TLogCommandFile);
+      Dictionary<string, List<ITaskItem>> cachedCommandLogDictionary = GenerateCommandLinesFromTlogs (TLogCommandFiles);
 
       Dictionary<string, List<ITaskItem>> mergedCommandLogDictionary = new Dictionary<string, List<ITaskItem>> ();
 
@@ -389,11 +275,9 @@ namespace AndroidPlusPlus.MsBuild.Common
 
       foreach (KeyValuePair<string, List<ITaskItem>> entry in commandDictionary)
       {
-        List<ITaskItem> mergedLogDictionaryList;
-
         HashSet<string> mergedLogDictionaryListAsFullPaths = new HashSet<string> ();
 
-        if (mergedCommandLogDictionary.TryGetValue (entry.Key, out mergedLogDictionaryList))
+        if (mergedCommandLogDictionary.TryGetValue (entry.Key, out List<ITaskItem> mergedLogDictionaryList))
         {
           foreach (ITaskItem source in mergedLogDictionaryList)
           {
@@ -431,11 +315,9 @@ namespace AndroidPlusPlus.MsBuild.Common
 
       foreach (KeyValuePair<string, List<ITaskItem>> entry in cachedCommandLogDictionary)
       {
-        List<ITaskItem> mergedLogDictionaryList;
-
         HashSet<string> mergedLogDictionaryListAsFullPaths = new HashSet<string> ();
 
-        if (mergedCommandLogDictionary.TryGetValue (entry.Key, out mergedLogDictionaryList))
+        if (mergedCommandLogDictionary.TryGetValue (entry.Key, out List<ITaskItem> mergedLogDictionaryList))
         {
           foreach (ITaskItem source in mergedLogDictionaryList)
           {
@@ -469,6 +351,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
       base.OutputCommandTLog (mergedCommandLogDictionary);
     }
+#endif
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -29,7 +29,7 @@ namespace AndroidPlusPlus.VsDebugEngine
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public interface JavaLangDebuggerEventInterface
+  public interface IJavaLangDebuggerEvent
   {
     int OnAttachClient (JavaLangDebugger debugger);
 
@@ -46,7 +46,7 @@ namespace AndroidPlusPlus.VsDebugEngine
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class JavaLangDebuggerCallback : JavaLangDebuggerEventInterface, IDebugEventCallback2
+  public class JavaLangDebuggerCallback : IJavaLangDebuggerEvent, IDebugEventCallback2
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -69,17 +69,18 @@ namespace AndroidPlusPlus.VsDebugEngine
       // Register function handlers for specific events.
       // 
 
-      m_debuggerCallback = new Dictionary<Guid, JavaLangDebuggerEventDelegate> ();
+      m_debuggerCallback = new Dictionary<Guid, JavaLangDebuggerEventDelegate>
+      {
+        { ComUtils.GuidOf(typeof(JavaLangDebuggerEvent.AttachClient)), OnAttachClient },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (JavaLangDebuggerEvent.AttachClient)), OnAttachClient);
+        { ComUtils.GuidOf(typeof(JavaLangDebuggerEvent.DetachClient)), OnDetachClient },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (JavaLangDebuggerEvent.DetachClient)), OnDetachClient);
+        { ComUtils.GuidOf(typeof(JavaLangDebuggerEvent.StopClient)), OnStopClient },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (JavaLangDebuggerEvent.StopClient)), OnStopClient);
+        { ComUtils.GuidOf(typeof(JavaLangDebuggerEvent.ContinueClient)), OnContinueClient },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (JavaLangDebuggerEvent.ContinueClient)), OnContinueClient);
-
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (JavaLangDebuggerEvent.TerminateClient)), OnTerminateClient);
+        { ComUtils.GuidOf(typeof(JavaLangDebuggerEvent.TerminateClient)), OnTerminateClient }
+      };
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -107,11 +108,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        JavaLangDebuggerEventDelegate eventCallback;
+        LoggingUtils.Print("[JavaLangDebuggerCallback] Event: " + riidEvent.ToString());
 
-        LoggingUtils.Print ("[JavaLangDebuggerCallback] Event: " + riidEvent.ToString ());
-
-        if (!m_debuggerCallback.TryGetValue (riidEvent, out eventCallback))
+        if (!m_debuggerCallback.TryGetValue (riidEvent, out JavaLangDebuggerEventDelegate eventCallback))
         {
           return Constants.E_NOTIMPL;
         }
