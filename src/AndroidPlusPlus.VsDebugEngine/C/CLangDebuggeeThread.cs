@@ -70,11 +70,9 @@ namespace AndroidPlusPlus.VsDebugEngine
       }
       else if (threadData.HasField ("target-id"))
       {
-        uint threadPid;
-
         m_threadDisplayName = threadData ["target-id"] [0].GetString (); // usually the raw name, i.e. 'Thread 18771'
 
-        if (m_threadDisplayName.StartsWith ("Thread ") && uint.TryParse (m_threadDisplayName.Substring ("Thread ".Length), out threadPid))
+        if (m_threadDisplayName.StartsWith ("Thread ") && uint.TryParse (m_threadDisplayName.Substring ("Thread ".Length), out uint threadPid))
         {
           AndroidDevice hostDevice = NativeProgram.DebugProgram.DebugProcess.NativeProcess.HostDevice;
 
@@ -122,9 +120,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         if (m_threadStackFrames.Count < depth)
         {
-          uint threadId;
-
-          LoggingUtils.RequireOk (GetThreadId (out threadId));
+          LoggingUtils.RequireOk(GetThreadId(out uint threadId));
 
           m_debugProgram.AttachedEngine.NativeDebugger.RunInterruptOperation (delegate (CLangDebugger debugger)
           {

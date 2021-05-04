@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <ItemGroup>
+    <PropertyPageSchema Include="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml" />
+  </ItemGroup>
+
+  <UsingTask TaskName="AndroidNdkDepends" AssemblyFile="$(ANDROID_PLUS_PLUS)\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
+
+  <UsingTask TaskName="JavaSigner" AssemblyFile="$(ANDROID_PLUS_PLUS)\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
+
+  <UsingTask TaskName="AndroidZipAlign" AssemblyFile="$(ANDROID_PLUS_PLUS)\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target
+    Name="_AndroidApk"
+    Condition="'$(ConfigurationType)' == 'Application'"
+    DependsOnTargets="$(ComputeAndroidApkInputsTargets);ComputeAndroidDalvikOutput;">
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target
+    Name="AndroidApk"
+    BeforeTargets="$(AndroidApkBeforeTargets)"
+    AfterTargets="$(AndroidApkAfterTargets)"
+    DependsOnTargets="AndroidManifest;_AndroidApk;">
+
+    <PropertyGroup>
+      <UnsignedOutputFile>$(IntDir)bin\$(ProjectName)-$(Configuration.Replace(' ','_'))-Unsigned.apk</UnsignedOutputFile>
+      <SignedUnalignedOutputFile>$(IntDir)bin\$(ProjectName)-$(Configuration.Replace(' ','_'))-Unaligned.apk</SignedUnalignedOutputFile>
+      <SignedAlignedOutputFile>$(IntDir)bin\$(ProjectName)-$(Configuration.Replace(' ','_')).apk</SignedAlignedOutputFile>
+    </PropertyGroup>
+
+    <!--
+      Register shared libraries (.so) which will need to be copied to the final APK .\lib\[arch] directory.
+    -->
+
+    <ItemGroup Condition="'$(ConfigurationType)' == 'Application'">
+      <!-- First-party (linker output) and third-party provided libraries. -->
+      <__Temp_TargetElfFiles Include="
+        @(Link->Metadata('OutputFile'));
+        @(LinkOutputFiles->Metadata('FullPath'));
+        $(ProjectDir)lib\$(TargetPlatformArchitectureEabi)\*.so;
+        $(ProjectDir)libs\$(TargetPlatformArchitectureEabi)\*.so">
+      </__Temp_TargetElfFiles>
+      <_TargetElfFiles Include="@(__Temp_TargetElfFiles->Distinct())" />
+
+      <__Temp_TargetElfSearchPaths Include="
+        @(_TargetElfFiles->'%(RootDir)%(Directory)');
+        %(Link.AdditionalLibraryDirectories);
+        $(IntDir)raw\lib\$(TargetPlatformArchitectureEabi)">
+      </__Temp_TargetElfSearchPaths>
+      <_TargetElfSearchPaths Include="@(__Temp_TargetElfSearchPaths->Distinct())" />
+    </ItemGroup>
+
+    <!--
+      Search for application library (ELF) dependencies. Use 'ndk-depends' to help evaluate this.
+    -->
+
+    <AndroidNdkDepends
+      Condition="'@(_TargetElfFiles)' != ''"
+      TargetElfFiles="@(_TargetElfFiles)"
+      LibrarySearchPaths="@(_TargetElfSearchPaths)"
+      NdkDependsTool="$(NdkDependsTool)"
+      Verbose="true">
+      <Output TaskParameter="DependentLibraries" ItemName="AndroidApkDependentLibraries" />
+      <Output TaskParameter="DependentSystemLibraries" ItemName="AndroidApkDependentSystemLibraries" />
+    </AndroidNdkDepends>
+
+    <!--
+      Recursively copy registered native libraries/tools to architecture paths.
+    -->
+
+    <ItemGroup Condition="'$(ConfigurationType)' == 'Application'">
+      <_CopyNativeLibrariesAndTools Condition="'@(AndroidApkDependentLibraries)' != ''" Include="@(AndroidApkDependentLibraries->Distinct())">
+        <IntermediateDirectory>$(IntDir)raw</IntermediateDirectory>
+      </_CopyNativeLibrariesAndTools>
+
+      <!-- Copy target architecture 'gdbserver' instance. -->
+      <_CopyNativeLibrariesAndTools Condition="('$(UseDebugLibraries)' == 'true' or '%(AndroidManifest.DebugMode)' == 'true')" Include="$(PlatformToolsetGdbServer)">
+        <IntermediateDirectory>$(IntDir)raw</IntermediateDirectory>
+      </_CopyNativeLibrariesAndTools>
+    </ItemGroup>
+
+    <Copy
+      Condition="'@(_CopyNativeLibrariesAndTools)' != ''"
+      SourceFiles="@(_CopyNativeLibrariesAndTools->Distinct())"
+      DestinationFiles="@(_CopyNativeLibrariesAndTools->'%(IntermediateDirectory)\lib\$(TargetPlatformArchitectureEabi)\%(Filename)%(Extension)')"
+    />
+
+    <!--
+      Duplicate initial AndroidManifest-produced APK (so we can modify it without triggering incremental builds).
+    -->
+
+    <Copy SourceFiles="@(AndroidManifestOutputApk)" DestinationFiles="$(UnsignedOutputFile)">
+      <Output TaskParameter="CopiedFiles" ItemName="AndroidApkOutputFile" />
+    </Copy>
+
+    <!--
+      Add registered files to the final APK using a 7zip deployment (which is significantly faster than aapt).
+
+        Registering example:
+
+        <ItemGroup>
+          <AndroidApk Include="$(IntDir)**\libs\**\*" />
+        </ItemGroup>
+    -->
+
+    <Copy
+      Condition="'@(AndroidApk)' != ''"
+      SourceFiles="@(AndroidApk)"
+      DestinationFiles="@(AndroidApk->'$(IntDir)raw\%(RecursiveDir)%(Filename)%(Extension)')"
+    />
+
+    <Exec
+      Condition="'@(AndroidApkOutputFile)' != ''"
+      Command="&quot;$(SevenZipToolRoot)\7za.exe&quot; a -tzip -mx9 -ssc -r &quot;@(AndroidApkOutputFile->Metadata('FullPath'))&quot; * &gt;NUL"
+      WorkingDirectory="$(IntDir)raw"
+    />
+
+    <!--
+      Duplicate and sign the APK with specified credentials.
+    -->
+
+    <Copy Condition="'$(UnsignedOutputFile)' != ''" SourceFiles="$(UnsignedOutputFile)" DestinationFiles="$(SignedUnalignedOutputFile)" />
+
+    <Message Condition="'$(SignedUnalignedOutputFile)' != ''" Text="$(MSBuildProjectFile) -&gt; $(SignedUnalignedOutputFile)" Importance="High" />
+
+    <ItemGroup>
+      <AndroidApkSign Include="$(SignedUnalignedOutputFile)">
+        <Keystore Condition="'%(AndroidApkSign.Keystore)' == ''">$(MSBuildThisFileDirectory)\Keystores\debug.keystore</Keystore>
+        <KeystorePass Condition="'%(AndroidApkSign.KeystorePass)' == ''">android</KeystorePass>
+        <KeystoreType Condition="'%(AndroidApkSign.KeystoreType)' == ''"></KeystoreType>
+        <PrivateKeyPassword Condition="'%(AndroidApkSign.PrivateKeyPassword)' == ''"></PrivateKeyPassword>
+        <SignatureFile Condition="'%(AndroidApkSign.SignatureFile)' == ''"></SignatureFile>
+        <DigestAlgorithm Condition="'%(AndroidApkSign.DigestAlgorithm)' == ''">SHA1</DigestAlgorithm>
+        <SignatureAlgorithm Condition="'%(AndroidApkSign.SignatureAlgorithm)' == ''">SHA1withRSA</SignatureAlgorithm>
+        <DisplayCertificates Condition="'%(AndroidApkSign.DisplayCertificates)' == ''">false</DisplayCertificates>
+        <UnsignedJar Condition="'%(AndroidApkSign.UnsignedJar)' == ''">$(SignedUnalignedOutputFile)</UnsignedJar>
+        <KeystoreAlias Condition="'%(AndroidApkSign.KeystoreAlias)' == ''">androiddebugkey</KeystoreAlias>
+      </AndroidApkSign>
+    </ItemGroup>
+
+    <JavaSigner
+      BuildingInIDE="$(BuildingInsideVisualStudio)"
+      Condition="'@(AndroidApkSign)' != ''"
+      TrackerLogDirectory="$(TLogLocation)"
+      ToolPath="$(JavaHomeDir)\bin"
+      ToolExe="jarsigner.exe"
+      Keystore="%(AndroidApkSign.Keystore)"
+      KeystorePass="%(AndroidApkSign.KeystorePass)"
+      KeystoreType="%(AndroidApkSign.KeystoreType)"
+      PrivateKeyPassword="%(AndroidApkSign.PrivateKeyPassword)"
+      SignatureFile="%(AndroidApkSign.SignatureFile)"
+      DigestAlgorithm="%(AndroidApkSign.DigestAlgorithm)"
+      SignatureAlgorithm="%(AndroidApkSign.SignatureAlgorithm)"
+      Verbose="%(AndroidApkSign.Verbose)"
+      DisplayCertificates="%(AndroidApkSign.DisplayCertificates)"
+      Protected="%(AndroidApkSign.Protected)"
+      UnsignedJar="%(AndroidApkSign.UnsignedJar)"
+      KeystoreAlias="%(AndroidApkSign.KeystoreAlias)">
+    </JavaSigner>
+
+    <Message Condition="'@(AndroidApkSign)' != ''" Text="$(MSBuildProjectFile) -&gt; %(UnsignedJar)" Importance="High" />
+
+    <!--
+      Align the signed APK. (Must be post-signing if using jarsigner.)
+    -->
+
+    <ItemGroup>
+      <AndroidZipAlign Condition="'@(AndroidApkSign)' != ''" Include="%(UnsignedJar)">
+        <Overwrite Condition="'%(AndroidZipAlign.Overwrite)' == ''">true</Overwrite>
+        <MemoryPageAlignment Condition="'%(AndroidZipAlign.MemoryPageAlignment)' == ''">true</MemoryPageAlignment>
+        <Verbose Condition="'%(AndroidZipAlign.Verbose)' == ''">false</Verbose>
+        <RecompressUsingZopfli Condition="'%(AndroidZipAlign.RecompressUsingZopfli)' == ''">false</RecompressUsingZopfli>
+        <Alignment Condition="'%(AndroidZipAlign.Alignment)' == ''">4</Alignment>
+        <InFile>%(FullPath)</InFile>
+        <Outfile>$(SignedAlignedOutputFile)</Outfile>
+      </AndroidZipAlign>
+    </ItemGroup>
+
+    <AndroidZipAlign
+      BuildingInIDE="$(BuildingInsideVisualStudio)"
+      Condition="'@(AndroidZipAlign)' != ''"
+      TrackerLogDirectory="$(TLogLocation)"
+      ToolPath="$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)"
+      ToolExe="zipalign.exe"
+      Overwrite="%(AndroidZipAlign.Overwrite)"
+      MemoryPageAlignment="%(AndroidZipAlign.MemoryPageAlignment)"
+      Verbose="%(AndroidZipAlign.Verbose)"
+      RecompressUsingZopfli="%(AndroidZipAlign.RecompressUsingZopfli)"
+      Alignment="%(AndroidZipAlign.Alignment)"
+      InFile="%(AndroidZipAlign.InFile)"
+      Outfile="%(AndroidZipAlign.Outfile)">
+    </AndroidZipAlign>
+
+    <Message Condition="'@(AndroidZipAlign)' != ''" Text="$(MSBuildProjectFile) -&gt; %(Outfile)" Importance="High" />
+
+  </Target>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <Target Name="CleanAndroidApk">
+    <ItemGroup>
+      <CleanAndroidApkCacheFiles
+        Include="
+        $(IntDir)*.apk;
+        $(IntDir)raw\lib\$(TargetPlatformArchitectureEabi)\gdbserver;
+        $(IntDir)raw\lib\$(TargetPlatformArchitectureEabi)\*.a;
+        $(IntDir)raw\lib\$(TargetPlatformArchitectureEabi)\*.so;
+        $(IntDir)raw\**\*;"
+      />
+      <CleanAndroidApkCacheDirectories Include="$(IntDir)raw\lib\$(TargetPlatformArchitectureEabi);" />
+    </ItemGroup>
+    <Delete Files="@(CleanAndroidApkCacheFiles)" />
+    <RemoveDir Directories="@(CleanAndroidApkCacheDirectories)" />
+  </Target>
+
+</Project>

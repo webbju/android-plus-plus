@@ -221,7 +221,7 @@ namespace AndroidPlusPlus.Common
 
           List<MiResultValue> nestedResultValues = new List<MiResultValue> ();
 
-          if (enclosureVariable == string.Empty)
+          if (string.IsNullOrEmpty(enclosureVariable))
           {
             enclosureVariable = enclosuresProcessed.ToString ();
           }

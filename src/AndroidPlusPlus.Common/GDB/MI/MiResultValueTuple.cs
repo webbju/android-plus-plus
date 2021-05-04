@@ -38,11 +38,9 @@ namespace AndroidPlusPlus.Common
 
       foreach (MiResultValue value in m_valueList)
       {
-        List <MiResultValue> fieldList;
-
-        if (!m_fieldDictionary.TryGetValue (value.Variable, out fieldList))
+        if (!m_fieldDictionary.TryGetValue(value.Variable, out List<MiResultValue> fieldList))
         {
-          fieldList = new List <MiResultValue> ();
+          fieldList = new List<MiResultValue>();
         }
 
         fieldList.Add (value);
@@ -66,7 +64,7 @@ namespace AndroidPlusPlus.Common
         valueListBuilder.Append (value.ToString ());
       }
 
-      valueListBuilder.Append ("}");
+      valueListBuilder.Append ('}');
 
       return valueListBuilder.ToString ();
     }

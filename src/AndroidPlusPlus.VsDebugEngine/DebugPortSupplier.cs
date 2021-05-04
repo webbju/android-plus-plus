@@ -71,7 +71,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private Dictionary<Guid, IDebugPort2> m_registeredPorts = new Dictionary<Guid, IDebugPort2> ();
+    private readonly Dictionary<Guid, IDebugPort2> m_registeredPorts = new Dictionary<Guid, IDebugPort2> ();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -91,16 +91,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        string requestPortName;
-
-        LoggingUtils.RequireOk (portRequest.GetPortName (out requestPortName));
+        LoggingUtils.RequireOk(portRequest.GetPortName(out string requestPortName));
 
         if (string.IsNullOrWhiteSpace (requestPortName))
         {
           throw new InvalidOperationException ("Invalid/empty port name");
         }
 
-        AndroidDevice device = AndroidAdb.GetConnectedDeviceById (requestPortName) ?? throw new InvalidOperationException ($"Failed to find a device named {requestPortName}");
+        var device = AndroidAdb.GetConnectedDeviceById (requestPortName) ?? throw new InvalidOperationException ($"Failed to find a device named {requestPortName}");
 
         port = new DebuggeePort (this, device);
 
@@ -136,11 +134,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        string requestPortName;
+        LoggingUtils.RequireOk(CanAddPort());
 
-        LoggingUtils.RequireOk (CanAddPort ());
-
-        LoggingUtils.RequireOk (pRequest.GetPortName (out requestPortName));
+        LoggingUtils.RequireOk (pRequest.GetPortName (out string requestPortName));
 
         if (string.IsNullOrWhiteSpace (requestPortName))
         {
@@ -151,11 +147,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         foreach (KeyValuePair<Guid, IDebugPort2> keyPair in m_registeredPorts)
         {
-          string portName;
-
           IDebugPort2 registeredPort = keyPair.Value;
 
-          LoggingUtils.RequireOk (registeredPort.GetPortName (out portName));
+          LoggingUtils.RequireOk (registeredPort.GetPortName (out string portName));
 
           if (portName.Equals (requestPortName))
           {
@@ -171,11 +165,9 @@ namespace AndroidPlusPlus.VsDebugEngine
           // Create and track a new port for this request.
           //
 
-          Guid portId;
+          LoggingUtils.RequireOk(CreatePort(pRequest, out ppPort));
 
-          LoggingUtils.RequireOk (CreatePort (pRequest, out ppPort));
-
-          LoggingUtils.RequireOk (ppPort.GetPortId (out portId));
+          LoggingUtils.RequireOk (ppPort.GetPortId (out Guid portId));
 
           m_registeredPorts.Add (portId, ppPort);
         }

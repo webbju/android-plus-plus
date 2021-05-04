@@ -823,11 +823,11 @@ namespace AndroidPlusPlus.VsDebugEngine
           }
         }
 
-        NativeDebugger.RunInterruptOperation (delegate (CLangDebugger debugger)
+        NativeDebugger.RunInterruptOperation ((CLangDebugger debugger) =>
         {
-          debugger.GdbClient.SetSetting ("solib-search-path", string.Join (";", symbolSearchPaths.ToArray ()), true);
+          debugger.GdbClient.SetSetting ("solib-search-path", string.Join<string> (";", symbolSearchPaths), true);
 
-          debugger.GdbClient.SetSetting ("debug-file-directory", string.Join (";", symbolSearchPaths.ToArray ()), true);
+          debugger.GdbClient.SetSetting ("debug-file-directory", string.Join<string> (";", symbolSearchPaths), true);
 
           BreakpointManager.SetDirty (true);
 

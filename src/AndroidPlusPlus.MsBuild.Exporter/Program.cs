@@ -2,20 +2,19 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+using CommandLine;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.IO;
+using System.Text;
 using System.Xml;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace AndroidPlusPlus.MsBuild.Exporter
-{
+namespace AndroidPlusPlus.MsBuild.Exporter {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -28,17 +27,23 @@ namespace AndroidPlusPlus.MsBuild.Exporter
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private static bool s_uninstall = false;
+    class Options
+    {
+      [Option("uninstall", Default = false)]
+      public bool Uninstall { get; set; }
 
-    private static bool s_killMsBuildInstances = false;
+      [Option("kill-msbuild", Default = false)]
+      public bool KillMsBuild { get; set; }
 
-    private static HashSet<string> s_templateDirs = new HashSet<string> ();
+      [Option("template-dir", Required = true)]
+      public IEnumerable<string> TemplateDirs { get; set; }
 
-    private static string s_versionDescriptorFile = string.Empty;
+      [Option("export-dir", Required = true)]
+      public IEnumerable<string> ExportDirs { get; set; }
 
-    private static Dictionary<string, string> s_vsVersionMsBuildDirs = new Dictionary<string, string> ();
-
-    private static HashSet<string> s_exportDirectories = new HashSet<string> ();
+      [Option("version-file")]
+      public string VersionFile { get; set; }
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -46,65 +51,46 @@ namespace AndroidPlusPlus.MsBuild.Exporter
 
     static int Main (string [] args)
     {
+      CommandLine.Parser.Default.ParseArguments<Options>(args)
+        .WithParsed(RunOptions);
+
+      return 0;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    static void RunOptions (Options options)
+    {
       try
       {
-        ProcessArguments (args);
-
-        if (s_killMsBuildInstances)
+        if (options.KillMsBuild)
         {
           KillMsBuildInstances ();
         }
 
-        Dictionary<string, string> textSubstitution = new Dictionary<string, string> ();
-
-        textSubstitution.Add ("{master}", "Android++");
-
-        textSubstitution.Add ("{master-verbose}", "AndroidPlusPlus");
-
-        //
-        // Decide whether to validate MSBuild installed directories if the user specified particular VS version(s).
-        //
-
-        bool validateMsBuildInstallations = true;
-
-        if (s_vsVersionMsBuildDirs.ContainsKey ("all"))
+        var textSubstitution = new Dictionary<string, string>
         {
-          validateMsBuildInstallations = false;
+          { "{master}", "Android++" },
+          { "{master-version}", "1.0" },
+          { "{master-verbose}", "AndroidPlusPlus" }
+        };
+
+        foreach (var exportDir in options.ExportDirs)
+        {
+          string canonicalExportDir = Path.GetFullPath(exportDir);
+
+          UninstallMsBuildTemplates (canonicalExportDir, ref textSubstitution);
         }
 
-        //
-        // Accumulate additional export locations for each requested MSBuild directory/version.
-        //
-
-        foreach (KeyValuePair<string, string> keyPair in s_vsVersionMsBuildDirs)
+        if (!options.Uninstall)
         {
-          s_exportDirectories.Clear ();
-
-          string version = keyPair.Key;
-
-          string dir = keyPair.Value;
-
-          if (Directory.Exists (dir))
+          foreach (var exportDir in options.ExportDirs)
           {
-            if (!s_exportDirectories.Contains (dir))
-            {
-              s_exportDirectories.Add (dir);
-            }
-          }
-          else if (validateMsBuildInstallations)
-          {
-            throw new DirectoryNotFoundException (string.Format ("Could not locate required MSBuild platforms directory. This should have been installed with Visual Studio {0}. Tried: {1}", version, dir));
-          }
+            string canonicalExportDir = Path.GetFullPath(exportDir);
 
-          //
-          // Install/Uninstall scripts for each specified VS version.
-          //
-
-          UninstallMsBuildTemplates (version, ref textSubstitution, ref s_exportDirectories);
-
-          if (!s_uninstall)
-          {
-            ExportMsBuildTemplateForVersion (version, ref textSubstitution, ref s_exportDirectories, ref s_templateDirs);
+            ExportMsBuildTemplateForVersion (canonicalExportDir, options.TemplateDirs, options.VersionFile, ref textSubstitution);
           }
         }
       }
@@ -115,212 +101,7 @@ namespace AndroidPlusPlus.MsBuild.Exporter
         Console.WriteLine (exception);
 
         Trace.WriteLine (exception);
-
-        PrintArgumentUsage ();
-
-        return 1;
       }
-
-      Console.WriteLine ("[AndroidPlusPlus.MsBuild.Exporter] Success.");
-
-      Trace.WriteLine ("[AndroidPlusPlus.MsBuild.Exporter] Success.");
-
-      return 0;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    private static void ProcessArguments (string [] args)
-    {
-      if ((args == null) || (args.Length == 0))
-      {
-        throw new ArgumentException ("No arguments specified");
-      }
-
-      for (int i = 0; i < args.Length; ++i)
-      {
-        switch (args [i])
-        {
-          case "--uninstall":
-          {
-            s_uninstall = true;
-
-            break;
-          }
-
-          case "--kill-msbuild":
-          {
-            s_killMsBuildInstances = true;
-
-            break;
-          }
-
-          case "--template-dir":
-          {
-            string template = args [++i];
-
-            if (!Directory.Exists (template))
-            {
-              throw new DirectoryNotFoundException ("--template-dir references non-existent directory. Tried: " + template);
-            }
-
-            s_templateDirs.Add (template);
-
-            break;
-          }
-
-          case "--export-dir":
-          {
-            string exportDir = args [++i].Replace ("\"", "");
-
-            if (!Directory.Exists (exportDir))
-            {
-              Directory.CreateDirectory (exportDir);
-            }
-
-            if (!s_exportDirectories.Contains (exportDir))
-            {
-              s_exportDirectories.Add (exportDir);
-            }
-
-            break;
-          }
-
-          case "--version-file":
-          {
-            string descriptorFile = args [++i];
-
-            if (!File.Exists (descriptorFile))
-            {
-              throw new DirectoryNotFoundException ("--version-file references non-existent file. Tried: " + descriptorFile);
-            }
-
-            s_versionDescriptorFile = descriptorFile;
-
-            break;
-          }
-
-          case "--vs-version":
-          {
-            string [] versions = args [++i].Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (string version in versions)
-            {
-              if (s_vsVersionMsBuildDirs.ContainsKey (version))
-              {
-                continue;
-              }
-
-              // https://docs.microsoft.com/en-us/cpp/build/reference/msbuild-visual-cpp-overview?view=vs-2019
-              switch (version)
-              {
-                case "2010":
-                {
-                  string dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\";
-
-                  if (!Directory.Exists (dir))
-                  {
-                    dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\";
-                  }
-
-                  s_vsVersionMsBuildDirs.Add (version, dir);
-
-                  break;
-                }
-
-                case "2012":
-                {
-                  string dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\V110\";
-
-                  if (!Directory.Exists (dir))
-                  {
-                    dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\V110\";
-                  }
-
-                  s_vsVersionMsBuildDirs.Add (version, dir);
-
-                  break;
-                }
-
-                case "2013":
-                {
-                  string dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\V120\";
-
-                  if (!Directory.Exists (dir))
-                  {
-                    dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\V120\";
-                  }
-
-                  s_vsVersionMsBuildDirs.Add (version, dir);
-
-                  break;
-                }
-
-                case "2015":
-                {
-                  string dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFiles) + @"\MSBuild\Microsoft.Cpp\v4.0\V140\";
-
-                  if (!Directory.Exists (dir))
-                  {
-                    dir = Environment.GetFolderPath (Environment.SpecialFolder.ProgramFilesX86) + @"\MSBuild\Microsoft.Cpp\v4.0\V140\";
-                  }
-
-                  s_vsVersionMsBuildDirs.Add (version, dir);
-
-                  break;
-                }
-
-                case "all":
-                {
-                  ProcessArguments ("--vs-version 2010;2012;2013;2015".Split (' '));
-
-                  break;
-                }
-
-                default:
-                {
-                  throw new ArgumentException ("--vs-version references invalid version. Tried: " + version);
-                }
-              }
-            }
-
-            break;
-          }
-        }
-      }
-
-      //
-      // Validate the tool executed with appropriate arguments.
-      //
-
-      if (!s_uninstall)
-      {
-        if (s_templateDirs.Count () == 0)
-        {
-          throw new ArgumentException ("--template-dir not specified.");
-        }
-
-        if (s_templateDirs.Count () > 1)
-        {
-          throw new ArgumentException ("Please only specify a single target --template-dir.");
-        }
-      }
-
-      if (s_vsVersionMsBuildDirs.Count () == 0)
-      {
-        throw new ArgumentException ("--vs-version not defined correctly. Expected: 'all', '2013' or '2015'.");
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    private static void PrintArgumentUsage ()
-    {
-      // TODO
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -345,12 +126,11 @@ namespace AndroidPlusPlus.MsBuild.Exporter
           }
           catch (Exception)
           {
-            using (Process taskkill = Process.Start ("taskkill", "/pid " + process.Id + " /f"))
-            {
-              taskkill.WaitForExit ();
+            using Process taskkill = Process.Start("taskkill", "/pid " + process.Id + " /f");
 
-              killed = (taskkill.ExitCode == 0);
-            }
+            taskkill.WaitForExit();
+
+            killed = taskkill.ExitCode == 0;
           }
           finally
           {
@@ -371,86 +151,88 @@ namespace AndroidPlusPlus.MsBuild.Exporter
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private static void UninstallMsBuildTemplates (string version, ref Dictionary<string, string> textSubstitution, ref HashSet <string> exportDirectories)
+    private static void UninstallMsBuildTemplates (string exportDir, ref Dictionary<string, string> textSubstitution)
     {
-      foreach (string exportDir in exportDirectories)
+      //
+      // Clean 'Application Type' files and sub-directories.
+      //
+
+      Console.WriteLine (string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Uninstalling scripts from {0}", exportDir));
+
+      if (Directory.Exists (Path.Combine (exportDir, "Application Type")))
       {
-        //
-        // Clean 'BuildCustomizations' files and sub-directories.
-        //
+        string [] installedCustomisationFiles = Directory.GetFiles (Path.Combine (exportDir, "Application Type"));
 
-        Console.WriteLine (string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Uninstalling scripts from {0}", exportDir));
+        string [] installedCustomisationDirectories = Directory.GetDirectories (Path.Combine (exportDir, "Application Type"));
 
-        if (Directory.Exists (Path.Combine (exportDir, "Application Type")))
+        foreach (string file in installedCustomisationFiles)
         {
-          string [] installedCustomisationFiles = Directory.GetFiles (Path.Combine (exportDir, "Application Type"));
-
-          string [] installedCustomisationDirectories = Directory.GetDirectories (Path.Combine (exportDir, "Application Type"));
-
-          foreach (string file in installedCustomisationFiles)
+          if (file.Contains (textSubstitution ["{master}"]))
           {
-            if (file.Contains (textSubstitution ["{master}"]))
-            {
-              File.Delete (file);
-            }
-          }
-
-          foreach (string directory in installedCustomisationDirectories)
-          {
-            if (directory.Contains (textSubstitution ["{master}"]))
-            {
-              Directory.Delete (directory, true);
-            }
+            File.Delete (file);
           }
         }
 
-        if (Directory.Exists (Path.Combine (exportDir, "BuildCustomizations")))
+        foreach (string directory in installedCustomisationDirectories)
         {
-          string [] installedCustomisationFiles = Directory.GetFiles (Path.Combine (exportDir, "BuildCustomizations"));
-
-          string [] installedCustomisationDirectories = Directory.GetDirectories (Path.Combine (exportDir, "BuildCustomizations"));
-
-          foreach (string file in installedCustomisationFiles)
+          if (directory.Contains (textSubstitution ["{master}"]))
           {
-            if (file.Contains (textSubstitution ["{master}"]))
-            {
-              File.Delete (file);
-            }
+            Directory.Delete (directory, true);
           }
+        }
+      }
 
-          foreach (string directory in installedCustomisationDirectories)
+      //
+      // Clean 'BuildCustomizations' files and sub-directories.
+      //
+
+
+      if (Directory.Exists (Path.Combine (exportDir, "BuildCustomizations")))
+      {
+        string [] installedCustomisationFiles = Directory.GetFiles (Path.Combine (exportDir, "BuildCustomizations"));
+
+        string [] installedCustomisationDirectories = Directory.GetDirectories (Path.Combine (exportDir, "BuildCustomizations"));
+
+        foreach (string file in installedCustomisationFiles)
+        {
+          if (file.Contains (textSubstitution ["{master}"]))
           {
-            if (directory.Contains (textSubstitution ["{master}"]))
-            {
-              Directory.Delete (directory, true);
-            }
+            File.Delete (file);
           }
         }
 
-        //
-        // Clean 'Platforms' files and sub-directories.
-        //
-
-        if (Directory.Exists (Path.Combine (exportDir, "Platforms")))
+        foreach (string directory in installedCustomisationDirectories)
         {
-          string [] installedPlatformFiles = Directory.GetFiles (Path.Combine (exportDir, "Platforms"));
-
-          string [] installedPlatformDirectories = Directory.GetDirectories (Path.Combine (exportDir, "Platforms"));
-
-          foreach (string file in installedPlatformFiles)
+          if (directory.Contains (textSubstitution ["{master}"]))
           {
-            if (file.Contains (textSubstitution ["{master}"]))
-            {
-              File.Delete (file);
-            }
+            Directory.Delete (directory, true);
           }
+        }
+      }
 
-          foreach (string directory in installedPlatformDirectories)
+      //
+      // Clean 'Platforms' files and sub-directories.
+      //
+
+      if (Directory.Exists (Path.Combine (exportDir, "Platforms")))
+      {
+        string [] installedPlatformFiles = Directory.GetFiles (Path.Combine (exportDir, "Platforms"));
+
+        string [] installedPlatformDirectories = Directory.GetDirectories (Path.Combine (exportDir, "Platforms"));
+
+        foreach (string file in installedPlatformFiles)
+        {
+          if (file.Contains (textSubstitution ["{master}"]))
           {
-            if (directory.Contains (textSubstitution ["{master}"]))
-            {
-              Directory.Delete (directory, true);
-            }
+            File.Delete (file);
+          }
+        }
+
+        foreach (string directory in installedPlatformDirectories)
+        {
+          if (directory.Contains (textSubstitution ["{master}"]))
+          {
+            Directory.Delete (directory, true);
           }
         }
       }
@@ -460,31 +242,34 @@ namespace AndroidPlusPlus.MsBuild.Exporter
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private static void ExportMsBuildTemplateForVersion (string version, ref Dictionary <string, string> textSubstitution, ref HashSet <string> exportDirectories, ref HashSet <string> templateDirectories)
+    private static void ExportMsBuildTemplateForVersion (string exportDir, IEnumerable<string> templateDirectories, string versionFile, ref Dictionary<string, string> textSubstitution)
     {
-      foreach (string exportDir in exportDirectories)
+      //
+      // Copy each directory of the template directories and apply pattern processing.
+      //
+
+      foreach (string templateDir in templateDirectories)
       {
-        //
-        // Copy each directory of the template directories and apply pattern processing.
-        //
+        string canonicalTemplateDir = Path.GetFullPath(templateDir);
 
-        foreach (string templateDir in templateDirectories)
-        {
-          Console.WriteLine (string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Copying {0} to {1}", templateDir, exportDir));
+        Console.WriteLine (string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Copying {0} to {1}", canonicalTemplateDir, exportDir));
 
-          CopyFoldersAndFiles (templateDir, exportDir, true, ref textSubstitution);
-        }
+        CopyFoldersAndFiles (canonicalTemplateDir, exportDir, true, ref textSubstitution);
+      }
 
-        //
-        // Copy specified version descriptor file to the root of 'Platforms'. Useful for tracking install versions.
-        //
+      //
+      // Copy specified version descriptor file to the root of 'Platforms'. Useful for tracking install versions.
+      //
 
-        if (!string.IsNullOrEmpty (s_versionDescriptorFile))
-        {
-          string destinationVersionFile = Path.Combine (exportDir, "Application Type", textSubstitution ["{master}"], Path.GetFileName (s_versionDescriptorFile));
+      if (!string.IsNullOrEmpty (versionFile))
+      {
+        string canonicalVersionFile = Path.GetFullPath(versionFile);
 
-          File.Copy (s_versionDescriptorFile, destinationVersionFile, true);
-        }
+        string destinationVersionFile = Path.Combine (exportDir, "Application Type", textSubstitution ["{master}"], Path.GetFileName (canonicalVersionFile));
+
+        Console.WriteLine(string.Format("[AndroidPlusPlus.MsBuild.Exporter] Copying {0} to {1}", canonicalVersionFile, destinationVersionFile));
+
+        File.Copy (canonicalVersionFile, destinationVersionFile, true);
       }
     }
 
@@ -561,7 +346,7 @@ namespace AndroidPlusPlus.MsBuild.Exporter
           }
           catch (Exception e)
           {
-            throw new InvalidOperationException ("File validation failed: " + newFileName + ". Exception: " + e.Message);
+            throw new InvalidOperationException ("File validation failed: " + newFileName, e);
           }
         }
       }

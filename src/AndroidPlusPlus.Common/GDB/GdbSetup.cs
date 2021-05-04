@@ -71,34 +71,33 @@ namespace AndroidPlusPlus.Common
 
       GdbToolVersionMinor = 0;
 
-      using (SyncRedirectProcess gdbProcess = new SyncRedirectProcess (GdbToolPath, "--version"))
+      using SyncRedirectProcess gdbProcess = new SyncRedirectProcess(GdbToolPath, "--version");
+
+      gdbProcess.StartAndWaitForExit();
+
+      var versionDetails = gdbProcess.StandardOutput.Replace("\r", "").Split(new char[] { '\n' });
+
+      string versionPrefix = "GNU gdb (GDB) ";
+
+      for (int i = 0; i < versionDetails.Length; ++i)
       {
-        gdbProcess.StartAndWaitForExit ();
-
-        var versionDetails = gdbProcess.StandardOutput.Replace ("\r", "").Split (new char [] { '\n' });
-
-        string versionPrefix = "GNU gdb (GDB) ";
-
-        for (int i = 0; i < versionDetails.Length; ++i)
+        if (versionDetails[i].StartsWith(versionPrefix))
         {
-          if (versionDetails [i].StartsWith (versionPrefix))
+          string gdbVersion = versionDetails[i].Substring(versionPrefix.Length); ;
+
+          var gdbVersionComponents = gdbVersion.Split('.');
+
+          if (gdbVersionComponents.Length > 0)
           {
-            string gdbVersion = versionDetails [i].Substring (versionPrefix.Length); ;
-
-            var gdbVersionComponents = gdbVersion.Split ('.');
-
-            if (gdbVersionComponents.Length > 0)
-            {
-              GdbToolVersionMajor = int.Parse (gdbVersionComponents [0]);
-            }
-
-            if (gdbVersionComponents.Length > 1)
-            {
-              GdbToolVersionMinor = int.Parse (gdbVersionComponents [1]);
-            }
-
-            break;
+            GdbToolVersionMajor = int.Parse(gdbVersionComponents[0]);
           }
+
+          if (gdbVersionComponents.Length > 1)
+          {
+            GdbToolVersionMinor = int.Parse(gdbVersionComponents[1]);
+          }
+
+          break;
         }
       }
     }
@@ -178,10 +177,9 @@ namespace AndroidPlusPlus.Common
         forwardArgsBuilder.AppendFormat ("tcp:{0} ", Port);
       }
 
-      using (SyncRedirectProcess adbPortForward = AndroidAdb.AdbCommand (Process.HostDevice, "forward", forwardArgsBuilder.ToString ()))
-      {
-        adbPortForward.StartAndWaitForExit ();
-      }
+      using SyncRedirectProcess adbPortForward = AndroidAdb.AdbCommand(Process.HostDevice, "forward", forwardArgsBuilder.ToString());
+
+      adbPortForward.StartAndWaitForExit();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -200,10 +198,9 @@ namespace AndroidPlusPlus.Common
 
       forwardArgsBuilder.AppendFormat ("--remove tcp:{0}", Port);
 
-      using (SyncRedirectProcess adbPortForward = AndroidAdb.AdbCommand (Process.HostDevice, "forward", forwardArgsBuilder.ToString ()))
-      {
-        adbPortForward.StartAndWaitForExit (1000);
-      }
+      using SyncRedirectProcess adbPortForward = AndroidAdb.AdbCommand(Process.HostDevice, "forward", forwardArgsBuilder.ToString());
+
+      adbPortForward.StartAndWaitForExit(1000);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -484,39 +481,33 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      List<string> gdbExecutionCommands = new List<string> ();
+      List<string> gdbExecutionCommands = new List<string>
+      {
+        "set target-async on",
+        "set breakpoint pending on",
+        "set logging file " + PathUtils.SantiseWindowsPath(Path.Combine(CacheDirectory, "gdb.log")),
+        "set logging overwrite on",
+        "set logging on",
+#if DEBUG
+        "set debug remote 1",
+        "set debug infrun 1",
+        "set verbose on",
+#endif
+      };
 
-      gdbExecutionCommands.Add ("set target-async on");
-
-      gdbExecutionCommands.Add ("set breakpoint pending on");
-
-      gdbExecutionCommands.Add ("set logging file " + PathUtils.SantiseWindowsPath (Path.Combine (CacheDirectory, "gdb.log")));
-
-      gdbExecutionCommands.Add ("set logging overwrite on");
-
-      gdbExecutionCommands.Add ("set logging on");
-
-    #if false
+#if false
       if (IsVersionEqualOrAbove (7, 7))
       {
         gdbExecutionCommands.Add ("set mi-async on"); // as above, from GDB 7.7
       }
-    #endif
-
-    #if DEBUG && false
-      gdbExecutionCommands.Add ("set debug remote 1");
-
-      gdbExecutionCommands.Add ("set debug infrun 1");
-
-      gdbExecutionCommands.Add ("set verbose on");
-    #endif
+#endif
 
       // 
       // Include a script copied from 'platform/development' (Android Git) which allows JVM stack traces on via Python.
       // - It also define a special mode for controlling debugging behaviour on ART.
       // 
 
-    #if false
+#if false
       string androidPlusPlusRoot = Environment.GetEnvironmentVariable ("ANDROID_PLUS_PLUS");
 
       string dalkvikGdbScriptPath = Path.Combine (androidPlusPlusRoot, "contrib", "gdb", "scripts", "dalvik.gdb");
@@ -532,7 +523,7 @@ namespace AndroidPlusPlus.Common
           gdbExecutionCommands.Add ("handle SIGSEGV print stop");
         }
       }
-    #endif
+#endif
 
       return gdbExecutionCommands;
     }

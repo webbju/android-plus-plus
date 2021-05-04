@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <PropertyGroup Condition="'$(AndroidManifestBeforeTargets)' == '' and '$(AndroidManifestAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
+
+    <AndroidManifestBeforeTargets></AndroidManifestBeforeTargets>
+
+    <AndroidManifestAfterTargets></AndroidManifestAfterTargets>
+
+  </PropertyGroup>
+
+  <PropertyGroup>
+
+    <ComputeAndroidManifestInputsTargets>$(ComputeAndroidManifestInputsTargets)</ComputeAndroidManifestInputsTargets>
+
+    <CleanDependsOn>$(CleanDependsOn);CleanAndroidManifest</CleanDependsOn>
+
+  </PropertyGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <ItemDefinitionGroup Condition="'$(UseDebugLibraries)' == 'true'">
+
+    <AndroidManifest>
+
+      <DebugMode Condition="'%(AndroidManifest.DebugMode)' == ''">true</DebugMode>
+
+    </AndroidManifest>
+
+  </ItemDefinitionGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+  <ItemDefinitionGroup>
+
+    <AndroidManifest>
+
+      <ProjectManifest Condition="'%(AndroidManifest.ProjectManifest)' == ''">$(ProjectDir)AndroidManifest.xml</ProjectManifest>
+
+      <PrintAndroidSpecificData Condition="'%(AndroidManifest.PrintAndroidSpecificData)' == ''">false</PrintAndroidSpecificData>
+
+      <ConfigurationsToInclude Condition="'%(AndroidManifest.ConfigurationsToInclude)' == ''"></ConfigurationsToInclude>
+
+      <DeviceAssetsToInclude Condition="'%(AndroidManifest.DeviceAssetsToInclude)' == ''"></DeviceAssetsToInclude>
+
+      <OverwriteExistingFiles Condition="'%(AndroidManifest.OverwriteExistingFiles)' == ''">true</OverwriteExistingFiles>
+
+      <GreyscalePixelTolerance Condition="'%(AndroidManifest.GreyscalePixelTolerance)' == ''"></GreyscalePixelTolerance>
+
+      <IncludeJarOrZip Condition="'%(AndroidManifest.IncludeJarOrZip)' == ''"></IncludeJarOrZip>
+
+      <CreatePackageDirectoriesUnderOutput Condition="'%(AndroidManifest.CreatePackageDirectoriesUnderOutput)' == ''">true</CreatePackageDirectoriesUnderOutput>
+
+      <UpdateExistingPackages Condition="'%(AndroidManifest.UpdateExistingPackages)' == ''">false</UpdateExistingPackages>
+
+      <Verbose Condition="'%(AndroidManifest.Verbose)' == ''">false</Verbose>
+
+      <CreateExistingResourceIds Condition="'%(AndroidManifest.CreateExistingResourceIds)' == ''">false</CreateExistingResourceIds>
+
+      <RequireSuggestedLocalisationResources Condition="'%(AndroidManifest.RequireSuggestedLocalisationResources)' == ''">false</RequireSuggestedLocalisationResources>
+
+      <IncludeRawAssetsDirectory Condition="'%(AndroidManifest.IncludeRawAssetsDirectory)' == ''"></IncludeRawAssetsDirectory>
+
+      <ProguardOptionsOutputFile Condition="'%(AndroidManifest.ProguardOptionsOutputFile)' == ''">$(IntDir)bin\proguard.txt</ProguardOptionsOutputFile>
+
+      <ApkOutputFile Condition="'%(AndroidManifest.ApkOutputFile)' == ''"></ApkOutputFile>
+
+      <IncludeExistingPackages Condition="'%(AndroidManifest.IncludeExistingPackages)' == ''">$(AndroidSdkRoot)\platforms\android-$(AndroidSdkLevel)\android.jar</IncludeExistingPackages>
+
+      <ResourceConstantsOutputDirectory Condition="'%(AndroidManifest.ResourceConstantsOutputDirectory)' == ''">$(IntDir)gen</ResourceConstantsOutputDirectory>
+
+      <PublicResourceDefintionsOutputFile Condition="'%(AndroidManifest.PublicResourceDefintionsOutputFile)' == ''"></PublicResourceDefintionsOutputFile>
+
+      <IncludeResourceDirectories Condition="'%(AndroidManifest.IncludeResourceDirectories)' == ''">res</IncludeResourceDirectories>
+
+      <NoNotCompressExtensions Condition="'%(AndroidManifest.NoNotCompressExtensions)' == ''"></NoNotCompressExtensions>
+
+      <DebugMode Condition="'%(AndroidManifest.DebugMode)' == ''">false</DebugMode>
+
+      <InsertManifestMinSdkVersion Condition="'%(AndroidManifest.InsertManifestMinSdkVersion)' == ''"></InsertManifestMinSdkVersion>
+
+      <InsertManifestTargetSdkVersion Condition="'%(AndroidManifest.InsertManifestTargetSdkVersion)' == ''"></InsertManifestTargetSdkVersion>
+
+      <InsertManifestVersionCode Condition="'%(AndroidManifest.InsertManifestVersionCode)' == ''"></InsertManifestVersionCode>
+
+      <InsertManifestVersionName Condition="'%(AndroidManifest.InsertManifestVersionName)' == ''"></InsertManifestVersionName>
+
+      <MaxResVersion Condition="'%(AndroidManifest.MaxResVersion)' == ''"></MaxResVersion>
+
+      <CustomPackage Condition="'%(AndroidManifest.CustomPackage)' == ''"></CustomPackage>
+
+      <ExtraPackages Condition="'%(AndroidManifest.ExtraPackages)' == ''"></ExtraPackages>
+
+      <GenerateDependencies Condition="'%(AndroidManifest.GenerateDependencies)' == ''">false</GenerateDependencies>
+
+      <AutoAddOverlay Condition="'%(AndroidManifest.AutoAddOverlay)' == ''">true</AutoAddOverlay>
+
+      <PreferredConfigurations Condition="'%(AndroidManifest.PreferredConfigurations)' == ''"></PreferredConfigurations>
+
+      <RenameManifestPackage Condition="'%(AndroidManifest.RenameManifestPackage)' == ''"></RenameManifestPackage>
+
+      <RenameInstrumentationTargetPackage Condition="'%(AndroidManifest.RenameInstrumentationTargetPackage)' == ''"></RenameInstrumentationTargetPackage>
+
+      <StringProductVariant Condition="'%(AndroidManifest.StringProductVariant)' == ''"></StringProductVariant>
+
+      <UseUtf16Encoding Condition="'%(AndroidManifest.UseUtf16Encoding)' == ''">false</UseUtf16Encoding>
+
+      <NonConstantResourceId Condition="'%(AndroidManifest.NonConstantResourceId)' == ''">true</NonConstantResourceId>
+
+      <ErrorOnFailedManifestInsert Condition="'%(AndroidManifest.ErrorOnFailedManifestInsert)' == ''">true</ErrorOnFailedManifestInsert>
+
+      <OutputTextSymbols Condition="'%(AndroidManifest.OutputTextSymbols)' == ''">$(IntDir)gen</OutputTextSymbols>
+
+      <IgnoreAssetPatterns Condition="'%(AndroidManifest.IgnoreAssetPatterns)' == ''"></IgnoreAssetPatterns>
+
+      <IncludeRawDirectories Condition="'%(AndroidManifest.IncludeRawDirectories)' == ''"></IncludeRawDirectories>
+
+    </AndroidManifest>
+
+  </ItemDefinitionGroup>
+
+  <!--
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+
+</Project>

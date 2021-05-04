@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "AndroidPlusPlus.MsBuild.Exporter": {
+      "commandName": "Project",
+      "commandLineArgs": "--template-dir \"..\\..\\..\\..\\..\\msbuild\\scripts\" --export-dir \".\\msbuild\" \"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\MSBuild\\Microsoft\\VC\\v160\" --version-file \"..\\..\\..\\..\\..\\version.txt\" --kill-msbuild",
+      "remoteDebugEnabled": false
+    }
+  }
+}

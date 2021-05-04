@@ -76,7 +76,7 @@ namespace AndroidPlusPlus.Common
         valueListBuilder.Append (value.ToString ());
       }
 
-      valueListBuilder.Append ("]");
+      valueListBuilder.Append (']');
 
       return valueListBuilder.ToString ();
     }

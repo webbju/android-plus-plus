@@ -37,7 +37,7 @@ namespace AndroidPlusPlus.Common {
 
     protected StringBuilder m_stdErrorBuilder = new StringBuilder ();
 
-    protected SyncProcess m_process;
+    protected Process m_process;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -113,21 +113,22 @@ namespace AndroidPlusPlus.Common {
     {
       LoggingUtils.PrintFunction ();
 
-      ProcessStartInfo startInfo = new ProcessStartInfo ();
+      ProcessStartInfo startInfo = new ProcessStartInfo
+      {
+        CreateNoWindow = true,
 
-      startInfo.CreateNoWindow = true;
+        UseShellExecute = false,
 
-      startInfo.UseShellExecute = false;
+        LoadUserProfile = false,
 
-      startInfo.LoadUserProfile = false;
+        ErrorDialog = false,
 
-      startInfo.ErrorDialog = false;
+        RedirectStandardOutput = true,
 
-      startInfo.RedirectStandardOutput = true;
+        RedirectStandardError = true,
 
-      startInfo.RedirectStandardError = true;
-
-      startInfo.RedirectStandardInput = true;
+        RedirectStandardInput = true
+      };
 
       return startInfo;
     }
@@ -144,9 +145,10 @@ namespace AndroidPlusPlus.Common {
 
       m_exitMutex = new ManualResetEvent (false);
 
-      m_process = new SyncProcess ();
-
-      m_process.StartInfo = StartInfo;
+      m_process = new Process
+      {
+        StartInfo = StartInfo
+      };
 
       m_process.OutputDataReceived += new DataReceivedEventHandler (ProcessStdout);
 

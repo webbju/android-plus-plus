@@ -2,21 +2,16 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+using AndroidPlusPlus.MsBuild.Common;
+using AndroidPlusPlus.MsBuild.Common.Attributes;
+using Microsoft.Build.Framework;
+using Microsoft.Build.Utilities;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Text;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Resources;
-
-using Microsoft.Build.Framework;
-using Microsoft.Win32;
-using Microsoft.Build.Utilities;
-
-using AndroidPlusPlus.MsBuild.Common;
-using AndroidPlusPlus.Common;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -25,11 +20,7 @@ using AndroidPlusPlus.Common;
 namespace AndroidPlusPlus.MsBuild.DeployTasks
 {
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  public class AndroidDex : TrackedOutOfDateToolTask, ITask
+  public class AndroidDex : TrackedOutOfDateToolTask
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -45,228 +36,113 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [SwitchString(Switch = "-Xms")]
+    public string JvmInitialHeapSize { get; set; } = "32m";
+
+    [SwitchString(Switch = "-Xmx")]
+    public string JvmMaximumHeapSize { get; set; } = "1024m";
+
+    [SwitchString(Switch = "-Xss")]
+    public string JvmThreadStackSize { get; set; } = "1m";
+
+    [SwitchString(Switch = "-jar", Separator = " ")]
+    public string JvmJar { get; set; }
+
+    [SwitchBool(Switch = "--dex")]
+    public bool CreateDex { get; set; }
+
+    [SwitchBool(Switch = "--multi-dex")]
+    public bool MultiDex { get; set; }
+
+    [SwitchString(Subtype = "file", Switch = "--main-dex-list", Separator = "=")]
+    public ITaskItem MultiDexMainList
+    {
+      // --main-dex-list is only supported with --multi-dex
+      get => MultiDex ? _multiDexMainList : null;
+      set => _multiDexMainList = value;
+    }
+    private ITaskItem _multiDexMainList;
+
+    [SwitchBool(Switch = "--minimal-main-dex")]
+    public bool MultiDexMinimalMainDex
+    {
+      // --minimal-main-dex is only supported with --multi-dex
+      get => MultiDex && _multiDexMinimalMainDex;
+      set => _multiDexMinimalMainDex = value;
+    }
+    private bool _multiDexMinimalMainDex;
+
+    [SwitchBool(Switch = "--incremental")]
+    public bool Incremental
+    {
+      // --incremental is not supported with --multi-dex
+      get => _incremental && !MultiDex;
+      set => _incremental = value;
+    }
+    private bool _incremental = true;
+
+    [SwitchBool(ReverseSwitch = "--no-optimize")]
+    public bool Optimize { get; set; } = true;
+
+    [SwitchBool(Switch = "--debug")]
+    public bool Debug { get; set; }
+
+    [SwitchBool(Switch = "--verbose")]
+    public bool Verbose { get; set; }
+
+    [SwitchBool(Switch = "--statistics")]
+    public bool Statistics { get; set; }
+
     [Required]
-    public ITaskItem OutputPath { get; set; }
+    [Output]
+    [SwitchStringList(IsRequired = true, Subtype = "file", Switch = "--output", Separator = "=")]
+    public ITaskItem[] OutputPath { get; set; }
 
     [Required]
-    public string DexJar { get; set; }
+    [SwitchStringList(Subtype = "file")]
+    public ITaskItem[] SourceFiles { get; set; }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected override int TrackedExecuteTool (string pathToTool, string responseFileCommands, string commandLineCommands)
+    protected override bool ValidateParameters()
     {
-      int retCode = -1;
+      var inputFiles = new List<ITaskItem>();
 
-      try
+      if (MultiDexMainList != null)
       {
-        retCode = base.TrackedExecuteTool (pathToTool, responseFileCommands, commandLineCommands);
-
-        string fullOutputPath = OutputPath.GetMetadata ("FullPath");
-
-        OutputFiles = GetOutputFilesFromPath (fullOutputPath);
-      }
-      catch (Exception e)
-      {
-        Log.LogErrorFromException (e, true);
-
-        retCode = -1;
+        inputFiles.Add(MultiDexMainList);
       }
 
-      return retCode;
+      inputFiles.AddRange(SourceFiles);
+
+      InputFiles = inputFiles.ToArray();
+
+      return base.ValidateParameters();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected override void TrackedExecuteToolOutput (KeyValuePair<string, List<ITaskItem>> commandAndSourceFiles, string singleLine)
+    protected override string GenerateResponseFileCommands()
     {
-      try
-      {
-        if (!string.IsNullOrWhiteSpace (singleLine))
-        {
-          if (singleLine.StartsWith ("Exception in thread"))
-          {
-            Log.LogError (singleLine);
-          }
-          else
-          {
-            LogEventsFromTextOutput (string.Format ("[{0}] {1}", ToolName, singleLine), MessageImportance.High);
-          }
-        }
-      }
-      catch (Exception e)
-      {
-        Log.LogErrorFromException (e, true);
-      }
+      return string.Empty; // Disable use of response files.
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected override void AddTaskSpecificDependencies (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
+    protected override void LogEventsFromTextOutput(string singleLine, MessageImportance messageImportance)
     {
-      foreach (ITaskItem source in sources)
+      if (singleLine?.StartsWith("Exception in thread") ?? false)
       {
-        string fullPath = source.GetMetadata ("FullPath");
-
-        // 
-        // Mark additional dependencies for .class files contained within specified folder class paths.
-        // 
-
-        if (Directory.Exists (fullPath))
-        {
-          string [] classPathFiles = Directory.GetFiles (fullPath, "*.class", SearchOption.AllDirectories);
-
-          List<ITaskItem> classPathFileItems = new List<ITaskItem> (classPathFiles.Length);
-
-          foreach (string classpath in classPathFiles)
-          {
-            classPathFileItems.Add (new TaskItem (classpath));
-          }
-
-          trackedFileManager.AddDependencyForSources (classPathFileItems.ToArray (), new ITaskItem [] { source });
-        }
-
-        // 
-        // Ensure configuration file(s) for MultiDex output are flagged as dependencies.
-        // 
-
-        bool multiDex = (source.GetMetadata ("MultiDex") == "true");
-
-        string multiDexMainList = source.GetMetadata ("MultiDexMainList");
-
-        if (multiDex && !string.IsNullOrWhiteSpace (multiDexMainList) && File.Exists (multiDexMainList))
-        {
-          ITaskItem multiDexMainListItem = new TaskItem (multiDexMainList);
-
-          trackedFileManager.AddDependencyForSources (new ITaskItem [] { multiDexMainListItem }, new ITaskItem [] { source });
-        }
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override void AddTaskSpecificOutputFiles (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
-    {
-      // 
-      // Collate the output files using 'GetOutputFilesFromPath' helper. This handles singular and directory output(s).
-      // 
-
-      string fullOutputPath = OutputPath.GetMetadata ("FullPath");
-
-      ITaskItem [] outputFiles = GetOutputFilesFromPath (fullOutputPath);
-
-      if (outputFiles != null)
-      {
-        trackedFileManager.AddDependencyForSources (outputFiles, sources);
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override string GenerateCommandLineCommands ()
-    {
-      // 
-      // Build a command-line based on parsing switches from the registered property sheet, and any additional flags.
-      // 
-
-      StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
-
-      // 
-      // JavaVM options need to go at the start of the command line.
-      // 
-
-      string jvmInitialHeapSize = m_parsedProperties.ParseProperty (Sources [0], "JvmInitialHeapSize");
-
-      string jvmMaximumHeapSize = m_parsedProperties.ParseProperty (Sources [0], "JvmMaximumHeapSize");
-
-      string jvmThreadStackSize = m_parsedProperties.ParseProperty (Sources [0], "JvmThreadStackSize");
-
-      builder.Append (jvmInitialHeapSize + " ");
-
-      builder.Append (jvmMaximumHeapSize + " ");
-
-      builder.Append (jvmThreadStackSize + " ");
-
-      string frameworkDir = Path.GetDirectoryName (DexJar);
-
-      builder.Append ("-Djava.ext.dirs=\"" + frameworkDir + "\" ");
-
-      builder.Append ("-jar \"" + DexJar + "\" ");
-
-      // 
-      // Ensure the JVM options aren't duplicated.
-      // 
-
-      StringBuilder parsedProperties = new StringBuilder (m_parsedProperties.Parse (Sources [0]));
-
-      if (!string.IsNullOrEmpty (jvmInitialHeapSize))
-      {
-        parsedProperties.Replace (jvmInitialHeapSize, "");
+        Log.LogError(singleLine);
       }
 
-      if (!string.IsNullOrEmpty (jvmMaximumHeapSize))
-      {
-        parsedProperties.Replace (jvmMaximumHeapSize, "");
-      }
-
-      if (!string.IsNullOrEmpty (jvmThreadStackSize))
-      {
-        parsedProperties.Replace (jvmThreadStackSize, "");
-      }
-
-      builder.Append (parsedProperties.ToString ());
-
-      return builder.ToString ();
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override string ToolName
-    {
-      get
-      {
-        return "AndroidDex";
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    private ITaskItem [] GetOutputFilesFromPath (string fullOutputPath)
-    {
-      if (Directory.Exists (fullOutputPath))
-      {
-        // 
-        // When exporting to a directory, ensure the contents of such directory are listed as its output.
-        // 
-
-        string [] dexOutputFiles = Directory.GetFiles (fullOutputPath, "*.dex", SearchOption.AllDirectories);
-
-        List<ITaskItem> dexFileItems = new List<ITaskItem> (dexOutputFiles.Length);
-
-        foreach (string dexFile in dexOutputFiles)
-        {
-          dexFileItems.Add (new TaskItem (dexFile));
-        }
-
-        return dexFileItems.ToArray ();
-      }
-      else
-      {
-        return new ITaskItem [] { OutputPath };
-      }
+      base.LogEventsFromTextOutput(singleLine, MessageImportance.High);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -180,17 +180,16 @@ namespace AndroidPlusPlus.Common
       {
         int exitCode = -1;
 
-        using (SyncRedirectProcess process = AndroidAdb.AdbCommand (this, "shell", string.Format ("{0} {1}", command, arguments)))
+        using SyncRedirectProcess process = AndroidAdb.AdbCommand(this, "shell", string.Format("{0} {1}", command, arguments));
+
+        exitCode = process.StartAndWaitForExit(timeout);
+
+        if (exitCode != 0)
         {
-          exitCode = process.StartAndWaitForExit (timeout);
-
-          if (exitCode != 0)
-          {
-            throw new InvalidOperationException (string.Format ("[shell:{0}] returned error code: {1}", command, exitCode));
-          }
-
-          return process.StandardOutput;
+          throw new InvalidOperationException(string.Format("[shell:{0}] returned error code: {1}", command, exitCode));
         }
+
+        return process.StandardOutput;
       }
       catch (Exception e)
       {
@@ -212,17 +211,16 @@ namespace AndroidPlusPlus.Common
       {
         int exitCode = -1;
 
-        using (SyncRedirectProcess process = AndroidAdb.AdbCommand (this, "push", string.Format ("{0} {1}", PathUtils.QuoteIfNeeded (localPath), remotePath)))
+        using SyncRedirectProcess process = AndroidAdb.AdbCommand(this, "push", string.Format("{0} {1}", PathUtils.QuoteIfNeeded(localPath), remotePath));
+
+        exitCode = process.StartAndWaitForExit();
+
+        if (exitCode != 0)
         {
-          exitCode = process.StartAndWaitForExit ();
-
-          if (exitCode != 0)
-          {
-            throw new InvalidOperationException (string.Format ("[push] returned error code: {0}", exitCode));
-          }
-
-          return process.StandardOutput;
+          throw new InvalidOperationException(string.Format("[push] returned error code: {0}", exitCode));
         }
+
+        return process.StandardOutput;
       }
       catch (Exception e)
       {
@@ -280,17 +278,16 @@ namespace AndroidPlusPlus.Common
 
         int exitCode = -1;
 
-        using (SyncRedirectProcess process = AndroidAdb.AdbCommand (this, "pull", string.Format ("{0} {1}", remotePath, PathUtils.QuoteIfNeeded (localPath))))
+        using SyncRedirectProcess process = AndroidAdb.AdbCommand(this, "pull", string.Format("{0} {1}", remotePath, PathUtils.QuoteIfNeeded(localPath)));
+
+        exitCode = process.StartAndWaitForExit();
+
+        if (exitCode != 0)
         {
-          exitCode = process.StartAndWaitForExit ();
-
-          if (exitCode != 0)
-          {
-            throw new InvalidOperationException (string.Format ("[pull] returned error code: {0}", exitCode));
-          }
-
-          return process.StandardOutput;
+          throw new InvalidOperationException(string.Format("[pull] returned error code: {0}", exitCode));
         }
+
+        return process.StandardOutput;
       }
       catch (Exception e)
       {

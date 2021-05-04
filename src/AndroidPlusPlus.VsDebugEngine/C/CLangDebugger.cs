@@ -223,13 +223,14 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       GdbServer = new GdbServer (m_gdbSetup);
 
-      GdbClient = new GdbClient (m_gdbSetup);
+      GdbClient = new GdbClient(m_gdbSetup)
+      {
+        OnResultRecord = OnClientResultRecord,
 
-      GdbClient.OnResultRecord = OnClientResultRecord;
+        OnAsyncRecord = OnClientAsyncRecord,
 
-      GdbClient.OnAsyncRecord = OnClientAsyncRecord;
-
-      GdbClient.OnStreamRecord = OnClientStreamRecord;
+        OnStreamRecord = OnClientStreamRecord
+      };
 
       GdbClient.Start ();
     }

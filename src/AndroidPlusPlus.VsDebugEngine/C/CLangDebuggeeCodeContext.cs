@@ -100,7 +100,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             //infoArray [0].bstrModuleUrl = moduleArray [0].m_bstrUrl;
 
-            m_symbolModule = PathUtils.ConvertPathMingwToWindows (module);
+            m_symbolModule = PathUtils.ConvertPathWslToWindows (module);
           }
         }
       }

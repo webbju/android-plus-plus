@@ -243,13 +243,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        string fileName;
-
-        TEXT_POSITION [] startPos = new TEXT_POSITION [1];
+        TEXT_POSITION[] startPos = new TEXT_POSITION[1];
 
         TEXT_POSITION [] endPos = new TEXT_POSITION [1];
 
-        LoggingUtils.RequireOk (pDocPos.GetFileName (out fileName));
+        LoggingUtils.RequireOk (pDocPos.GetFileName (out string fileName));
 
         LoggingUtils.RequireOk (pDocPos.GetRange (startPos, endPos));
 
@@ -604,9 +602,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         JavaLangDebuggeeThread thread = pThread as JavaLangDebuggeeThread;
 
-        uint threadId;
-
-        LoggingUtils.RequireOk (thread.GetThreadId (out threadId));
+        LoggingUtils.RequireOk(thread.GetThreadId(out uint threadId));
 
         JdbClient.StepType stepType = (JdbClient.StepType) Step;
 

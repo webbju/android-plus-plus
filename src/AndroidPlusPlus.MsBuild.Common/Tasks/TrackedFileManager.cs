@@ -2,20 +2,11 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Diagnostics;
-using System.Text;
-using System.IO;
-using System.Reflection;
-using System.Resources;
-using System.Threading;
-
 using Microsoft.Build.Framework;
-using Microsoft.Win32;
-using Microsoft.Build.Utilities;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -35,9 +26,7 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private Dictionary<string, HashSet<string>> m_sourceDependencyTable = new Dictionary<string, HashSet<string>> ();
-
-    private Encoding m_defaultEncoding = Encoding.Unicode;
+    private readonly Dictionary<string, HashSet<string>> m_sourceDependencyTable = new Dictionary<string, HashSet<string>> ();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -59,7 +48,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
       if (tlog == null)
       {
-        throw new ArgumentNullException ("tlog");
+        throw new ArgumentNullException (nameof(tlog));
       }
 
       string tlogFullPath = (!string.IsNullOrEmpty (tlog.GetMetadata ("FullPath")) ? tlog.GetMetadata ("FullPath") : Path.GetFullPath (tlog.ItemSpec));
@@ -74,76 +63,75 @@ namespace AndroidPlusPlus.MsBuild.Common
         return; // Don't error as sometimes this is expected; full rebuilds for example.
       }
 
-      using (StreamReader reader = new StreamReader (tlogFullPath, m_defaultEncoding))
+      using StreamReader reader = new StreamReader(tlogFullPath, Encoding.UTF8);
+
+      string trackedSourceLineData = reader.ReadLine();
+
+      while (!string.IsNullOrWhiteSpace(trackedSourceLineData))
       {
-        string trackedSourceLineData = reader.ReadLine ();
-
-        while (!string.IsNullOrWhiteSpace (trackedSourceLineData))
+        if (trackedSourceLineData.StartsWith("^"))
         {
-          if (trackedSourceLineData.StartsWith ("^"))
+          // 
+          // Encountered a canonical source root node. Add each of the sources referenced here to the dependency graph.
+          // 
+
+          HashSet<string> trackedSources = new HashSet<string>(trackedSourceLineData.Substring(1).ToUpperInvariant().Split('|'));
+
+          foreach (string source in trackedSources)
           {
-            // 
-            // Encountered a canonical source root node. Add each of the sources referenced here to the dependency graph.
-            // 
+            string trackedFormat = ConvertToTrackerFormat(source);
 
-            HashSet<string> trackedSources = new HashSet<string> (trackedSourceLineData.Substring (1).ToUpperInvariant ().Split ('|'));
+            if (!m_sourceDependencyTable.ContainsKey(trackedFormat))
+            {
+              m_sourceDependencyTable.Add(trackedFormat, new HashSet<string>());
+            }
+          }
 
+          // 
+          // Parse the next line, if it contains source dependencies process them - otherwise handle a new root node.
+          // 
+
+          trackedSourceLineData = reader.ReadLine();
+
+          if (string.IsNullOrWhiteSpace(trackedSourceLineData) || trackedSourceLineData.StartsWith("^"))
+          {
+            continue;
+          }
+
+          HashSet<string> trackedSourceDependencies = new HashSet<string>();
+
+          while (trackedSourceLineData != null)
+          {
+            if (string.IsNullOrWhiteSpace(trackedSourceLineData))
+            {
+              break;
+            }
+            else if (trackedSourceLineData.StartsWith("^"))
+            {
+              break;
+            }
+            else
+            {
+              string trackedFormat = ConvertToTrackerFormat(trackedSourceLineData);
+
+              if (!trackedSourceDependencies.Contains(trackedFormat))
+              {
+                trackedSourceDependencies.Add(trackedFormat);
+              }
+            }
+
+            trackedSourceLineData = reader.ReadLine();
+          }
+
+          foreach (string dependency in trackedSourceDependencies)
+          {
             foreach (string source in trackedSources)
             {
-              string trackedFormat = ConvertToTrackerFormat (source);
+              string trackedFormat = ConvertToTrackerFormat(source);
 
-              if (!m_sourceDependencyTable.ContainsKey (trackedFormat))
+              if (!m_sourceDependencyTable[trackedFormat].Contains(dependency))
               {
-                m_sourceDependencyTable.Add (trackedFormat, new HashSet<string> ());
-              }
-            }
-
-            // 
-            // Parse the next line, if it contains source dependencies process them - otherwise handle a new root node.
-            // 
-
-            trackedSourceLineData = reader.ReadLine ();
-
-            if (string.IsNullOrWhiteSpace (trackedSourceLineData) || trackedSourceLineData.StartsWith ("^"))
-            {
-              continue;
-            }
-
-            HashSet<string> trackedSourceDependencies = new HashSet<string> ();
-
-            while (trackedSourceLineData != null)
-            {
-              if (string.IsNullOrWhiteSpace (trackedSourceLineData))
-              {
-                break;
-              }
-              else if (trackedSourceLineData.StartsWith ("^"))
-              {
-                break;
-              }
-              else
-              {
-                string trackedFormat = ConvertToTrackerFormat (trackedSourceLineData);
-
-                if (!trackedSourceDependencies.Contains (trackedFormat))
-                {
-                  trackedSourceDependencies.Add (trackedFormat);
-                }
-              }
-
-              trackedSourceLineData = reader.ReadLine ();
-            }
-
-            foreach (string dependency in trackedSourceDependencies)
-            {
-              foreach (string source in trackedSources)
-              {
-                string trackedFormat = ConvertToTrackerFormat (source);
-
-                if (!m_sourceDependencyTable [trackedFormat].Contains (dependency))
-                {
-                  m_sourceDependencyTable [trackedFormat].Add (dependency);
-                }
+                m_sourceDependencyTable[trackedFormat].Add(dependency);
               }
             }
           }
@@ -155,7 +143,7 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public ITaskItem [] ComputeSourcesNeedingCompilation ()
+    public ICollection<ITaskItem> ComputeSourcesNeedingCompilation ()
     {
       throw new NotImplementedException ();
     }
@@ -164,15 +152,15 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void AddSourcesToTable (ITaskItem [] sources)
+    public void AddSourcesToTable (ICollection<ITaskItem> sources)
     {
       // 
       // Register a set of provided sources, without an associated dependency.
       // 
-
+      
       foreach (ITaskItem source in sources)
       {
-        string trackerFormat = ConvertToTrackerFormat (source.GetMetadata ("FullPath"));
+        string trackerFormat = ConvertToTrackerFormat (source);
 
         if (!m_sourceDependencyTable.ContainsKey (trackerFormat))
         {
@@ -185,7 +173,7 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void AddDependencyForSources (ITaskItem [] dependencies, ITaskItem [] sources)
+    public void AddDependencyForSources (ICollection<ITaskItem> dependencies, ICollection<ITaskItem> sources)
     {
       // 
       // Register a dependency for a set of provided sources. Will add unregistered sources to table if required.
@@ -193,39 +181,27 @@ namespace AndroidPlusPlus.MsBuild.Common
 
       AddSourcesToTable (sources);
 
-      foreach (ITaskItem dependency in dependencies)
+      foreach (var dependency in dependencies)
       {
-        string dependencyFullPath = dependency.GetMetadata ("FullPath");
+        string dependencyFullPath = dependency.GetMetadata ("FullPath") ?? Path.GetFullPath(dependency.ItemSpec);
 
-        if (Directory.Exists (dependencyFullPath))
+        if (Directory.Exists (dependencyFullPath) || !File.Exists(dependencyFullPath))
         {
-          continue; // Skip any references to directories.
+          continue; // Skip any references to directories or non-existent files.
         }
-
-#if DEBUG
-        if (!File.Exists (dependencyFullPath))
-        {
-          throw new FileNotFoundException ("Could not find specified dependency: " + dependencyFullPath);
-        }
-#endif
 
         string dependencyFileTrackerFormat = ConvertToTrackerFormat (dependencyFullPath);
 
-        foreach (ITaskItem source in sources)
+        foreach (var source in sources)
         {
-          string sourceFullPath = source.GetMetadata ("FullPath");
+          string sourceFileTrackerFormat = ConvertToTrackerFormat (source);
 
-          if (dependencyFullPath.Equals (sourceFullPath))
+          if (dependencyFileTrackerFormat.Equals(sourceFileTrackerFormat))
           {
             continue; // Don't list sources as their own dependencies.
           }
 
-          string sourceFileTrackerFormat = ConvertToTrackerFormat (sourceFullPath);
-
-          if (!m_sourceDependencyTable [sourceFileTrackerFormat].Contains (dependencyFileTrackerFormat))
-          {
-            m_sourceDependencyTable [sourceFileTrackerFormat].Add (dependencyFileTrackerFormat);
-          }
+          m_sourceDependencyTable[sourceFileTrackerFormat].Add(dependencyFileTrackerFormat);
         }
       }
     }
@@ -234,17 +210,15 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void RemoveSourcesFromTable (ITaskItem [] sources)
+    public void RemoveSourcesFromTable (ICollection<ITaskItem> sources)
     {
       // 
       // Iterate through the entire dependency table removing any of the specified sources. Remove empty entries.
       // 
 
-      foreach (ITaskItem source in sources)
+      foreach (var source in sources)
       {
-        string sourceFileTrackerFormat = ConvertToTrackerFormat (source.GetMetadata ("FullPath"));
-
-        m_sourceDependencyTable.Remove (sourceFileTrackerFormat);
+        m_sourceDependencyTable.Remove (ConvertToTrackerFormat(source));
       }
     }
 
@@ -268,7 +242,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
       if (tlog == null)
       {
-        throw new ArgumentNullException ("tlog");
+        throw new ArgumentNullException (nameof(tlog));
       }
 
       string tlogFullPath = (!string.IsNullOrEmpty (tlog.GetMetadata ("FullPath")) ? tlog.GetMetadata ("FullPath") : Path.GetFullPath (tlog.ItemSpec));
@@ -279,16 +253,15 @@ namespace AndroidPlusPlus.MsBuild.Common
       }
 
 #if true
-      using (StreamWriter writer = new StreamWriter (tlogFullPath, false, Encoding.Unicode))
-      {
-        foreach (KeyValuePair<string, HashSet<string>> sourceEntry in m_sourceDependencyTable)
-        {
-          writer.WriteLine ('^' + sourceEntry.Key);
+      using StreamWriter writer = new StreamWriter(tlogFullPath, false, Encoding.Unicode);
 
-          foreach (string dependency in sourceEntry.Value)
-          {
-            writer.WriteLine (dependency);
-          }
+      foreach (var sourceEntry in m_sourceDependencyTable)
+      {
+        writer.WriteLine('^' + sourceEntry.Key);
+
+        foreach (string dependency in sourceEntry.Value)
+        {
+          writer.WriteLine(dependency);
         }
       }
 #else
@@ -350,6 +323,15 @@ namespace AndroidPlusPlus.MsBuild.Common
         writer.Close ();
       }
 #endif
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public static string ConvertToTrackerFormat (ITaskItem item)
+    {
+      return ConvertToTrackerFormat(item.ItemSpec);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

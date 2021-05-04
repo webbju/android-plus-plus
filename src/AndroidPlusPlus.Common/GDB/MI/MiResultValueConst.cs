@@ -44,13 +44,15 @@ namespace AndroidPlusPlus.Common
         throw new ArgumentNullException (nameof(value));
       }
 
-      m_valueList = new List<MiResultValue> ();
+      m_valueList = new List<MiResultValue>
+      {
+        this
+      };
 
-      m_valueList.Add (this);
-
-      m_fieldDictionary = new Dictionary<string, List <MiResultValue>> ();
-
-      m_fieldDictionary.Add (variable, m_valueList);
+      m_fieldDictionary = new Dictionary<string, List<MiResultValue>>
+      {
+        { variable, m_valueList }
+      };
 
       m_rawConstValue = value;
     }

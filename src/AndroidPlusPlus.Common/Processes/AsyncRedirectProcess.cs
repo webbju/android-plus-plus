@@ -48,7 +48,7 @@ namespace AndroidPlusPlus.Common
 
     protected TextWriter m_stdInputWriter = null;
 
-    protected AsyncProcess m_process;
+    protected Process m_process;
 
     protected IEventListener m_listener = null;
 
@@ -160,7 +160,7 @@ namespace AndroidPlusPlus.Common
 
       m_listener = listener;
 
-      m_process = new AsyncProcess
+      m_process = new Process
       {
         StartInfo = StartInfo
       };

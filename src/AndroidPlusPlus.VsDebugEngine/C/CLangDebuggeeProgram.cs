@@ -505,13 +505,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        string fileName;
-
         TEXT_POSITION [] startPos = new TEXT_POSITION [1];
 
         TEXT_POSITION [] endPos = new TEXT_POSITION [1];
 
-        LoggingUtils.RequireOk (pDocPos.GetFileName (out fileName));
+        LoggingUtils.RequireOk (pDocPos.GetFileName (out string fileName));
 
         LoggingUtils.RequireOk (pDocPos.GetRange (startPos, endPos));
 
@@ -555,9 +553,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         CLangDebuggeeStackFrame stackFrame = pFrame as CLangDebuggeeStackFrame;
 
-        IDebugThread2 thread;
-
-        LoggingUtils.RequireOk (stackFrame.GetThread (out thread));
+        LoggingUtils.RequireOk (stackFrame.GetThread (out IDebugThread2 thread));
 
         CLangDebuggeeThread stackFrameThread = thread as CLangDebuggeeThread;
 
@@ -567,23 +563,19 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         for (int i = 0; i < threadCallStack.Count; ++i)
         {
-          string frameName;
+          var frame = threadCallStack [i];
 
-          IDebugCodeContext2 codeContext;
+          LoggingUtils.RequireOk (frame.GetName (out string frameName));
 
-          DebuggeeStackFrame frame = threadCallStack [i] as DebuggeeStackFrame;
-
-          LoggingUtils.RequireOk (frame.GetName (out frameName));
-
-          LoggingUtils.RequireOk (frame.GetCodeContext (out codeContext));
+          LoggingUtils.RequireOk (frame.GetCodeContext (out IDebugCodeContext2 codeContext));
 
           if (codeContext != null)
           {
-            CODE_PATH codePath = new CODE_PATH ();
-
-            codePath.bstrName = frameName;
-
-            codePath.pCode = codeContext;
+            var codePath = new CODE_PATH
+            {
+              bstrName = frameName,
+              pCode = codeContext
+            };
 
             threadCodePaths.Add (codePath);
           }
@@ -867,9 +859,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         CLangDebuggeeThread thread = pThread as CLangDebuggeeThread;
 
-        uint threadId;
-
-        LoggingUtils.RequireOk (thread.GetThreadId (out threadId));
+        LoggingUtils.RequireOk (thread.GetThreadId (out uint threadId));
 
         GdbClient.StepType stepType = (GdbClient.StepType)Step;
 
@@ -991,11 +981,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        uint threadId;
-
         CLangDebuggeeThread thread = pThread as CLangDebuggeeThread;
 
-        LoggingUtils.RequireOk (thread.GetThreadId (out threadId));
+        LoggingUtils.RequireOk (thread.GetThreadId (out uint threadId));
 
         string command = "-thread-select " + threadId;
 

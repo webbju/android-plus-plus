@@ -72,10 +72,9 @@ namespace AndroidPlusPlus.Common
 
       forwardArgsBuilder.AppendFormat ("tcp:{0} jdwp:{1}", Port, Process.Pid);
 
-      using (SyncRedirectProcess adbPortForward = AndroidAdb.AdbCommand (Process.HostDevice, "forward", forwardArgsBuilder.ToString ()))
-      {
-        adbPortForward.StartAndWaitForExit (1000);
-      }
+      using SyncRedirectProcess adbPortForward = AndroidAdb.AdbCommand(Process.HostDevice, "forward", forwardArgsBuilder.ToString());
+
+      adbPortForward.StartAndWaitForExit(1000);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -94,10 +93,9 @@ namespace AndroidPlusPlus.Common
 
       forwardArgsBuilder.AppendFormat ("--remove tcp:{0}", Port);
 
-      using (SyncRedirectProcess adbPortForward = AndroidAdb.AdbCommand (Process.HostDevice, "forward", forwardArgsBuilder.ToString ()))
-      {
-        adbPortForward.StartAndWaitForExit (1000);
-      }
+      using SyncRedirectProcess adbPortForward = AndroidAdb.AdbCommand(Process.HostDevice, "forward", forwardArgsBuilder.ToString());
+
+      adbPortForward.StartAndWaitForExit(1000);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -106,8 +104,6 @@ namespace AndroidPlusPlus.Common
 
     public ICollection<string> CreateJdbExecutionScript ()
     {
-      LoggingUtils.PrintFunction ();
-
       return Array.Empty<string>();
     }
 

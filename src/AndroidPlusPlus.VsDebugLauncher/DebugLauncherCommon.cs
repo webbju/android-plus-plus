@@ -534,7 +534,6 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "AndroidSdkRoot")]
     public LaunchConfiguration GetLaunchConfigurationFromProjectProperties (IDictionary<string, string> projectProperties)
     {
       LoggingUtils.PrintFunction ();

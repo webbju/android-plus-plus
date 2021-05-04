@@ -2,293 +2,212 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+using AndroidPlusPlus.Common;
+using AndroidPlusPlus.MsBuild.Common;
+using AndroidPlusPlus.MsBuild.Common.Attributes;
+using Microsoft.Build.Framework;
+using Microsoft.Build.Utilities;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Diagnostics;
-using System.Text;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Resources;
-
-using Microsoft.Build.Framework;
-using Microsoft.Win32;
-using Microsoft.Build.Utilities;
-
-using AndroidPlusPlus.MsBuild.Common;
-using AndroidPlusPlus.Common;
+using System.Text;
+using System.Threading;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace AndroidPlusPlus.MsBuild.DeployTasks
+namespace AndroidPlusPlus.MsBuild.DeployTasks.Tasks
 {
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public class JavaCompile : TrackedOutOfDateToolTask, ITask
+  public class JavaCompile : TrackedOutOfDateToolTask
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    HashSet<string> m_outputClassPackages;
+    private HashSet<string> _outputClassPackages = new HashSet<string>();
 
-    List<ITaskItem> m_outputClassSourceFiles;
+    private List<ITaskItem> _outputClassSourceFiles = new List<ITaskItem>();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public JavaCompile ()
-      : base (new ResourceManager ("AndroidPlusPlus.MsBuild.DeployTasks.Properties.Resources", Assembly.GetExecutingAssembly ()))
+    public JavaCompile()
+      : base(new ResourceManager("AndroidPlusPlus.MsBuild.DeployTasks.Properties.Resources", Assembly.GetExecutingAssembly()))
     {
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    [SwitchBool(Switch = "-g", ReverseSwitch = "-g:none")]
+    public bool GenerateDebuggingInfo { get; set; }
+
+    [SwitchBool(Switch = "-nowarn")]
+    public bool NoWarnings { get; set; }
+
+    [SwitchBool(Switch = "-verbose")]
+    public bool Verbose { get; set; }
+
+    [SwitchBool(Switch = "-deprecation")]
+    public bool Deprecation { get; set; }
+
+    [SwitchStringList(Subtype = "folder", Switch = "-classpath", Separator = " ", CommandLineValueSeparator = ";")]
+    public ITaskItem[] ClassPaths { get; set; }
+
+    [SwitchStringList(Subtype = "folder", Switch = "-sourcepath", Separator = " ", CommandLineValueSeparator = ";")]
+    public ITaskItem[] SourcePaths { get; set; }
+
+    [SwitchStringList(Subtype = "folder", Switch = "-bootclasspath", Separator = " ", CommandLineValueSeparator = ";")]
+    public ITaskItem[] BootClassPaths { get; set; }
+
+    [SwitchStringList(Subtype = "folder", Switch = "-Djava.ext.dirs", Separator = "=", CommandLineValueSeparator = ";")]
+    public ITaskItem[] ExtDirs { get; set; }
+
+    [SwitchStringList(Subtype = "folder", Switch = "-Djava.endorsed.dirs", Separator = "=", CommandLineValueSeparator = ";")]
+    public ITaskItem[] EndorsedDirs { get; set; }
+
+    [SwitchStringList(Switch = "-processor", Separator = " ", CommandLineValueSeparator = ",")]
+    public string[] AnnotationProcessors { get; set; }
+
+    [SwitchStringList(Subtype = "folder", Switch = "-processorpath", Separator = " ")]
+    public ITaskItem[] AnnotationProcessorPaths { get; set; }
+
+    [SwitchString(Subtype = "folder", Switch = "-d", Separator = " ")]
+    public ITaskItem GeneratedClassFileOutputPath { get; set; }
+
+    [SwitchString(Subtype = "folder", Switch = "-s", Separator = " ")]
+    public ITaskItem GeneratedSourceFileOutputPath { get; set; }
+
+    [SwitchString(Subtype = "folder", Switch = "-h", Separator = " ")]
+    public ITaskItem GeneratedNativeHeaderOutputPath { get; set; }
+
+    [SwitchEnum(Switch = "-encoding", Separator = " ")]
+    [SwitchEnumValue(Name = "UTF-8", Switch = "UTF-8")]
+    public string Encoding { get; set; }
+
+    [SwitchEnum(Switch = "-source", Separator = " ")]
+    [SwitchEnumValue(Name = "1.3", Switch = "1.3")]
+    [SwitchEnumValue(Name = "1.4", Switch = "1.4")]
+    [SwitchEnumValue(Name = "1.5", Switch = "1.5")]
+    [SwitchEnumValue(Name = "1.6", Switch = "1.6")]
+    [SwitchEnumValue(Name = "1.7", Switch = "1.7")]
+    [SwitchEnumValue(Name = "1.8", Switch = "1.8")]
+    [SwitchEnumValue(Name = "5", Switch = "5")]
+    [SwitchEnumValue(Name = "6", Switch = "6")]
+    [SwitchEnumValue(Name = "7", Switch = "7")]
+    [SwitchEnumValue(Name = "8", Switch = "8")]
+    [SwitchEnumValue(Name = "9", Switch = "9")]
+    public string SourceVersion { get; set; }
+
+    [SwitchEnum(Switch = "-target", Separator = " ")]
+    [SwitchEnumValue(Name = "1.3", Switch = "1.3")]
+    [SwitchEnumValue(Name = "1.4", Switch = "1.4")]
+    [SwitchEnumValue(Name = "1.5", Switch = "1.5")]
+    [SwitchEnumValue(Name = "1.6", Switch = "1.6")]
+    [SwitchEnumValue(Name = "1.7", Switch = "1.7")]
+    [SwitchEnumValue(Name = "1.8", Switch = " 1.8")]
+    [SwitchEnumValue(Name = "5", Switch = "5")]
+    [SwitchEnumValue(Name = "6", Switch = "6")]
+    [SwitchEnumValue(Name = "7", Switch = "7")]
+    [SwitchEnumValue(Name = "8", Switch = "8")]
+    [SwitchEnumValue(Name = "9", Switch = "9")]
+    public string TargetVersion { get; set; }
+
+    [SwitchBool(Switch = "-Werror")]
+    public bool WarningsAsErrors { get; set; }
 
     [Required]
-    public string JavaHomeDir { get; set; }
+    [SwitchStringList(Subtype = "file", IsRequired = true)]
+    public ITaskItem[] SourceFiles { get; set; }
 
     [Output]
-    public ITaskItem [] OutputClassPaths { get; set; }
+    public ITaskItem[] OutputClassFiles => _outputClassSourceFiles.ToArray();
+
+    [Output]
+    public ITaskItem[] OutputClassPaths => _outputClassPackages.Select(str => new TaskItem(str)).ToArray<ITaskItem>();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected override bool Setup ()
+    protected override bool ValidateParameters()
     {
-      if (base.Setup ())
-      {
-        m_outputClassPackages = new HashSet<string> ();
+      InputFiles = SourceFiles;
 
-        m_outputClassSourceFiles = new List<ITaskItem> ();
-
-        return true;
-      }
-
-      return false;
+      return base.ValidateParameters();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected override int TrackedExecuteTool (string pathToTool, string responseFileCommands, string commandLineCommands)
+    protected override void LogEventsFromTextOutput(string singleLine, MessageImportance messageImportance)
     {
-      int retCode = -1;
+      base.LogEventsFromTextOutput(JavaUtilities.ConvertJavaOutputToVS(singleLine), messageImportance);
 
-      try
+      //
+      // Intercept output class filenames and package addresses
+      // .
+      // e.g.
+      //  [checking com.example.nativemedia.MyRenderer]
+      //  [wrote AndroidMT\Debug\bin\classes\com\example\nativemedia\MyRenderer.class]
+      //
+
+      if (singleLine?.StartsWith("[") ?? false)
       {
-        m_outputClassPackages.Clear ();
+        string sanitisedOutput = singleLine.Trim(new char[] { ' ', '[', ']' });
 
-        m_outputClassSourceFiles.Clear ();
-
-        retCode = base.TrackedExecuteTool (pathToTool, responseFileCommands, commandLineCommands);
-      }
-      catch (Exception e)
-      {
-        Log.LogErrorFromException (e, true);
-
-        retCode = -1;
-      }
-      finally
-      {
-        if (retCode == 0)
+        if (sanitisedOutput.StartsWith("checking "))
         {
-          // 
-          // Export listing of compiled .class outputs and the default class path.
-          // 
+          string packageNameWithClassName = sanitisedOutput.Substring("checking ".Length);
 
-          string defaultClassPath = Sources [0].GetMetadata ("ClassOutputDirectory");
+          string packageNameWithoutClass = packageNameWithClassName.Substring(0, packageNameWithClassName.LastIndexOf('.'));
 
-          ITaskItem defaultClassPathItem = new TaskItem (defaultClassPath);
+          _outputClassPackages.Add(packageNameWithoutClass);
+        }
+        else if (sanitisedOutput.StartsWith("wrote "))
+        {
+          string fileWritten = sanitisedOutput.Substring("wrote ".Length);
 
-          defaultClassPathItem.SetMetadata ("ClassPaths", defaultClassPath);
+          fileWritten = StripFileObjectDescriptor(fileWritten);
 
-          OutputClassPaths = new ITaskItem [] { defaultClassPathItem };
-
-          OutputFiles = m_outputClassSourceFiles.ToArray ();
+          _outputClassSourceFiles.Add(new TaskItem(fileWritten));
         }
       }
-
-      return retCode;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected override void TrackedExecuteToolOutput (KeyValuePair<string, List<ITaskItem>> commandAndSourceFiles, string singleLine)
+    private static string StripFileObjectDescriptor(string fileObjectDescription)
     {
-      try
-      {
-        if (!string.IsNullOrWhiteSpace (singleLine))
-        {
-          // 
-          // Intercept output class filenames and package addresses
-          // .
-          // e.g.
-          //  [checking com.example.nativemedia.MyRenderer]
-          //  [wrote AndroidMT\Debug\bin\classes\com\example\nativemedia\MyRenderer.class]
-          // 
-
-          if (singleLine.StartsWith ("["))
-          {
-            if (Sources [0].GetMetadata ("Verbose") == "true")
-            {
-              LogEventsFromTextOutput (string.Format ("[{0}] {1}", ToolName, singleLine), MessageImportance.High);
-            }
-
-            string sanitisedOutput = singleLine.Trim (new char [] { ' ', '[', ']' });
-
-            if (sanitisedOutput.StartsWith ("checking "))
-            {
-              string packageNameWithClassName = sanitisedOutput.Substring ("checking ".Length);
-
-              string packageNameWithoutClass = packageNameWithClassName.Substring (0, packageNameWithClassName.LastIndexOf ('.'));
-
-              if (!m_outputClassPackages.Contains (packageNameWithoutClass))
-              {
-                m_outputClassPackages.Add (packageNameWithoutClass);
-              }
-            }
-            else if (sanitisedOutput.StartsWith ("wrote "))
-            {
-              string fileWritten = sanitisedOutput.Substring ("wrote ".Length);
-
-              fileWritten = StripFileObjectDescriptor (fileWritten);
-
-              ITaskItem classFileItem = new TaskItem (fileWritten);
-
-              classFileItem.SetMetadata ("ClassOutputDirectory", Sources [0].GetMetadata ("ClassOutputDirectory"));
-
-              m_outputClassSourceFiles.Add (classFileItem);
-            }
-          }
-          else
-          {
-            // 
-            // Java output differs from a Visual Studio's "jump to line" format, we transform that output here.
-            // 
-
-            LogEventsFromTextOutput (JavaUtilities.ConvertJavaOutputToVS (singleLine), MessageImportance.High);
-          }
-        }
-      }
-      catch (Exception e)
-      {
-        Log.LogErrorFromException (e, true);
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override string GenerateCommandLineCommands ()
-    {
-      // 
-      // Build a command-line based on parsing switches from the registered property sheet, and any additional flags.
-      // 
-
-      StringBuilder builder = new StringBuilder (PathUtils.CommandLineLength);
-
-      builder.Append ("--jdk-home " + PathUtils.QuoteIfNeeded (JavaHomeDir) + " ");
-
-      return builder.ToString ();
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override string GenerateResponseFileCommands ()
-    {
-      try
-      {
-        StringBuilder builder = new StringBuilder ();
-
-        builder.Append ("-verbose" + " ");
-
-        builder.Append (m_parsedProperties.Parse (Sources [0]) + " ");
-
-        foreach (ITaskItem source in Sources)
-        {
-          builder.Append (PathUtils.QuoteIfNeeded (source.GetMetadata ("Identity")) + " ");
-        }
-
-        return builder.ToString ();
-      }
-      catch (Exception e)
-      {
-        Log.LogErrorFromException (e, true);
-      }
-
-      return string.Empty;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    private static string StripFileObjectDescriptor (string fileObjectDescription)
-    {
-      // 
+      //
       // Convert from JDK 7-style verbose file output to the raw filename.
-      // 
+      //
       // e.g: [wrote RegularFileObject[..\..\build\obj\android\vs10.0\NMG_System\debug_no_assets\bin\classes\com\google\android\gms\R$attr.class]]
-      // 
+      //
 
-      int filenameStart = fileObjectDescription.LastIndexOf ('[');
+      int filenameStart = fileObjectDescription.LastIndexOf('[');
 
       if (filenameStart != -1)
       {
-        fileObjectDescription = fileObjectDescription.Substring (filenameStart).Trim (new char [] { '[', ']' });
+        fileObjectDescription = fileObjectDescription.Substring(filenameStart).Trim(new char[] { '[', ']' });
       }
 
       return fileObjectDescription;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override void AddTaskSpecificOutputFiles (ref TrackedFileManager trackedFileManager, ITaskItem [] sources)
-    {
-      trackedFileManager.AddDependencyForSources (m_outputClassSourceFiles.ToArray (), sources);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override bool AppendSourcesToCommandLine
-    {
-      get
-      {
-        return false;
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override string ToolName
-    {
-      get
-      {
-        return "JavaCompile";
-      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
