@@ -23,7 +23,18 @@
   DisplayName="Android++ Debugger"
   PageTemplate="debugger"
   Description="Android++ Debugger options"
+  xmlns:sys="clr-namespace:System;assembly=mscorlib"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns="http://schemas.microsoft.com/build/2009/properties">
+
+  <Rule.Metadata>
+    <sys:Guid x:Key="DebugTargetTypeCommandGuid">A7A96E37-9D90-489A-84CB-14BBBE5686D2</sys:Guid>
+    <sys:UInt32 x:Key="DebugTargetTypeCommandId">0x200</sys:UInt32>
+  </Rule.Metadata>
+
+  <Rule.DataSource>
+    <DataSource Persistence="UserFile" />
+  </Rule.DataSource>
 
   <Rule.Categories>
     <Category Name="General" DisplayName="General"/>
@@ -31,29 +42,22 @@
     <Category Name="LaunchProps" DisplayName="Launch Properties" />
   </Rule.Categories>
 
-  <Rule.DataSource>
-    <DataSource Persistence="UserFile" />
-  </Rule.DataSource>
-
   <EnumProperty
     Name="DebuggerConfigMode"
     DisplayName="Debugger mode"
     Description="Specifies a pre-defined MSBuild solution to interface."
     Category="LaunchConfiguration"
   >
-
     <EnumValue
       Name="Custom"
       DisplayName="Custom"
       Description="Custom MSBuild implementation. Debugger properties must be correct."
     />
-
     <EnumValue
       Name="vs-android"
       DisplayName="vs-android"
       Description="Use 'vs-android' (https://code.google.com/p/vs-android/)."
     />
-
   </EnumProperty>
 
   <StringProperty

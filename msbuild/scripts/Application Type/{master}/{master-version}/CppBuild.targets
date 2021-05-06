@@ -38,10 +38,13 @@
   <ItemGroup Condition="'$(ConfigurationType)' != 'Utility'">
     <PropertyPageSchema Include="
       $(VCTargetsPath)$(LangID)\custom_build_step.xml;
+      $(VCTargetsPath)$(LangID)\debugger_general.xml;
       $(MSBuildThisFileDirectory)\PlatformProps\custom_project_items_schema.xml;
       $(MSBuildThisFileDirectory)\PlatformProps\$(PlatformToolset)\compile.xml;
       $(MSBuildThisFileDirectory)\PlatformProps\$(PlatformToolset)\link.xml;
-      $(MSBuildThisFileDirectory)\PlatformProps\$(PlatformToolset)\lib.xml"
+      $(MSBuildThisFileDirectory)\PlatformProps\$(PlatformToolset)\lib.xml;
+      $(MSBuildThisFileDirectory)\PlatformProps\debugger.xml;
+      "
     />
   </ItemGroup>
 
