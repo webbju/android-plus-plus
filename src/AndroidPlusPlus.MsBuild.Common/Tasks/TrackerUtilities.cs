@@ -2,7 +2,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using AndroidPlusPlus.Common;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using System;
@@ -17,10 +16,6 @@ using System.Text;
 namespace AndroidPlusPlus.MsBuild.Common
 {
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   public static class TrackerUtilities
   {
 
@@ -28,133 +23,70 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if false
-    public static Dictionary<string, HashSet<ITaskItem>> ParseTrackerLogForCommandMapping(ICollection<ITaskItem> trackerLogs)
+    public static Dictionary<string, string> ReadCommandTLog(ITaskItem commandFile, Encoding responseFileEncoding)
     {
       // 
-      // Parse TLog files (exported from Tracker.exe) to produce file modifications grouped by command.
-      // 
-
-      var commandLookup = new Dictionary<string, HashSet<ITaskItem>>();
-
-      if (trackerLogs?.Count == 0)
-      {
-        return commandLookup;
-      }
-
-      foreach (var log in trackerLogs)
-      {
-        using StreamReader reader = File.OpenText(log.ItemSpec);
-
-        string command = "";
-
-        for (string line = reader.ReadLine(); !string.IsNullOrEmpty(line); line = reader.ReadLine())
-        {
-          if (line.StartsWith("#Command:"))
-          {
-            command = line.Substring("#Command:".Length);
-
-            continue;
-          }
-
-          if (line.StartsWith("^"))
-          {
-            continue; //throw new InvalidOperationException($"Log ({log}) contains a rooted element: {line}");
-          }
-
-          if (!commandLookup.TryGetValue(command, out HashSet<ITaskItem> taskItems))
-          {
-            taskItems = new HashSet<ITaskItem>();
-          }
-
-          taskItems.Add(new TaskItem(PathUtils.NormalizePath(line)));
-
-          commandLookup[command] = taskItems;
-        }
-      }
-
-      return commandLookup;
-    }
-#endif
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#if false
-    public static Dictionary<string, HashSet <string>> GetDependencyTableFromTLog (ITaskItem tlog)
-    {
-      // 
-      // Parse and collate a TLog. It's best to achieve this by associating dependency graph 'entries' with associated sources.
+      // Parse and collate a command TLog (format below) into a HashMap with a "rooted filename" as the key, and command as value.
       // 
       // Format:
       // 
       //    ^FILE1.C
-      //    FILE1.OBJ
+      //    command-line-run --input FILE1.C
       //    ^FILE2.C|FILE3.C
-      //    FILE2.OBJ
-      //    FILE3.OBJ
+      //    ...
       // 
 
-      if (tlog == null)
+      var collatedTrackedFiles = new Dictionary<string, string>();
+
+      var commandLineFullPath = commandFile.GetMetadata("FullPath");
+
+      if (!File.Exists(commandLineFullPath))
       {
-        throw new ArgumentNullException (nameof(tlog));
+        return collatedTrackedFiles;
       }
 
-      string tlogFullPath = (!string.IsNullOrEmpty (tlog.GetMetadata ("FullPath")) ? tlog.GetMetadata ("FullPath") : Path.GetFullPath (tlog.ItemSpec));
+      using StreamReader reader = new StreamReader(commandLineFullPath, responseFileEncoding);
 
-      if (string.IsNullOrEmpty (tlogFullPath))
+      for (string line = reader.ReadLine(); !string.IsNullOrEmpty(line); line = reader.ReadLine())
       {
-        throw new ArgumentException ("Could not evaluate full path for TLog: " + tlog);
-      }
-
-      Dictionary<string, HashSet<string>> trackedDependencyTable = new Dictionary<string, HashSet<string>> ();
-
-      if (!File.Exists (tlogFullPath))
-      {
-        return trackedDependencyTable; // Don't error as sometimes this is expected; full rebuilds for example.
-      }
-
-      using (StreamReader reader = new StreamReader (tlogFullPath, Encoding.UTF8))
-      {
-        string trackedSourceLineData = reader.ReadLine ();
-
-        while (!string.IsNullOrWhiteSpace (trackedSourceLineData))
+        if (line.StartsWith("^"))
         {
-          if (trackedSourceLineData.StartsWith ("^"))
+          var trackedSources = line.Substring(1).Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+
+          string trackedCommand = reader.ReadLine();
+
+          foreach (var source in trackedSources)
           {
-            HashSet<string> trackedSources = new HashSet<string> (trackedSourceLineData.Substring (1).Split ('|'));
-
-            string trackedDependencyEntriesLineData = reader.ReadLine ();
-
-            while (!string.IsNullOrWhiteSpace (trackedDependencyEntriesLineData))
-            {
-              if (trackedDependencyTable.TryGetValue (trackedDependencyEntriesLineData, out HashSet<string> dependentSources))
-              {
-                foreach (string source in trackedSources)
-                {
-                  if (!dependentSources.Contains (source))
-                  {
-                    dependentSources.Add (source);
-                  }
-                }
-              }
-              else
-              {
-                trackedDependencyTable.Add (trackedDependencyEntriesLineData, new HashSet<string> (trackedSources));
-              }
-
-              trackedDependencyEntriesLineData = reader.ReadLine ();
-            }
+            collatedTrackedFiles.Add(source, trackedCommand);
           }
-
-          trackedSourceLineData = reader.ReadLine ();
         }
       }
 
-      return trackedDependencyTable;
+      return collatedTrackedFiles;
     }
-#endif
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public static void OutputCommandTLog(ITaskItem commandFile, Dictionary<string, string> collatedTrackedFiles, Encoding responseFileEncoding)
+    {
+      if (commandFile == null)
+      {
+        throw new ArgumentNullException(nameof(commandFile));
+      }
+
+      using StreamWriter writer = new StreamWriter(commandFile.GetMetadata("FullPath"), false, responseFileEncoding);
+
+      foreach (var fileSet in collatedTrackedFiles)
+      {
+        writer.WriteLine("^" + FileTracker.FormatRootingMarker(new TaskItem(fileSet.Key)));
+
+        writer.WriteLine(fileSet.Value);
+      }
+
+      writer.Dispose();
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -162,12 +94,4 @@ namespace AndroidPlusPlus.MsBuild.Common
 
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

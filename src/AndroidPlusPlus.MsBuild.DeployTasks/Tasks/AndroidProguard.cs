@@ -18,7 +18,7 @@ using System.Resources;
 namespace AndroidPlusPlus.MsBuild.DeployTasks
 {
 
-  public class AndroidProguard : TrackedOutOfDateToolTask
+  public class AndroidProguard : TrackedToolTask
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

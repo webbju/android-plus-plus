@@ -16,7 +16,7 @@ using System.Resources;
 namespace AndroidPlusPlus.MsBuild.CppTasks
 {
 
-  public class NativeCompile : TrackedOutOfDateToolTask
+  public class NativeCompile : TrackedToolTask
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -42,7 +42,8 @@ namespace AndroidPlusPlus.MsBuild.CppTasks
     [SwitchString(Subtype = "file", Switch = "-o", Separator = " ")]
     public ITaskItem ObjectFileName { get; set; }
 
-    [SwitchStringList(Subtype = "file")]
+    [Required]
+    [SwitchStringList(Subtype = "file", IsRequired = true)]
     public ITaskItem[] SourceFiles { get; set; }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

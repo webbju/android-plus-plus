@@ -4,7 +4,6 @@
 
 using AndroidPlusPlus.Common;
 using AndroidPlusPlus.MsBuild.Common.Attributes;
-using AndroidPlusPlus.MsBuild.Common.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Framework.XamlTypes;
 using Microsoft.Build.Utilities;
@@ -13,6 +12,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Resources;
 using System.Text;
 
@@ -23,8 +23,17 @@ using System.Text;
 namespace AndroidPlusPlus.MsBuild.Common
 {
 
-  public class TrackedToolTask : SwitchToolTask
+  public class TrackedToolTask : ToolTask
   {
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public TrackedToolTask()
+      : base()
+    {
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -52,7 +61,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
     [Output]
     public bool SkippedExecution { get; set; }
-    
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -66,6 +75,8 @@ namespace AndroidPlusPlus.MsBuild.Common
     public string PropertiesFile { get; set; }
 
     public bool BuildingInIDE { get; set; }
+
+    protected Dictionary<string, SwitchBaseAttribute> SwitchAttributes { get; set; }
 
     protected CanonicalTrackedInputFiles TrackedInputFiles { get; set; }
 
@@ -98,6 +109,18 @@ namespace AndroidPlusPlus.MsBuild.Common
             validParameters = false;
           }
 
+#if DEBUG
+          for (int i = 0; i < InputFiles?.Length; ++i)
+          {
+            Log.LogMessageFromText($"[{GetType().Name}] {nameof(InputFiles)}: [{i}] {InputFiles[i]}", MessageImportance.Low);
+
+            foreach (string metadataName in InputFiles[i].MetadataNames)
+            {
+              Log.LogMessageFromText($"[{GetType().Name}] -- Metadata: '{metadataName}' = '{InputFiles[i].GetMetadata(metadataName)}' ", MessageImportance.Low);
+            }
+          }
+#endif
+
           OutOfDateInputFiles = Array.Empty<ITaskItem>();
 
           OutputFiles = Array.Empty<ITaskItem>();
@@ -110,7 +133,50 @@ namespace AndroidPlusPlus.MsBuild.Common
         }
       }
 
-      return validParameters;
+      return validParameters && InitializeSwitches();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected bool InitializeSwitches()
+    {
+      // 
+      // Collate and initialise any bound switch attributes.
+      // 
+
+      try
+      {
+        SwitchAttributes ??= new Dictionary<string, SwitchBaseAttribute>();
+
+        var properties = GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        foreach (var propInfo in properties)
+        {
+          var basePropertyAttributes = (SwitchBaseAttribute[])Attribute.GetCustomAttributes(propInfo, typeof(SwitchBaseAttribute), true);
+
+          foreach (var attribute in basePropertyAttributes)
+          {
+            attribute.Initialize(this, propInfo);
+
+            SwitchAttributes.Add(attribute.Name, attribute);
+          }
+        }
+
+#if DEBUG
+        foreach (var attribute in SwitchAttributes)
+        {
+          Log.LogMessage($"[{ToolName}] Initialize property from {GetType().Name}: {attribute.Key} | {attribute.Value.GetType().Name}");
+        }
+#endif
+      }
+      catch (Exception e)
+      {
+        Log.LogErrorFromException(e, true);
+      }
+
+      return true;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -165,6 +231,8 @@ namespace AndroidPlusPlus.MsBuild.Common
 
       TrackedInputFiles = new CanonicalTrackedInputFiles(this, TLogReadFiles, OutOfDateInputFiles, ExcludedInputPaths, TrackedOutputFiles, true, false);
 
+      var trackedCommands = TrackerUtilities.ReadCommandTLog(TLogCommandFiles[0], ResponseFileEncoding);
+
       switch (exitCode)
       {
         case 0:
@@ -173,27 +241,20 @@ namespace AndroidPlusPlus.MsBuild.Common
             // Successful build. Begin by collating known output files. (We have a manual workaround for instances where TrackedOutputFiles can't find rooted output.)
             //
 
-            OutputFiles = TrackedOutputFiles.OutputsForSource(OutOfDateInputFiles);
+            string commandLine = (commandLineCommands.Length > 0) ? commandLineCommands + " " + responseFileCommands : responseFileCommands;
 
-            /*if (OutputFiles?.Length == 0)
+            foreach (var inputFile in OutOfDateInputFiles)
             {
-              var fileWrites = TrackerUtilities.ParseTrackerLogForCommandMapping(TrackedDependencies.ExpandWildcards(TLogWriteFiles));
+              trackedCommands[FileTracker.FormatRootingMarker(inputFile)] = commandLine;
+            }
 
-              var writtenFiles = new HashSet<ITaskItem>();
-
-              foreach (var keypair in fileWrites)
-              {
-                writtenFiles.UnionWith(keypair.Value);
-              }
-
-              OutputFiles = writtenFiles.ToArray();
-            }*/
+            OutputFiles = TrackedOutputFiles.OutputsForSource(OutOfDateInputFiles);
 
             if (OutputFiles != null)
             {
               foreach (var outfile in OutputFiles)
               {
-                outfile.ItemSpec = PathUtils.GetExactPathName(outfile.ItemSpec.ToLowerInvariant());
+                outfile.ItemSpec = PathUtils.GetExactPathName(outfile.ItemSpec);
               }
             }
 
@@ -213,6 +274,8 @@ namespace AndroidPlusPlus.MsBuild.Common
 
             TrackedInputFiles.SaveTlog();
 
+            TrackerUtilities.OutputCommandTLog(TLogCommandFiles[0], trackedCommands, ResponseFileEncoding);
+
             break;
           }
 
@@ -222,6 +285,11 @@ namespace AndroidPlusPlus.MsBuild.Common
             // Task failed. Remove any potentially processed file outputs to refresh clean state.
             //
 
+            foreach (var file in OutOfDateInputFiles)
+            {
+              trackedCommands.Remove(FileTracker.FormatRootingMarker(file));
+            }
+
             TrackedOutputFiles.RemoveEntriesForSource(OutOfDateInputFiles);
 
             TrackedInputFiles.RemoveEntriesForSource(OutOfDateInputFiles);
@@ -230,13 +298,10 @@ namespace AndroidPlusPlus.MsBuild.Common
 
             TrackedInputFiles.SaveTlog();
 
+            TrackerUtilities.OutputCommandTLog(TLogCommandFiles[0], trackedCommands, ResponseFileEncoding);
+
             break;
           }
-      }
-
-      if (TLogCommandFiles != null)
-      {
-        OutputCommandTLog(TLogCommandFiles[0], responseFileCommands, commandLineCommands);
       }
 
       return exitCode;
@@ -285,7 +350,7 @@ namespace AndroidPlusPlus.MsBuild.Common
         {
           var trackerRootingMarker = OutOfDateInputFiles.Length > 0 ? FileTracker.FormatRootingMarker(OutOfDateInputFiles) : null;
 
-          var trackerResponseFileArguments = FileTracker.TrackerResponseFileArguments(FileTracker.GetFileTrackerPath(ExecutableType.Native64Bit), new TaskItemHelper(TrackerIntermediateDirectory).FullPath, trackerRootingMarker, null);
+          var trackerResponseFileArguments = FileTracker.TrackerResponseFileArguments(FileTracker.GetFileTrackerPath(ExecutableType.Native64Bit), TrackerIntermediateDirectory.GetMetadata("FullPath"), trackerRootingMarker, null);
 
           var trackerResponseFile = Path.GetTempFileName();
 
@@ -325,9 +390,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
           if (responseFileSwitchesBuffer.Length > 0)
           {
-            string responseFilePath = Path.Combine(TrackerLogDirectory, string.Format("{0}_{1}.rsp", ToolName, Guid.NewGuid().ToString()));
-
-            Directory.CreateDirectory(Path.GetDirectoryName(responseFilePath));
+            string responseFilePath = Path.GetTempFileName();
 
             File.WriteAllText(responseFilePath, responseFileSwitchesBuffer.ToString(), ResponseFileEncoding);
 
@@ -356,7 +419,7 @@ namespace AndroidPlusPlus.MsBuild.Common
 
           if (OutputCommandLine)
           {
-            Log.LogMessageFromText(string.Format("[{0}] Process started: {1} {2}", ToolName, trackedProcess.StartInfo.FileName, trackedProcess.StartInfo.Arguments), MessageImportance.High);
+            Log.LogMessageFromText($"[{ToolName}] Process started: {trackedProcess.StartInfo.FileName} {trackedProcess.StartInfo.Arguments}", MessageImportance.High);
           }
 
           if (!trackedProcess.Start())
@@ -421,32 +484,126 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected override bool SkipTaskExecution ()
+    protected virtual void SetupTrackerLogPaths ()
     {
       //
-      // (MSBuild docs: Returns true if task execution is not necessary. Executed after ValidateParameters)
+      // Create tracker tasks for each of the target output files; command, read and write logs.
       //
 
       try
       {
-        SetupTrackerLogPaths();
+        var trackerLogDirectory = TrackerLogDirectory.GetMetadata("FullPath");
 
-#if DEBUG
-        for (int i = 0; i < InputFiles?.Length; ++i)
+        Directory.CreateDirectory(trackerLogDirectory);
+
+        if (TLogCommandFiles == null)
         {
-          Log.LogMessageFromText($"[{ToolName}] {nameof(InputFiles)}: [{i}] {InputFiles[i]}", MessageImportance.Low);
-
-          foreach (string metadataName in InputFiles[i].MetadataNames)
-          {
-            Log.LogMessageFromText($"[{ToolName}] -- Metadata: '{metadataName}' = '{InputFiles[i].GetMetadata(metadataName)}' ", MessageImportance.Low);
-          }
+          TLogCommandFiles = TLogCommandNames.Select(log => new TaskItem(Path.Combine(trackerLogDirectory, log))).ToArray();
         }
-#endif
+
+        if (TLogReadFiles == null)
+        {
+          TLogReadFiles = TLogReadNames.Select(log => new TaskItem(Path.Combine(trackerLogDirectory, log))).ToArray();
+        }
+
+        if (TLogWriteFiles == null)
+        {
+          TLogWriteFiles = TLogWriteNames.Select(log => new TaskItem(Path.Combine(trackerLogDirectory, log))).ToArray();
+        }
       }
       catch (Exception e)
       {
         Log.LogWarningFromException(e, true);
       }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected bool ForcedRebuildRequired()
+    {
+      //
+      // If we can't find a cached "command" file, presume we have to force rebuild all sources.
+      //
+
+      if (TLogCommandFiles == null || TLogCommandFiles.Length == 0)
+      {
+        return true;
+      }
+
+      return !File.Exists(TLogCommandFiles[0]?.GetMetadata("FullPath"));
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected override bool SkipTaskExecution()
+    {
+      //
+      // (MSBuild docs: Returns true if task execution is not necessary. Executed after ValidateParameters)
+      //
+
+      SetupTrackerLogPaths();
+
+      if (MinimalRebuildFromTracking && !ForcedRebuildRequired())
+      {
+        //
+        // Check there are actually sources to build, otherwise we can skip execution.
+        //
+
+        TrackedOutputFiles = new CanonicalTrackedOutputFiles(this, TLogWriteFiles);
+
+        TrackedInputFiles = new CanonicalTrackedInputFiles(this, TLogReadFiles, InputFiles, ExcludedInputPaths, TrackedOutputFiles, true, false);
+
+        var outOfDateSourcesFromTracking = TrackedInputFiles.ComputeSourcesNeedingCompilation(true);
+
+        var outOfDateSourcesFromCommandLine = GetOutOfDateSourcesFromCmdLineChanges(GenerateUnionFileCommands(), InputFiles);
+
+#if DEBUG
+        Log.LogMessageFromText($"[{GetType().Name}] Out of date sources (from tracking): {outOfDateSourcesFromTracking.Length}", MessageImportance.Low);
+
+        Log.LogMessageFromText($"[{GetType().Name}] Out of date sources (command line differs): {outOfDateSourcesFromCommandLine.Count}", MessageImportance.Low);
+#endif
+
+        // 
+        // Merge out-of-date lists from both sources and assign these for compilation.
+        // 
+
+        var mergedOutOfDateSources = new HashSet<ITaskItem>(outOfDateSourcesFromTracking);
+
+        mergedOutOfDateSources.UnionWith(outOfDateSourcesFromCommandLine);
+
+        OutOfDateInputFiles = mergedOutOfDateSources.ToArray();
+
+        SkippedExecution = OutOfDateInputFiles == null || OutOfDateInputFiles.Length == 0;
+
+        if (SkippedExecution)
+        {
+          return SkippedExecution;
+        }
+
+        // 
+        // Remove out-of-date files from tracked file list. Thus they are missing and need re-processing.
+        // 
+
+        TrackedInputFiles.RemoveEntriesForSource(OutOfDateInputFiles);
+
+        TrackedInputFiles.SaveTlog();
+
+        TrackedOutputFiles.RemoveEntriesForSource(OutOfDateInputFiles);
+
+        TrackedOutputFiles.SaveTlog();
+
+        SkippedExecution = false;
+
+        return SkippedExecution;
+      }
+
+      // 
+      // Consider nothing out of date. Process everything.
+      // 
 
       OutOfDateInputFiles = InputFiles;
 
@@ -459,37 +616,56 @@ namespace AndroidPlusPlus.MsBuild.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected virtual void SetupTrackerLogPaths ()
+    protected ICollection<ITaskItem> GetOutOfDateSourcesFromCmdLineChanges(string expectedCommandLine, ITaskItem[] uncheckedSources)
     {
-      //
-      // Create tracker tasks for each of the target output files; command, read and write logs.
-      //
+      // 
+      // Evaluate which (if any) of the `uncheckedSources` are already present in the command TLog.
+      // If cached entries are found, identify whether this source should be considered "out of date".
+      // 
 
-      try
+      if (TLogCommandFiles?.Length == 0)
       {
-        var trackerLogDirectory = new TaskItemHelper(TrackerLogDirectory);
+        return Array.Empty<ITaskItem>();
+      }
 
-        Directory.CreateDirectory(trackerLogDirectory.FullPath);
+      Dictionary<string, ITaskItem> uncheckedSourcesRooted = new Dictionary<string, ITaskItem>();
 
-        if (TLogCommandFiles == null)
+      foreach (var uncheckedSource in uncheckedSources)
+      {
+        uncheckedSourcesRooted.Add(FileTracker.FormatRootingMarker(uncheckedSource), uncheckedSource);
+      }
+
+      var outOfDateSources = new HashSet<ITaskItem>();
+
+      using StreamReader reader = File.OpenText(TLogCommandFiles[0].ItemSpec);
+
+      for (string line = reader.ReadLine(); !string.IsNullOrEmpty(line); line = reader.ReadLine())
+      {
+        if (line.StartsWith("^"))
         {
-          TLogCommandFiles = TLogCommandNames.Select(log => new TaskItem(Path.Combine(trackerLogDirectory.FullPath, log))).ToArray();
-        }
+          var trackedFiles = line.Substring(1).Split('|');
 
-        if (TLogReadFiles == null)
-        {
-          TLogReadFiles = TLogReadNames.Select(log => new TaskItem(Path.Combine(trackerLogDirectory.FullPath, log))).ToArray();
-        }
+          string trackedCommandLine = reader.ReadLine();
 
-        if (TLogWriteFiles == null)
-        {
-          TLogWriteFiles = TLogWriteNames.Select(log => new TaskItem(Path.Combine(trackerLogDirectory.FullPath, log))).ToArray();
+          foreach (string trackedFile in trackedFiles)
+          {
+            if (uncheckedSourcesRooted.TryGetValue(trackedFile, out ITaskItem match) && !string.Equals(trackedCommandLine, expectedCommandLine))
+            {
+#if DEBUG
+              Log.LogMessageFromText($"[{GetType().Name}] Out of date source identified: {trackedFile}. Command lines differed.", MessageImportance.Low);
+
+              Log.LogMessageFromText($"[{GetType().Name}] Out of date source identified: {trackedFile}. Expected: {expectedCommandLine} ", MessageImportance.Low);
+
+              Log.LogMessageFromText($"[{GetType().Name}] Out of date source identified: {trackedFile}. Cached: {trackedCommandLine} ", MessageImportance.Low);
+#endif
+
+              outOfDateSources.Add(match);
+            }
+          }
         }
       }
-      catch (Exception e)
-      {
-        Log.LogWarningFromException(e, true);
-      }
+
+      return outOfDateSources;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -612,7 +788,9 @@ namespace AndroidPlusPlus.MsBuild.Common
         {
           rule.Properties.Add(property);
 
+#if DEBUG
           Log.LogMessage($"[{ToolName}] Added property from {GetType().Name}: {property.Name} | {property.GetType().Name}");
+#endif
         }
       }
 
@@ -755,7 +933,6 @@ namespace AndroidPlusPlus.MsBuild.Common
 
 #if DEBUG
         Log.LogMessage($"[{ToolName}] Property from metadata: {prop.Name} | {prop.GetType().Name} | {(value == null ? "(null)" : $"{value} ({value.GetType()})")}");
-#endif
 
         if (propertyValues.TryGetValue(prop.Name, out object existingValue) && existingValue != null && !Equals(value, existingValue))
         {
@@ -763,77 +940,10 @@ namespace AndroidPlusPlus.MsBuild.Common
 
           Log.LogWarning($"[{ToolName}] Property {prop.Name} will be overwritten with source item metadata value: {(value == null ? "(null)" : $"{value} ({value.GetType()})")}");
         }
+#endif
 
         propertyValues[prop.Name] = value;
       }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected virtual void OutputCommandTLog(ITaskItem commandFile, string responseFileCommands, string commandLineCommands)
-    {
-      if (commandFile == null)
-      {
-        throw new ArgumentNullException(nameof(commandFile));
-      }
-
-      HashSet<string> formatedOutOfDateFiles = new HashSet<string>(OutOfDateInputFiles.Select(ti => TrackedFileManager.ConvertToTrackerFormat(ti)));
-
-      Dictionary<string, HashSet<string>> collatedTrackedFileSets = new Dictionary<string, HashSet<string>>();
-
-      string commandLine = (commandLineCommands.Length > 0) ? commandLineCommands + " " + responseFileCommands : responseFileCommands;
-
-      collatedTrackedFileSets[commandLine] = formatedOutOfDateFiles;
-
-      // 
-      // Parse the existing command log (if available).
-      // 
-
-      if (File.Exists(commandFile.GetMetadata("FullPath")))
-      {
-        using StreamReader reader = new StreamReader(commandFile.GetMetadata("FullPath"), ResponseFileEncoding);
-
-        for (string line = reader.ReadLine(); !string.IsNullOrEmpty(line); line = reader.ReadLine())
-        {
-          if (line.StartsWith("^"))
-          {
-            HashSet<string> trackedSources = new HashSet<string>(line.Substring(1).Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries));
-
-            string trackedCommand = reader.ReadLine();
-
-            if (collatedTrackedFileSets.TryGetValue(trackedCommand, out HashSet<string> trackedFiles))
-            {
-              trackedSources.UnionWith(trackedFiles);
-            }
-
-            trackedSources.RemoveWhere(str => formatedOutOfDateFiles.Contains(str));
-
-            collatedTrackedFileSets[trackedCommand] = trackedSources;
-          }
-        }
-      }
-      
-      // 
-      // Re-export the collated collection.
-      // 
-
-      using StreamWriter writer = new StreamWriter(commandFile.GetMetadata("FullPath"), false, ResponseFileEncoding);
-
-      foreach (var fileSet in collatedTrackedFileSets)
-      {
-        if (fileSet.Value.Count == 0)
-        {
-          continue;
-        }
-
-        writer.WriteLine("^" + FileTracker.FormatRootingMarker(fileSet.Value.Select(str => new TaskItem(str)).ToArray()));
-
-        writer.WriteLine(fileSet.Key);
-      }
-
-      writer.Dispose();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -965,12 +1075,4 @@ namespace AndroidPlusPlus.MsBuild.Common
 
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

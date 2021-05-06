@@ -19,7 +19,7 @@ using System.Resources;
 namespace AndroidPlusPlus.MsBuild.DeployTasks
 {
 
-  public class AndroidAapt : TrackedOutOfDateToolTask
+  public class AndroidAapt : TrackedToolTask
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

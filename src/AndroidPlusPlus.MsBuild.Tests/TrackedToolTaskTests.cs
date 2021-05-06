@@ -96,7 +96,7 @@ namespace AndroidPlusPlus.MsBuild.Tests
         BuildEngine = mock.Object,
         ToolExe = "clang++.exe",
         TrackerLogDirectory = new TaskItem(Path.GetFullPath(TestContext.TestDir)),
-        InputFiles = sourceFiles.ToArray(),
+        SourceFiles = sourceFiles.ToArray(),
       };
 
       Assert.IsTrue(trackedToolTask.Execute());
@@ -151,4 +151,5 @@ namespace AndroidPlusPlus.MsBuild.Tests
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   }
+
 }

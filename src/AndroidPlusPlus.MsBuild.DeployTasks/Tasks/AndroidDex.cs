@@ -20,7 +20,7 @@ using System.Resources;
 namespace AndroidPlusPlus.MsBuild.DeployTasks
 {
 
-  public class AndroidDex : TrackedOutOfDateToolTask
+  public class AndroidDex : TrackedToolTask
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -99,7 +99,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     public ITaskItem[] OutputPath { get; set; }
 
     [Required]
-    [SwitchStringList(Subtype = "file")]
+    [SwitchStringList(IsRequired = true, Subtype = "file")]
     public ITaskItem[] SourceFiles { get; set; }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

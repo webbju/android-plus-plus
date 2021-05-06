@@ -54,7 +54,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
   [ProvideService(typeof(IDebuggerConnectionService), IsAsyncQueryable = true)]
 
-  [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)]
+  [InstalledProductRegistration("Android++", "A native development and debugging solution for Visual Studio.", "0.8")]
 
   //
   // VsDebugLauncher registration.

@@ -405,8 +405,7 @@ $(_ProGuardCommandPrintMapping);
       <!-- MultiDex script configuration -->
       <_MainDexInputJars>@(AndroidDalvik->Distinct()->'&quot;%(FullPath)&quot;(!META-INF/**.*,**.class,!**.class.d)')</_MainDexInputJars>
       <_MainDexScriptOutputJar>$(ProjectDir)$(IntDir)bin\mainDexClasses.tmp.jar</_MainDexScriptOutputJar>
-      <_MainDexScriptOutputMainList>$(ProjectDir)$(IntDir)bin\mainDexClasses.keep</_MainDexScriptOutputMainList>
-      <_MainDexClassPathArgument>@(AndroidDalvik->Distinct())</_MainDexClassPathArgument>
+
       <_MainDexScriptCommandFile>$(ProjectDir)$(IntDir)bin\mainDex-commands.txt</_MainDexScriptCommandFile>
       <_MainDexOutputLog>$(ProjectDir)$(IntDir)bin\mainDex-output.txt</_MainDexOutputLog>
       <!-- and because Google love moving things for no reason -->
@@ -471,7 +470,14 @@ $(_ProGuardCommandPrintMapping);
       <Output TaskParameter="SkippedExecution" PropertyName="AndroidProguardSkippedExecution" />
     </AndroidProguard>
 
-    <!-- Run Multi-dex processing. -->
+    <!--
+      Run Multi-dex processing.
+      (Seeded from Android\Sdk\build-tools\x.y.z\mainDexClasses.bat)
+    -->
+    <PropertyGroup>
+      <_MainDexClassPathArgument>@(AndroidDalvik->Distinct())</_MainDexClassPathArgument>
+      <_MainDexScriptOutputMainList>$(ProjectDir)$(IntDir)bin\mainDexClasses.keep</_MainDexScriptOutputMainList>
+    </PropertyGroup>
     <Exec
       Condition="'@(AndroidDalvik)' != ''"
       Command="&quot;$(JavaHomeDir)\bin\java.exe&quot; -Djava.ext.dirs=&quot;$(AndroidSdkRoot)\build-tools\$(AndroidSdkBuildToolsVersion)\lib&quot; com.android.multidex.ClassReferenceListBuilder &quot;$(_MainDexScriptOutputJar)&quot; &quot;$(_MainDexClassPathArgument)&quot; 1&gt;&quot;$(_MainDexScriptOutputMainList)&quot;"

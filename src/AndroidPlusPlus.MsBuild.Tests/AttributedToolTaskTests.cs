@@ -1,6 +1,5 @@
 ﻿using AndroidPlusPlus.MsBuild.Common;
 using AndroidPlusPlus.MsBuild.Common.Attributes;
-using AndroidPlusPlus.MsBuild.Common.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Framework.XamlTypes;
 using Microsoft.Build.Utilities;
@@ -16,7 +15,7 @@ namespace AndroidPlusPlus.MsBuild.Tests
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  internal class AttributedToolTask : SwitchToolTask
+  internal class AttributedToolTask : TrackedToolTask
   {
     [SwitchBool(Switch = "--true", ReverseSwitch = "--false", Separator = " ")]
     bool Boolean => true;

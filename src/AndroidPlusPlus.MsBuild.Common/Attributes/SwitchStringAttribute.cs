@@ -1,7 +1,5 @@
 ﻿using Microsoft.Build.Framework.XamlTypes;
-using Microsoft.Build.Utilities;
 using System;
-using System.Reflection;
 
 namespace AndroidPlusPlus.MsBuild.Common.Attributes
 {
