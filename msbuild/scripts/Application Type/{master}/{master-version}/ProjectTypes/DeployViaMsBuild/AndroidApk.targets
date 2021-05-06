@@ -71,7 +71,7 @@
       Condition="'@(_TargetElfFiles)' != ''"
       TargetElfFiles="@(_TargetElfFiles)"
       LibrarySearchPaths="@(_TargetElfSearchPaths)"
-      NdkDependsTool="$(NdkDependsTool)"
+      NdkDependsTool="$(AndroidPlusPlusToolchainRoot)\bin\app-ndk-depends.exe"
       Verbose="true">
       <Output TaskParameter="DependentLibraries" ItemName="AndroidApkDependentLibraries" />
       <Output TaskParameter="DependentSystemLibraries" ItemName="AndroidApkDependentSystemLibraries" />
@@ -124,7 +124,7 @@
 
     <Exec
       Condition="'@(AndroidApkOutputFile)' != ''"
-      Command="&quot;$(SevenZipToolRoot)\7za.exe&quot; a -tzip -mx9 -ssc -r &quot;@(AndroidApkOutputFile->Metadata('FullPath'))&quot; * &gt;NUL"
+      Command="&quot;$(AndroidPlusPlusToolchainRoot)\bin\7za.exe&quot; a -tzip -mx9 -ssc -r &quot;@(AndroidApkOutputFile->Metadata('FullPath'))&quot; * &gt;NUL"
       WorkingDirectory="$(IntDir)raw"
     />
 

@@ -23,7 +23,7 @@
 
   <PropertyGroup>
 
-    <ProguardRoot Condition="'$(ProguardRoot)' == ''">$(ANDROID_PLUS_PLUS)\contrib\proguard5.2.1</ProguardRoot>
+    <ProguardRoot Condition="'$(ProguardRoot)' == ''">$(AndroidPlusPlusToolchainRoot)\contrib\proguard5.2.1</ProguardRoot>
 
     <ProguardRoot Condition="'$(ProguardRoot)' == ''">$(AndroidSdkRoot)\tools\proguard</ProguardRoot>
 

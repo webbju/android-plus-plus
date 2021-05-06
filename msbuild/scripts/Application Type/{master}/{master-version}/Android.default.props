@@ -124,16 +124,10 @@
     <JavaHomeDir Condition="'$(JavaHomeDir)' == ''">JavaHomeDir_is_not_defined</JavaHomeDir>
 
     <!--
-      Local tooling
+      Android++ toolchain.
     -->
 
     <AndroidPlusPlusToolchainRoot Condition="'$(AndroidPlusPlusToolchainRoot)' == ''">$(MSBuildThisFileDirectory)Toolchain</AndroidPlusPlusToolchainRoot>
-
-    <SevenZipToolRoot Condition="'$(SevenZipToolRoot)' == ''">$(AndroidPlusPlusToolchainRoot)\bin</SevenZipToolRoot>
-
-    <NdkDependsToolRoot Condition="'$(NdkDependsToolRoot)' == ''">$(AndroidPlusPlusToolchainRoot)\bin</NdkDependsToolRoot>
-
-    <NdkDependsTool Condition="'$(NdkDependsTool)' == ''">$(NdkDependsToolRoot)\app-ndk-depends.exe</NdkDependsTool>
 
   </PropertyGroup>
 
