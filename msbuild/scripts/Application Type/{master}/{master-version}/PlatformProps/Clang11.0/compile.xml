@@ -38,104 +38,80 @@
     <DataSource Persistence="ProjectFile" ItemType="ClCompile" Label="" HasConfigurationCondition="true" />
   </Rule.DataSource>
 
-  <!--
-    CompileAs
-  -->
-
   <EnumProperty
     Name="CompileAs"
     DisplayName="Compile As"
     Description="Select compile language option for .c, .cpp, .asm files."
     Category="Advanced"
     F1Keyword="VC.Project.VCCLCompilerTool.CompileAs">
-
     <EnumValue
       Name="Default"
       Switch=""
       DisplayName="Default"
       Description="Default."
     />
-
     <EnumValue
       Name="CompileAsC"
       Switch="-x c"
       DisplayName="Compile as C Code"
       Description="Compile as C Code"
     />
-
     <EnumValue
       Name="CompileAsCpp"
       Switch="-x c++"
       DisplayName="Compile as C++ Code"
       Description="Compile as C++ Code"
     />
-
     <EnumValue
       Name="CompileAsAsm"
       Switch="-x assembler-with-cpp"
       DisplayName="Compile as Assembly Code"
       Description="Compile as Assembly Code"
     />
-
     <EnumValue
       Name="CompileAsCHeader"
       Switch="-x c-header"
       DisplayName="Compile as C Header Code"
       Description="Compile as C Header Code"
     />
-
     <EnumValue
       Name="CompileAsCppHeader"
       Switch="-x c++-header"
       DisplayName="Compile as C++ Header Code"
       Description="Compile as C++ Header Code"
     />
-
   </EnumProperty>
-
-  <!--
-    StandardLanguageDialect
-  -->
 
   <EnumProperty
     Name="StandardLanguageDialect"
     DisplayName="Standard Language Dialect"
     Description="Determine the language standard."
     Category="Advanced">
-
     <EnumValue
       Name="Default"
       Switch=""
       DisplayName="Default"
       Description="Default."
     />
-
     <EnumValue
       Name="c99"
       Switch="-std=c99"
       DisplayName="c99"
       Description="ISO C99. See http://gcc.gnu.org/c99status.html for more information."
     />
-
     <EnumValue
       Name="c++11"
       Switch="-std=c++11"
       DisplayName="c++11"
       Description="The 2011 ISO C++ standard plus amendments."
     />
-
     <EnumValue
       Name="c++14"
       Switch="-std=c++14"
       DisplayName="c++14"
       Description="The 2014 ISO C++ standard plus amendments."
     />
-
   </EnumProperty>
-
-  <!--
-    SystemIncludeDirectories
-  -->
 
   <StringListProperty
     Subtype="folder"
@@ -146,10 +122,6 @@
     Switch="-I"
   />
 
-  <!--
-    AdditionalIncludeDirectories
-  -->
-
   <StringListProperty
     Subtype="folder"
     Name="AdditionalIncludeDirectories"
@@ -158,10 +130,6 @@
     Category="General"
     Switch="-I"
   />
-
-  <!--
-    AdditionalQuotationIncludeDirectories
-  -->
 
   <StringListProperty
     Subtype="folder"
@@ -172,10 +140,6 @@
     Switch="-iquote"
   />
 
-  <!--
-    ForcedIncludeFiles
-  -->
-
   <StringListProperty
     Subtype="file"
     Name="ForcedIncludeFiles"
@@ -184,10 +148,6 @@
     Category="Advanced"
     Switch="-include"
   />
-
-  <!--
-    GenerateDebuggingInformation
-  -->
 
   <BoolProperty
     Name="GenerateDebuggingInformation"
@@ -198,64 +158,49 @@
     F1Keyword="VC.Project.VCCLCompilerTool.WarnAsError"
   />
 
-  <!--
-    WarningLevel
-  -->
-
   <EnumProperty
     Name="WarningLevel"
     DisplayName="Warning Level"
     Description="Select how strict you want the compiler to be about code errors."
     Category="General"
     F1Keyword="VC.Project.VCCLCompilerTool.WarningLevel">
-
     <EnumValue
       Name="TurnOffAllWarnings"
       Switch="-w"
       DisplayName="Turn Off All Warnings"
       Description="Disables all warnings."
     />
-
     <EnumValue
       Name="Level1"
       Switch=""
       DisplayName="Level 1"
       Description="Enables default warnings."
     />
-
     <EnumValue
       Name="Level2"
       Switch="-Wall"
       DisplayName="Level 2"
       Description="Enables all warnings, including those disabled by default."
     />
-
     <EnumValue
       Name="Level3"
       Switch="-Wall"
       DisplayName="Level 3"
       Description="Enables all warnings, and any extra warning flags that are not enabled by -Wall"
     />
-
     <EnumValue
       Name="Level4"
       Switch="-Wall -Wextra"
       DisplayName="Level 4"
       Description="Enables all warnings, and any extra warning flags that are not enabled by -Wall"
     />
-
     <EnumValue
       Name="EnableAllWarnings"
       Switch="-Wall -Wextra"
       DisplayName="Enable All Warnings"
       Description="Enables all warnings, and any extra warning flags that are not enabled by -Wall"
     />
-
   </EnumProperty>
-
-  <!--
-    TreatWarningAsError
-  -->
 
   <BoolProperty
     Name="TreatWarningAsError"
@@ -265,10 +210,6 @@
     Switch="-Werror"
     F1Keyword="VC.Project.VCCLCompilerTool.WarnAsError"
   />
-
-  <!--
-    TrackerLogDirectory
-  -->
 
   <StringProperty
     Subtype="folder"
@@ -280,90 +221,68 @@
     Visible="false"
   />
 
-  <!--
-    CompileAsManaged (Hidden)
-  -->
-
   <EnumProperty
     Name="CompileAsManaged"
     DisplayName="Common Language RunTime Support"
     Description="Use the .NET runtime service.  This switch is incompatible with some other switches; see the documentation on the /clr family of switches for details."
     Category="General"
     Visible="false">
-
     <EnumValue
       Name="false"
       Switch=""
       DisplayName="No Common Language RunTime Support"
       Description="No Common Language RunTime Support"
     />
-
   </EnumProperty>
-
-  <!--
-    Optimization
-  -->
 
   <EnumProperty
     Name="Optimization"
     DisplayName="Optimization"
     Description="Select option for code optimization; choose Custom to use specific optimization options.     (/Od, /O1, /O2, /Ox)"
     Category="Optimization">
-
     <EnumValue
       Name="Disabled"
       Switch="-O0"
       DisplayName="Disabled"
       Description="No optimization."
     />
-
     <EnumValue
       Name="MinSpace"
       Switch="-O1"
       DisplayName="Optimization Level 1"
       Description="Compiler tries to reduce code size and execution time, without performing any optimizations that take a great deal of compilation time."
     />
-
     <EnumValue
       Name="MaxSpeed"
       Switch="-O2"
       DisplayName="Optimization Level 2"
       Description="Compiler performs nearly all supported optimizations that do not involve a space-speed tradeoff."
     />
-
     <EnumValue
       Name="Full"
       Switch="-O3"
       DisplayName="Optimization Level 3"
       Description="Optimize yet more. Full Optimization and aggressive inlining."
     />
-
     <EnumValue
       Name="Og"
       Switch="-Og"
       DisplayName="Optimize For Debugging"
       Description="Enables optimizations that do not interfere with debugging. It should be the optimization level of choice for the standard edit-compile-debug cycle."
     />
-
     <EnumValue
       Name="Os"
       Switch="-Os"
       DisplayName="Minimize Size"
       Description="Optimize for size. -Os enables all -O2 optimizations that do not typically increase code size."
     />
-
     <EnumValue
       Name="Ofast"
       Switch="-Ofast"
       DisplayName="Minimize Speed"
       Description="Disregard strict standards compliance. -Ofast enables all -O3 optimizations. It also enables optimizations that are not valid for all standard-compliant programs."
     />
-
   </EnumProperty>
-
-  <!--
-    OmitFramePointers
-  -->
 
   <BoolProperty
     Name="OmitFramePointers"
@@ -373,10 +292,6 @@
     Switch="-fomit-frame-pointer"
     ReverseSwitch="-fno-omit-frame-pointer"
   />
-
-  <!--
-    UserHeaderDependenciesOnly
-  -->
 
   <BoolProperty
     Name="UserHeaderDependenciesOnly"
@@ -389,57 +304,39 @@
     IncludeInCommandLine="false"
   />
 
-  <!--
-    PositionIndependentCode
-  -->
-
   <EnumProperty
     Name="PositionIndependentCode"
     DisplayName="Generate Position-Independent Code"
     Description="Generate position-independent code (PIC) suitable for use in a shared library."
     Category="Code Generation">
-
     <EnumValue
       Name="SmallPic"
       Switch="-fpic"
       Description="Define the macros __pic__ and __PIC__, which have the value 1."
     />
-
     <EnumValue
       Name="BigPic"
       Switch="-fPIC"
       Description="Define the macros __pic__ and __PIC__, which have the value 2."
     />
-
   </EnumProperty>
-
-  <!--
-    PositionIndependentExecutable
-  -->
 
   <EnumProperty
     Name="PositionIndependentExecutable"
     DisplayName="Generate Position-Independent Executable"
     Description="Generate position-independent code (PIC) suitable for use in executables."
     Category="Code Generation">
-
     <EnumValue
       Name="SmallPie"
       Switch="-fpie"
       Description="Define the macros __pie__ and __PIE__, which have the value 1."
     />
-
     <EnumValue
       Name="BigPie"
       Switch="-fPIE"
       Description="Define the macros __pie__ and __PIE__, which have the value 2."
     />
-
   </EnumProperty>
-
-  <!--
-    InlineLimitSize
-  -->
 
   <IntProperty
     Name="InlineLimitSize"
@@ -449,10 +346,6 @@
     Switch="-finline-limit="
   />
 
-  <!--
-    FunctionSections
-  -->
-
   <BoolProperty
     Name="FunctionSections"
     DisplayName="Use Function Sections"
@@ -460,10 +353,6 @@
     Category="Optimization"
     Switch="-ffunction-sections"
   />
-
-  <!--
-    StrictAliasing
-  -->
 
   <BoolProperty
     Name="StrictAliasing"
@@ -474,11 +363,6 @@
     ReverseSwitch="-fno-strict-aliasing"
   />
 
-
-  <!--
-    UnswitchLoops
-  -->
-
   <BoolProperty
     Name="UnswitchLoops"
     DisplayName="Unswitch Loops"
@@ -487,49 +371,36 @@
     Switch="-funswitch-loops"
   />
 
-  <!--
-    ExceptionHandling
-  -->
-
   <EnumProperty
     Name="ExceptionHandling"
     DisplayName="C++ Exception Handling"
     Description="Generates extra code needed to propagate exceptions. If you do not specify this option, GCC enables it by default for languages like C++ that normally require exception handling, and disables it for languages like C that do not normally require it."
     Category="Code Generation">
-
     <EnumValue
       Name="Default"
       Switch=""
       DisplayName="Default"
       Description="Allow GCC/Clang determine whether to allow C++ Exceptions."
     />
-
     <EnumValue
       Name="Disabled"
       DisplayName="Disabled"
       Description="Disable C++ Exceptions."
       Switch="-fno-exceptions"
     />
-
     <EnumValue
       Name="Enabled"
       DisplayName="Enabled"
       Description="Enable C++ Exceptions."
       Switch="-fexceptions"
     />
-
     <EnumValue
       Name="UnwindTables"
       DisplayName="Unwind Tables"
       Description="Similar to -fexceptions, except that it just generates any needed static data, but does not affect the generated code in any other way."
       Switch="-funwind-tables"
     />
-
   </EnumProperty>
-
-  <!--
-    RuntimeTypeInfo
-  -->
 
   <BoolProperty
     Name="RuntimeTypeInfo"
@@ -540,99 +411,72 @@
     ReverseSwitch="-fno-rtti"
   />
 
-  <!--
-    StackProtection
-  -->
-
   <EnumProperty
     Name="StackProtection"
     DisplayName="Stack Protection"
     Description="Control 'Stack Smashing Protector' (SSP) settings for protecting applications from stack smashing attacks. This is the single largest class of attacks."
     Category="Code Generation">
-
     <EnumValue
       Name="Disabled"
       Switch="-fno-stack-protector"
       DisplayName="Disabled"
       Description="No stack protection."
     />
-
     <EnumValue
       Name="StringProtection"
       Switch="-fstack-protector"
       DisplayName="String Protection"
       Description="Enable stack protection for strings, and functions with arrays of length seven or less."
     />
-
     <EnumValue
       Name="FullProtection"
       Switch="-fstack-protector-all"
       DisplayName="Full Protection"
       Description="Enable stack protection for all functions with no size limit."
     />
-
   </EnumProperty>
-
-  <!--
-    ArmFloatingPointAbi
-  -->
 
   <EnumProperty
     Name="ArmFloatingPointAbi"
     DisplayName="Floating-point ABI (ARM Only)"
     Description="Specifies which floating-point ABI to use."
     Category="Code Generation">
-
     <EnumValue
       Name="Soft"
       Switch="-mfloat-abi=soft"
       DisplayName="Soft"
       Description="Specifying 'soft' causes GCC to generate output containing library calls for floating-point operations.     (-mfloat-abi=soft)"
     />
-
     <EnumValue
       Name="SoftFp"
       Switch="-mfloat-abi=softfp"
       DisplayName="SoftFp"
       Description="'softfp' allows the generation of code using hardware floating-point instructions, but still uses the soft-float calling conventions.     (-mfloat-abi=softfp)"
     />
-
     <EnumValue
       Name="Hard"
       Switch="-mfloat-abi=hard"
       DisplayName="Hard"
       Description="'hard' allows generation of floating-point instructions and uses FPU-specific calling conventions.     (-mfloat-abi=hard)"
     />
-
   </EnumProperty>
-
-  <!--
-    ArmFloatingPointHardware
-  -->
 
   <EnumProperty
     Name="ArmFloatingPointHardware"
     DisplayName="Floating-point Hardware (ARM Only)"
     Description="This specifies what floating-point hardware (or hardware emulation) is available on the target."
     Category="Code Generation">
-
     <EnumValue
       Name="vfpv3-d16"
       Switch="-mfpu=vfpv3-d16"
       DisplayName="VFPv3-D16"
     />
-
     <EnumValue
       Name="neon"
       Switch="-mfpu=neon"
       DisplayName="NEON"
     />
-
   </EnumProperty>
-
-  <!--
-    PreprocessorDefinitions
-  -->
 
   <StringListProperty
     Name="PreprocessorDefinitions"
@@ -642,10 +486,6 @@
     Switch="-D"
   />
 
-  <!--
-    UndefinePreprocessorDefinitions
-  -->
-
   <StringListProperty
     Name="UndefinePreprocessorDefinitions"
     DisplayName="Undefine Preprocessor Definitions"
@@ -654,43 +494,31 @@
     Switch="-U"
   />
 
-  <!--
-    PrecompiledHeader
-  -->
-
   <EnumProperty
     Name="PrecompiledHeader"
     DisplayName="Precompiled Header"
     Description="Create/Use Precompiled Header : Enables creation or use of a precompiled header during the build."
     Category="Precompiled Headers"
     IncludeInCommandLine="false">
-
     <EnumValue
       Name="Create"
       DisplayName="Create"
       Description="Instructs the compiler to create a precompiled header file that represents the state of compilation at a certain point."
       Switch=""
     />
-
     <EnumValue
       Name="Use"
       DisplayName="Use"
       Description="Instructs the compiler to use an existing precompiled header file in the current compilation."
       Switch=""
     />
-
     <EnumValue
       Name="NotUsing"
       DisplayName="Not Using Precompiled Headers"
       Description="Not using precompiled headers."
       Switch=""
     />
-
   </EnumProperty>
-
-  <!--
-    PrecompiledHeaderFile
-  -->
 
   <StringProperty
     Name="PrecompiledHeaderFile"
@@ -701,10 +529,6 @@
     IncludeInCommandLine="false"
   />
 
-  <!--
-    PrecompiledHeaderOutputFile
-  -->
-
   <StringProperty
     Name="PrecompiledHeaderOutputFile"
     DisplayName="Precompiled Header Output File"
@@ -713,10 +537,6 @@
     Subtype="file"
     IncludeInCommandLine="false"
   />
-
-  <!--
-    ObjectFileName
-  -->
 
   <StringProperty
     Subtype="file"
@@ -728,10 +548,6 @@
     Separator=" "
   />
 
-  <!--
-    AdditionalOptions
-  -->
-
   <StringProperty
     Name="AdditionalOptions"
     DisplayName="Additional Options"
@@ -740,10 +556,6 @@
     F1Keyword="vc.project.AdditionalOptionsPage"
   />
 
-  <!--
-    ExecutableStack
-  -->
-
   <BoolProperty
     Name="ExecutableStack"
     DisplayName="Executable Stack"
@@ -751,10 +563,6 @@
     Switch=""
     ReverseSwitch="-Wa,--noexecstack"
   />
-
-  <!--
-    SysRoot
-  -->
 
   <StringProperty
     Subtype="folder"
@@ -766,10 +574,6 @@
     Separator="="
   />
 
-  <!--
-    NoCanonicalPrefixes
-  -->
-
   <BoolProperty
     Name="NoCanonicalPrefixes"
     DisplayName="No Canonical Prefixes"
@@ -779,9 +583,3 @@
   />
 
 </Rule>
-
-<!--
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
--->

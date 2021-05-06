@@ -34,10 +34,6 @@
     <DataSource Persistence="ProjectFile" ItemType="Link" Label="" HasConfigurationCondition="true" />
   </Rule.DataSource>
 
-  <!--
-    OutputFile
-  -->
-
   <StringProperty
     Subtype="file"
     Name="OutputFile"
@@ -47,10 +43,6 @@
     Separator=" "
   />
 
-  <!--
-    OutputSharedLibrary (Hidden)
-  -->
-
   <BoolProperty
     Name="OutputSharedLibrary"
     DisplayName="Output Shared Library"
@@ -58,10 +50,6 @@
     Switch="-shared"
     Visible="false"
   />
-
-  <!--
-    OutputSharedLibraryName
-  -->
 
   <StringProperty
     Name="OutputSharedLibraryName"
@@ -71,10 +59,6 @@
     Switch="-Wl,-soname"
     Separator=","
   />
-
-  <!--
-    LinkLibraryDependencies
-  -->
 
   <BoolProperty
     Name="LinkLibraryDependencies"
@@ -88,10 +72,6 @@
     </BoolProperty.DataSource>
   </BoolProperty>
 
-  <!--
-    UseLibraryDependencyInputs
-  -->
-
   <BoolProperty
     Name="UseLibraryDependencyInputs"
     DisplayName="Use Library Dependency Inputs"
@@ -104,10 +84,6 @@
     </BoolProperty.DataSource>
   </BoolProperty>
 
-  <!--
-    SystemLibraryDirectories
-  -->
-
   <StringListProperty
     Subtype="folder"
     Name="SystemLibraryDirectories"
@@ -116,10 +92,6 @@
     Category="Advanced"
     Switch="-L"
   />
-
-  <!--
-    AdditionalLibraryDirectories
-  -->
 
   <StringListProperty
     Subtype="folder"
@@ -130,10 +102,6 @@
     Switch="-L"
   />
 
-  <!--
-    SystemLibraryDependencies
-  -->
-
   <StringListProperty
     Subtype="file"
     Name="SystemLibraryDependencies"
@@ -142,20 +110,12 @@
     Switch="-l"
   />
 
-  <!--
-    AdditionalDependencies
-  -->
-
   <StringListProperty
     Subtype="file"
     Name="AdditionalDependencies"
     DisplayName="Additional Dependencies"
     Category="Input"
   />
-
-  <!--
-    AdditionalOptions
-  -->
 
   <StringProperty
     Name="AdditionalOptions"
@@ -165,10 +125,6 @@
     F1Keyword="vc.project.AdditionalOptionsPage"
   />
 
-  <!--
-    StripUnusedSymbols
-  -->
-
   <BoolProperty
     Name="StripUnusedSymbols"
     DisplayName="Strip Unused Symbols"
@@ -176,10 +132,6 @@
     Category="Advanced"
     IncludeInCommandLine="false"
   />
-
-  <!--
-    StripDebugSymbols
-  -->
 
   <BoolProperty
     Name="StripDebugSymbols"
@@ -189,10 +141,6 @@
     IncludeInCommandLine="false"
   />
 
-  <!--
-    NoUndefinedSymbols
-  -->
-
   <BoolProperty
     Name="NoUndefinedSymbols"
     DisplayName="No Undefined Symbols"
@@ -201,10 +149,6 @@
     Switch="-Wl,-undefined,error"
   />
 
-  <!--
-    AllowSharedLibraryUndefinedSymbols
-  -->
-
   <BoolProperty
     Name="AllowSharedLibraryUndefinedSymbols"
     DisplayName="Allow Shared Library Undefined Symbols"
@@ -212,10 +156,6 @@
     Category="Advanced"
     Switch="-Wl,-undefined,dynamic_lookup"
   />
-
-  <!--
-    ExecutableStack
-  -->
 
   <BoolProperty
     Name="ExecutableStack"
@@ -226,10 +166,6 @@
     ReverseSwitch="-Wl,-z,noexecstack"
   />
 
-  <!--
-    ReadOnlyAfterRelocation
-  -->
-
   <BoolProperty
     Name="ReadOnlyAfterRelocation"
     DisplayName="Read-Only After Relocation"
@@ -238,10 +174,6 @@
     Switch="-Wl,-z,relro"
   />
 
-  <!--
-    ResolveSymbolsAtRuntime
-  -->
-
   <BoolProperty
     Name="ResolveSymbolsAtRuntime"
     DisplayName="Resolve Symbols At Runtime"
@@ -249,10 +181,6 @@
     Category="Advanced"
     Switch="-Wl,-z,now"
   />
-
-  <!--
-    SysRoot
-  -->
 
   <StringProperty
     Subtype="folder"
@@ -264,37 +192,25 @@
     Separator="="
   />
 
-  <!--
-    PositionIndependentExecutable
-  -->
-
   <EnumProperty
     Name="PositionIndependentExecutable"
     DisplayName="Generate Position-Independent Executable"
     Description="Generate position-independent code (PIC) suitable for use in executables."
     Category="Advanced">
-
     <EnumValue
       Name="SmallPie"
       Switch="-fpie"
     />
-
     <EnumValue
       Name="BigPie"
       Switch="-fPIE"
     />
-
     <EnumValue
       Name="Both"
       Switch="-fpie -fPIE"
       DisplayName="-fpie and -fPIE"
     />
-
   </EnumProperty>
-
-  <!--
-    RDynamic
-  -->
 
   <BoolProperty
     Name="RDynamic"
@@ -304,10 +220,6 @@
     Switch="-Wl,-export-dynamic"
   />
 
-  <!--
-    EmbedBuildId
-  -->
-
   <BoolProperty
     Name="EmbedBuildId"
     DisplayName="Embed Build Id"
@@ -315,11 +227,6 @@
     Category="Advanced"
     Switch="-Wl,-build-id"
   />
-
-
-  <!--
-    NoCanonicalPrefixes
-  -->
 
   <BoolProperty
     Name="NoCanonicalPrefixes"
@@ -330,9 +237,3 @@
   />
 
 </Rule>
-
-<!--
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
--->
