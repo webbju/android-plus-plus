@@ -44,7 +44,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     public string JvmThreadStackSize { get; set; } = "1m";
 
     [Required]
-    [SwitchString(Switch = "-jar", Separator = " ")]
+    [SwitchString(Subtype = "file", Switch = "-jar", Separator = " ")]
     public string JvmJar { get; set; }
 
     [SwitchStringList(Subtype = "file", Switch = "-include", Separator = " ")]

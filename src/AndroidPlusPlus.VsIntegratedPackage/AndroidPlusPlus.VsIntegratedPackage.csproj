@@ -67,11 +67,6 @@
     <Compile Include="Attributes\ProvideDebugBaseAttribute.cs" />
     <Compile Include="Attributes\ProvideDebugExtensionAttribute.cs" />
     <Compile Include="Guids.cs" />
-    <Compile Include="Interface\DebuggerConnectionService.cs" />
-    <Compile Include="Interface\DebuggerOutputWindow.cs" />
-    <Compile Include="Interface\DebuggerConnectionWindow.xaml.cs">
-      <DependentUpon>DebuggerConnectionWindow.xaml</DependentUpon>
-    </Compile>
     <Compile Include="AndroidPackage.cs" />
     <Compile Include="Listeners\AssemblyResolveListener.cs" />
     <Compile Include="Attributes\ProvideDebugPortSupplierAttribute.cs" />
@@ -114,14 +109,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Page Include="Interface\DebuggerConnectionWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="EnvDTE">
       <Version>16.9.31023.347</Version>
     </PackageReference>
@@ -130,7 +117,9 @@
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.VSSDK.BuildTools">
-      <Version>16.9.1050</Version>
+      <Version>16.10.1055</Version>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Editor">
       <Version>16.9.227</Version>

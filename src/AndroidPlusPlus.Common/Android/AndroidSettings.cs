@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Security;
 using Microsoft.Win32;
 
@@ -16,10 +17,6 @@ using Microsoft.Win32;
 namespace AndroidPlusPlus.Common
 {
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   public partial class AndroidSettings
   {
 
@@ -27,191 +24,72 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    private static string _sdkRoot;
+
     public static string SdkRoot
     {
       get
       {
-        // 
-        // Probe for possible Android SDK installation directories.
-        // 
-
-        HashSet<string> androidSdkPossibleLocations = new HashSet<string> (); 
-
-        try
+        if (string.IsNullOrEmpty(_sdkRoot))
         {
-          var environmentPaths = new string [] 
-          {
-            Environment.GetEnvironmentVariable ("ANDROID_SDK"),
-            Environment.GetEnvironmentVariable ("ANDROID_SDK_ROOT"),
-            Environment.GetEnvironmentVariable ("ANDROID_HOME")
-          };
+          //
+          // Probe for possible Android SDK installation directories.
+          //
 
-          foreach (string possiblePath in environmentPaths)
-          {
-            if ((!string.IsNullOrEmpty (possiblePath)) && (!androidSdkPossibleLocations.Contains (possiblePath)))
-            {
-              androidSdkPossibleLocations.Add (possiblePath);
-            }
-          }
-        }
-        catch (SecurityException e)
-        {
-          LoggingUtils.Print (string.Format ("Failed retrieving ANDROID_SDK_* environment variables: {0}", e.Message));
+          var androidSdkPossibleLocations = new HashSet<string>();
 
-          LoggingUtils.HandleException (e);
+          androidSdkPossibleLocations.Add(Environment.ExpandEnvironmentVariables("%LOCALAPPDATA%\\Android\\Sdk"));
+
+          androidSdkPossibleLocations.Add(Environment.ExpandEnvironmentVariables("%ANDROID_SDK%"));
+
+          androidSdkPossibleLocations.Add(Environment.ExpandEnvironmentVariables("%ANDROID_SDK_ROOT%"));
+
+          androidSdkPossibleLocations.Add(Environment.ExpandEnvironmentVariables("%ANDROID_HOME%"));
+
+          androidSdkPossibleLocations.RemoveWhere(path => !Directory.Exists(path));
+
+          _sdkRoot = androidSdkPossibleLocations.First();
         }
 
-        using (RegistryKey localMachineAndroidSdkTools = Registry.LocalMachine.OpenSubKey (@"SOFTWARE\Android SDK Tools\"))
-        {
-          if (localMachineAndroidSdkTools != null)
-          {
-            androidSdkPossibleLocations.Add (localMachineAndroidSdkTools.GetValue ("Path") as string);
-          }
-        }
-
-        using (RegistryKey currentUserAndroidSdkTools = Registry.CurrentUser.OpenSubKey (@"SOFTWARE\Android SDK Tools\"))
-        {
-          if (currentUserAndroidSdkTools != null)
-          {
-            androidSdkPossibleLocations.Add (currentUserAndroidSdkTools.GetValue ("Path") as string);
-          }
-        }
-
-        // 
-        // Search specified path the default 'SDK Manager' executable.
-        // 
-
-        foreach (string location in androidSdkPossibleLocations)
-        {
-          if (location != null && File.Exists(Path.Combine(location, "SDK Manager.exe")))
-          {
-            return location;
-          }
-        }
-
-        return null;
+        return _sdkRoot;
       }
+      set => _sdkRoot = value;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public static ICollection <uint> SdkInstalledPlatforms
-    {
-      get
-      {
-        // 
-        // Evaluate which 'platforms' are supported by this distribution. (This implementation is crude, should use Android.bat).
-        // 
-
-        List<uint> installedSdkPlatforms = new List<uint> ();
-
-        string platformSrcPath = Path.Combine (SdkRoot, "platforms");
-
-        if (File.Exists (platformSrcPath))
-        {
-          var platformDirs = Directory.GetDirectories (platformSrcPath);
-
-          for (uint i = 0; i < platformDirs.Length; ++i)
-          {
-            if (platformDirs [i].StartsWith ("android-"))
-            {
-              installedSdkPlatforms.Add (uint.Parse (platformDirs [i].Substring ("android-".Length - 1)));
-            }
-          }
-        }
-
-        if (installedSdkPlatforms.Count == 0)
-        {
-          throw new InvalidOperationException ();
-        }
-
-        return installedSdkPlatforms;
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private static string _ndkRoot;
 
     public static string NdkRoot
     {
       get
       {
-        // 
-        // Probe for possible Android NDK installation directories.
-        // 
-
-        List <string> androidNdkPossibleLocations = new List <string> (2); 
-
-        try
+        if (string.IsNullOrEmpty(_ndkRoot))
         {
-          androidNdkPossibleLocations.Add (Environment.GetEnvironmentVariable ("ANDROID_NDK"));
+          //
+          // Probe for possible Android NDK installation directories.
+          //
 
-          androidNdkPossibleLocations.Add (Environment.GetEnvironmentVariable ("ANDROID_NDK_ROOT"));
+          var androidNdkPossibleLocations = new HashSet<string>();
 
-          androidNdkPossibleLocations.Add (Environment.GetEnvironmentVariable ("ANDROID_NDK_PATH"));
-        }
-        catch (SecurityException e)
-        {
-          LoggingUtils.Print (string.Format ("Failed retrieving ANDROID_NDK_* environment variables: {0}", e.Message));
+          androidNdkPossibleLocations.Add(Environment.ExpandEnvironmentVariables("%ANDROID_NDK%"));
 
-          LoggingUtils.HandleException (e);
-        }
+          androidNdkPossibleLocations.Add(Environment.ExpandEnvironmentVariables("%ANDROID_NDK_ROOT%"));
 
-        // 
-        // Search specified path the default 'ndk-build' script.
-        // 
+          androidNdkPossibleLocations.Add(Environment.ExpandEnvironmentVariables("%ANDROID_NDK_PATH%"));
 
-        foreach (string location in androidNdkPossibleLocations)
-        {
-          if (location != null && File.Exists(Path.Combine(location, "ndk-build")))
-          {
-            return location;
-          }
+          androidNdkPossibleLocations.RemoveWhere(path => !Directory.Exists(path));
+
+          androidNdkPossibleLocations.RemoveWhere(path => File.Exists(Path.Combine(path, "ndk-build.cmd")));
+
+          _ndkRoot = androidNdkPossibleLocations.First();
         }
 
-        return null;
+        return _ndkRoot;
       }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public static ICollection<uint> NdkInstalledPlatforms
-    {
-      get
-      {
-        // 
-        // Evaluate which 'platforms' are supported by this distribution. (This implemenation is crude, should use Android.bat).
-        // 
-
-        List<uint> installedNdkPlatforms = new List<uint> ();
-
-        string platformSrcPath = Path.Combine (NdkRoot, "platforms");
-
-        if (File.Exists (platformSrcPath))
-        {
-          var platformDirs = Directory.GetDirectories (platformSrcPath);
-
-          for (uint i = 0; i < platformDirs.Length; ++i)
-          {
-            if (platformDirs [i].StartsWith ("android-"))
-            {
-              installedNdkPlatforms.Add (uint.Parse (platformDirs [i].Substring ("android-".Length - 1)));
-            }
-          }
-        }
-
-        if (installedNdkPlatforms.Count == 0)
-        {
-          throw new InvalidOperationException ();
-        }
-
-        return installedNdkPlatforms;
-      }
+      set => _ndkRoot = value;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -225,7 +103,3 @@ namespace AndroidPlusPlus.Common
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

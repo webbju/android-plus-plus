@@ -42,24 +42,6 @@
     <Category Name="LaunchProps" DisplayName="Launch Properties" />
   </Rule.Categories>
 
-  <EnumProperty
-    Name="DebuggerConfigMode"
-    DisplayName="Debugger mode"
-    Description="Specifies a pre-defined MSBuild solution to interface."
-    Category="LaunchConfiguration"
-  >
-    <EnumValue
-      Name="Custom"
-      DisplayName="Custom"
-      Description="Custom MSBuild implementation. Debugger properties must be correct."
-    />
-    <EnumValue
-      Name="vs-android"
-      DisplayName="vs-android"
-      Description="Use 'vs-android' (https://code.google.com/p/vs-android/)."
-    />
-  </EnumProperty>
-
   <StringProperty
     Name="DebuggerConfigTargetApk"
     DisplayName="Target .apk"

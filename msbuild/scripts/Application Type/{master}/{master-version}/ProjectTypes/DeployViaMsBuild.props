@@ -8,8 +8,6 @@
       Launch configuration options.
     -->
 
-    <DebuggerConfigMode Condition="'$(DebuggerConfigMode)' == ''">Custom</DebuggerConfigMode>
-
     <DebuggerConfigTargetApk Condition="'$(DebuggerConfigTargetApk)' == ''">$(OutDir)$(ProjectName)-$(Configuration.Replace(' ','_')).apk</DebuggerConfigTargetApk>
 
     <DebuggerConfigUpToDateCheck Condition="'$(DebuggerConfigUpToDateCheck)' == ''">true</DebuggerConfigUpToDateCheck>

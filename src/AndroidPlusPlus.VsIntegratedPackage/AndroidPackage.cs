@@ -262,12 +262,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     {
       await base.InitializeAsync(cancellationToken, progress);
 
-      LoggingUtils.PrintFunction ();
-
       InitialiseTraceListeners ();
-
-      AddService(typeof(IDebuggerConnectionService), CreateDebuggerConnectionServiceAsync);
-
 
       //InitialiseEventListeners ();
 
@@ -359,28 +354,13 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private async Task<object> CreateDebuggerConnectionServiceAsync(IAsyncServiceContainer container, CancellationToken cancellationToken, Type serviceType)
-    {
-      //
-      // Create a service to manage the 'attach' status dialog. As we need to access this via VsDebugLauncher/VsDebugEngine.
-      //
-
-      var launchService = new DebuggerConnectionService ();
-
-      await launchService.InitializeAsync(this, cancellationToken);
-
-      return launchService;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     void InitialiseTraceListeners ()
     {
       LoggingUtils.PrintFunction ();
 
       DateTime logTime = DateTime.Now;
+
+      Serilog.Log.Logger = new Serilog.LoggerConfiguration().CreateLogger();
 
       string traceLog = string.Format (@"{0}\Android++\{1:D4}-{2:D2}-{3:D2}.log", Environment.GetFolderPath (Environment.SpecialFolder.LocalApplicationData), logTime.Year, logTime.Month, logTime.Day);
 
@@ -409,74 +389,8 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
         m_traceWriterListener.Dispose ();
       }
-    }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    void InitialiseEventListeners ()
-    {
-      ThreadHelper.ThrowIfNotOnUIThread();
-
-      //
-      // Acquire VisualStudio service references.
-      //
-
-      LoggingUtils.PrintFunction ();
-
-      EnvDTE.DTE dteService = GetService (typeof (SDTE)) as EnvDTE.DTE;
-
-      IVsShell shellService = GetService (typeof (SVsShell)) as IVsShell;
-
-      IVsDebugger debuggerService = GetService (typeof (IVsDebugger)) as IVsDebugger;
-
-      IVsSolution2 solutionService = GetService (typeof (SVsSolution)) as IVsSolution2;
-
-      IVsMonitorSelection monitorSelectionService = GetService (typeof (IVsMonitorSelection)) as IVsMonitorSelection;
-
-      IDebuggerConnectionService debuggerConnectionService = GetService (typeof (IDebuggerConnectionService)) as IDebuggerConnectionService;
-
-      //
-      // Register service listeners.
-      //
-
-      if (dteService == null)
-      {
-        throw new InvalidOperationException ("Failed to acquire 'DTE' service");
-      }
-
-      if (shellService == null)
-      {
-        throw new InvalidOperationException ("Failed to acquire 'IVsShell' service");
-      }
-
-      if (debuggerService == null)
-      {
-        throw new InvalidOperationException ("Failed to acquire 'IVsDebugger' service");
-      }
-
-      if (solutionService == null)
-      {
-        throw new InvalidOperationException ("Failed to acquire 'SVsSolution' service");
-      }
-
-      if (monitorSelectionService == null)
-      {
-        throw new InvalidOperationException ("Failed to acquire 'IVsMonitorSelection' service");
-      }
-
-      m_propertyEventListener = new PropertyEventListener (shellService);
-
-      m_debuggerEventListener = new DebuggerEventListener (dteService, debuggerService, debuggerConnectionService);
-
-      m_solutionEventListener = new SolutionEventListener (dteService, solutionService);
-
-      //
-      // Register a new listener to assist finding assemblies placed within the package's current directory.
-      //
-
-      m_assemblyResolveListener = new AssemblyResolveListener ();
+      Serilog.Log.CloseAndFlush();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

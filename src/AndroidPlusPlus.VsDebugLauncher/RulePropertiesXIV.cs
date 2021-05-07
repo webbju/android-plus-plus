@@ -93,34 +93,33 @@ namespace AndroidPlusPlus.VsDebugLauncher.Rules
     {
       LoggingUtils.PrintFunction ();
 
-      Dictionary<string, string> evaluatedProperties = new Dictionary<string, string> ();
+      var evaluatedProperties = new Dictionary<string, string> ();
 
       var catalogs = await GetNamedCatalogsAsync ();
 
       foreach (var catalog in catalogs)
       {
-        IReadOnlyCollection<string> catalogPropertySchemas = catalog.Value.GetPropertyPagesSchemas ();
+        var catalogPropertySchemas = catalog.Value.GetPropertyPagesSchemas ();
 
         foreach (string schema in catalogPropertySchemas)
         {
-          IRule schemaRules = catalog.Value.BindToContext (schema, File, ItemType, ItemName);
+          var schemaRules = catalog.Value.BindToContext (schema, File, ItemType, ItemName);
 
-          foreach (IProperty property in schemaRules.Properties)
+          foreach (var property in schemaRules.Properties)
           {
             try
             {
               if (property.DataSource.Persistence.Equals ("ProjectInstance"))
               {
-                // Exceptions are thrown when trying to query the values of properties with 'ProjectInstance' persistence.
-
-                continue;
+                continue; // Exceptions are thrown when trying to query the values of properties with 'ProjectInstance' persistence.
               }
 
-              IEvaluatedProperty evaluatedProperty = (IEvaluatedProperty)property;
+              if (property is IEvaluatedProperty evaluatedProperty)
+              {
+                string schemaGroupedKey = schema + "." + property.Name;
 
-              string schemaGroupedKey = schema + "." + property.Name;
-
-              evaluatedProperties [schemaGroupedKey] = await evaluatedProperty.GetEvaluatedValueAsync ();
+                evaluatedProperties[schemaGroupedKey] = await evaluatedProperty.GetEvaluatedValueAsync();
+              }
             }
             catch (Exception e)
             {

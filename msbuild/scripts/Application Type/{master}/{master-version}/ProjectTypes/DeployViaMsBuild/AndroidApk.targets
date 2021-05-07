@@ -178,13 +178,14 @@
     -->
 
     <ItemGroup>
-      <AndroidZipAlign Condition="'@(AndroidApkSign)' != ''" Include="%(UnsignedJar)">
+      <AndroidZipAlign Remove="@(AndroidApkSign)" />
+      <AndroidZipAlign Include="$(SignedUnalignedOutputFile)">
         <Overwrite Condition="'%(AndroidZipAlign.Overwrite)' == ''">true</Overwrite>
         <MemoryPageAlignment Condition="'%(AndroidZipAlign.MemoryPageAlignment)' == ''">true</MemoryPageAlignment>
         <Verbose Condition="'%(AndroidZipAlign.Verbose)' == ''">false</Verbose>
         <RecompressUsingZopfli Condition="'%(AndroidZipAlign.RecompressUsingZopfli)' == ''">false</RecompressUsingZopfli>
         <Alignment Condition="'%(AndroidZipAlign.Alignment)' == ''">4</Alignment>
-        <InFile>%(FullPath)</InFile>
+        <InFile>$(SignedUnalignedOutputFile)</InFile>
         <Outfile>$(SignedAlignedOutputFile)</Outfile>
       </AndroidZipAlign>
     </ItemGroup>
@@ -204,7 +205,7 @@
       Outfile="%(AndroidZipAlign.Outfile)">
     </AndroidZipAlign>
 
-    <Message Condition="'@(AndroidZipAlign)' != ''" Text="$(MSBuildProjectFile) -&gt; %(Outfile)" Importance="High" />
+    <Message Condition="'@(AndroidZipAlign)' != ''" Text="$(MSBuildProjectFile) -&gt; $(SignedAlignedOutputFile)" Importance="High" />
 
   </Target>
 

@@ -45,7 +45,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
     [SwitchString(Switch = "-Xss")]
     public string JvmThreadStackSize { get; set; } = "1m";
 
-    [SwitchString(Switch = "-jar", Separator = " ")]
+    [SwitchString(Subtype = "file", Switch = "-jar", Separator = " ")]
     public string JvmJar { get; set; }
 
     [SwitchBool(Switch = "--dex")]

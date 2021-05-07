@@ -78,8 +78,6 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
     private AsyncRedirectProcess m_adbLogcatProcess = null;
 
-    private DeviceLogcatListener m_adbLogcatListener = null;
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -121,33 +119,6 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       m_eventCallbacks.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.DebuggerConnectionEvent)), OnDebuggerConnectionEvent);
 
       m_eventCallbacks.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.DebuggerLogcatEvent)), OnDebuggerLogcatEvent);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    private class DeviceLogcatListener : AsyncRedirectProcess.IEventListener
-    {
-      public void ProcessStdout (object sendingProcess, DataReceivedEventArgs args)
-      {
-        if (!string.IsNullOrWhiteSpace (args.Data))
-        {
-          DebuggerOutputWindow.WriteLine (VSConstants.OutputWindowPaneGuid.DebugPane_guid, args.Data);
-        }
-      }
-
-      public void ProcessStderr (object sendingProcess, DataReceivedEventArgs args)
-      {
-        if (!string.IsNullOrWhiteSpace (args.Data))
-        {
-          DebuggerOutputWindow.WriteLine (VSConstants.OutputWindowPaneGuid.DebugPane_guid, args.Data);
-        }
-      }
-
-      public void ProcessExited (object sendingProcess, EventArgs args)
-      {
-      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -402,10 +373,6 @@ namespace AndroidPlusPlus.VsIntegratedPackage
         }
 
         m_adbLogcatProcess = AndroidAdb.AdbCommandAsync (debuggerLogcatEvent.HostDevice, "logcat", "");
-
-        m_adbLogcatListener = new DeviceLogcatListener ();
-
-        m_adbLogcatProcess.Start (m_adbLogcatListener);
 
         return VSConstants.S_OK;
       }

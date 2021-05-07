@@ -34,18 +34,6 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <Target Name="PrepareForBuild_DeployViaMsBuild" DependsOnTargets="$(PlatformPrepareForBuildDependsOn)">
-
-    <!--
-      Validate existence of Java JDK
-    -->
-
-    <Error Condition="'$(JavaHomeDir)' == ''" Text="Could not locate the Java JDK. Please consult $(ANDROID_PLUS_PLUS)\docs\getting_started.txt" />
-
-    <Error Condition="!Exists('$(JavaHomeDir)')" Text="Could not locate the Java JDK. Path does not exist. Expected: $(JavaHomeDir)." />
-
-  </Target>
-
   <PropertyGroup>
 
     <__DeployViaMsBuildTargets>true</__DeployViaMsBuildTargets>
