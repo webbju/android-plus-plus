@@ -121,7 +121,7 @@ namespace AndroidPlusPlus.MsBuild.Common
           }
 #endif
 
-          OutOfDateInputFiles = Array.Empty<ITaskItem>();
+          OutOfDateInputFiles = InputFiles;
 
           OutputFiles = Array.Empty<ITaskItem>();
         }
