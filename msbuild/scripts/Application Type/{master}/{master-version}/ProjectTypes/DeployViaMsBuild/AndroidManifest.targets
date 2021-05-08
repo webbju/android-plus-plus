@@ -7,9 +7,9 @@
 
   </ItemGroup>
 
-  <UsingTask TaskName="AndroidManifestMerge" AssemblyFile="$(ANDROID_PLUS_PLUS)\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
+  <UsingTask TaskName="AndroidManifestMerge" AssemblyFile="$(MSBuildThisFileDirectory)\..\..\Toolchain\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
 
-  <UsingTask TaskName="AndroidAapt" AssemblyFile="$(ANDROID_PLUS_PLUS)\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
+  <UsingTask TaskName="AndroidAapt" AssemblyFile="$(MSBuildThisFileDirectory)\..\..\Toolchain\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

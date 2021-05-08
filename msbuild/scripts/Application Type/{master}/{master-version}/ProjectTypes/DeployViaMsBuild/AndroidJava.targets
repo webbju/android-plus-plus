@@ -5,11 +5,11 @@
     <PropertyPageSchema Include="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml" />
   </ItemGroup>
 
-  <UsingTask TaskName="AndroidDex" AssemblyFile="$(ANDROID_PLUS_PLUS)\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
+  <UsingTask TaskName="AndroidDex" AssemblyFile="$(MSBuildThisFileDirectory)\..\..\Toolchain\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
 
-  <UsingTask TaskName="AndroidProguard" AssemblyFile="$(ANDROID_PLUS_PLUS)\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
+  <UsingTask TaskName="AndroidProguard" AssemblyFile="$(MSBuildThisFileDirectory)\..\..\Toolchain\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
 
-  <UsingTask TaskName="JavaCompile" AssemblyFile="$(ANDROID_PLUS_PLUS)\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
+  <UsingTask TaskName="JavaCompile" AssemblyFile="$(MSBuildThisFileDirectory)\..\..\Toolchain\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -168,7 +168,7 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <UsingTask TaskName="AndroidProguard" AssemblyFile="$(ANDROID_PLUS_PLUS)\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
+  <UsingTask TaskName="AndroidProguard" AssemblyFile="$(MSBuildThisFileDirectory)\..\..\Toolchain\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

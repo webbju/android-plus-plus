@@ -51,17 +51,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private Dictionary<string, Tuple<ulong, ulong, bool>> m_mappedSharedLibraries = new Dictionary<string, Tuple<ulong, ulong, bool>> ();
 
-    private readonly LaunchConfiguration m_launchConfiguration;
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public CLangDebugger (DebugEngine debugEngine, LaunchConfiguration launchConfiguration, DebuggeeProgram debugProgram)
+    public CLangDebugger (DebugEngine debugEngine, Dictionary<string, string> launchConfiguration, DebuggeeProgram debugProgram)
     {
       Engine = debugEngine;
-
-      m_launchConfiguration = launchConfiguration ?? new LaunchConfiguration();
 
       NativeProgram = new CLangDebuggeeProgram (this, debugProgram);
 
@@ -69,154 +65,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       VariableManager = new CLangDebuggerVariableManager (this);
 
-      //
-      // Evaluate target device's architecture triple.
-      //
+      Engine.Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus, "Configuring GDB for target..."), null, null);
 
-      bool allow64BitAbis = true;
+      m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, Path.Combine(AndroidSettings.NdkRoot, @"prebuilt\windows-x86_64\bin\gdb.exe"));
 
-      string preferedGdbAbiToolPrefix = string.Empty;
-
-      foreach (string abi in debugProgram.DebugProcess.NativeProcess.ProcessSupportedCpuAbis)
-      {
-        switch (abi)
-        {
-          case "armeabi":
-          case "armeabi-v7a":
-          case "arm64-v8a":
-          {
-            if (allow64BitAbis && abi.Equals("arm64-v8a"))
-            {
-              preferedGdbAbiToolPrefix = "aarch64-linux-android";
-            }
-            else
-            {
-              preferedGdbAbiToolPrefix = "arm-linux-androideabi";
-            }
-
-            break;
-          }
-
-          case "x86":
-          case "x86_64":
-          {
-            if (allow64BitAbis && abi.Equals("x86_64"))
-            {
-              preferedGdbAbiToolPrefix = "x86_64-linux-android";
-            }
-            else
-            {
-              preferedGdbAbiToolPrefix = "i686-linux-android";
-            }
-
-            break;
-          }
-
-          case "mips":
-          case "mips64":
-          {
-            if (allow64BitAbis && abi.Equals("mips64"))
-            {
-              preferedGdbAbiToolPrefix = "mips64el-linux-android";
-            }
-            else
-            {
-              preferedGdbAbiToolPrefix = "mipsel-linux-android";
-            }
-
-            break;
-          }
-        }
-
-        if (!string.IsNullOrEmpty (preferedGdbAbiToolPrefix))
-        {
-          break; // Early out, evaluated a target ABI triple.
-        }
-      }
-
-      if (string.IsNullOrEmpty (preferedGdbAbiToolPrefix))
-      {
-        throw new InvalidOperationException ("Could not evaluate a target CPU ABI.");
-      }
-
-      bool preferedGdbAbiIs64Bit = preferedGdbAbiToolPrefix.Contains ("64");
-
-      Engine.Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus, string.Format ("Configuring GDB for '{0}' target...", preferedGdbAbiToolPrefix)), null, null);
-
-      //
-      // Android++ bundles its own copies of GDB to get round various NDK issues. Search for these.
-      //
-
-      string androidPlusPlusRoot = Environment.GetEnvironmentVariable ("ANDROID_PLUS_PLUS");
-
-      //
-      // Build GDB version permutations.
-      //
-
-      List<string> gdbToolPermutations = new List<string> ();
-
-      var availableHostArchitectures = new string [] { "x86_64" };
-
-      foreach (string arch in availableHostArchitectures)
-      {
-        if (arch.Contains ("64") && !Environment.Is64BitOperatingSystem)
-        {
-          continue;
-        }
-
-        string gdbToolFilePattern = string.Format ("{0}-gdb.cmd", preferedGdbAbiToolPrefix);
-
-        var availableVersionPaths = Directory.GetDirectories (Path.Combine (androidPlusPlusRoot, "contrib", "gdb", "bin", arch), "*.*.*", SearchOption.TopDirectoryOnly);
-
-        foreach (string versionPath in availableVersionPaths)
-        {
-          var gdbToolMatches = Directory.GetFiles (versionPath, gdbToolFilePattern, SearchOption.TopDirectoryOnly);
-
-          foreach (string tool in gdbToolMatches)
-          {
-            gdbToolPermutations.Add (tool);
-          }
-        }
-      }
-
-      if (gdbToolPermutations.Count == 0)
-      {
-        throw new InvalidOperationException ("Could not locate required 32/64-bit GDB deployments.");
-      }
-      else
-      {
-        //
-        // Pick the oldest GDB version available if running 'Jelly Bean' or below.
-        //
-
-        bool forceNdkR9dClient = (debugProgram.DebugProcess.NativeProcess.HostDevice.SdkVersion <= AndroidSettings.VersionCode.JELLY_BEAN);
-
-        if (forceNdkR9dClient)
-        {
-          m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, gdbToolPermutations [0]);
-        }
-        else
-        {
-          m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, gdbToolPermutations [gdbToolPermutations.Count - 1]);
-        }
-
-        //
-        // A symbolic link to 'share' is placed in the architecture directory, provide GDB with that location.
-        //
-
-        string architecturePath = Path.GetDirectoryName (Path.GetDirectoryName (m_gdbSetup.GdbToolPath));
-
-        string pythonGdbScriptsPath = Path.Combine (architecturePath, "share", "gdb");
-
-        m_gdbSetup.GdbToolArguments += " --data-directory " + PathUtils.SantiseWindowsPath (pythonGdbScriptsPath);
-      }
-
-      if (m_gdbSetup == null)
-      {
-        throw new InvalidOperationException ("Could not evaluate a suitable GDB instance. Ensure you have the correct NDK deployment for your system's architecture.");
-      }
-
-      if (m_launchConfiguration.TryGetValue ("LaunchSuspendedDir", out string launchDirectory))
+      if (launchConfiguration != null && launchConfiguration.TryGetValue ("LaunchSuspendedDir", out string launchDirectory))
       {
         m_gdbSetup.SymbolDirectories.Add (launchDirectory);
       }

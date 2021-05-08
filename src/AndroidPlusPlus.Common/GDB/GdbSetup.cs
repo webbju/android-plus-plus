@@ -63,9 +63,9 @@ namespace AndroidPlusPlus.Common
         throw new FileNotFoundException ("Could not find requested GDB instance. Expected: " + gdbToolPath);
       }
 
-      // 
+      //
       // Spawn an initial GDB instance to evaluate the client version.
-      // 
+      //
 
       GdbToolVersionMajor = 1;
 
@@ -158,9 +158,9 @@ namespace AndroidPlusPlus.Common
 
     public void SetupPortForwarding ()
     {
-      // 
+      //
       // Setup network redirection.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -188,9 +188,9 @@ namespace AndroidPlusPlus.Common
 
     public void ClearPortForwarding ()
     {
-      // 
+      //
       // Clear network redirection.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -209,9 +209,9 @@ namespace AndroidPlusPlus.Common
 
     public ICollection<string> CacheSystemBinaries ()
     {
-      // 
+      //
       // Evaluate remote binaries required for debugging, which must be cached on the host device.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -224,9 +224,9 @@ namespace AndroidPlusPlus.Common
         "/system/bin/linker64",
       };
 
-      // 
+      //
       // Pull the required binaries from the device.
-      // 
+      //
 
       List<string> hostBinaries = new List<string> ();
 
@@ -279,9 +279,9 @@ namespace AndroidPlusPlus.Common
 
     public ICollection<string> CacheSystemLibraries ()
     {
-      // 
+      //
       // Evaluate the remote libraries required for debugging on the host device.
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -327,9 +327,9 @@ namespace AndroidPlusPlus.Common
         // Ignore. No lib64 directory?
       }
 
-      // 
+      //
       // Pull the required libraries from the device.
-      // 
+      //
 
       List<string> hostBinaries = new List<string> ();
 
@@ -382,10 +382,10 @@ namespace AndroidPlusPlus.Common
 
     public ICollection<string> CacheApplicationLibraries ()
     {
-      // 
+      //
       // Application binaries (those under /lib/ of an installed application).
       // TODO: Consider improving this. Pulling libraries ensures consistency, but takes time (ADB is a slow protocol).
-      // 
+      //
 
       LoggingUtils.PrintFunction ();
 
@@ -422,9 +422,9 @@ namespace AndroidPlusPlus.Common
           }
         }
 
-        // 
+        //
         // On Android L, Google have broken pull permissions to 'app-lib' (and '/data/app/XXX/lib/') content so we use cp to avoid this.
-        // 
+        //
 
         List<string> applicationLibraries = new List<string> (deviceBinaries.Count);
 
@@ -499,29 +499,6 @@ namespace AndroidPlusPlus.Common
       if (IsVersionEqualOrAbove (7, 7))
       {
         gdbExecutionCommands.Add ("set mi-async on"); // as above, from GDB 7.7
-      }
-#endif
-
-      // 
-      // Include a script copied from 'platform/development' (Android Git) which allows JVM stack traces on via Python.
-      // - It also define a special mode for controlling debugging behaviour on ART.
-      // 
-
-#if false
-      string androidPlusPlusRoot = Environment.GetEnvironmentVariable ("ANDROID_PLUS_PLUS");
-
-      string dalkvikGdbScriptPath = Path.Combine (androidPlusPlusRoot, "contrib", "gdb", "scripts", "dalvik.gdb");
-
-      if (File.Exists (dalkvikGdbScriptPath))
-      {
-        gdbExecutionCommands.Add ("source " + PathUtils.SantiseWindowsPath (dalkvikGdbScriptPath));
-
-        if (Process.HostDevice.SdkVersion >= AndroidSettings.VersionCode.LOLLIPOP)
-        {
-          gdbExecutionCommands.Add ("art-on");
-
-          gdbExecutionCommands.Add ("handle SIGSEGV print stop");
-        }
       }
 #endif
 

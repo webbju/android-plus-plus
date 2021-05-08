@@ -36,24 +36,51 @@ namespace AndroidPlusPlus.Common
           // Probe for possible Android SDK installation directories.
           //
 
-          var androidSdkPossibleLocations = new HashSet<string>();
+          var androidSdkLocations = new HashSet<string>();
 
-          androidSdkPossibleLocations.Add(Environment.ExpandEnvironmentVariables("%LOCALAPPDATA%\\Android\\Sdk"));
+          androidSdkLocations.Add(Environment.ExpandEnvironmentVariables("%LOCALAPPDATA%\\Android\\Sdk"));
 
-          androidSdkPossibleLocations.Add(Environment.ExpandEnvironmentVariables("%ANDROID_SDK%"));
+          androidSdkLocations.Add(Environment.ExpandEnvironmentVariables("%ANDROID_SDK%"));
 
-          androidSdkPossibleLocations.Add(Environment.ExpandEnvironmentVariables("%ANDROID_SDK_ROOT%"));
+          androidSdkLocations.Add(Environment.ExpandEnvironmentVariables("%ANDROID_SDK_ROOT%"));
 
-          androidSdkPossibleLocations.Add(Environment.ExpandEnvironmentVariables("%ANDROID_HOME%"));
+          androidSdkLocations.Add(Environment.ExpandEnvironmentVariables("%ANDROID_HOME%"));
 
-          androidSdkPossibleLocations.RemoveWhere(path => !Directory.Exists(path));
+          androidSdkLocations.RemoveWhere(path => !Directory.Exists(path));
 
-          _sdkRoot = androidSdkPossibleLocations.First();
+          _sdkRoot = androidSdkLocations.First();
         }
 
         return _sdkRoot;
       }
       set => _sdkRoot = value;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private static string _sdkBuildTools;
+
+    public static string SdkBuildToolsRoot
+    {
+      get
+      {
+        if (_sdkBuildTools == null)
+        {
+          var androidSdkBuildToolsLocations = new HashSet<string>();
+
+          foreach (var dir in Directory.GetDirectories(Path.Combine(SdkRoot, "build-tools")))
+          {
+            androidSdkBuildToolsLocations.Add(dir);
+          }
+
+          _sdkBuildTools = androidSdkBuildToolsLocations.First();
+        }
+
+        return _sdkBuildTools;
+      }
+      set => _sdkBuildTools = value;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -72,19 +99,22 @@ namespace AndroidPlusPlus.Common
           // Probe for possible Android NDK installation directories.
           //
 
-          var androidNdkPossibleLocations = new HashSet<string>();
+          var androidNdkLocations = new HashSet<string>();
 
-          androidNdkPossibleLocations.Add(Environment.ExpandEnvironmentVariables("%ANDROID_NDK%"));
+          foreach (var dir in Directory.GetDirectories(Environment.ExpandEnvironmentVariables("%LOCALAPPDATA%\\Android\\Sdk\\ndk")))
+          {
+            androidNdkLocations.Add(dir);
+          }
 
-          androidNdkPossibleLocations.Add(Environment.ExpandEnvironmentVariables("%ANDROID_NDK_ROOT%"));
+          androidNdkLocations.Add(Environment.ExpandEnvironmentVariables("%ANDROID_NDK%"));
 
-          androidNdkPossibleLocations.Add(Environment.ExpandEnvironmentVariables("%ANDROID_NDK_PATH%"));
+          androidNdkLocations.Add(Environment.ExpandEnvironmentVariables("%ANDROID_NDK_ROOT%"));
 
-          androidNdkPossibleLocations.RemoveWhere(path => !Directory.Exists(path));
+          androidNdkLocations.Add(Environment.ExpandEnvironmentVariables("%ANDROID_NDK_PATH%"));
 
-          androidNdkPossibleLocations.RemoveWhere(path => File.Exists(Path.Combine(path, "ndk-build.cmd")));
+          androidNdkLocations.RemoveWhere(path => !File.Exists(Path.Combine(path, "ndk-build.cmd")));
 
-          _ndkRoot = androidNdkPossibleLocations.First();
+          _ndkRoot = androidNdkLocations.First();
         }
 
         return _ndkRoot;

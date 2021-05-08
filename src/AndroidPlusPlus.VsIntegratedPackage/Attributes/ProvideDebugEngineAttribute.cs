@@ -14,6 +14,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.Win32;
 
 using AndroidPlusPlus.Common;
+using AndroidPlusPlus.VsDebugCommon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -222,7 +223,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
         {
           Guid incompatibleEngineGuid = new Guid (engineId);
 
-          string debugEngineName = VsDebugEngine.DebugEngineGuids.GetEngineNameFromId (incompatibleEngineGuid);
+          string debugEngineName = DebugEngineGuids.GetEngineNameFromId (incompatibleEngineGuid);
 
           m_engineIncompatibleIds [debugEngineName] = incompatibleEngineGuid;
         }

@@ -24,6 +24,8 @@ using AndroidPlusPlus.VsDebugCommon;
 using AndroidPlusPlus.VsDebugEngine;
 using System.Threading;
 using System.Threading.Tasks;
+using Serilog;
+using Microsoft.VisualStudio.Shell.Events;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -52,7 +54,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
   [ProvideAutoLoad(VSConstants.UICONTEXT.NoSolution_string, PackageAutoLoadFlags.BackgroundLoad)]
 
-  [ProvideService(typeof(IDebuggerConnectionService), IsAsyncQueryable = true)]
+  [ProvideService(typeof(DebuggerConnectionService), IsAsyncQueryable = true)]
 
   [InstalledProductRegistration("Android++", "A native development and debugging solution for Visual Studio.", "0.8")]
 
@@ -229,23 +231,8 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private AssemblyResolveListener m_assemblyResolveListener;
-
-    private PropertyEventListener m_propertyEventListener;
-
-    private DebuggerEventListener m_debuggerEventListener;
-
-    private SolutionEventListener m_solutionEventListener;
-
-    private TextWriterTraceListener m_traceWriterListener;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     public AndroidPackage ()
     {
-      LoggingUtils.PrintFunction ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -262,10 +249,32 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     {
       await base.InitializeAsync(cancellationToken, progress);
 
-      InitialiseTraceListeners ();
+      LoggingUtils.PrintFunction();
 
-      //InitialiseEventListeners ();
+      //
+      // Register a new listener to assist finding assemblies placed within the package's current directory.
+      //
 
+      AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(AssemblyResolveHandler);
+
+      Log.Logger = new LoggerConfiguration()
+        .WriteTo.File(@"Android++.log", rollOnFileSizeLimit: true)
+        .WriteTo.Debug(Serilog.Events.LogEventLevel.Verbose)
+        .CreateLogger();
+
+      //
+      // Register service listeners.
+      //
+
+      try
+      {
+        AddService(typeof(DebuggerConnectionService), CreateDebuggerConnectionServiceAsync);
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException(e);
+      }
+      
       //
       // Sanity type checking.
       //
@@ -340,57 +349,56 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    private async Task<object> CreateDebuggerConnectionServiceAsync(IAsyncServiceContainer container, CancellationToken cancellationToken, Type serviceType)
+    {
+      var debuggerConnectionService = new DebuggerConnectionService();
+
+      await debuggerConnectionService.InitializeAsync(this, cancellationToken);
+
+      return debuggerConnectionService;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private Assembly AssemblyResolveHandler(object sender, ResolveEventArgs args)
+    {
+      try
+      {
+        var packagePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+        var assemblyFilename = args.Name;
+
+        int i = assemblyFilename.IndexOf(',');
+
+        if (i != -1)
+        {
+          assemblyFilename = assemblyFilename.Substring(0, i);
+        }
+
+        return Assembly.LoadFrom(Path.Combine(packagePath, assemblyFilename + ".dll"));
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException(e);
+
+        return null;
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     protected override void Dispose (bool disposing)
     {
       if (disposing)
       {
-        DisposeTraceListeners();
+        Log.CloseAndFlush();
 
         base.Dispose(disposing);
       }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    void InitialiseTraceListeners ()
-    {
-      LoggingUtils.PrintFunction ();
-
-      DateTime logTime = DateTime.Now;
-
-      Serilog.Log.Logger = new Serilog.LoggerConfiguration().CreateLogger();
-
-      string traceLog = string.Format (@"{0}\Android++\{1:D4}-{2:D2}-{3:D2}.log", Environment.GetFolderPath (Environment.SpecialFolder.LocalApplicationData), logTime.Year, logTime.Month, logTime.Day);
-
-      LoggingUtils.Print ("[Package] Trace Log: " + traceLog);
-
-      m_traceWriterListener = new TextWriterTraceListener (traceLog);
-
-      Trace.Listeners.Add (m_traceWriterListener);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    void DisposeTraceListeners ()
-    {
-      LoggingUtils.PrintFunction ();
-
-      Trace.Flush ();
-
-      if (m_traceWriterListener != null)
-      {
-        Trace.Listeners.Remove (m_traceWriterListener);
-
-        m_traceWriterListener.Close ();
-
-        m_traceWriterListener.Dispose ();
-      }
-
-      Serilog.Log.CloseAndFlush();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

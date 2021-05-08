@@ -72,13 +72,6 @@
   />
 
   <BoolProperty
-    Name="DebuggerConfigOpenGlTrace"
-    DisplayName="OpenGL trace"
-    Description="Launch the Application in 'trace mode'. This enables runtime and performance checking of OpenGL ES functionality."
-    Category="LaunchConfiguration"
-  />
-
-  <BoolProperty
     Name="DebuggerConfigKeepAppData"
     DisplayName="Keep application data (on install)"
     Description="Ensures that existing data remains for if the Application is re-installed."

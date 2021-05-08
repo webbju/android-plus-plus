@@ -361,7 +361,9 @@ namespace AndroidPlusPlus.Common
 
       LoggingUtils.PrintFunction ();
 
-      string deviceProcessList = Shell ("ps", string.Format ("-t {0}", ((processIdFilter == 0) ? "" : processIdFilter.ToString ())));
+      string args = (processIdFilter == 0) ? string.Empty : $"-p {processIdFilter}";
+
+      string deviceProcessList = Shell ("ps", args);
 
       if (!string.IsNullOrEmpty (deviceProcessList))
       {

@@ -28,7 +28,9 @@
     <AndroidJava Include="src\com\example\hellogdbserver\HelloGdbServer.java" />
   </ItemGroup>
   <ItemGroup>
-    <AndroidManifest Include="AndroidManifest.xml" />
+    <AndroidManifest Include="AndroidManifest.xml">
+      <DebugMode Condition="'$(Configuration)|$(Platform)'=='Debug|I686'">true</DebugMode>
+    </AndroidManifest>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

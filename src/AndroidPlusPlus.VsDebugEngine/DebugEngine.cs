@@ -15,6 +15,7 @@ using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugCommon;
 
 using Microsoft.VisualStudio.Debugger.Interop;
+using Newtonsoft.Json;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -308,7 +309,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus, string.Format ("Starting GDB client...")), null, null);
 
-        NativeDebugger = new CLangDebugger (this, new LaunchConfiguration(), Program);
+        NativeDebugger = new CLangDebugger (this, null, Program);
 
         Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus, string.Format ("Starting JDB client...")), null, null);
 
@@ -912,15 +913,9 @@ namespace AndroidPlusPlus.VsDebugEngine
         // Evaluate options; including current debugger target application.
         //
 
-        var launchConfiguration = LaunchConfiguration.FromString (options);
+        var launchConfiguration = JsonConvert.DeserializeObject<Dictionary<string, string>> (options);
 
         string packageName = launchConfiguration["PackageName"];
-
-        string launchActivity = launchConfiguration["LaunchActivity"];
-
-        bool debugMode = launchConfiguration["DebugMode"].Equals ("true");
-
-        bool openGlTrace = launchConfiguration["OpenGlTrace"].Equals ("true");
 
         bool appIsRunning = false;
 
@@ -958,23 +953,29 @@ namespace AndroidPlusPlus.VsDebugEngine
 
               launchArgumentsBuilder.Append ("start ");
 
-              if (debugMode)
+              /*if (launchConfiguration.TryGetValue("DebugMode", out string debugMode) && string.Equals(debugMode, "true", StringComparison.OrdinalIgnoreCase))
               {
                 launchArgumentsBuilder.Append ("-D "); // debug
               }
-              else
+              else*/
               {
                 launchArgumentsBuilder.Append ("-W "); // wait
               }
 
+              launchArgumentsBuilder.Append ("-N "); // enable native debugging
+
               launchArgumentsBuilder.Append ("-S "); // force stop the target app before starting the activity
 
-              if (openGlTrace)
+              if (launchConfiguration.TryGetValue("LaunchActivity", out string launchActivity) && !string.IsNullOrWhiteSpace(launchActivity))
               {
-                launchArgumentsBuilder.Append ("--opengl-trace ");
+                launchArgumentsBuilder.Append (packageName + "/" + launchActivity);
               }
+              else
+              {
+                string resolvedActivity = debuggeePort.PortDevice.Shell ("cmd", $"\"package resolve-activity --brief {packageName} | tail -1\"");
 
-              launchArgumentsBuilder.Append (packageName + "/" + launchActivity);
+                launchArgumentsBuilder.Append (resolvedActivity.Trim(new char[] { '\n', '\r' }));
+              }
 
               Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus, string.Format ("[adb:shell:am] {0}", launchArgumentsBuilder)), null, null);
 

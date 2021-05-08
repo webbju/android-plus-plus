@@ -55,22 +55,22 @@ namespace AndroidPlusPlus.Common
 
       lock (m_updateLockMutex)
       {
-        // 
+        //
         // Start an ADB instance, if required.
-        // 
+        //
 
-        using (SyncRedirectProcess adbStartServer = new SyncRedirectProcess (AndroidSettings.SdkRoot + @"\platform-tools\adb.exe", "start-server"))
+        using (var adbStartServer = AdbCommand("start-server", string.Empty))
         {
           adbStartServer.StartAndWaitForExit (30000);
         }
 
-        using SyncRedirectProcess adbDevices = new SyncRedirectProcess(AndroidSettings.SdkRoot + @"\platform-tools\adb.exe", "devices");
+        using var adbDevices = AdbCommand("devices", string.Empty);
 
         adbDevices.StartAndWaitForExit(30000);
 
-        // 
+        //
         // Parse 'devices' output, skipping headers and potential 'start-server' output.
-        // 
+        //
 
         Dictionary<string, string> currentAdbDevices = new Dictionary<string, string>();
 
@@ -95,9 +95,9 @@ namespace AndroidPlusPlus.Common
           }
         }
 
-        // 
+        //
         // First identify any previously tracked devices which aren't in 'devices' output.
-        // 
+        //
 
         HashSet<string> disconnectedDevices = new HashSet<string>();
 
@@ -111,9 +111,9 @@ namespace AndroidPlusPlus.Common
           }
         }
 
-        // 
+        //
         // Identify whether any devices have changed state; connected/persisted/disconnected.
-        // 
+        //
 
         foreach (KeyValuePair<string, string> devicePair in currentAdbDevices)
         {
@@ -133,9 +133,9 @@ namespace AndroidPlusPlus.Common
           {
             if (m_connectedDevices.TryGetValue(deviceName, out AndroidDevice connectedDevice))
             {
-              // 
+              //
               // Device is pervasive. Refresh internal properties.
-              // 
+              //
 
               LoggingUtils.Print(string.Format("[AndroidAdb] Device pervaded: {0} - {1}", deviceName, deviceType));
 
@@ -148,9 +148,9 @@ namespace AndroidPlusPlus.Common
             }
             else
             {
-              // 
+              //
               // Device connected.
-              // 
+              //
 
               LoggingUtils.Print(string.Format("[AndroidAdb] Device connected: {0} - {1}", deviceName, deviceType));
 
@@ -168,9 +168,9 @@ namespace AndroidPlusPlus.Common
           }
         }
 
-        // 
+        //
         // Finally, handle device disconnection.
-        // 
+        //
 
         foreach (string deviceName in disconnectedDevices)
         {
@@ -216,6 +216,15 @@ namespace AndroidPlusPlus.Common
       {
         return m_connectedDevices.Values;
       }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public static SyncRedirectProcess AdbCommand (string command)
+    {
+      return AdbCommand(command, string.Empty);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

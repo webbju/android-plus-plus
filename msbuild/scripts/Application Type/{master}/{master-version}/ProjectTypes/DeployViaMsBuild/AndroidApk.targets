@@ -5,11 +5,11 @@
     <PropertyPageSchema Include="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml" />
   </ItemGroup>
 
-  <UsingTask TaskName="AndroidNdkDepends" AssemblyFile="$(ANDROID_PLUS_PLUS)\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
+  <UsingTask TaskName="AndroidNdkDepends" AssemblyFile="$(MSBuildThisFileDirectory)\..\..\Toolchain\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
 
-  <UsingTask TaskName="JavaSigner" AssemblyFile="$(ANDROID_PLUS_PLUS)\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
+  <UsingTask TaskName="JavaSigner" AssemblyFile="$(MSBuildThisFileDirectory)\..\..\Toolchain\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
 
-  <UsingTask TaskName="AndroidZipAlign" AssemblyFile="$(ANDROID_PLUS_PLUS)\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
+  <UsingTask TaskName="AndroidZipAlign" AssemblyFile="$(MSBuildThisFileDirectory)\..\..\Toolchain\bin\AndroidPlusPlus.MsBuild.DeployTasks.dll" />
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

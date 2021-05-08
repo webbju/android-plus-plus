@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.ProjectSystem.Debug;
 using Microsoft.VisualStudio.ProjectSystem.VS.Debug;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -113,7 +114,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public Task<DebugLaunchSettings> StartWithoutDebuggingAsync (DebugLaunchOptions launchOptions, LaunchConfiguration launchConfig, ICollection<LaunchProps> launchProps, IDictionary<string, string> projectProperties)
+    public Task<DebugLaunchSettings> StartWithoutDebuggingAsync (DebugLaunchOptions launchOptions, IDictionary<string, string> launchConfig, ICollection<Tuple<string, string>> launchProps, IDictionary<string, string> projectProperties)
     {
       LoggingUtils.PrintFunction ();
 
@@ -144,13 +145,14 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       var nonDebuglaunchSettings = new DebugLaunchSettings (launchOptions | DebugLaunchOptions.Silent);
 
-      nonDebuglaunchSettings.LaunchDebugEngineGuid = new Guid ("8310DAF9-1043-4C8E-85A0-FF68896E1922");
+      // MDD Android
+      nonDebuglaunchSettings.LaunchDebugEngineGuid = DebugEngineGuids.guidDebugEngineID;
 
-      nonDebuglaunchSettings.PortSupplierGuid = new Guid ("3AEE417F-E5F9-4B89-BC31-20534C99B7F5");
+      nonDebuglaunchSettings.PortSupplierGuid = DebugEngineGuids.guidDebugPortSupplierID;
 
       nonDebuglaunchSettings.PortName = debuggingDevice.ID;
 
-      nonDebuglaunchSettings.Options = launchConfig.ToString ();
+      nonDebuglaunchSettings.Options = JsonConvert.SerializeObject(launchConfig, Formatting.Indented);
 
       nonDebuglaunchSettings.Executable = launchConfig ["TargetApk"];
 
@@ -163,7 +165,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public async Task<DebugLaunchSettings> StartWithDebuggingAsync (DebugLaunchOptions launchOptions, LaunchConfiguration launchConfig, ICollection<LaunchProps> launchProps, IDictionary<string, string> projectProperties)
+    public async Task<DebugLaunchSettings> StartWithDebuggingAsync (DebugLaunchOptions launchOptions, IDictionary<string, string> launchConfig, ICollection<Tuple<string, string>> launchProps, IDictionary<string, string> projectProperties)
     {
       LoggingUtils.PrintFunction ();
 
@@ -215,13 +217,14 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       DebugLaunchSettings debugLaunchSettings = new DebugLaunchSettings (launchOptions | DebugLaunchOptions.Silent);
 
-      debugLaunchSettings.LaunchDebugEngineGuid = new Guid ("8310DAF9-1043-4C8E-85A0-FF68896E1922");
+      // new Guid("EA6637C6-17DF-45B5-A183-0951C54243BC"); // MDD Android
+      debugLaunchSettings.LaunchDebugEngineGuid = DebugEngineGuids.guidDebugEngineID;
 
-      debugLaunchSettings.PortSupplierGuid = new Guid ("3AEE417F-E5F9-4B89-BC31-20534C99B7F5");
+      debugLaunchSettings.PortSupplierGuid = DebugEngineGuids.guidDebugPortSupplierID;
 
       debugLaunchSettings.PortName = debuggingDevice.ID;
 
-      debugLaunchSettings.Options = launchConfig.ToString ();
+      debugLaunchSettings.Options = JsonConvert.SerializeObject(launchConfig, Formatting.Indented);
 
       if (shouldAttach)
       {
@@ -425,7 +428,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private void InstallApplicationAsync (AndroidDevice debuggingDevice, LaunchConfiguration launchConfig)
+    private void InstallApplicationAsync (AndroidDevice debuggingDevice, IDictionary<string, string> launchConfig)
     {
       //
       // Asynchronous installation process, so the UI can be updated appropriately.
@@ -447,10 +450,6 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
           string targetRemoteTemporaryFile = targetRemoteTemporaryPath + '/' + Path.GetFileName (targetLocalApk);
 
-          bool keepData = launchConfig ["KeepAppData"].Equals ("true");
-
-          string installerPackage = launchConfig ["InstallerPackage"];
-
           //
           // Construct 'am install' arguments for installing the application in a manner compatible with GDB.
           //
@@ -461,14 +460,14 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
           installArgsBuilder.Append ("-f "); // install package on internal flash. (required for debugging)
 
-          if (keepData)
+          if (launchConfig.TryGetValue("KeepAppData", out string keepAppData) && string.Equals (keepAppData, "true", StringComparison.OrdinalIgnoreCase))
           {
             installArgsBuilder.Append ("-r "); // reinstall an existing app, keeping its data.
           }
 
-          if (!string.IsNullOrWhiteSpace (installerPackage))
+          if (launchConfig.TryGetValue("InstallerPackage", out string installerPackage) && !string.IsNullOrWhiteSpace (installerPackage))
           {
-            installArgsBuilder.Append (string.Format (CultureInfo.InvariantCulture, "-i {0} ", installerPackage));
+            installArgsBuilder.Append (string.Format (CultureInfo.InvariantCulture, "-i {0} ", launchConfig ["InstallerPackage"]));
           }
 
           installArgsBuilder.Append (targetRemoteTemporaryFile);
@@ -535,7 +534,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public LaunchConfiguration GetLaunchConfigurationFromProjectProperties (IDictionary<string, string> projectProperties)
+    public IDictionary<string, string> GetLaunchConfigurationFromProjectProperties (IDictionary<string, string> projectProperties)
     {
       LoggingUtils.PrintFunction ();
 
@@ -580,11 +579,7 @@ namespace AndroidPlusPlus.VsDebugLauncher
 
       string applicationPackageName = string.Empty;
 
-      string applicationLaunchActivity = string.Empty;
-
-      var androidSdkBuildToolsPath = Directory.GetDirectories(Path.Combine(AndroidSettings.SdkRoot, "build-tools"))[0];
-
-      using (SyncRedirectProcess getApkDetails = new SyncRedirectProcess (Path.Combine (androidSdkBuildToolsPath, "aapt.exe"), "dump --values badging " + PathUtils.SantiseWindowsPath (debuggerTargetApk)))
+      using (SyncRedirectProcess getApkDetails = new SyncRedirectProcess (Path.Combine (AndroidSettings.SdkBuildToolsRoot, "aapt.exe"), "dump --values badging " + PathUtils.SantiseWindowsPath (debuggerTargetApk)))
       {
         int exitCode = getApkDetails.StartAndWaitForExit ();
 
@@ -614,20 +609,8 @@ namespace AndroidPlusPlus.VsDebugLauncher
                 break;
               }
             }
-          }
-          else if (singleLine.StartsWith ("launchable-activity: ", StringComparison.OrdinalIgnoreCase))
-          {
-            var launchActivityData = singleLine.Substring ("launchable-activity: ".Length).Split (' ');
 
-            foreach (string data in launchActivityData)
-            {
-              if (data.StartsWith ("name=", StringComparison.OrdinalIgnoreCase))
-              {
-                applicationLaunchActivity = data.Substring ("name=".Length).Trim ('\'');
-
-                break;
-              }
-            }
+            break;
           }
         }
       }
@@ -636,36 +619,36 @@ namespace AndroidPlusPlus.VsDebugLauncher
       // If a specific launch activity was not requested, ensure that the default one is referenced.
       //
 
-      projectProperties.TryGetValue("AndroidPlusPlusDebugger.DebuggerConfigLaunchActivity", out string debuggerLaunchActivity);
+      var launchConfig = new Dictionary<string, string>();
 
-      projectProperties.TryGetValue("AndroidPlusPlusDebugger.DebuggerConfigUpToDateCheck", out string debuggerUpToDateCheck);
+      launchConfig["TargetApk"] = debuggerTargetApk;
 
-      projectProperties.TryGetValue("AndroidPlusPlusDebugger.DebuggerConfigDebugMode", out string debuggerDebugMode);
+      launchConfig["PackageName"] = applicationPackageName;
 
-      projectProperties.TryGetValue("AndroidPlusPlusDebugger.DebuggerConfigOpenGlTrace", out string debuggerOpenGlTrace);
-
-      projectProperties.TryGetValue("AndroidPlusPlusDebugger.DebuggerConfigKeepAppData", out string debuggerKeepAppData);
-
-      projectProperties.TryGetValue("AndroidPlusPlusDebugger.DebuggerConfigInstallerPackage", out string debuggerInstallerPackage);
-
-      var launchConfig = new LaunchConfiguration
+      if (projectProperties.TryGetValue("AndroidPlusPlusDebugger.DebuggerConfigLaunchActivity", out string debuggerLaunchActivity) && !string.IsNullOrWhiteSpace(debuggerLaunchActivity))
       {
-        ["TargetApk"] = debuggerTargetApk ?? string.Empty,
+        launchConfig["LaunchActivity"] = debuggerLaunchActivity;
+      }
 
-        ["UpToDateCheck"] = debuggerUpToDateCheck ?? string.Empty,
+      if (projectProperties.TryGetValue("AndroidPlusPlusDebugger.DebuggerConfigUpToDateCheck", out string debuggerUpToDateCheck) && !string.IsNullOrWhiteSpace(debuggerUpToDateCheck))
+      {
+        launchConfig["UpToDateCheck"] = debuggerUpToDateCheck;
+      }
 
-        ["PackageName"] = applicationPackageName ?? string.Empty,
+      if (projectProperties.TryGetValue("AndroidPlusPlusDebugger.DebuggerConfigDebugMode", out string debuggerDebugMode) && !string.IsNullOrWhiteSpace(debuggerDebugMode))
+      {
+        launchConfig["DebugMode"] = debuggerDebugMode;
+      }
 
-        ["LaunchActivity"] = debuggerLaunchActivity ?? applicationLaunchActivity,
+      if (projectProperties.TryGetValue("AndroidPlusPlusDebugger.DebuggerConfigKeepAppData", out string debuggerKeepAppData) && !string.IsNullOrWhiteSpace(debuggerKeepAppData))
+      {
+        launchConfig["KeepAppData"] = debuggerKeepAppData;
+      }
 
-        ["DebugMode"] = debuggerDebugMode ?? string.Empty,
-
-        ["OpenGlTrace"] = debuggerOpenGlTrace ?? string.Empty,
-
-        ["KeepAppData"] = debuggerKeepAppData ?? string.Empty,
-
-        ["InstallerPackage"] = debuggerInstallerPackage ?? string.Empty,
-      };
+      if (projectProperties.TryGetValue("AndroidPlusPlusDebugger.DebuggerConfigInstallerPackage", out string debuggerInstallerPackage) && !string.IsNullOrWhiteSpace(debuggerInstallerPackage))
+      {
+        launchConfig["InstallerPackage"] = debuggerInstallerPackage;
+      }
 
       return launchConfig;
     }
@@ -674,17 +657,17 @@ namespace AndroidPlusPlus.VsDebugLauncher
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public ICollection<LaunchProps> GetLaunchPropsFromProjectProperties (IDictionary<string, string> projectProperties)
+    public ICollection<Tuple<string, string>> GetLaunchPropsFromProjectProperties (IDictionary<string, string> projectProperties)
     {
       projectProperties.TryGetValue("AndroidPlusPlusDebugger.DebuggerPropCheckJni", out string debuggerPropCheckJni);
 
       projectProperties.TryGetValue("AndroidPlusPlusDebugger.DebuggerPropEglCallstack", out string debuggerPropEglCallstack);
 
-      var launchProps = new List<LaunchProps>
+      var launchProps = new List<Tuple<string, string>>
       {
-        new LaunchProps("debug.checkjni", (string.Equals("true", debuggerPropCheckJni, StringComparison.OrdinalIgnoreCase)) ? "1" : "0"),
+        new Tuple<string, string>("debug.checkjni", (string.Equals("true", debuggerPropCheckJni, StringComparison.OrdinalIgnoreCase)) ? "1" : "0"),
 
-        new LaunchProps("debug.egl.callstack", (string.Equals("true", debuggerPropEglCallstack, StringComparison.OrdinalIgnoreCase)) ? "1" : "0"),
+        new Tuple<string, string>("debug.egl.callstack", (string.Equals("true", debuggerPropEglCallstack, StringComparison.OrdinalIgnoreCase)) ? "1" : "0"),
       };
 
       return launchProps;

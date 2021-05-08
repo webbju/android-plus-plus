@@ -9,12 +9,6 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <OutputPath>..\..\bin</OutputPath>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-  </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\AndroidPlusPlus.MsBuild.Common\AndroidPlusPlus.MsBuild.Common.csproj">
       <Project>{E3A93421-987E-4704-B0D8-21415453B5C9}</Project>

@@ -19,8 +19,6 @@ namespace AndroidPlusPlus.VsDebugCommon
 
   public interface IDebuggerConnectionService
   {
-    void Initialize(IServiceProvider provider);
-
     Task InitializeAsync(Microsoft.VisualStudio.Shell.IAsyncServiceProvider provider, CancellationToken cancellationToken);
 
     Task<int> LaunchDialogShow ();

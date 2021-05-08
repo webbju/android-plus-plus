@@ -16,8 +16,6 @@
 
     <DebuggerConfigDebugMode Condition="'$(DebuggerConfigDebugMode)' == ''">true</DebuggerConfigDebugMode>
 
-    <DebuggerConfigOpenGlTrace Condition="'$(DebuggerConfigOpenGlTrace)' == ''">false</DebuggerConfigOpenGlTrace>
-
     <DebuggerConfigKeepAppData Condition="'$(DebuggerConfigKeepAppData)' == ''">true</DebuggerConfigKeepAppData>
 
     <DebuggerConfigInstallerPackage Condition="'$(DebuggerConfigInstallerPackage)' == ''"></DebuggerConfigInstallerPackage>

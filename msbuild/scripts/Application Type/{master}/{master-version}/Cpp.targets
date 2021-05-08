@@ -28,17 +28,15 @@
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   -->
 
-  <UsingTask TaskName="NativeCompile" AssemblyFile="$(ANDROID_PLUS_PLUS)\bin\AndroidPlusPlus.MsBuild.CppTasks.dll" />
+  <UsingTask TaskName="NativeCompile" AssemblyFile="$(MSBuildThisFileDirectory)\Toolchain\bin\AndroidPlusPlus.MsBuild.CppTasks.dll" />
 
-  <UsingTask TaskName="NativeLink" AssemblyFile="$(ANDROID_PLUS_PLUS)\bin\AndroidPlusPlus.MsBuild.CppTasks.dll" />
+  <UsingTask TaskName="NativeLink" AssemblyFile="$(MSBuildThisFileDirectory)\Toolchain\bin\AndroidPlusPlus.MsBuild.CppTasks.dll" />
 
-  <UsingTask TaskName="NativeLib" AssemblyFile="$(ANDROID_PLUS_PLUS)\bin\AndroidPlusPlus.MsBuild.CppTasks.dll" />
+  <UsingTask TaskName="NativeLib" AssemblyFile="$(MSBuildThisFileDirectory)\Toolchain\bin\AndroidPlusPlus.MsBuild.CppTasks.dll" />
 
-  <UsingTask TaskName="NativeStrip" AssemblyFile="$(ANDROID_PLUS_PLUS)\bin\AndroidPlusPlus.MsBuild.CppTasks.dll" />
+  <UsingTask TaskName="NativeStrip" AssemblyFile="$(MSBuildThisFileDirectory)\Toolchain\bin\AndroidPlusPlus.MsBuild.CppTasks.dll" />
 
-  <UsingTask TaskName="NativeBuildId" AssemblyFile="$(ANDROID_PLUS_PLUS)\bin\AndroidPlusPlus.MsBuild.CppTasks.dll" />
-
-  <UsingTask TaskName="VCMessage" AssemblyName="Microsoft.Build.CppTasks.Common, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+  <UsingTask TaskName="NativeBuildId" AssemblyFile="$(MSBuildThisFileDirectory)\Toolchain\bin\AndroidPlusPlus.MsBuild.CppTasks.dll" />
 
   <!--
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

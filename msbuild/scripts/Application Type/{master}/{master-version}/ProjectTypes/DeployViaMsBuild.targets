@@ -14,7 +14,7 @@
 
   <PropertyGroup Condition="'$(__DeployViaMsBuildTargets)' != 'true'">
 
-    <PrepareForBuildDependsOn>$(PrepareForBuildDependsOn);PrepareForBuild_DeployViaMsBuild</PrepareForBuildDependsOn>
+    <PrepareForBuildDependsOn>$(PrepareForBuildDependsOn)</PrepareForBuildDependsOn>
 
     <BuildLibTargets Condition="'$(ConfigurationType)' != 'Utility'">$(BuildLibTargets);AndroidJava</BuildLibTargets>
 

@@ -3,6 +3,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 using CommandLine;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -35,6 +36,9 @@ namespace AndroidPlusPlus.MsBuild.Exporter {
       [Option("kill-msbuild", Default = false)]
       public bool KillMsBuild { get; set; }
 
+      [Option("copy-dlls", Default = true)]
+      public bool CopyDlls { get; set; }
+
       [Option("template-dir", Required = true)]
       public IEnumerable<string> TemplateDirs { get; set; }
 
@@ -51,7 +55,12 @@ namespace AndroidPlusPlus.MsBuild.Exporter {
 
     static int Main (string [] args)
     {
-      CommandLine.Parser.Default.ParseArguments<Options>(args)
+      Log.Logger = new LoggerConfiguration()
+        .WriteTo.Console(Serilog.Events.LogEventLevel.Verbose)
+        .WriteTo.Debug(Serilog.Events.LogEventLevel.Verbose)
+        .CreateLogger();
+
+      Parser.Default.ParseArguments<Options>(args)
         .WithParsed(RunOptions);
 
       return 0;
@@ -90,17 +99,13 @@ namespace AndroidPlusPlus.MsBuild.Exporter {
           {
             string canonicalExportDir = Path.GetFullPath(exportDir);
 
-            ExportMsBuildTemplateForVersion (canonicalExportDir, options.TemplateDirs, options.VersionFile, ref textSubstitution);
+            ExportMsBuildTemplateForVersion (options, canonicalExportDir, ref textSubstitution);
           }
         }
       }
       catch (Exception e)
       {
-        string exception = string.Format ("[AndroidPlusPlus.MsBuild.Exporter] {0}: {1}\nStack trace:\n{2}", e.GetType ().Name, e.Message, e.StackTrace);
-
-        Console.WriteLine (exception);
-
-        Trace.WriteLine (exception);
+        Log.Error(e, "");
       }
     }
 
@@ -136,14 +141,14 @@ namespace AndroidPlusPlus.MsBuild.Exporter {
           {
             if (!killed)
             {
-              Console.WriteLine (string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Couldn't kill a running MSBuild instance."));
+              Log.Information (string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Couldn't kill a running MSBuild instance."));
             }
           }
         }
       }
-      catch (Exception)
+      catch (Exception e)
       {
-        Console.WriteLine (string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Failed to terminate running MSBuild instance(s)."));
+        Log.Error(e, "Failed to terminate running MSBuild instance(s).");
       }
     }
 
@@ -157,7 +162,7 @@ namespace AndroidPlusPlus.MsBuild.Exporter {
       // Clean 'Application Type' files and sub-directories.
       //
 
-      Console.WriteLine (string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Uninstalling scripts from {0}", exportDir));
+      Log.Information(string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Uninstalling scripts from {0}", exportDir));
 
       if (Directory.Exists (Path.Combine (exportDir, "Application Type")))
       {
@@ -242,32 +247,57 @@ namespace AndroidPlusPlus.MsBuild.Exporter {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private static void ExportMsBuildTemplateForVersion (string exportDir, IEnumerable<string> templateDirectories, string versionFile, ref Dictionary<string, string> textSubstitution)
+    private static void ExportMsBuildTemplateForVersion (Options options, string exportDir, ref Dictionary<string, string> textSubstitution)
     {
       //
       // Copy each directory of the template directories and apply pattern processing.
       //
 
-      foreach (string templateDir in templateDirectories)
+      foreach (string templateDir in options.TemplateDirs)
       {
         string canonicalTemplateDir = Path.GetFullPath(templateDir);
 
-        Console.WriteLine (string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Copying {0} to {1}", canonicalTemplateDir, exportDir));
+        Log.Information(string.Format ("[AndroidPlusPlus.MsBuild.Exporter] Copying {0} to {1}", canonicalTemplateDir, exportDir));
 
         CopyFoldersAndFiles (canonicalTemplateDir, exportDir, true, ref textSubstitution);
+      }
+
+      //
+      // Copy assemblies.
+      //
+
+      foreach (string templateDir in options.TemplateDirs)
+      {
+        var assemblies = Directory.GetFiles(".", "*.dll");
+
+        foreach (var assembly in assemblies)
+        {
+          if (Path.GetFileName(assembly).StartsWith("System."))
+          {
+            continue;
+          }
+
+          string canonicalAssemblyFile = Path.GetFullPath(assembly);
+
+          string destinationAssemblyFile = Path.Combine(exportDir, "Application Type", textSubstitution["{master}"], textSubstitution ["{master-version}"], "Toolchain", "bin", Path.GetFileName(canonicalAssemblyFile));
+
+          Log.Information(string.Format("[AndroidPlusPlus.MsBuild.Exporter] Copying {0} to {1}", canonicalAssemblyFile, destinationAssemblyFile));
+
+          File.Copy(canonicalAssemblyFile, destinationAssemblyFile, true);
+        }
       }
 
       //
       // Copy specified version descriptor file to the root of 'Platforms'. Useful for tracking install versions.
       //
 
-      if (!string.IsNullOrEmpty (versionFile))
+      if (!string.IsNullOrEmpty (options.VersionFile))
       {
-        string canonicalVersionFile = Path.GetFullPath(versionFile);
+        string canonicalVersionFile = Path.GetFullPath(options.VersionFile);
 
-        string destinationVersionFile = Path.Combine (exportDir, "Application Type", textSubstitution ["{master}"], Path.GetFileName (canonicalVersionFile));
+        string destinationVersionFile = Path.Combine (exportDir, "Application Type", textSubstitution ["{master}"], textSubstitution ["{master-version}"], Path.GetFileName (canonicalVersionFile));
 
-        Console.WriteLine(string.Format("[AndroidPlusPlus.MsBuild.Exporter] Copying {0} to {1}", canonicalVersionFile, destinationVersionFile));
+        Log.Information(string.Format("[AndroidPlusPlus.MsBuild.Exporter] Copying {0} to {1}", canonicalVersionFile, destinationVersionFile));
 
         File.Copy (canonicalVersionFile, destinationVersionFile, true);
       }

@@ -2,17 +2,16 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Debugger.Interop;
-using Microsoft.VisualStudio.Shell.Interop;
 using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugCommon;
 using AndroidPlusPlus.VsDebugEngine;
+using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Debugger.Interop;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using System;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -26,7 +25,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public delegate Task<int> DebuggerEventListenerDelegate (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib);
+  public delegate Task<int> DebuggerEventListenerDelegate(IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -34,45 +33,37 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
   interface DebuggerEventListenerInterface
   {
-    Task<int> OnSessionCreate (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib);
+    Task<int> OnSessionCreate(IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib);
 
-    Task<int> OnSessionDestroy (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib);
+    Task<int> OnSessionDestroy(IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib);
 
-    Task<int> OnEngineCreate (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib);
+    Task<int> OnEngineCreate(IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib);
 
-    Task<int> OnProgramCreate (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib);
+    Task<int> OnProgramCreate(IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib);
 
-    Task<int> OnProgramDestroy (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib);
+    Task<int> OnProgramDestroy(IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib);
 
-    Task<int> OnAttachComplete (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib);
+    Task<int> OnAttachComplete(IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib);
 
-    Task<int> OnError (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib);
+    Task<int> OnError(IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib);
 
-    Task<int> OnDebuggerConnectionEvent (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib);
+    Task<int> OnDebuggerConnectionEvent(IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib);
 
-    Task<int> OnDebuggerLogcatEvent (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib);
+    Task<int> OnDebuggerLogcatEvent(IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib);
   }
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  [ComVisible (false)]
-
-  public class DebuggerEventListener : DebuggerEventListenerInterface, IVsDebuggerEvents, IDebugEventCallback2
+  public class DebuggerConnectionService : IDebuggerConnectionService, DebuggerEventListenerInterface, IVsDebuggerEvents, IDebugEventCallback2
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private readonly EnvDTE.DTE m_dteService;
-
-    private readonly IVsDebugger m_debuggerService;
-
-    private readonly IDebuggerConnectionService m_debuggerConnectionService;
-
-    private readonly uint m_debuggerServiceCookie;
+    private uint m_debuggerServiceCookie;
 
     private Dictionary<Guid, DebuggerEventListenerDelegate> m_eventCallbacks;
 
@@ -82,44 +73,84 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public DebuggerEventListener (EnvDTE.DTE dteService, IVsDebugger debuggerService, IDebuggerConnectionService debuggerConnectionService)
+    public async System.Threading.Tasks.Task InitializeAsync(Microsoft.VisualStudio.Shell.IAsyncServiceProvider provider, CancellationToken cancellationToken)
     {
-      Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
+      await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
-      m_dteService = dteService;
+      var debuggerService = await provider.GetServiceAsync(typeof(SVsShellDebugger)) as IVsDebugger;
+      
+      LoggingUtils.RequireOk(debuggerService.AdviseDebuggerEvents(this, out m_debuggerServiceCookie));
 
-      m_debuggerService = debuggerService;
-
-      m_debuggerConnectionService = debuggerConnectionService;
-
-      LoggingUtils.RequireOk (m_debuggerService.AdviseDebuggerEvents (this, out m_debuggerServiceCookie));
-
-      LoggingUtils.RequireOk (m_debuggerService.AdviseDebugEventCallback (this));
+      LoggingUtils.RequireOk(debuggerService.AdviseDebugEventCallback(this));
 
       //
       // Register required listener events and paired process function callbacks.
       //
 
-      m_eventCallbacks = new Dictionary<Guid, DebuggerEventListenerDelegate> ();
+      m_eventCallbacks = new Dictionary<Guid, DebuggerEventListenerDelegate>();
 
-      m_eventCallbacks.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.SessionCreate)), OnSessionCreate);
+      m_eventCallbacks.Add(ComUtils.GuidOf(typeof(DebugEngineEvent.SessionCreate)), OnSessionCreate);
 
-      m_eventCallbacks.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.SessionDestroy)), OnSessionDestroy);
+      m_eventCallbacks.Add(ComUtils.GuidOf(typeof(DebugEngineEvent.SessionDestroy)), OnSessionDestroy);
 
-      m_eventCallbacks.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.EngineCreate)), OnEngineCreate);
+      m_eventCallbacks.Add(ComUtils.GuidOf(typeof(DebugEngineEvent.EngineCreate)), OnEngineCreate);
 
-      m_eventCallbacks.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.ProgramCreate)), OnProgramCreate);
+      m_eventCallbacks.Add(ComUtils.GuidOf(typeof(DebugEngineEvent.ProgramCreate)), OnProgramCreate);
 
-      m_eventCallbacks.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.ProgramDestroy)), OnProgramDestroy);
+      m_eventCallbacks.Add(ComUtils.GuidOf(typeof(DebugEngineEvent.ProgramDestroy)), OnProgramDestroy);
 
-      m_eventCallbacks.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.AttachComplete)), OnAttachComplete);
+      m_eventCallbacks.Add(ComUtils.GuidOf(typeof(DebugEngineEvent.AttachComplete)), OnAttachComplete);
 
-      m_eventCallbacks.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.Error)), OnError);
+      m_eventCallbacks.Add(ComUtils.GuidOf(typeof(DebugEngineEvent.Error)), OnError);
 
-      m_eventCallbacks.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.DebuggerConnectionEvent)), OnDebuggerConnectionEvent);
+      m_eventCallbacks.Add(ComUtils.GuidOf(typeof(DebugEngineEvent.DebuggerConnectionEvent)), OnDebuggerConnectionEvent);
 
-      m_eventCallbacks.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.DebuggerLogcatEvent)), OnDebuggerLogcatEvent);
+      m_eventCallbacks.Add(ComUtils.GuidOf(typeof(DebugEngineEvent.DebuggerLogcatEvent)), OnDebuggerLogcatEvent);
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    #region IDebuggerConnectionService Members
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public async Task<int> LaunchDialogShow()
+    {
+      return VSConstants.S_OK;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public async Task<int> LaunchDialogUpdate(string status, bool isError)
+    {
+      return VSConstants.S_OK;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public async Task<int> LaunchDialogClose()
+    {
+      return VSConstants.S_OK;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    #endregion
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -131,18 +162,18 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int OnModeChange (DBGMODE dbgmodeNew)
+    public int OnModeChange(DBGMODE dbgmodeNew)
     {
-      LoggingUtils.Print ("[DebuggerEventListener] OnModeChange: " + dbgmodeNew.ToString ());
+      LoggingUtils.Print($"[{GetType().Name}] OnModeChange: {dbgmodeNew}");
 
       switch (dbgmodeNew)
       {
         case DBGMODE.DBGMODE_Design:
         case DBGMODE.DBGMODE_Break:
         case DBGMODE.DBGMODE_Run:
-        {
-          break;
-        }
+          {
+            break;
+          }
       }
 
       return VSConstants.S_OK;
@@ -164,31 +195,31 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int Event (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
+    public int Event(IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, ref Guid riidEvent, uint dwAttrib)
     {
       try
       {
-        LoggingUtils.Print ("[DebuggerEventListener] Event: " + riidEvent.ToString ());
+        LoggingUtils.Print($"[{GetType().Name}] Event: {riidEvent}");
 
         int handle = VsDebugCommon.Constants.E_NOTIMPL;
 
-        if (!m_eventCallbacks.TryGetValue (riidEvent, out DebuggerEventListenerDelegate callback))
+        if (!m_eventCallbacks.TryGetValue(riidEvent, out DebuggerEventListenerDelegate callback))
         {
           return handle;
         }
 
-        handle = callback (pEngine, pProcess, pProgram, pThread, pEvent, riidEvent, dwAttrib).Result;
+        handle = callback(pEngine, pProcess, pProgram, pThread, pEvent, riidEvent, dwAttrib).Result;
 
         if (handle != VsDebugCommon.Constants.E_NOTIMPL)
         {
-          LoggingUtils.RequireOk (handle);
+          LoggingUtils.RequireOk(handle);
         }
 
         return VSConstants.S_OK;
       }
       catch (Exception e)
       {
-        LoggingUtils.HandleException (e);
+        LoggingUtils.HandleException(e);
 
         return VSConstants.E_FAIL;
       }
@@ -210,9 +241,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public async Task<int> OnSessionCreate (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib)
+    public async Task<int> OnSessionCreate(IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib)
     {
-      LoggingUtils.PrintFunction ();
+      LoggingUtils.PrintFunction();
 
       return VSConstants.E_NOTIMPL;
     }
@@ -221,9 +252,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public async Task<int> OnSessionDestroy (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib)
+    public async Task<int> OnSessionDestroy(IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib)
     {
-      LoggingUtils.PrintFunction ();
+      LoggingUtils.PrintFunction();
 
       return VSConstants.E_NOTIMPL;
     }
@@ -232,9 +263,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public async Task<int> OnEngineCreate (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib)
+    public async Task<int> OnEngineCreate(IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib)
     {
-      LoggingUtils.PrintFunction ();
+      LoggingUtils.PrintFunction();
 
       return VSConstants.E_NOTIMPL;
     }
@@ -243,9 +274,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public async Task<int> OnProgramCreate (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib)
+    public async Task<int> OnProgramCreate(IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib)
     {
-      LoggingUtils.PrintFunction ();
+      LoggingUtils.PrintFunction();
 
       try
       {
@@ -275,7 +306,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       }
       catch (Exception e)
       {
-        LoggingUtils.HandleException (e);
+        LoggingUtils.HandleException(e);
 
         return VSConstants.E_FAIL;
       }
@@ -285,17 +316,17 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public async Task<int> OnProgramDestroy (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib)
+    public async Task<int> OnProgramDestroy(IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib)
     {
-      LoggingUtils.PrintFunction ();
+      LoggingUtils.PrintFunction();
 
       try
       {
         if (m_adbLogcatProcess != null)
         {
-          m_adbLogcatProcess.Kill ();
+          m_adbLogcatProcess.Kill();
 
-          m_adbLogcatProcess.Dispose ();
+          m_adbLogcatProcess.Dispose();
 
           m_adbLogcatProcess = null;
         }
@@ -304,7 +335,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       }
       catch (Exception e)
       {
-        LoggingUtils.HandleException (e);
+        LoggingUtils.HandleException(e);
 
         return VSConstants.E_FAIL;
       }
@@ -314,9 +345,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public async Task<int> OnAttachComplete (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib)
+    public async Task<int> OnAttachComplete(IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib)
     {
-      LoggingUtils.PrintFunction ();
+      LoggingUtils.PrintFunction();
 
       return VSConstants.E_NOTIMPL;
     }
@@ -325,15 +356,15 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public async Task<int> OnError (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib)
+    public async Task<int> OnError(IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib)
     {
-      LoggingUtils.PrintFunction ();
+      LoggingUtils.PrintFunction();
 
       try
       {
         DebugEngineEvent.Error errorEvent = pEvent as DebugEngineEvent.Error;
 
-        enum_MESSAGETYPE [] messageType = new enum_MESSAGETYPE [1];
+        enum_MESSAGETYPE[] messageType = new enum_MESSAGETYPE[1];
 
         string errorFormat, errorHelpFileName;
 
@@ -341,15 +372,15 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
         uint errorType, errorHelpId;
 
-        LoggingUtils.RequireOk (errorEvent.GetErrorMessage (messageType, out errorFormat, out errorReason, out errorType, out errorHelpFileName, out errorHelpId));
+        LoggingUtils.RequireOk(errorEvent.GetErrorMessage(messageType, out errorFormat, out errorReason, out errorType, out errorHelpFileName, out errorHelpId));
 
-        LoggingUtils.RequireOk (await m_debuggerConnectionService.LaunchDialogUpdate (errorFormat, true));
+        LoggingUtils.RequireOk(await LaunchDialogUpdate(errorFormat, true));
 
         return VSConstants.S_OK;
       }
       catch (Exception e)
       {
-        LoggingUtils.HandleException (e);
+        LoggingUtils.HandleException(e);
 
         return VSConstants.E_FAIL;
       }
@@ -359,26 +390,26 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public async Task<int> OnDebuggerLogcatEvent (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib)
+    public async Task<int> OnDebuggerLogcatEvent(IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib)
     {
-      LoggingUtils.PrintFunction ();
+      LoggingUtils.PrintFunction();
 
       try
       {
         DebugEngineEvent.DebuggerLogcatEvent debuggerLogcatEvent = pEvent as DebugEngineEvent.DebuggerLogcatEvent;
 
-        using (SyncRedirectProcess command = AndroidAdb.AdbCommand (debuggerLogcatEvent.HostDevice, "logcat", "-c"))
+        using (SyncRedirectProcess command = AndroidAdb.AdbCommand(debuggerLogcatEvent.HostDevice, "logcat", "-c"))
         {
-          command.StartAndWaitForExit ();
+          command.StartAndWaitForExit();
         }
 
-        m_adbLogcatProcess = AndroidAdb.AdbCommandAsync (debuggerLogcatEvent.HostDevice, "logcat", "");
+        m_adbLogcatProcess = AndroidAdb.AdbCommandAsync(debuggerLogcatEvent.HostDevice, "logcat", "");
 
         return VSConstants.S_OK;
       }
       catch (Exception e)
       {
-        LoggingUtils.HandleException (e);
+        LoggingUtils.HandleException(e);
 
         return VSConstants.E_FAIL;
       }
@@ -388,9 +419,9 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public async Task<int> OnDebuggerConnectionEvent (IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib)
+    public async Task<int> OnDebuggerConnectionEvent(IDebugEngine2 pEngine, IDebugProcess2 pProcess, IDebugProgram2 pProgram, IDebugThread2 pThread, IDebugEvent2 pEvent, Guid riidEvent, uint dwAttrib)
     {
-      LoggingUtils.PrintFunction ();
+      LoggingUtils.PrintFunction();
 
       try
       {
@@ -399,35 +430,35 @@ namespace AndroidPlusPlus.VsIntegratedPackage
         switch (debuggerConnectionEvent.Type)
         {
           case DebugEngineEvent.DebuggerConnectionEvent.EventType.ShowDialog:
-          {
-            LoggingUtils.RequireOk (await m_debuggerConnectionService.LaunchDialogShow ());
+            {
+              LoggingUtils.RequireOk(await LaunchDialogShow());
 
-            break;
-          }
+              break;
+            }
 
           case DebugEngineEvent.DebuggerConnectionEvent.EventType.CloseDialog:
-          {
-            LoggingUtils.RequireOk (await m_debuggerConnectionService.LaunchDialogClose ());
+            {
+              LoggingUtils.RequireOk(await LaunchDialogClose());
 
-            break;
-          }
+              break;
+            }
 
           case DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus:
           case DebugEngineEvent.DebuggerConnectionEvent.EventType.LogError:
-          {
-            bool isError = (debuggerConnectionEvent.Type == DebugEngineEvent.DebuggerConnectionEvent.EventType.LogError);
+            {
+              bool isError = (debuggerConnectionEvent.Type == DebugEngineEvent.DebuggerConnectionEvent.EventType.LogError);
 
-            LoggingUtils.RequireOk (await m_debuggerConnectionService.LaunchDialogUpdate (debuggerConnectionEvent.Message, isError));
+              LoggingUtils.RequireOk(await LaunchDialogUpdate(debuggerConnectionEvent.Message, isError));
 
-            break;
-          }
+              break;
+            }
         }
 
         return VSConstants.S_OK;
       }
       catch (Exception e)
       {
-        LoggingUtils.HandleException (e);
+        LoggingUtils.HandleException(e);
 
         return VSConstants.E_FAIL;
       }
@@ -445,12 +476,4 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
