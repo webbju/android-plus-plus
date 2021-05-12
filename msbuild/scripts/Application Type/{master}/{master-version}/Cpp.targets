@@ -285,8 +285,10 @@
       ToolPath="$(PlatformToolsetReadElfToolPath)"
       ToolExe="$(PlatformToolsetReadElfTool)"
       TrackerLogDirectory="%(LinkOutputFiles.TrackerLogDirectory)">
-      <Output TaskParameter="BuildId" PropertyName="_DebugLinkSharedLibraryBuildId" />
+      <!-- <Output TaskParameter="BuildId" PropertyName="_DebugLinkSharedLibraryBuildId" /> -->
     </NativeBuildId>
+
+    <Message Condition="'$(_DebugLinkSharedLibraryBuildId)' != ''" Text="Build-id: $(_DebugLinkSharedLibraryBuildId)" Importance="High" />
 
     <PropertyGroup Condition="'$(_DebugLinkSharedLibraryBuildId)' != ''">
       <_DebugLinkBuildIdPath>$([System.IO.Path]::GetDirectoryName('$(_DebugLinkSharedLibrary)'))\.build-id\$(_DebugLinkSharedLibraryBuildId.Substring(0,2))</_DebugLinkBuildIdPath>
@@ -294,65 +296,28 @@
       <_DebugLinkBuildIdOutputPath>$(_DebugLinkBuildIdPath)\$(_DebugLinkBuildIdFilename)</_DebugLinkBuildIdOutputPath>
     </PropertyGroup>
 
-    <MakeDir Condition="'$(_DebugLinkBuildIdPath)' != ''" Directories="$(_DebugLinkBuildIdPath)" />
-
     <!--
       Create a symbolic link to the original .debug symbols file. This should hopefully reduce sprawling build sizes.
     -->
 
+    <MakeDir Condition="'$(_DebugLinkBuildIdPath)' != ''" Directories="$(_DebugLinkBuildIdPath)" />
+
     <Exec
-      Condition="('$(_DebugLinkBuildIdOutputPath)' != '' and Exists('$(_DebugLinkBuildIdOutputPath)'))"
+      Condition="Exists('$(_DebugLinkBuildIdOutputPath)')"
       Command="del /q &quot;$(_DebugLinkBuildIdOutputPath)&quot;"
       IgnoreExitCode="true"
     />
 
     <Exec
-      Condition="('$(_DebugLinkBuildIdOutputPath)' != '' and Exists('$(_DebugLinkBuildIdOutputPath)'))"
-      Command="mklink &quot;$(_DebugLinkBuildIdPath)\$(_DebugLinkBuildIdFilename)&quot; &quot;$(_DebugLinkSymbolsFile)&quot;"
+      Condition="'$(_DebugLinkBuildIdOutputPath)' != '' and !Exists('$(_DebugLinkBuildIdOutputPath)')"
+      Command="mklink &quot;$(_DebugLinkBuildIdOutputPath)&quot; &quot;$(_DebugLinkSymbolsFile)&quot;"
     />
 
     <WriteLinesToFile
-      Condition="('$(_DebugLinkBuildIdOutputPath)' != '' and Exists('$(_DebugLinkBuildIdOutputPath)'))"
+      Condition="'$(_DebugLinkBuildIdOutputPath)' != ''"
       File="$(_DebugLinkBuildIdOutputPath).txt"
       Lines="Debugging symbols for library: $(_DebugLinkSharedLibrary);Original file: $(_DebugLinkSymbolsFile);Build-id: $(_DebugLinkSharedLibraryBuildId);"
       Overwrite="true"
-    />
-
-    <!--
-      Construct a GDB setup execution script, then embed this as an additional section ('gdb.setup') in the target library.
-    -->
-
-    <ItemGroup>
-      <_GdbSearchDirectories Include="$(OutDir);$(LibraryPath)" />
-      <_GdbDebugFileDirectories Condition="'$(_DebugLinkSharedLibrary)' != ''" Include="$([System.IO.Path]::GetDirectoryName('$(_DebugLinkSharedLibrary)'))" />
-    </ItemGroup>
-
-    <PropertyGroup>
-      <Semicolon>%3B</Semicolon>
-      <GdbSetupExecutionScript>$(_DebugLinkSharedLibraryAutoloadScript)</GdbSetupExecutionScript>
-      <GdbSourceDirectories>@(_GdbSearchDirectories->'%(FullPath)', '$(Semicolon)')</GdbSourceDirectories>
-      <GdbDebugFileDirectories>@(_GdbDebugFileDirectories->'%(FullPath)', '$(Semicolon)')</GdbDebugFileDirectories>
-    </PropertyGroup>
-
-    <Delete Condition="Exists('$(GdbSetupExecutionScript)')" Files="$(GdbSetupExecutionScript)" />
-
-    <WriteLinesToFile
-      Condition="'$(GdbSetupExecutionScript)' != '' and '$(GdbSourceDirectories)' != ''"
-      File="$(GdbSetupExecutionScript)"
-      Lines="directory $(GdbSourceDirectories);"
-      Overwrite="true"
-    />
-
-    <WriteLinesToFile
-      Condition="'$(GdbSetupExecutionScript)' != '' and '$(GdbDebugFileDirectories)' != ''"
-      File="$(GdbSetupExecutionScript)"
-      Lines="set solib-search-path $(GdbDebugFileDirectories);set debug-file-directory $(GdbDebugFileDirectories);"
-      Overwrite="false"
-    />
-
-    <Exec
-      Condition="('@(LinkOutputFiles)' != '' and '$(_LinkStripSymbolsRequired)' == 'true' and Exists('$(GdbSetupExecutionScript)'))"
-      Command="$(PlatformToolsetObjcopyToolPath)\$(PlatformToolsetObjcopyTool) --add-section debug_gdb_scripts=$(GdbSetupExecutionScript) $(_DebugLinkSharedLibrary)"
     />
 
   </Target>

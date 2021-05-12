@@ -2,15 +2,13 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.IO;
-using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugCommon;
+using Microsoft.VisualStudio.Debugger.Interop;
+using System;
+using System.IO;
+using System.Text;
+using System.Text.RegularExpressions;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -55,53 +53,46 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         MiResultRecord.RequireOk (resultRecord, command);
 
-        string pattern = "(?<symbol>.+)( [\\+] (?<offset>[0-9]+))? (in section (?<section>[^ ]+) of) (?<module>.+)";
-
-        Regex regExMatcher = new Regex (pattern, RegexOptions.IgnoreCase);
+        var regExMatcher = new Regex (@"(?<symbol>.+)( [\+] (?<offset>[0-9]+))? (in section (?<section>[^ ]+) of) (?<module>.+)", RegexOptions.IgnoreCase);
 
         foreach (MiStreamRecord record in resultRecord.Records)
         {
-          if (!record.Stream.StartsWith ("No symbol"))
+          using var reader = new StringReader(record.Stream);
+
+          Match regExLineMatch = regExMatcher.Match (reader.ReadLine());
+
+          if (!regExLineMatch.Success)
           {
-            continue; // early rejection.
+            continue;
           }
 
-          StringBuilder sanitisedStream = new StringBuilder (record.Stream);
+          string symbol = regExLineMatch.Result ("${symbol}");
 
-          sanitisedStream.Length -= 2; // Strip trailing "\\n"
+          string offset = regExLineMatch.Result ("${offset}");
 
-          Match regExLineMatch = regExMatcher.Match (sanitisedStream.ToString ());
+          string section = regExLineMatch.Result ("${section}");
 
-          if (regExLineMatch.Success)
-          {
-            string symbol = regExLineMatch.Result ("${symbol}");
+          string module = regExLineMatch.Result ("${module}");
 
-            string offset = regExLineMatch.Result ("${offset}");
+          ulong addressOffset = 0ul;
 
-            string section = regExLineMatch.Result ("${section}");
+          ulong.TryParse (offset, out addressOffset);
 
-            string module = regExLineMatch.Result ("${module}");
+          m_symbolName = symbol;
 
-            ulong addressOffset = 0ul;
+          m_symbolOffset = addressOffset.ToString ();
 
-            ulong.TryParse (offset, out addressOffset);
+          //string moduleFile = Path.GetFileName (module);
 
-            m_symbolName = symbol;
+          //CLangDebuggeeModule module = m_debugger.NativeProgram.GetModule (moduleFile);
 
-            m_symbolOffset = addressOffset.ToString ();
+          //MODULE_INFO [] moduleArray = new MODULE_INFO [1];
 
-            //string moduleFile = Path.GetFileName (module);
+          //LoggingUtils.RequireOk (module.GetInfo (enum_MODULE_INFO_FIELDS.MIF_URL, moduleArray));
 
-            //CLangDebuggeeModule module = m_debugger.NativeProgram.GetModule (moduleFile);
+          //infoArray [0].bstrModuleUrl = moduleArray [0].m_bstrUrl;
 
-            //MODULE_INFO [] moduleArray = new MODULE_INFO [1];
-
-            //LoggingUtils.RequireOk (module.GetInfo (enum_MODULE_INFO_FIELDS.MIF_URL, moduleArray));
-
-            //infoArray [0].bstrModuleUrl = moduleArray [0].m_bstrUrl;
-
-            m_symbolModule = PathUtils.ConvertPathWslToWindows (module);
-          }
+          m_symbolModule = PathUtils.ConvertPathWslToWindows (module);
         }
       }
       catch (Exception e)

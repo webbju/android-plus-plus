@@ -3,6 +3,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -12,11 +13,8 @@ using System.Threading;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace AndroidPlusPlus.Common {
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+namespace AndroidPlusPlus.Common
+{
 
   public partial class SyncRedirectProcess : IDisposable
   {
@@ -25,19 +23,17 @@ namespace AndroidPlusPlus.Common {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected int m_startTicks = 0;
-
-    protected int m_exitCode = -1;
-
-    protected ManualResetEvent m_exitMutex = null;
+    protected int m_startTimestamp = 0;
 
     protected int m_lastOutputTimestamp = 0;
 
-    protected StringBuilder m_stdOutputBuilder = new StringBuilder ();
+    protected int m_exitCode = -1;
 
-    protected StringBuilder m_stdErrorBuilder = new StringBuilder ();
+    protected RedirectEventListener m_listener;
 
-    protected Process m_process;
+    protected StringBuilder m_standardOutput = new StringBuilder();
+
+    protected StringBuilder m_standardError = new StringBuilder();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -55,7 +51,7 @@ namespace AndroidPlusPlus.Common {
         throw new FileNotFoundException ("Could not find target executable.", filename);
       }
 
-      StartInfo = CreateDefaultStartInfo ();
+      StartInfo = CreateDefaultStartInfo (filename, arguments, workingDirectory);
 
       StartInfo.FileName = filename;
 
@@ -68,7 +64,13 @@ namespace AndroidPlusPlus.Common {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public ProcessStartInfo StartInfo { get; set; }
+    public Process Process { get; protected set; }
+
+    public ProcessStartInfo StartInfo { get; protected set; }
+
+    public string StandardOutput => m_standardOutput.ToString();
+
+    public string StandardError => m_standardError.ToString();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -89,18 +91,11 @@ namespace AndroidPlusPlus.Common {
     {
       if (disposing)
       {
-        if (m_process != null)
+        if (Process != null)
         {
-          m_process.Dispose ();
+          Process.Dispose ();
 
-          m_process = null;
-        }
-
-        if (m_exitMutex != null)
-        {
-          m_exitMutex.Dispose ();
-
-          m_exitMutex = null;
+          Process = null;
         }
       }
     }
@@ -109,12 +104,16 @@ namespace AndroidPlusPlus.Common {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected static ProcessStartInfo CreateDefaultStartInfo ()
+    protected static ProcessStartInfo CreateDefaultStartInfo (string filename, string arguments, string workingDirectory = null)
     {
-      LoggingUtils.PrintFunction ();
-
-      ProcessStartInfo startInfo = new ProcessStartInfo
+      var startInfo = new ProcessStartInfo
       {
+        FileName = filename ?? throw new ArgumentNullException(nameof(filename)),
+
+        Arguments = arguments,
+
+        WorkingDirectory = workingDirectory ?? Path.GetDirectoryName(filename),
+
         CreateNoWindow = true,
 
         UseShellExecute = false,
@@ -137,34 +136,34 @@ namespace AndroidPlusPlus.Common {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void Start ()
+    public void Start (RedirectEventListener listener)
     {
-      m_startTicks = Environment.TickCount;
+      m_listener = listener;
 
-      m_lastOutputTimestamp = m_startTicks;
-
-      m_exitMutex = new ManualResetEvent (false);
-
-      m_process = new Process
+      Process = new Process
       {
-        StartInfo = StartInfo
-      };
+        StartInfo = StartInfo,
 
-      m_process.OutputDataReceived += new DataReceivedEventHandler (ProcessStdout);
+        EnableRaisingEvents = true,
+    };
 
-      m_process.ErrorDataReceived += new DataReceivedEventHandler (ProcessStderr);
+      Process.OutputDataReceived += new DataReceivedEventHandler(ProcessStdout);
 
-      m_process.Exited += new EventHandler (ProcessExited);
+      Process.ErrorDataReceived += new DataReceivedEventHandler(ProcessStderr);
 
-      m_process.EnableRaisingEvents = true;
+      Process.Exited += new EventHandler(ProcessExited);
 
-      LoggingUtils.Print (string.Format ("[SyncRedirectProcess] Start: {0} (Args=\"{1}\" Pwd=\"{2}\")", m_process.StartInfo.FileName, m_process.StartInfo.Arguments, m_process.StartInfo.WorkingDirectory));
+      LoggingUtils.Print (string.Format ("[SyncRedirectProcess] Start: {0} (Args=\"{1}\" Pwd=\"{2}\")", Process.StartInfo.FileName, Process.StartInfo.Arguments, Process.StartInfo.WorkingDirectory));
 
-      m_process.Start ();
+      m_startTimestamp = Environment.TickCount;
 
-      m_process.BeginOutputReadLine ();
+      m_lastOutputTimestamp = m_startTimestamp;
 
-      m_process.BeginErrorReadLine ();
+      Process.Start ();
+
+      Process.BeginOutputReadLine();
+
+      Process.BeginErrorReadLine();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -177,9 +176,9 @@ namespace AndroidPlusPlus.Common {
 
       try
       {
-        if ((m_process != null) && (!m_process.HasExited))
+        if (!Process?.HasExited ?? false)
         {
-          m_process.Kill ();
+          Process.Kill ();
         }
       }
       catch (Exception e)
@@ -192,154 +191,90 @@ namespace AndroidPlusPlus.Common {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int StartAndWaitForExit ()
+    public (int exitCode, string standardOutput, string standardError) StartAndWaitForExit (int idleTimeoutMs = 5000, RedirectEventListener listener = null)
     {
-      return StartAndWaitForExit (int.MaxValue);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public int StartAndWaitForExit (int idleTimeout)
-    {
-      LoggingUtils.PrintFunction ();
-
       try
       {
-        if (idleTimeout <= 0)
-        {
-          throw new ArgumentException ("idleTimeout must be positive and non-zero.");
-        }
+        Start(listener);
 
-        Start ();
-
-        int timeoutFromCurrentTick = (idleTimeout + m_lastOutputTimestamp) - Environment.TickCount;
+        int timeoutFromCurrentTick = (idleTimeoutMs + m_lastOutputTimestamp) - Environment.TickCount;
 
         bool responseSignaled = false;
 
-        while ((!responseSignaled) && (timeoutFromCurrentTick > 0))
+        while (!responseSignaled && timeoutFromCurrentTick > 0)
         {
-          if (m_exitMutex != null)
-          {
-            responseSignaled = m_exitMutex.WaitOne (0);
-          }
-          else
+          if (Process.WaitForExit(0))
           {
             responseSignaled = true;
+
+            break;
           }
 
-          if (!responseSignaled)
-          {
-            timeoutFromCurrentTick = (idleTimeout + m_lastOutputTimestamp) - Environment.TickCount;
+          timeoutFromCurrentTick = (idleTimeoutMs + m_lastOutputTimestamp) - Environment.TickCount;
 
-            Thread.Sleep (100);
-          }
+          Thread.Sleep(100);
         }
 
         if (!responseSignaled)
         {
-          throw new TimeoutException ("Timed out waiting for synchronous redirect process.");
+          throw new TimeoutException($"Process was idle for over threshold ({idleTimeoutMs} ms).");
         }
 
-        return m_exitCode;
+        LoggingUtils.Print($"[SyncRedirectProcess] {StartInfo.FileName} exited with code {m_exitCode} in {(Environment.TickCount - m_startTimestamp)} ms");
       }
       catch (Exception e)
       {
-        LoggingUtils.HandleException (e);
-
-        throw;
+        LoggingUtils.HandleException(e);
       }
+
+      return (m_exitCode, m_standardOutput.ToString(), m_standardError.ToString());
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected void ProcessStdout (object sendingProcess, DataReceivedEventArgs args)
+    protected void ProcessStdout(object sendingProcess, DataReceivedEventArgs args)
     {
-      if (!string.IsNullOrWhiteSpace (args.Data))
+      if (string.IsNullOrEmpty(args.Data))
       {
-        //LoggingUtils.Print (string.Format ("[SyncRedirectProcess] ProcessStdout: {0}", args.Data));
-
-        m_stdOutputBuilder.AppendLine (args.Data);
+        return;
       }
-    }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected void ProcessStderr (object sendingProcess, DataReceivedEventArgs args)
-    {
       m_lastOutputTimestamp = Environment.TickCount;
 
-      if (!string.IsNullOrWhiteSpace (args.Data))
-      {
-        //LoggingUtils.Print (string.Format ("[SyncRedirectProcess] ProcessStderr: {0}", args.Data));
+      m_standardOutput.AppendLine(args.Data);
 
-        m_stdErrorBuilder.AppendLine (args.Data);
-      }
+      m_listener?.ProcessStdout(sendingProcess, args);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected void ProcessExited (object sendingProcess, EventArgs args)
+    protected void ProcessStderr(object sendingProcess, DataReceivedEventArgs args)
     {
-      try
+      if (string.IsNullOrEmpty(args.Data))
       {
-        try
-        {
-          m_exitCode = m_process.ExitCode;
-        }
-        catch (InvalidOperationException)
-        {
-          // Ignore: 'No process is associated with this object'.
-        }
-
-        if (m_exitMutex != null)
-        {
-          m_exitMutex.Set ();
-        }
-
-        m_lastOutputTimestamp = Environment.TickCount;
+        return;
       }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-      }
-      finally
-      {
-        LoggingUtils.Print (string.Format ("[SyncRedirectProcess] {0} exited ({1}) in {2} ms", StartInfo.FileName, m_exitCode, Environment.TickCount - m_startTicks));
 
-        Dispose ();
-      }
+      m_lastOutputTimestamp = Environment.TickCount;
+
+      m_standardError.AppendLine(args.Data);
+
+      m_listener?.ProcessStderr(sendingProcess, args);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public string StandardOutput 
-    { 
-      get
-      {
-        return m_stdOutputBuilder.ToString ();
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public string StandardError
+    protected void ProcessExited(object sendingProcess, EventArgs args)
     {
-      get
-      {
-        return m_stdErrorBuilder.ToString ();
-      }
+      m_exitCode = Process.ExitCode;
+
+      m_listener?.ProcessExited(sendingProcess, args);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -348,12 +283,4 @@ namespace AndroidPlusPlus.Common {
 
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

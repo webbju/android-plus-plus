@@ -14,25 +14,8 @@ using System.Threading;
 namespace AndroidPlusPlus.Common
 {
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   public class AsyncRedirectProcess : IDisposable
   {
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public interface IEventListener
-    {
-      void ProcessStdout (object sendingProcess, DataReceivedEventArgs args);
-
-      void ProcessStderr (object sendingProcess, DataReceivedEventArgs args);
-
-      void ProcessExited (object sendingProcess, EventArgs args);
-    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -42,15 +25,15 @@ namespace AndroidPlusPlus.Common
 
     protected int m_exitCode = -1;
 
-    protected ManualResetEvent m_exitMutex = null;
+    protected ManualResetEvent m_exitMutex;
 
     protected int m_lastOutputTimestamp = 0;
 
-    protected TextWriter m_stdInputWriter = null;
+    protected TextWriter m_stdInputWriter;
 
     protected Process m_process;
 
-    protected IEventListener m_listener = null;
+    protected RedirectEventListener m_listener;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -58,23 +41,7 @@ namespace AndroidPlusPlus.Common
 
     public AsyncRedirectProcess (string filename, string arguments, string workingDirectory = null)
     {
-      if (string.IsNullOrEmpty (filename))
-      {
-        throw new ArgumentNullException (nameof(filename));
-      }
-
-      if (!File.Exists (filename))
-      {
-        throw new FileNotFoundException ("Could not find target executable.", filename);
-      }
-
-      StartInfo = CreateDefaultStartInfo ();
-
-      StartInfo.FileName = filename;
-
-      StartInfo.Arguments = arguments;
-
-      StartInfo.WorkingDirectory = workingDirectory ?? Path.GetDirectoryName (filename);
+      StartInfo = CreateDefaultStartInfo (filename, arguments, workingDirectory);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -122,12 +89,16 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    protected static ProcessStartInfo CreateDefaultStartInfo ()
+    protected static ProcessStartInfo CreateDefaultStartInfo (string filename, string arguments, string workingDirectory = null)
     {
-      LoggingUtils.PrintFunction ();
-
-      ProcessStartInfo startInfo = new ProcessStartInfo
+      var startInfo = new ProcessStartInfo
       {
+        FileName = filename ?? throw new ArgumentNullException(nameof(filename)),
+
+        Arguments = arguments,
+
+        WorkingDirectory = workingDirectory ?? Path.GetDirectoryName(filename),
+
         CreateNoWindow = true,
 
         UseShellExecute = false,
@@ -150,19 +121,13 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void Start (IEventListener listener)
+    public void Start (RedirectEventListener listener)
     {
-      m_startTicks = Environment.TickCount;
-
-      m_lastOutputTimestamp = m_startTicks;
-
-      m_exitMutex = new ManualResetEvent (false);
-
-      m_listener = listener;
-
       m_process = new Process
       {
-        StartInfo = StartInfo
+        StartInfo = StartInfo,
+
+        EnableRaisingEvents = true,
       };
 
       m_process.OutputDataReceived += new DataReceivedEventHandler (ProcessStdout);
@@ -171,9 +136,15 @@ namespace AndroidPlusPlus.Common
 
       m_process.Exited += new EventHandler (ProcessExited);
 
-      m_process.EnableRaisingEvents = true;
-
       LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] Start: {0} (Args=\"{1}\" Pwd=\"{2}\")", m_process.StartInfo.FileName, m_process.StartInfo.Arguments, m_process.StartInfo.WorkingDirectory));
+
+      m_startTicks = Environment.TickCount;
+
+      m_lastOutputTimestamp = m_startTicks;
+
+      m_exitMutex = new ManualResetEvent(false);
+
+      m_listener = listener;
 
       if (!m_process.Start ())
       {
@@ -237,18 +208,13 @@ namespace AndroidPlusPlus.Common
 
     protected void ProcessStdout (object sendingProcess, DataReceivedEventArgs args)
     {
-#if DEBUG && false
+      m_lastOutputTimestamp = Environment.TickCount;
+
       LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessStdout: {0}", args.Data));
-#endif
 
       try
       {
-        m_lastOutputTimestamp = Environment.TickCount;
-
-        if (m_listener != null)
-        {
-          m_listener.ProcessStdout (sendingProcess, args);
-        }
+        m_listener?.ProcessStdout(sendingProcess, args);
       }
       catch (Exception e)
       {
@@ -262,16 +228,13 @@ namespace AndroidPlusPlus.Common
 
     protected void ProcessStderr (object sendingProcess, DataReceivedEventArgs args)
     {
+      m_lastOutputTimestamp = Environment.TickCount;
+
       LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] ProcessStderr: {0}", args.Data));
 
       try
       {
-        m_lastOutputTimestamp = Environment.TickCount;
-
-        if (m_listener != null)
-        {
-          m_listener.ProcessStderr (sendingProcess, args);
-        }
+        m_listener?.ProcessStderr(sendingProcess, args);
       }
       catch (Exception e)
       {
@@ -304,10 +267,7 @@ namespace AndroidPlusPlus.Common
           m_exitMutex.Set ();
         }
 
-        if (m_listener != null)
-        {
-          m_listener.ProcessExited (sendingProcess, args);
-        }
+        m_listener?.ProcessExited (sendingProcess, args);
       }
       catch (Exception e)
       {
@@ -316,8 +276,6 @@ namespace AndroidPlusPlus.Common
       finally
       {
         LoggingUtils.Print (string.Format ("[AsyncRedirectProcess] {0} exited ({1}) in {2} ms", StartInfo.FileName, m_exitCode, Environment.TickCount - m_startTicks));
-
-        Dispose ();
       }
     }
 
@@ -327,12 +285,4 @@ namespace AndroidPlusPlus.Common
 
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -2,14 +2,13 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Diagnostics;
-using System.Collections;
-using System.Collections.Generic;
-using System.Threading;
-using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugCommon;
+using Microsoft.VisualStudio.Debugger.Interop;
+using Microsoft.VisualStudio.Shell;
+using System;
+using System.Collections.Generic;
+using System.Threading;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -56,7 +55,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private readonly DebugEngine m_debugEngine;
+    private readonly CLangDebugger m_debugger;
 
     private readonly Dictionary<Guid, CLangDebuggerEventDelegate> m_debuggerCallback;
 
@@ -64,13 +63,13 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public CLangDebuggerCallback (DebugEngine engine)
+    public CLangDebuggerCallback (CLangDebugger debugger)
     {
-      m_debugEngine = engine;
-
       // 
       // Register function handlers for specific events.
       // 
+
+      m_debugger = debugger;
 
       m_debuggerCallback = new Dictionary<Guid, CLangDebuggerEventDelegate>
       {
@@ -94,11 +93,9 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public bool IsRegistered (ref Guid riidEvent)
+    public bool HasEventCallback (Guid riidEvent)
     {
-      LoggingUtils.PrintFunction ();
-
-      return m_debuggerCallback.ContainsKey (riidEvent);
+      return m_debuggerCallback.ContainsKey(riidEvent);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -115,12 +112,12 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.Print ("[CLangDebuggerCallback] Event: " + riidEvent.ToString ());
 
-        if (!m_debuggerCallback.TryGetValue (riidEvent, out CLangDebuggerEventDelegate eventCallback))
+        if (!m_debuggerCallback.TryGetValue(riidEvent, out CLangDebuggerEventDelegate eventCallback))
         {
           return Constants.E_NOTIMPL;
         }
 
-        return eventCallback (m_debugEngine.NativeDebugger);
+        return eventCallback (m_debugger);
       }
       catch (Exception e)
       {
@@ -140,7 +137,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        debugger.GdbServer.Start ();
+        ThreadHelper.JoinableTaskFactory.Run(async () =>
+        {
+          await debugger.GdbServer.Start();
+        });
 
         return Constants.S_OK;
       }
@@ -184,9 +184,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        GdbServer gdbServer = debugger.GdbServer;
-
-        debugger.GdbClient.Attach (gdbServer);
+        ThreadHelper.JoinableTaskFactory.Run(async () =>
+        {
+          await debugger.GdbClient.Attach(debugger.GdbServer);
+        });
 
         return Constants.S_OK;
       }
@@ -212,9 +213,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         ManualResetEvent detachLock = new ManualResetEvent (false);
 
-        debugger.RunInterruptOperation (delegate (CLangDebugger _debugger)
+        debugger.RunInterruptOperation (async (CLangDebugger debugger) =>
         {
-          _debugger.GdbClient.Detach ();
+          debugger.GdbClient.Detach ();
 
           detachLock.Set ();
         }, shouldContinue);

@@ -2,15 +2,16 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugCommon;
+using Microsoft.VisualStudio.Debugger.Interop;
+using Microsoft.VisualStudio.Shell;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
+using System.Threading.Tasks;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -18,10 +19,6 @@ using AndroidPlusPlus.VsDebugCommon;
 
 namespace AndroidPlusPlus.VsDebugEngine
 {
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public class DebuggeePort : IDebugPort2, IDebugPortNotify2, IConnectionPoint, IConnectionPointContainer
   {
@@ -48,9 +45,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private readonly Guid m_portGuid;
 
-    private Dictionary<uint, DebuggeeProcess> m_portProcesses;
+    private ConcurrentDictionary<uint, DebuggeeProcess> m_portProcesses;
 
-    private Dictionary<int, IDebugPortEvents2> m_eventConnectionPoints;
+    private ConcurrentDictionary<int, IDebugPortEvents2> m_eventConnectionPoints;
 
     private int m_eventConnectionPointCookie = 1;
 
@@ -66,41 +63,24 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       m_portGuid = Guid.NewGuid ();
 
-      m_portProcesses = new Dictionary<uint, DebuggeeProcess> ();
+      m_portProcesses = new ConcurrentDictionary<uint, DebuggeeProcess> ();
 
-      m_eventConnectionPoints = new Dictionary<int, IDebugPortEvents2> ();
+      m_eventConnectionPoints = new ConcurrentDictionary<int, IDebugPortEvents2> ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public AndroidDevice PortDevice
-    {
-      get
-      {
-        return m_portDevice;
-      }
-    }
+    public AndroidDevice PortDevice => m_portDevice;
+
+    public ConcurrentDictionary<uint, DebuggeeProcess> PortProcesses => m_portProcesses;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public DebuggeeProcess GetProcessForPid (uint pid)
-    {
-      LoggingUtils.PrintFunction ();
-
-      m_portProcesses.TryGetValue (pid, out DebuggeeProcess process);
-
-      return process;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public int RefreshProcesses ()
+    public async Task<int> RefreshProcessesAsync ()
     {
       //
       // Check which processes are currently running on the target device (port).
@@ -110,47 +90,29 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        m_portDevice.RefreshProcesses ();
+        var currentProcesses = await AndroidAdb.ProcessesSnapshot(m_portDevice, "");
 
-        m_portProcesses.Clear ();
+#if false
+        var terminatedProcesses = m_portProcesses.Where(p => !currentProcesses.ContainsKey(p.Key));
 
-        //
-        // Register a new process with this port if it was spawned by 'zygote'.
-        //
-
-        uint [] zygotePids = m_portDevice.GetPidsFromName ("zygote");
-
-        if (zygotePids.Length > 0)
+        foreach (var deviceProcess in terminatedProcesses)
         {
-          uint [] activeZygoteSpawnedPids = m_portDevice.GetChildPidsFromPpid (zygotePids [0]);
-
-          for (int i = 0; i < activeZygoteSpawnedPids.Length; ++i)
+          if (m_portProcesses.TryRemove(deviceProcess.Key, out DebuggeeProcess removedProcess))
           {
-            uint pid = activeZygoteSpawnedPids [i];
-
-            AndroidProcess nativeProcess = m_portDevice.GetProcessFromPid (pid);
-
-            m_portProcesses.Add (pid, new DebuggeeProcess (this, nativeProcess));
+            Serilog.Log.Verbose($"Removed port process: {removedProcess.NativeProcess.Name} (pid: {deviceProcess.Key})");
           }
         }
+#else
+        Serilog.Log.Verbose($"Clearing tracked port processes.");
 
-        //
-        // Register a new process with this port if it was spawned by 'zygote64' (it's a 64-bit process).
-        //
+        m_portProcesses.Clear(); // newly spawned user applications are called "zygote" before they fork. Sadly.
+#endif
 
-        uint [] zygote64Pids = m_portDevice.GetPidsFromName ("zygote64");
-
-        if (zygote64Pids.Length > 0)
+        foreach (var deviceProcess in currentProcesses)
         {
-          uint [] activeZygote64SpawnedPids = m_portDevice.GetChildPidsFromPpid (zygote64Pids [0]);
-
-          for (int i = 0; i < activeZygote64SpawnedPids.Length; ++i)
+          if (m_portProcesses.TryAdd(deviceProcess.Key, new DebuggeeProcess(this, deviceProcess.Value)))
           {
-            uint pid = activeZygote64SpawnedPids [i];
-
-            AndroidProcess nativeProcess = m_portDevice.GetProcessFromPid (pid);
-
-            m_portProcesses.Add (pid, new DebuggeeProcess (this, nativeProcess));
+            Serilog.Log.Verbose($"Added port process: {deviceProcess.Value.Name} (pid: {deviceProcess.Key})");
           }
         }
 
@@ -168,40 +130,28 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    #region IDebugPort2 Members
+#region IDebugPort2 Members
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int EnumProcesses (out IEnumDebugProcesses2 ppEnum)
+    public int EnumProcesses(out IEnumDebugProcesses2 ppEnum)
     {
       //
       // Returns a list of all the processes running on a port.
       //
 
-      LoggingUtils.PrintFunction ();
+      LoggingUtils.PrintFunction();
 
-      try
+      ThreadHelper.JoinableTaskFactory.Run(async () =>
       {
-        RefreshProcesses ();
+        await RefreshProcessesAsync();
+      });
 
-        DebuggeeProcess [] processes = new DebuggeeProcess [m_portProcesses.Count];
+      ppEnum = new DebuggeeProcess.Enumerator (m_portProcesses.Values.ToArray());
 
-        m_portProcesses.Values.CopyTo (processes, 0);
-
-        ppEnum = new DebuggeeProcess.Enumerator (processes);
-
-        return Constants.S_OK;
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-
-        ppEnum = null;
-
-        return Constants.E_FAIL;
-      }
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -288,20 +238,30 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        if (ProcessId.ProcessIdType == (uint)enum_AD_PROCESS_ID.AD_PROCESS_ID_SYSTEM)
+        switch (ProcessId.ProcessIdType)
         {
-          LoggingUtils.RequireOk (RefreshProcesses ());
+          case (uint)enum_AD_PROCESS_ID.AD_PROCESS_ID_SYSTEM:
+          {
+            if (!m_portProcesses.TryGetValue(ProcessId.dwProcessId, out DebuggeeProcess debuggeeProcess))
+            {
+              ThreadHelper.JoinableTaskFactory.Run(async () =>
+              {
+                await RefreshProcessesAsync();
+              });
+            }
 
-          DebuggeeProcess process = GetProcessForPid (ProcessId.dwProcessId) ?? throw new InvalidOperationException ($"Could not locate requested process. Pid: {ProcessId.dwProcessId}");
+            if (m_portProcesses.TryGetValue(ProcessId.dwProcessId, out debuggeeProcess))
+            {
+              ppProcess = debuggeeProcess as IDebugProcess2;
+            }
 
-          ppProcess = process as IDebugProcess2;
+            return ppProcess == null ? Constants.E_FAIL : Constants.S_OK;
+          }
+          default:
+          {
+            throw new NotImplementedException();
+          }
         }
-        else /*if (ProcessId.ProcessIdType == (uint) enum_AD_PROCESS_ID.AD_PROCESS_ID_GUID)*/
-        {
-          throw new NotImplementedException ();
-        }
-
-        return Constants.S_OK;
       }
       catch (Exception e)
       {
@@ -315,13 +275,13 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    #endregion
+#endregion
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    #region IDebugPortNotify2 Members
+#region IDebugPortNotify2 Members
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -347,11 +307,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        IDebugProcess2 process;
-
         DebuggeeProgram program = pProgramNode as DebuggeeProgram;
 
-        LoggingUtils.RequireOk (program.GetProcess (out process));
+        LoggingUtils.RequireOk (program.GetProcess (out IDebugProcess2 process));
 
         foreach (IDebugPortEvents2 connectionPoint in m_eventConnectionPoints.Values)
         {
@@ -383,7 +341,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int RemoveProgramNode (IDebugProgramNode2 pProgramNode)
+    public int RemoveProgramNode(IDebugProgramNode2 pProgramNode)
     {
       //
       // Unregisters a program that can be debugged from the port it is running on.
@@ -407,13 +365,13 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    #endregion
+#endregion
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    #region IConnectionPoint Members
+#region IConnectionPoint Members
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -421,7 +379,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private sealed class ConnectionEnumerator : DebugConnectionEnumerator<System.Runtime.InteropServices.ComTypes.CONNECTDATA, IEnumConnections>, IEnumConnections
     {
-      public ConnectionEnumerator (List<System.Runtime.InteropServices.ComTypes.CONNECTDATA> connections)
+      public ConnectionEnumerator (ICollection<System.Runtime.InteropServices.ComTypes.CONNECTDATA> connections)
         : base (connections)
       {
       }
@@ -441,9 +399,10 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        IDebugPortEvents2 portEvent = (IDebugPortEvents2) pUnkSink;
-
-        m_eventConnectionPoints.Add (m_eventConnectionPointCookie, portEvent);
+        if (m_eventConnectionPoints.TryAdd (m_eventConnectionPointCookie, (IDebugPortEvents2)pUnkSink))
+        {
+          Serilog.Log.Information($"Added connection point with id: {m_eventConnectionPointCookie}");
+        }
 
         pdwCookie = m_eventConnectionPointCookie++;
       }
@@ -469,7 +428,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        List<System.Runtime.InteropServices.ComTypes.CONNECTDATA> connections = new List<System.Runtime.InteropServices.ComTypes.CONNECTDATA> ();
+        var connections = new List<System.Runtime.InteropServices.ComTypes.CONNECTDATA> ();
 
         foreach (KeyValuePair <int, IDebugPortEvents2> keyPair in m_eventConnectionPoints)
         {
@@ -532,13 +491,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      try
+      if (m_eventConnectionPoints.TryRemove(dwCookie, out IDebugPortEvents2 connectionPoint))
       {
-        m_eventConnectionPoints.Remove (dwCookie);
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
+        Serilog.Log.Information($"Removed connection point with id: {dwCookie}");
       }
     }
 
@@ -546,13 +501,13 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    #endregion
+#endregion
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    #region IConnectionPointContainer Members
+#region IConnectionPointContainer Members
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -560,7 +515,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private sealed class ConnectionPointEnumerator : DebugConnectionEnumerator<IConnectionPoint, IEnumConnectionPoints>, IEnumConnectionPoints
     {
-      public ConnectionPointEnumerator (List<IConnectionPoint> points)
+      public ConnectionPointEnumerator (ICollection<IConnectionPoint> points)
         : base (points)
       {
       }
@@ -576,24 +531,9 @@ namespace AndroidPlusPlus.VsDebugEngine
       // Creates an enumerator of all the connection points supported in the connectable object, one connection point per IID.
       //
 
-      LoggingUtils.PrintFunction ();
+      LoggingUtils.PrintFunction();
 
-      ppEnum = null;
-
-      try
-      {
-        List<IConnectionPoint> connectionPoints = new List<IConnectionPoint> ();
-
-        connectionPoints.Add (this); // one connection point per IID.
-
-        ppEnum = new ConnectionPointEnumerator (connectionPoints);
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-
-        ppEnum = null;
-      }
+      ppEnum = new ConnectionPointEnumerator(new IConnectionPoint[] { this });
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -607,32 +547,18 @@ namespace AndroidPlusPlus.VsDebugEngine
       // and if so, returns the IConnectionPoint interface pointer to that connection point.
       //
 
-      LoggingUtils.PrintFunction ();
+      LoggingUtils.PrintFunction();
 
-      ppCP = null;
+      GetConnectionInterface (out Guid connectionPort);
 
-      try
-      {
-        Guid connectionPort;
-
-        GetConnectionInterface (out connectionPort);
-
-        if (riid.Equals (connectionPort))
-        {
-          ppCP = this;
-        }
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-      }
+      ppCP = riid.Equals(connectionPort) ? this : null;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    #endregion
+#endregion
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -640,12 +566,4 @@ namespace AndroidPlusPlus.VsDebugEngine
 
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

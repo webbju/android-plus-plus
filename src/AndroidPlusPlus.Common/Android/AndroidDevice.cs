@@ -3,12 +3,8 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Text.RegularExpressions;
-using System.Text;
+using System.Threading.Tasks;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -16,9 +12,6 @@ using System.Text;
 
 namespace AndroidPlusPlus.Common
 {
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public class AndroidDevice
   {
@@ -27,13 +20,9 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private Dictionary<string, string> m_deviceProperties = new Dictionary<string, string> ();
+    private Dictionary<uint, AndroidProcess> m_processesByPid = new Dictionary<uint, AndroidProcess> ();
 
-    private Dictionary<uint, AndroidProcess> m_deviceProcessesByPid = new Dictionary<uint, AndroidProcess> ();
-
-    private Dictionary<string, HashSet<uint>> m_devicePidsByName = new Dictionary<string, HashSet<uint>> ();
-
-    private Dictionary<uint, HashSet<uint>> m_devicePidsByPpid = new Dictionary<uint, HashSet<uint>> ();
+    private Dictionary<string, AndroidProcess> m_processesByName = new Dictionary<string, AndroidProcess> ();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -41,406 +30,9 @@ namespace AndroidPlusPlus.Common
 
     public AndroidDevice (string deviceId)
     {
-      ID = deviceId;
+      ID = deviceId ?? throw new ArgumentNullException(nameof(deviceId));
 
-      PopulateProperties ();
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public bool IsEmulator
-    {
-      get
-      {
-        return ID.StartsWith ("emulator-");
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public bool IsOverWiFi
-    {
-      get
-      {
-        return ID.Contains (".");
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public void Refresh ()
-    {
-      LoggingUtils.PrintFunction ();
-
-      RefreshProcesses ();
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public string GetProperty (string property)
-    {
-      LoggingUtils.PrintFunction ();
-
-      if (m_deviceProperties.TryGetValue (property, out string prop))
-      {
-        return prop;
-      }
-
-      return string.Empty;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public AndroidProcess GetProcessFromPid (uint processId)
-    {
-      LoggingUtils.PrintFunction ();
-
-      if (m_deviceProcessesByPid.TryGetValue(processId, out AndroidProcess process))
-      {
-        return process;
-      }
-
-      return null;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public uint [] GetPidsFromName (string processName)
-    {
-      LoggingUtils.PrintFunction ();
-
-      uint [] processesArray = Array.Empty<uint>();
-
-      if (m_devicePidsByName.TryGetValue (processName, out HashSet<uint> processPidSet))
-      {
-        processesArray = new uint [processPidSet.Count];
-
-        processPidSet.CopyTo (processesArray, 0);
-      }
-
-      return processesArray;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public uint [] GetChildPidsFromPpid (uint parentProcessId)
-    {
-      LoggingUtils.PrintFunction ();
-
-      uint [] processesArray = Array.Empty<uint>();
-
-      if (m_devicePidsByPpid.TryGetValue (parentProcessId, out HashSet<uint> processPpidSiblingSet))
-      {
-        processesArray = new uint [processPpidSiblingSet.Count];
-
-        processPpidSiblingSet.CopyTo (processesArray, 0);
-      }
-
-      return processesArray;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public uint [] GetActivePids ()
-    {
-      LoggingUtils.PrintFunction ();
-
-      uint [] activePids = new uint [m_deviceProcessesByPid.Count];
-
-      m_deviceProcessesByPid.Keys.CopyTo (activePids, 0);
-
-      return activePids;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public string Shell (string command, string arguments, int timeout = 30000)
-    {
-      LoggingUtils.PrintFunction ();
-
-      try
-      {
-        int exitCode = -1;
-
-        using SyncRedirectProcess process = AndroidAdb.AdbCommand(this, "shell", string.Format("{0} {1}", command, arguments));
-
-        exitCode = process.StartAndWaitForExit(timeout);
-
-        if (exitCode != 0)
-        {
-          throw new InvalidOperationException(string.Format("[shell:{0}] returned error code: {1}", command, exitCode));
-        }
-
-        return process.StandardOutput;
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-
-        throw new InvalidOperationException (string.Format ("[shell:{0}] failed", command), e);
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public string Push (string localPath, string remotePath)
-    {
-      LoggingUtils.PrintFunction ();
-
-      try
-      {
-        int exitCode = -1;
-
-        using SyncRedirectProcess process = AndroidAdb.AdbCommand(this, "push", string.Format("{0} {1}", PathUtils.QuoteIfNeeded(localPath), remotePath));
-
-        exitCode = process.StartAndWaitForExit();
-
-        if (exitCode != 0)
-        {
-          throw new InvalidOperationException(string.Format("[push] returned error code: {0}", exitCode));
-        }
-
-        return process.StandardOutput;
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-
-        throw new InvalidOperationException ("[push] failed", e);
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public string Pull (string remotePath, string localPath)
-    {
-      LoggingUtils.PrintFunction ();
-
-      try
-      {
-        //
-        // Check if the remote path is a symbolic link, and adjust the target file.
-        // (ADB Pull doesn't follow these links)
-        //
-
-        try
-        {
-          string readlink = Shell ("readlink", remotePath).Replace ("\r", "").Replace ("\n", "");
-
-          if (readlink.StartsWith ("/"))  // absolute path link
-          {
-            remotePath = readlink;
-          }
-          else // relative path link
-          {
-            int i = remotePath.LastIndexOf('/');
-
-            if (i != -1)
-            {
-              string parentPath = remotePath.Substring (0, i);
-
-              string file = remotePath.Substring (i + 1);
-
-              remotePath = parentPath + '/' + file;
-            }
-          }
-        }
-        catch (Exception)
-        {
-           // Ignore. Not a relative link.
-        }
-
-        //
-        // Pull the requested file.
-        //
-
-        int exitCode = -1;
-
-        using SyncRedirectProcess process = AndroidAdb.AdbCommand(this, "pull", string.Format("{0} {1}", remotePath, PathUtils.QuoteIfNeeded(localPath)));
-
-        exitCode = process.StartAndWaitForExit();
-
-        if (exitCode != 0)
-        {
-          throw new InvalidOperationException(string.Format("[pull] returned error code: {0}", exitCode));
-        }
-
-        return process.StandardOutput;
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-
-        throw new InvalidOperationException ("[pull] failed", e);
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    private void PopulateProperties ()
-    {
-      LoggingUtils.PrintFunction ();
-
-      string getPropOutput = Shell ("getprop", "");
-
-      if (!string.IsNullOrEmpty (getPropOutput))
-      {
-        string pattern = @"^\[(?<key>[^\]:]+)\]:[ ]+\[(?<value>[^\]$]+)";
-
-        Regex regExMatcher = new Regex (pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-        var properties = getPropOutput.Replace ("\r", "").Split (new char [] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-
-        for (int i = 0; i < properties.Length; ++i)
-        {
-          if (!properties [i].StartsWith ("["))
-          {
-            continue; // early rejection.
-          }
-
-          string unescapedStream = Regex.Unescape (properties [i]);
-
-          Match regExLineMatch = regExMatcher.Match (unescapedStream);
-
-          if (regExLineMatch.Success)
-          {
-            string key = regExLineMatch.Result ("${key}");
-
-            string value = regExLineMatch.Result ("${value}");
-
-            if (string.IsNullOrEmpty (key) || key.Equals ("${key}"))
-            {
-              continue;
-            }
-            else if (value.Equals ("${value}"))
-            {
-              continue;
-            }
-            else
-            {
-              m_deviceProperties [key] = value;
-            }
-          }
-        }
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public void RefreshProcesses (uint processIdFilter = 0)
-    {
-      //
-      // Skip the first line, and read in tab-separated process data.
-      //
-
-      LoggingUtils.PrintFunction ();
-
-      string args = (processIdFilter == 0) ? string.Empty : $"-p {processIdFilter}";
-
-      string deviceProcessList = Shell ("ps", args);
-
-      if (!string.IsNullOrEmpty (deviceProcessList))
-      {
-        var processesOutputLines = deviceProcessList.Replace ("\r", "").Split (new char [] { '\n' });
-
-        string processesRegExPattern = @"(?<user>[^ ]+)[ ]*(?<pid>[0-9]+)[ ]*(?<ppid>[0-9]+)[ ]*(?<vsize>[0-9]+)[ ]*(?<rss>[0-9]+)[ ]*(?<wchan>[^ ]+)[ ]*(?<pc>[A-Za-z0-9]+)[ ]*(?<s>[^ ]+)[ ]*(?<name>[^\r\n]+)";
-
-        Regex regExMatcher = new Regex (processesRegExPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-        m_deviceProcessesByPid.Clear ();
-
-        m_devicePidsByName.Clear ();
-
-        m_devicePidsByPpid.Clear ();
-
-        for (uint i = 1; i < processesOutputLines.Length; ++i)
-        {
-          if (!string.IsNullOrEmpty (processesOutputLines [i]))
-          {
-            Match regExLineMatches = regExMatcher.Match (processesOutputLines [i]);
-
-            string processUser = regExLineMatches.Result ("${user}");
-
-            uint processPid = uint.Parse (regExLineMatches.Result ("${pid}"));
-
-            uint processPpid = uint.Parse (regExLineMatches.Result ("${ppid}"));
-
-            uint processVsize = uint.Parse (regExLineMatches.Result ("${vsize}"));
-
-            uint processRss = uint.Parse (regExLineMatches.Result ("${rss}"));
-
-            string processWchan = regExLineMatches.Result ("${wchan}");
-
-            string processPc = regExLineMatches.Result ("${pc}");
-
-            string processPcS = regExLineMatches.Result ("${s}");
-
-            string processName = regExLineMatches.Result ("${name}");
-
-            AndroidProcess process = new AndroidProcess (this, processName, processPid, processPpid, processUser);
-
-            m_deviceProcessesByPid [processPid] = process;
-
-            //
-            // Add new process to a fast-lookup collection organised by process name.
-            //
-
-            if (!m_devicePidsByName.TryGetValue (processName, out HashSet<uint> processPidsList))
-            {
-              processPidsList = new HashSet<uint> ();
-            }
-
-            if (!processPidsList.Contains (processPid))
-            {
-              processPidsList.Add (processPid);
-            }
-
-            m_devicePidsByName [processName] = processPidsList;
-
-            //
-            // Check whether this process is sibling of another; keep ppids-pid relationships tracked.
-            //
-
-            if (!m_devicePidsByPpid.TryGetValue (processPpid, out HashSet<uint> processPpidSiblingList))
-            {
-              processPpidSiblingList = new HashSet<uint> ();
-            }
-
-            if (!processPpidSiblingList.Contains (process.Pid))
-            {
-              processPpidSiblingList.Add (process.Pid);
-            }
-
-            m_devicePidsByPpid [processPpid] = processPpidSiblingList;
-          }
-        }
-      }
+      PopulateProperties();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -449,29 +41,38 @@ namespace AndroidPlusPlus.Common
 
     public string ID { get; protected set; }
 
+    public Dictionary<string, string> Properties { get; protected set; }
+
+    public IEnumerable<AndroidProcess> Processes => m_processesByPid.Values;
+
+    public Dictionary<uint, AndroidProcess> ProcessesByPid => m_processesByPid;
+
+    public Dictionary<string, AndroidProcess> ProcessesByName => m_processesByName;
+
+    public bool IsEmulator => ID.StartsWith ("emulator-", StringComparison.OrdinalIgnoreCase);
+
+    public bool IsOverWiFi => ID.Contains (".");
+
+    public uint SdkVersion => uint.Parse(GetProperty("ro.build.version.sdk"));
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public uint SdkVersion
+    public string GetProperty (string propertyName)
     {
-      get
-      {
-        //
-        // Query device's current SDK level. If it's not an integer (like some custom ROMs) fall-back to ICS.
-        //
+      return Properties.TryGetValue(propertyName, out string propertValue) ? propertValue : string.Empty;
+    }
 
-        try
-        {
-          return uint.Parse (GetProperty ("ro.build.version.sdk"));
-        }
-        catch (Exception e)
-        {
-          LoggingUtils.HandleException (e);
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-          return (uint) AndroidSettings.VersionCode.GINGERBREAD;
-        }
-      }
+    private async void PopulateProperties ()
+    {
+      LoggingUtils.PrintFunction();
+
+      Properties = await AndroidAdb.GetProp(this, "");
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -507,12 +108,4 @@ namespace AndroidPlusPlus.Common
 
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

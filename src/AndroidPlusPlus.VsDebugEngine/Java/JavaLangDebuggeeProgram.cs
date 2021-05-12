@@ -2,12 +2,12 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugCommon;
+using Microsoft.VisualStudio.Debugger.Interop;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -15,10 +15,6 @@ using AndroidPlusPlus.VsDebugCommon;
 
 namespace AndroidPlusPlus.VsDebugEngine
 {
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public class JavaLangDebuggeeProgram : IDebugProgram3
   {
@@ -91,8 +87,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      Exception rethrowable = null;
-
       try
       {
         m_debugger.Engine.Broadcast (new JavaLangDebuggerEvent.AttachClient (), DebugProgram, null);
@@ -103,16 +97,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        rethrowable = e;
-
-        return Constants.E_FAIL;
-      }
-      finally
-      {
-        if (rethrowable != null)
-        {
-          throw rethrowable;
-        }
+        throw;
       }
     }
 
@@ -135,8 +120,6 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      Exception rethrowable = null;
-
       try
       {
         m_debugger.Engine.Broadcast (new JavaLangDebuggerEvent.StopClient (), DebugProgram, null);
@@ -147,16 +130,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        rethrowable = e;
-
-        return Constants.E_FAIL;
-      }
-      finally
-      {
-        if (rethrowable != null)
-        {
-          throw rethrowable;
-        }
+        throw;
       }
     }
 
@@ -167,8 +141,6 @@ namespace AndroidPlusPlus.VsDebugEngine
     public int Continue (IDebugThread2 pThread)
     {
       LoggingUtils.PrintFunction ();
-
-      Exception rethrowable = null;
 
       try
       {
@@ -183,16 +155,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        rethrowable = e;
-
-        return Constants.E_FAIL;
-      }
-      finally
-      {
-        if (rethrowable != null)
-        {
-          throw rethrowable;
-        }
+        throw;
       }
     }
 
@@ -204,8 +167,6 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      Exception rethrowable = null;
-
       try
       {
         m_debugger.Engine.Broadcast (new JavaLangDebuggerEvent.DetachClient (), DebugProgram, null);
@@ -216,16 +177,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        rethrowable = e;
-
-        return Constants.E_FAIL;
-      }
-      finally
-      {
-        if (rethrowable != null)
-        {
-          throw rethrowable;
-        }
+        throw;
       }
     }
 
@@ -255,9 +207,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         DebuggeeCodeContext codeContext = m_debugger.GetCodeContextForLocation (location) ?? throw new InvalidOperationException ("Failed evaluating code-context for location.");
 
-        DebuggeeCodeContext [] codeContexts = new DebuggeeCodeContext [] { codeContext };
-
-        ppEnum = new DebuggeeCodeContext.Enumerator (codeContexts);
+        ppEnum = new DebuggeeCodeContext.Enumerator (new DebuggeeCodeContext[] { codeContext });
 
         return Constants.S_OK;
       }
@@ -298,9 +248,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         CLangDebuggeeThread stackFrameThread = thread as CLangDebuggeeThread;
 
-        List<DebuggeeStackFrame> threadCallStack = stackFrameThread.StackTrace (uint.MaxValue);
+        var threadCallStack = stackFrameThread.StackTrace (uint.MaxValue);
 
-        List<CODE_PATH> threadCodePaths = new List<CODE_PATH> ();
+        var threadCodePaths = new List<CODE_PATH> ();
 
         for (int i = 0; i < threadCallStack.Count; ++i)
         {
@@ -357,27 +307,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      try
-      {
-        List<IDebugModule2> modules = new List<IDebugModule2> ();
+      ppEnum = new DebuggeeModule.Enumerator (m_debugModules.ToArray());
 
-        foreach (DebuggeeModule module in m_debugModules)
-        {
-          modules.Add (module as IDebugModule2);
-        }
-
-        ppEnum = new DebuggeeModule.Enumerator (modules);
-
-        return Constants.S_OK;
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-
-        ppEnum = null;
-
-        return Constants.E_FAIL;
-      }
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -392,24 +324,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      try
-      {
-        List<IDebugThread2> threads = new List<IDebugThread2> ();
+      ppEnum = new DebuggeeThread.Enumerator (m_debugThreads.Values.ToArray());
 
-        threads.AddRange (m_debugThreads.Values);
-
-        ppEnum = new DebuggeeThread.Enumerator (threads);
-
-        return Constants.S_OK;
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-
-        ppEnum = null;
-
-        return Constants.E_FAIL;
-      }
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -764,12 +681,4 @@ namespace AndroidPlusPlus.VsDebugEngine
 
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

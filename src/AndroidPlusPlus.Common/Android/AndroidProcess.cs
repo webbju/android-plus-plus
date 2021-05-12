@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -22,142 +23,15 @@ namespace AndroidPlusPlus.Common
 
     public AndroidProcess (AndroidDevice device, string name, uint pid, uint ppid, string user)
     {
-      if (string.IsNullOrEmpty(name))
-      {
-        throw new ArgumentNullException (nameof(name));
-      }
-
-      if (string.IsNullOrEmpty (user))
-      {
-        throw new ArgumentNullException (nameof(user));
-      }
-
       HostDevice = device ?? throw new ArgumentNullException (nameof(device));
 
-      Name = name;
+      Name = name ?? throw new ArgumentNullException(nameof(name));
 
       Pid = pid;
 
       ParentPid = ppid;
 
-      User = user;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    private string GetPackageManagerDumpEntry(string prefix)
-    {
-      char[] lineTrim = new char[] { ' ', '\r', '\n' };
-
-      string entry = HostDevice.Shell("pm", $"\"dump {Name} | grep {prefix} | head -1\"").Trim(lineTrim);
-      
-      if (string.IsNullOrEmpty(entry))
-      {
-        return entry;
-      }
-
-      int index = entry.IndexOf('=');
-
-      return (index == -1) ? entry : entry.Substring(index + 1);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public void RefreshPackageInfo ()
-    {
-      LoggingUtils.PrintFunction ();
-
-      //
-      // Retrieves the install specific (coded) remote APK path.
-      //   i.e: /data/app/com.example.hellogdbserver-2.apk
-      //
-
-      string remoteAppPath = HostDevice.Shell ("pm", $"\"path {Name} | grep 'package:'\"").Trim(new char [] { '\r', '\n'});
-
-      RemoteApkPath = remoteAppPath.Substring ("package:".Length);
-
-      CodePath = GetPackageManagerDumpEntry("codePath");
-
-      DataDirectory = GetPackageManagerDumpEntry("dataDir");
-
-      NativeLibraryPath = GetPackageManagerDumpEntry("nativeLibraryPath");
-
-      LegacyNativeLibraryPath = GetPackageManagerDumpEntry("legacyNativeLibraryDir");
-
-      if (string.IsNullOrWhiteSpace(LegacyNativeLibraryPath))
-      {
-        if (HostDevice.SdkVersion >= AndroidSettings.VersionCode.JELLY_BEAN_MR1)
-        {
-          string bundleId = Path.GetFileNameWithoutExtension(RemoteApkPath);
-
-          LegacyNativeLibraryPath = string.Concat("/data/app-lib/", bundleId);
-        }
-        else
-        {
-          LegacyNativeLibraryPath = string.Concat(CodePath, "/lib");
-        }
-      }
-
-      if (string.IsNullOrWhiteSpace(NativeLibraryPath))
-      {
-        NativeLibraryPath = LegacyNativeLibraryPath;
-      }
-
-      string primaryCpuAbi = GetPackageManagerDumpEntry("primaryCpuAbi");
-
-      string secondaryCpuAbi = GetPackageManagerDumpEntry("secondaryCpuAbi");
-
-      ProcessSupportedCpuAbis ??= new List<string>();
-
-      if (!string.IsNullOrEmpty(primaryCpuAbi) && !string.Equals(primaryCpuAbi, "(null)"))
-      {
-        ProcessSupportedCpuAbis.Add(primaryCpuAbi);
-      }
-
-      if (!string.IsNullOrEmpty(secondaryCpuAbi) && !string.Equals(secondaryCpuAbi, "(null)"))
-      {
-        ProcessSupportedCpuAbis.Add(secondaryCpuAbi);
-      }
-
-      foreach (string abi in HostDevice.SupportedCpuAbis)
-      {
-        if (!ProcessSupportedCpuAbis.Contains (abi))
-        {
-          ProcessSupportedCpuAbis.Add (abi);
-        }
-      }
-
-      NativeLibraryAbiPaths ??= new List<string>();
-
-      foreach (string abi in ProcessSupportedCpuAbis)
-      {
-        switch (abi)
-        {
-          case "armeabi":
-          case "armeabi-v7a":
-          case "arm64-v8a":
-          {
-            NativeLibraryAbiPaths.Add (string.Concat (NativeLibraryPath, "/", (abi.Equals("arm64-v8a")) ? "arm64" : "arm"));
-
-            break;
-          }
-
-          case "x86":
-          case "x86_64":
-          case "mips":
-          case "mips64":
-          default:
-          {
-            NativeLibraryAbiPaths.Add (string.Concat (NativeLibraryPath, "/", abi));
-
-            break;
-          }
-        }
-      }
+      User = user ?? throw new ArgumentNullException(nameof(user));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -166,24 +40,6 @@ namespace AndroidPlusPlus.Common
 
     public AndroidDevice HostDevice { get; protected set; }
 
-    public string RemoteApkPath { get; protected set; }
-
-    public string CodePath { get; protected set; }
-
-    public string DataDirectory { get; protected set; }
-
-    public string NativeLibraryPath { get; protected set; }
-
-    public string LegacyNativeLibraryPath { get; protected set; }
-
-    public ICollection<string> NativeLibraryAbiPaths {  get; protected set; }
-
-    public ICollection<string> ProcessSupportedCpuAbis { get; protected set; }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     public string User { get; protected set; }
 
     public uint Pid { get; protected set; }
@@ -191,6 +47,211 @@ namespace AndroidPlusPlus.Common
     public uint ParentPid { get; protected set; }
 
     public string Name { get; protected set; }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private const string CODE_PATH_EXPRESSION = "codePath=";
+
+    private const string RESOURCE_PATH_EXPRESSION = "resourcePath=";
+
+    private const string DATA_DIR_EXPRESSION = "dataDir=";
+
+    private const string NATIVE_LIBRARY_PATH_EXPRESSION = "nativeLibraryPath=";
+
+    private const string LEGACY_NATIVE_LIBRARY_DIR_EXPRESSION = "legacyNativeLibraryDir=";
+
+    private const string PRIMARY_CPU_ABI_EXPRESSION = "primaryCpuAbi=";
+
+    private const string SECONDARY_CPU_ABI_EXPRESSION = "secondaryCpuAbi=";
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private Dictionary<string, string> m_dumpsysProperties = new Dictionary<string, string>();
+
+    private void LazyEvaluateDumpsysProperties(CancellationToken cancellationToken = default)
+    {
+      try
+      {
+        var command = new SyncRedirectProcess(AndroidAdb.AdbExe, $"-s {HostDevice.ID} shell dumpsys package {Name}");
+
+        command.StartAndWaitForExit();
+
+        using var reader = new StringReader(command.StandardOutput);
+
+        for (string line = reader.ReadLine(); !string.IsNullOrEmpty(line); line = reader.ReadLine())
+        {
+          line = line.Trim(); // remove leading and trailing whitespace
+
+          if (!m_dumpsysProperties.ContainsKey("codePath") && line.StartsWith(CODE_PATH_EXPRESSION))
+          {
+            m_dumpsysProperties.Add("codePath", line.Substring(CODE_PATH_EXPRESSION.Length));
+          }
+          else if (!m_dumpsysProperties.ContainsKey("dataDir") && line.StartsWith(DATA_DIR_EXPRESSION))
+          {
+            m_dumpsysProperties.Add("dataDir", line.Substring(DATA_DIR_EXPRESSION.Length));
+          }
+          else if (!m_dumpsysProperties.ContainsKey("resourcePath") && line.StartsWith(RESOURCE_PATH_EXPRESSION))
+          {
+            m_dumpsysProperties.Add("resourcePath", line.Substring(RESOURCE_PATH_EXPRESSION.Length));
+          }
+          else if (!m_dumpsysProperties.ContainsKey("nativeLibraryPath") && line.StartsWith(NATIVE_LIBRARY_PATH_EXPRESSION))
+          {
+            m_dumpsysProperties.Add("nativeLibraryPath", line.Substring(NATIVE_LIBRARY_PATH_EXPRESSION.Length));
+          }
+          else if (!m_dumpsysProperties.ContainsKey("legacyNativeLibraryDir") && line.StartsWith(LEGACY_NATIVE_LIBRARY_DIR_EXPRESSION))
+          {
+            m_dumpsysProperties.Add("legacyNativeLibraryDir", line.Substring(LEGACY_NATIVE_LIBRARY_DIR_EXPRESSION.Length));
+          }
+          else if (!m_dumpsysProperties.ContainsKey("primaryCpuAbi") && line.StartsWith(PRIMARY_CPU_ABI_EXPRESSION))
+          {
+            m_dumpsysProperties.Add("primaryCpuAbi", line.Substring(PRIMARY_CPU_ABI_EXPRESSION.Length));
+          }
+          else if (!m_dumpsysProperties.ContainsKey("secondaryCpuAbi") && line.StartsWith(SECONDARY_CPU_ABI_EXPRESSION))
+          {
+            m_dumpsysProperties.Add("secondaryCpuAbi", line.Substring(SECONDARY_CPU_ABI_EXPRESSION.Length));
+          }
+        }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException(e);
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public string GetCodePath()
+    {
+      if (!m_dumpsysProperties.ContainsKey("codePath"))
+      {
+        LazyEvaluateDumpsysProperties();
+      }
+
+      if (!m_dumpsysProperties.TryGetValue("codePath", out string codePath) || string.IsNullOrEmpty(codePath))
+      {
+        codePath = GetDataDirectory();
+      }
+
+      return codePath;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public string GetDataDirectory()
+    {
+      if (!m_dumpsysProperties.ContainsKey("dataDir"))
+      {
+        LazyEvaluateDumpsysProperties();
+      }
+
+      if (!m_dumpsysProperties.TryGetValue("dataDir", out string dataDir) || string.IsNullOrEmpty(dataDir))
+      {
+        dataDir = $"/data/data/{Name}";
+      }
+
+      return dataDir;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public string GetNativeLibraryDir()
+    {
+      if (!m_dumpsysProperties.ContainsKey("nativeLibraryDir"))
+      {
+        LazyEvaluateDumpsysProperties();
+      }
+
+      if (!m_dumpsysProperties.TryGetValue("nativeLibraryDir", out string nativeLibraryDir) || string.IsNullOrEmpty(nativeLibraryDir))
+      {
+        nativeLibraryDir = GetLegacyNativeLibraryDir();
+      }
+
+      return nativeLibraryDir;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public string GetLegacyNativeLibraryDir()
+    {
+      if (!m_dumpsysProperties.ContainsKey("nativeLibraryDir"))
+      {
+        LazyEvaluateDumpsysProperties();
+      }
+
+      if (!m_dumpsysProperties.TryGetValue("legacyNativeLibraryDir", out string legacyNativeLibraryDir) || string.IsNullOrEmpty(legacyNativeLibraryDir))
+      {
+        legacyNativeLibraryDir = $"{GetCodePath()}/lib";
+      }
+
+      return legacyNativeLibraryDir;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public ICollection<string> GetSupportedCpuAbis()
+    {
+      if (!m_dumpsysProperties.ContainsKey("primaryCpuAbi") || !m_dumpsysProperties.ContainsKey("secondaryCpuAbi"))
+      {
+        LazyEvaluateDumpsysProperties();
+      }
+
+      var processSupportedCpuAbis = new HashSet<string>();
+
+      if (m_dumpsysProperties.TryGetValue("primaryCpuAbi", out string primaryCpuAbi) && !string.IsNullOrEmpty(primaryCpuAbi) && !string.Equals("null", primaryCpuAbi))
+      {
+        processSupportedCpuAbis.Add(primaryCpuAbi);
+      }
+
+      if (m_dumpsysProperties.TryGetValue("secondaryCpuAbi", out string secondaryCpuAbi) && !string.IsNullOrEmpty(secondaryCpuAbi) && !string.Equals("null", secondaryCpuAbi))
+      {
+        processSupportedCpuAbis.Add(secondaryCpuAbi);
+      }
+
+      return processSupportedCpuAbis;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public ICollection<string> GetNativeLibraryAbiPaths()
+    {
+      var nativeLibraryAbiPaths = new List<string>();
+
+      string nativeLibraryDir = GetNativeLibraryDir();
+
+      foreach (string supportedAbi in GetSupportedCpuAbis())
+      {
+        string abi = supportedAbi;
+
+        if (abi.Equals("armeabi"))
+        {
+          abi = "arm";
+        }
+        else if (abi.Equals("arm64-v8a"))
+        {
+          abi = "arm64";
+        }
+
+        nativeLibraryAbiPaths.Add($"{nativeLibraryDir}/{abi}");
+      }
+
+      return nativeLibraryAbiPaths;
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

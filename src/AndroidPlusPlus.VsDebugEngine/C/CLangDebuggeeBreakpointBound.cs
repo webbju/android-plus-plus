@@ -2,12 +2,9 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
-using AndroidPlusPlus.VsDebugCommon;
+using Microsoft.VisualStudio.Debugger.Interop;
+using System;
 using Constants = AndroidPlusPlus.VsDebugCommon.Constants;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -16,10 +13,6 @@ using Constants = AndroidPlusPlus.VsDebugCommon.Constants;
 
 namespace AndroidPlusPlus.VsDebugEngine
 {
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public class CLangDebuggeeBreakpointBound : DebuggeeBreakpointBound
   {
@@ -70,18 +63,18 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         int handle = base.Delete ();
 
-        if (handle == Constants.E_BP_DELETED)
+        if (handle != Constants.S_OK)
         {
           return handle;
         }
 
         LoggingUtils.RequireOk (handle);
 
-        m_debugger.RunInterruptOperation (delegate (CLangDebugger debugger)
-        {
-          string command = "-break-delete " + GdbBreakpoint.ID;
+        string command = $"-break-delete {GdbBreakpoint.ID}";
 
-          debugger.GdbClient.SendCommand (command, delegate (MiResultRecord resultRecord)
+        m_debugger.RunInterruptOperation (async (CLangDebugger debugger) =>
+        {
+          debugger.GdbClient.SendCommand (command, (MiResultRecord resultRecord) =>
           {
             MiResultRecord.RequireOk (resultRecord, command);
           });
@@ -120,7 +113,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         LoggingUtils.RequireOk (handle);
 
-        m_debugger.RunInterruptOperation (delegate (CLangDebugger debugger)
+        m_debugger.RunInterruptOperation (async (CLangDebugger debugger) =>
         {
           string command = (m_breakpointEnabled ? "-break-enable " : "-break-disable ") + GdbBreakpoint.ID;
 
@@ -182,7 +175,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (!string.IsNullOrEmpty (condition))
         {
-          m_debugger.RunInterruptOperation (delegate (CLangDebugger debugger)
+          m_debugger.RunInterruptOperation (async (CLangDebugger debugger) =>
           {
             string command = string.Format ("-break-condition {0} \"{1}\"", GdbBreakpoint.ID, condition);
 
@@ -254,7 +247,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           }
         }
 
-        m_debugger.RunInterruptOperation (delegate (CLangDebugger debugger)
+        m_debugger.RunInterruptOperation (async (CLangDebugger debugger) =>
         {
           string command = string.Format ("-break-after {0} {1}", GdbBreakpoint.ID, passCount);
 
@@ -292,12 +285,4 @@ namespace AndroidPlusPlus.VsDebugEngine
 
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

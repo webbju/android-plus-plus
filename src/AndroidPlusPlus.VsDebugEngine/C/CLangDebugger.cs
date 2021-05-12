@@ -2,20 +2,16 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+using AndroidPlusPlus.Common;
+using Microsoft.VisualStudio.Debugger.Interop;
+using Microsoft.VisualStudio.Shell;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
-
-using AndroidPlusPlus.Common;
-using AndroidPlusPlus.VsDebugCommon;
-
-using Microsoft.VisualStudio.Debugger.Interop;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -24,10 +20,6 @@ using Microsoft.VisualStudio.Debugger.Interop;
 namespace AndroidPlusPlus.VsDebugEngine
 {
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   public class CLangDebugger : IDisposable
   {
 
@@ -35,13 +27,11 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public delegate void InterruptOperation (CLangDebugger debugger);
+    public delegate System.Threading.Tasks.Task InterruptOperation (CLangDebugger debugger);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    private GdbSetup m_gdbSetup = null;
 
     private int m_interruptOperationCounter = 0;
 
@@ -55,7 +45,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public CLangDebugger (DebugEngine debugEngine, Dictionary<string, string> launchConfiguration, DebuggeeProgram debugProgram)
+    public CLangDebugger (DebugEngine debugEngine, DebuggeeProgram debugProgram, GdbSetup gdbSetup)
     {
       Engine = debugEngine;
 
@@ -65,18 +55,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       VariableManager = new CLangDebuggerVariableManager (this);
 
-      Engine.Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus, "Configuring GDB for target..."), null, null);
+      GdbServer = new GdbServer (gdbSetup);
 
-      m_gdbSetup = new GdbSetup (debugProgram.DebugProcess.NativeProcess, Path.Combine(AndroidSettings.NdkRoot, @"prebuilt\windows-x86_64\bin\gdb.exe"));
-
-      if (launchConfiguration != null && launchConfiguration.TryGetValue ("LaunchSuspendedDir", out string launchDirectory))
-      {
-        m_gdbSetup.SymbolDirectories.Add (launchDirectory);
-      }
-
-      GdbServer = new GdbServer (m_gdbSetup);
-
-      GdbClient = new GdbClient(m_gdbSetup)
+      GdbClient = new GdbClient(gdbSetup)
       {
         OnResultRecord = OnClientResultRecord,
 
@@ -138,13 +119,6 @@ namespace AndroidPlusPlus.VsDebugEngine
           GdbServer.Dispose ();
 
           GdbServer = null;
-        }
-
-        if (m_gdbSetup != null)
-        {
-          m_gdbSetup.Dispose ();
-
-          m_gdbSetup = null;
         }
 
         if (m_interruptOperationCompleted != null)
@@ -242,31 +216,31 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        lock (this)
+        bool interruptSignalled = false;
+
+        lock (NativeProgram)
         {
-          bool interruptSignalled = false;
-
-          lock (NativeProgram)
-          {
-            interruptSignalled = !NativeProgram.IsRunning;
-          }
-
-          while (!interruptSignalled)
-          {
-            LoggingUtils.Print ("[CLangDebugger] RunInterruptOperation: Waiting for interrupt to stop target.");
-
-            interruptSignalled = m_interruptOperationCompleted.WaitOne (0);
-
-            if (!interruptSignalled)
-            {
-              Application.DoEvents ();
-
-              Thread.Sleep (100);
-            }
-          }
-
-          operation (this);
+          interruptSignalled = !NativeProgram.IsRunning;
         }
+
+        while (!interruptSignalled)
+        {
+          LoggingUtils.Print("[CLangDebugger] RunInterruptOperation: Waiting for interrupt to stop target.");
+
+          interruptSignalled = m_interruptOperationCompleted.WaitOne(0);
+
+          if (!interruptSignalled)
+          {
+            Application.DoEvents();
+
+            Thread.Sleep(100);
+          }
+        }
+
+        ThreadHelper.JoinableTaskFactory.Run(async () =>
+        {
+          await operation(this);
+        });
       }
       catch (Exception e)
       {
@@ -331,17 +305,7 @@ namespace AndroidPlusPlus.VsDebugEngine
                     m_interruptOperationCompleted.Set ();
                   }
 
-                  ThreadPool.QueueUserWorkItem (delegate (object state)
-                  {
-                    try
-                    {
-                      LoggingUtils.RequireOk (Engine.Detach (NativeProgram.DebugProgram));
-                    }
-                    catch (Exception e)
-                    {
-                      LoggingUtils.HandleException (e);
-                    }
-                  });
+                  Engine.Broadcast(new DebugEngineEvent.ProgramDestroy(1), NativeProgram.DebugProgram, null);
 
                   break;
                 }
@@ -444,16 +408,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           if (streamRecord.Stream.Contains ("Remote communication error"))
           {
-            ThreadPool.QueueUserWorkItem (delegate (object state)
+            ThreadHelper.JoinableTaskFactory.Run(async () =>
             {
-              try
-              {
-                LoggingUtils.RequireOk (Engine.Detach (NativeProgram.DebugProgram));
-              }
-              catch (Exception e)
-              {
-                LoggingUtils.HandleException (e);
-              }
+              Engine.Broadcast(new DebugEngineEvent.ProgramDestroy(1), NativeProgram.DebugProgram, null);
             });
           }
 
@@ -468,7 +425,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private void OnClientAsyncRecord (MiAsyncRecord asyncRecord)
     {
-      LoggingUtils.PrintFunction ();
+      LoggingUtils.Print($"OnClientAsyncRecord: {asyncRecord.Type}");
 
       switch (asyncRecord.Type)
       {
@@ -494,14 +451,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                 if (threadId.Equals ("all"))
                 {
-                  Dictionary<uint, DebuggeeThread> programThreads = NativeProgram.GetThreads ();
+                  var programThreads = NativeProgram.GetThreads ();
 
-                  lock (programThreads)
+                  foreach (DebuggeeThread thread in programThreads.Values)
                   {
-                    foreach (DebuggeeThread thread in programThreads.Values)
-                    {
-                      thread.SetRunning (true);
-                    }
+                    thread.SetRunning (true);
                   }
                 }
                 else
@@ -588,14 +542,11 @@ namespace AndroidPlusPlus.VsDebugEngine
                   }
                   else
                   {
-                    Dictionary<uint, DebuggeeThread> programThreads = NativeProgram.GetThreads ();
+                    var programThreads = NativeProgram.GetThreads ();
 
-                    lock (programThreads)
+                    foreach (DebuggeeThread thread in programThreads.Values)
                     {
-                      foreach (DebuggeeThread thread in programThreads.Values)
-                      {
-                        thread.SetRunning (false);
-                      }
+                      thread.SetRunning (false);
                     }
                   }
                 }
@@ -758,10 +709,14 @@ namespace AndroidPlusPlus.VsDebugEngine
                       case null:
                       case "SIGINT":
                       {
-                        if (!ignoreInterruptSignal)
+                        if (ignoreInterruptSignal)
                         {
-                          Engine.Broadcast (new DebugEngineEvent.Break (), NativeProgram.DebugProgram, stoppedThread);
+                          Serilog.Log.Debug($"Ignoring {signalName}. Will not pass break event to VS.");
+
+                          break;
                         }
+
+                        Engine.Broadcast(new DebugEngineEvent.Break(), NativeProgram.DebugProgram, stoppedThread);
 
                         break;
                       }
@@ -827,17 +782,7 @@ namespace AndroidPlusPlus.VsDebugEngine
                     // React to program termination, but defer this so it doesn't consume the async output thread.
                     //
 
-                    ThreadPool.QueueUserWorkItem (delegate (object state)
-                    {
-                      try
-                      {
-                        LoggingUtils.RequireOk (Engine.Detach (NativeProgram.DebugProgram));
-                      }
-                      catch (Exception e)
-                      {
-                        LoggingUtils.HandleException (e);
-                      }
-                    });
+                    Engine.Broadcast(new DebugEngineEvent.ProgramDestroy(1), NativeProgram.DebugProgram, null);
 
                     break;
                   }
@@ -1000,6 +945,13 @@ namespace AndroidPlusPlus.VsDebugEngine
               {
                 string moduleName = asyncRecord ["id"] [0].GetString ();
 
+                MiResultValueList rangesRecord = asyncRecord["ranges"][0] as MiResultValueList;
+
+                if (rangesRecord.List[0].Values.Count < 2)
+                {
+                  break; // ignore any libraries which don't have a mapped address range; i.e. {from=0xe80a4420, to=0xe80b22db}
+                }
+
                 CLangDebuggeeModule module = NativeProgram.GetModule (moduleName) ?? NativeProgram.AddModule (moduleName, asyncRecord);
 
                 if (!GdbClient.GetClientFeatureSupported ("breakpoint-notifications"))
@@ -1126,35 +1078,30 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           MiResultRecord.RequireOk (resultRecord, command);
 
-          string pattern = "(?<from>0x[0-9a-fA-F]+)[ ]+(?<to>0x[0-9a-fA-F]+)[ ]+(?<syms>Yes|No)[ ]+(?<lib>[^ $]+)";
-
-          Regex regExMatcher = new Regex (pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+          Regex regExMatcher = new Regex ("(?<from>0x[0-9a-fA-F]+)[ ]+(?<to>0x[0-9a-fA-F]+)[ ]+(?<syms>Yes|No)[ ]+(?<lib>[^ $]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
           for (int i = 0; i < resultRecord.Records.Count; ++i)
           {
             MiStreamRecord record = resultRecord.Records [i];
 
-            if (!record.Stream.StartsWith ("0x"))
-            {
-              continue; // early rejection.
-            }
-
             string unescapedStream = Regex.Unescape (record.Stream);
 
             Match regExLineMatch = regExMatcher.Match (unescapedStream);
 
-            if (regExLineMatch.Success)
+            if (!regExLineMatch.Success)
             {
-              ulong from = ulong.Parse (regExLineMatch.Result ("${from}").Substring (2), NumberStyles.HexNumber);
-
-              ulong to = ulong.Parse (regExLineMatch.Result ("${to}").Substring (2), NumberStyles.HexNumber);
-
-              bool syms = regExLineMatch.Result ("${syms}").Equals ("Yes");
-
-              string lib = regExLineMatch.Result ("${lib}").Replace ("\r", "").Replace ("\n", "");
-
-              m_mappedSharedLibraries [lib] = new Tuple<ulong, ulong, bool> (from, to, syms);
+              continue;
             }
+
+            ulong from = ulong.Parse(regExLineMatch.Result("${from}").Substring(2), NumberStyles.HexNumber);
+
+            ulong to = ulong.Parse(regExLineMatch.Result("${to}").Substring(2), NumberStyles.HexNumber);
+
+            bool syms = regExLineMatch.Result("${syms}").Equals("Yes");
+
+            string lib = regExLineMatch.Result("${lib}").Replace("\r", "").Replace("\n", "");
+
+            m_mappedSharedLibraries[lib] = new Tuple<ulong, ulong, bool>(from, to, syms);
           }
         });
       }
@@ -1170,12 +1117,4 @@ namespace AndroidPlusPlus.VsDebugEngine
 
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

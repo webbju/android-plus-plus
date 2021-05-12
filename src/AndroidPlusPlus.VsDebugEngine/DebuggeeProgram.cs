@@ -2,13 +2,11 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugCommon;
+using Microsoft.VisualStudio.Debugger.Interop;
+using System;
+using System.Collections.Generic;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -17,18 +15,10 @@ using AndroidPlusPlus.VsDebugCommon;
 namespace AndroidPlusPlus.VsDebugEngine
 {
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   //
   // A debug engine (DE) or a custom port supplier implements this interface to represent a 'program' that can be debugged.
   // A 'program' is a thread container running in a particular run-time architecture, while a process is made up of one or more programs.
   //
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public class DebuggeeProgram : IDebugProgram3, IDebugProgramNode2
   {
@@ -106,8 +96,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      Exception rethrowable = null;
-
       try
       {
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.Attach (pCallback));
@@ -120,16 +108,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        rethrowable = e;
-
-        return Constants.E_FAIL;
-      }
-      finally
-      {
-        if (rethrowable != null)
-        {
-          throw rethrowable;
-        }
+        throw;
       }
     }
 
@@ -145,8 +124,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      Exception rethrowable = null;
-
       try
       {
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.CanDetach ());
@@ -159,16 +136,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        rethrowable = e;
-
-        return Constants.E_FAIL;
-      }
-      finally
-      {
-        if (rethrowable != null)
-        {
-          throw rethrowable;
-        }
+        throw;
       }
     }
 
@@ -184,8 +152,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      Exception rethrowable = null;
-
       try
       {
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.CauseBreak ());
@@ -198,16 +164,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        rethrowable = e;
-
-        return Constants.E_FAIL;
-      }
-      finally
-      {
-        if (rethrowable != null)
-        {
-          throw rethrowable;
-        }
+        throw;
       }
     }
 
@@ -223,8 +180,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      Exception rethrowable = null;
-
       try
       {
         LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.Continue (pThread));
@@ -237,16 +192,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        rethrowable = e;
-
-        return Constants.E_FAIL;
-      }
-      finally
-      {
-        if (rethrowable != null)
-        {
-          throw rethrowable;
-        }
+        throw;
       }
     }
 
@@ -262,11 +208,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      Exception rethrowable = null;
-
       try
       {
-        LoggingUtils.RequireOk (AttachedEngine.Detach (this));
+        LoggingUtils.RequireOk(AttachedEngine.NativeDebugger.NativeProgram.Detach());
+
+        LoggingUtils.RequireOk(AttachedEngine.JavaDebugger.JavaProgram.Detach());
 
         return Constants.S_OK;
       }
@@ -274,16 +220,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        rethrowable = e;
-
-        return Constants.E_FAIL;
-      }
-      finally
-      {
-        if (rethrowable != null)
-        {
-          throw rethrowable;
-        }
+        throw;
       }
     }
 
@@ -303,21 +240,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        List<IDebugCodeContext2> codeContexts = new List<IDebugCodeContext2> ();
+        LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.EnumCodeContexts (pDocPos, out ppEnum));
 
-        uint count;
+        LoggingUtils.RequireOk (ppEnum.GetCount (out uint count));
 
-        {
-          LoggingUtils.RequireOk (AttachedEngine.NativeDebugger.NativeProgram.EnumCodeContexts (pDocPos, out ppEnum));
+        var codeContextArray = new IDebugCodeContext2 [count];
 
-          LoggingUtils.RequireOk (ppEnum.GetCount (out count));
-
-          IDebugCodeContext2 [] codeContextArray = new IDebugCodeContext2 [count];
-
-          LoggingUtils.RequireOk (ppEnum.Next (count, codeContextArray, ref count));
-
-          codeContexts.AddRange (codeContextArray);
-        }
+        LoggingUtils.RequireOk (ppEnum.Next (count, codeContextArray, ref count));
 
 #if false
         {
@@ -333,7 +262,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         }
 #endif
 
-        ppEnum = new DebuggeeCodeContext.Enumerator (codeContexts);
+        ppEnum = new DebuggeeCodeContext.Enumerator (codeContextArray);
 
         return Constants.S_OK;
       }
@@ -393,7 +322,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        List<IDebugModule2> modules = new List<IDebugModule2> ();
+        var modules = new List<IDebugModule2> ();
 
         uint count;
 
@@ -402,7 +331,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           LoggingUtils.RequireOk (ppEnum.GetCount (out count));
 
-          IDebugModule2 [] moduleArray = new IDebugModule2 [count];
+          var moduleArray = new IDebugModule2 [count];
 
           LoggingUtils.RequireOk (ppEnum.Next (count, moduleArray, ref count));
 
@@ -414,7 +343,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           LoggingUtils.RequireOk (ppEnum.GetCount (out count));
 
-          IDebugModule2 [] moduleArray = new IDebugModule2 [count];
+          var moduleArray = new IDebugModule2 [count];
 
           LoggingUtils.RequireOk (ppEnum.Next (count, moduleArray, ref count));
 
@@ -447,7 +376,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        List<IDebugThread2> threads = new List<IDebugThread2> ();
+        var threads = new List<IDebugThread2> ();
 
         uint count;
 
@@ -456,7 +385,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           LoggingUtils.RequireOk (ppEnum.GetCount (out count));
 
-          IDebugThread2 [] threadArray = new IDebugThread2 [count];
+          var threadArray = new IDebugThread2 [count];
 
           LoggingUtils.RequireOk (ppEnum.Next (count, threadArray, ref count));
 
@@ -468,7 +397,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           LoggingUtils.RequireOk (ppEnum.GetCount (out count));
 
-          IDebugThread2 [] threadArray = new IDebugThread2 [count];
+          var threadArray = new IDebugThread2 [count];
 
           LoggingUtils.RequireOk (ppEnum.Next (count, threadArray, ref count));
         }
@@ -989,12 +918,4 @@ namespace AndroidPlusPlus.VsDebugEngine
 
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

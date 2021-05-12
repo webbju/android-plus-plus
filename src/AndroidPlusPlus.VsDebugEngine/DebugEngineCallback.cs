@@ -2,15 +2,11 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Diagnostics;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugCommon;
+using Microsoft.VisualStudio.Debugger.Interop;
+using System;
+using System.Collections.Generic;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -83,49 +79,50 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public DebugEngineCallback (DebugEngine engine, IDebugEventCallback2 ad7EventCallback)
+    public DebugEngineCallback (DebugEngine engine, CLangDebuggerCallback cLangDebuggerCallback, JavaLangDebuggerCallback javaLangDebuggerCallback, IDebugEventCallback2 ad7EventCallback)
     {
       Engine = engine;
 
       m_ad7EventCallback = ad7EventCallback;
 
-      m_cLangEventCallback = new CLangDebuggerCallback (engine);
+      m_cLangEventCallback = cLangDebuggerCallback;
 
-      m_javaLangEventCallback = new JavaLangDebuggerCallback (engine);
+      m_javaLangEventCallback = javaLangDebuggerCallback;
 
       // 
       // Register function handlers for specific events.
       // 
 
-      m_debuggerCallback = new Dictionary<Guid, DebuggerEventDelegate> ();
+      m_debuggerCallback = new Dictionary<Guid, DebuggerEventDelegate>
+      {
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.BreakpointHit)), OnBreakpoint },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.BreakpointHit)), OnBreakpoint);
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.BreakpointBound)), OnBreakpointBound },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.BreakpointBound)), OnBreakpointBound);
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.BreakpointError)), OnBreakpointError },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.BreakpointError)), OnBreakpointError);
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.Error)), OnError },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.Error)), OnError);
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.Exception)), OnException },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.Exception)), OnException);
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.LoadComplete)), OnLoadComplete },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.LoadComplete)), OnLoadComplete);
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.ModuleLoad)), OnModuleLoad },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.ModuleLoad)), OnModuleLoad);
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.OutputString)), OnOutputString },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.OutputString)), OnOutputString);
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.ProcessCreate)), OnProgramCreate },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.ProcessCreate)), OnProgramCreate);
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.ProgramDestroy)), OnProgramDestroy },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.ProgramDestroy)), OnProgramDestroy);
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.StepComplete)), OnStepComplete },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.StepComplete)), OnStepComplete);
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.SymbolSearch)), OnSymbolSearch },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.SymbolSearch)), OnSymbolSearch);
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.ThreadCreate)), OnThreadCreate },
 
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.ThreadCreate)), OnThreadCreate);
-
-      m_debuggerCallback.Add (ComUtils.GuidOf (typeof (DebugEngineEvent.ThreadDestroy)), OnThreadDestroy);
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.ThreadDestroy)), OnThreadDestroy }
+      };
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -156,9 +153,17 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        DebuggerEventDelegate eventCallback;
-
-        if (m_debuggerCallback.TryGetValue (riidEvent, out eventCallback))
+        if (m_cLangEventCallback.HasEventCallback(riidEvent))
+        {
+          handle = m_cLangEventCallback.Event(pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
+        }
+        
+        if(m_javaLangEventCallback.HasEventCallback(riidEvent))
+        {
+          handle = m_javaLangEventCallback.Event(pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
+        }
+        
+        if (m_debuggerCallback.TryGetValue (riidEvent, out DebuggerEventDelegate eventCallback))
         {
           handle = eventCallback (pEngine, pProcess, pProgram, pThread, pEvent, ref riidEvent, dwAttrib);
         }
@@ -405,12 +410,4 @@ namespace AndroidPlusPlus.VsDebugEngine
 
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

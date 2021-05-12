@@ -3,8 +3,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -18,11 +16,7 @@ using System.Threading.Tasks;
 namespace AndroidPlusPlus.Common
 {
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  public class JdbClient : AsyncRedirectProcess.IEventListener, IDisposable
+  public class JdbClient : RedirectEventListener, IDisposable
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -40,32 +34,15 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public delegate void OnAsyncOutputDelegate (ICollection<string> output);
+    public delegate void OnAsyncOutputDelegate (string output);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public OnAsyncOutputDelegate OnAsyncStdout { get; set; }
+    public OnAsyncOutputDelegate OnStandardOutput { get; set; }
 
-    public OnAsyncOutputDelegate OnAsyncStderr { get; set; }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    private class AsyncCommandData
-    {
-      public AsyncCommandData ()
-      {
-      }
-
-      public string Command { get; set; }
-
-      public List<string> OutputLines = new List <string> ();
-
-      public OnAsyncOutputDelegate OutputDelegate { get; set; }
-    }
+    public OnAsyncOutputDelegate OnStandardError { get; set; }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -75,15 +52,11 @@ namespace AndroidPlusPlus.Common
 
     private AsyncRedirectProcess m_jdbClientInstance = null;
 
-    private Dictionary<uint, AsyncCommandData> m_asyncCommandData = new Dictionary<uint, AsyncCommandData> ();
-
-    private Dictionary<string, ManualResetEvent> m_syncCommandLocks = new Dictionary<string, ManualResetEvent> ();
-
     private Stopwatch m_timeSinceLastOperation = new Stopwatch ();
 
     private ManualResetEvent m_sessionStarted = new ManualResetEvent (false);
 
-    private uint m_sessionCommandToken = 1;
+    private const string Magic = "__verify_jdb_has_started__";
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -160,33 +133,29 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      // 
+      //
       // Export an execution script ('jdb.ini') for standard start-up properties.
-      // 
+      //
 
-      using (StreamWriter writer = new StreamWriter (Path.Combine (m_jdbSetup.CacheDirectory, "jdb.ini"), false, Encoding.ASCII))
+      Directory.CreateDirectory(m_jdbSetup.CacheDirectory);
+
+      using (var writer = new StreamWriter (Path.Combine (m_jdbSetup.CacheDirectory, "jdb.ini"), false, Encoding.ASCII))
       {
-        var execCommands = m_jdbSetup.CreateJdbExecutionScript();
-
-        foreach (string command in execCommands)
-        {
-          writer.WriteLine (command);
-        }
       }
 
-      // 
+      //
       // Prepare a new JDB instance. Connections must be made on the command line, so delay this until an attach request.
-      // 
+      //
 
-      StringBuilder argumentBuilder = new StringBuilder ();
+      var builder = new StringBuilder ();
 
-    #if DEBUG && false
-      argumentBuilder.Append (string.Format ("-dbgtrace "));
-    #endif
+#if DEBUG && false
+      builder.Append (string.Format ("-dbgtrace "));
+#endif
 
-      argumentBuilder.Append (string.Format ("-connect com.sun.jdi.SocketAttach:hostname={0},port={1} ", m_jdbSetup.Host, m_jdbSetup.Port));
+      builder.Append (string.Format ("-connect com.sun.jdi.SocketAttach:hostname={0},port={1} ", m_jdbSetup.Host, m_jdbSetup.Port));
 
-      m_jdbClientInstance = new AsyncRedirectProcess (Path.Combine (JavaSettings.JdkRoot, @"bin\jdb.exe"), argumentBuilder.ToString ());
+      m_jdbClientInstance = new AsyncRedirectProcess (Path.Combine (JavaSettings.JdkRoot, @"bin\jdb.exe"), builder.ToString ());
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -204,21 +173,23 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void Attach ()
+    public async Task Attach (CancellationToken cancellationToken = default)
     {
       LoggingUtils.PrintFunction ();
 
       try
       {
-        m_jdbSetup.ClearPortForwarding ();
+        await m_jdbSetup.ClearPortForwardingAsync (cancellationToken);
 
-        m_jdbSetup.SetupPortForwarding ();
+        await m_jdbSetup.SetupPortForwardingAsync(cancellationToken);
 
         m_jdbClientInstance.Start (this);
 
-        m_timeSinceLastOperation.Start ();
+        m_timeSinceLastOperation.Start();
 
-        /*uint timeout = 15000;
+        /*SendCommand($"print {Magic}");
+
+        uint timeout = 60000;
 
         bool responseSignaled = false;
 
@@ -286,7 +257,7 @@ namespace AndroidPlusPlus.Common
     {
       LoggingUtils.PrintFunction ();
 
-      SendAsyncCommand ("exit");
+      SendCommand ("exit");
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -362,11 +333,11 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public ICollection<string> SendCommand (string command, int timeout = 30000)
+    public void SendCommand (string command, int timeout = 30000)
     {
-      // 
+      //
       // Perform a synchronous command request.
-      // 
+      //
 
       LoggingUtils.Print (string.Format ("[JdbClient] SendCommand: {0}", command));
 
@@ -375,89 +346,7 @@ namespace AndroidPlusPlus.Common
         throw new ArgumentNullException (nameof(command));
       }
 
-      ICollection<string> syncOutput = null;
-
-      if (m_jdbClientInstance == null)
-      {
-        return syncOutput;
-      }
-
-      ManualResetEvent syncCommandLock = new ManualResetEvent (false);
-
-      m_syncCommandLocks [command] = syncCommandLock;
-
-      SendAsyncCommand (command, (ICollection<string> output) =>
-      {
-        syncOutput = output;
-
-        syncCommandLock.Set ();
-      });
-
-      // 
-      // Wait for asynchronous record response (or exit), reset timeout each time new activity occurs.
-      // 
-
-      /*bool responseSignaled = false;
-
-      while ((!responseSignaled) && (m_timeSinceLastOperation.ElapsedMilliseconds < timeout))
-      {
-        responseSignaled = syncCommandLock.WaitOne (0);
-
-        if (!responseSignaled)
-        {
-          Thread.Sleep (100);
-        }
-      }*/
-
-      m_syncCommandLocks.Remove (command);
-
-      /*if (!responseSignaled)
-      {
-        throw new TimeoutException ("Timed out waiting for synchronous response for command: " + command);
-      }*/
-
-      return syncOutput;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public void SendAsyncCommand (string command, OnAsyncOutputDelegate asyncDelegate = null)
-    {
-      LoggingUtils.Print (string.Format ("[JdbClient] SendAsyncCommand: {0}", command));
-
-      if (string.IsNullOrWhiteSpace (command))
-      {
-        throw new ArgumentNullException (nameof(command));
-      }
-
-      if (m_jdbClientInstance == null)
-      {
-        return;
-      }
-
-      m_timeSinceLastOperation.Restart ();
-
-      AsyncCommandData commandData = new AsyncCommandData
-      {
-        Command = command,
-
-        OutputDelegate = asyncDelegate
-      };
-
-      ++m_sessionCommandToken;
-
-      lock (m_asyncCommandData)
-      {
-        m_asyncCommandData.Add (m_sessionCommandToken, commandData);
-      }
-
-      //command = m_sessionCommandToken + command;
-
-      m_jdbClientInstance.SendCommand (command);
-
-      m_timeSinceLastOperation.Restart ();
+      m_jdbClientInstance.SendCommand(command);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -466,79 +355,30 @@ namespace AndroidPlusPlus.Common
 
     public void ProcessStdout (object sendingProcess, DataReceivedEventArgs args)
     {
-      if (!string.IsNullOrEmpty (args.Data))
+      m_timeSinceLastOperation.Restart();
+
+      LoggingUtils.Print(string.Format("[JdbClient] ProcessStdout: {0}", args.Data));
+
+      try
       {
-        LoggingUtils.Print (string.Format ("[JdbClient] ProcessStdout: {0}", args.Data));
-
-        try
+        if (string.IsNullOrEmpty(args.Data))
         {
-          m_timeSinceLastOperation.Restart ();
-
-          if (args.Data.Equals ("Initializing jdb ..."))
-          {
-            m_sessionStarted.Set ();
-          }
-
-          // 
-          // Distribute result records to registered delegate callbacks.
-          // 
-
-          OnAsyncStdout (new string [] { args.Data });
-
-          // 
-          // Collate output for any ongoing async commands.
-          // 
-
-          lock (m_asyncCommandData)
-          {
-            foreach (KeyValuePair<uint, AsyncCommandData> asyncCommand in m_asyncCommandData)
-            {
-              if (!asyncCommand.Value.Command.StartsWith ("-"))
-              {
-                asyncCommand.Value.OutputLines.Add (args.Data);
-              }
-            }
-          }
-
-          // 
-          // Call the corresponding registered delegate for the token response.
-          // 
-
-          uint token = m_sessionCommandToken;
-
-          AsyncCommandData callbackCommandData = null;
-
-          lock (m_asyncCommandData)
-          {
-            if (m_asyncCommandData.TryGetValue (token, out callbackCommandData))
-            {
-              m_asyncCommandData.Remove (token);
-            }
-          }
-
-          // 
-          // Spawn any registered callback handlers on a dedicated thread, as not to block JDB output.
-          // 
-
-          if ((callbackCommandData != null) && (callbackCommandData.OutputDelegate != null))
-          {
-            ThreadPool.QueueUserWorkItem (delegate (object state)
-            {
-              try
-              {
-                callbackCommandData.OutputDelegate (callbackCommandData.OutputLines.ToArray ());
-              }
-              catch (Exception e)
-              {
-                LoggingUtils.HandleException (e);
-              }
-            });
-          }
+          return;
         }
-        catch (Exception e)
+        else if (args.Data.StartsWith(">")) // JDB prompt.
         {
-          LoggingUtils.HandleException (e);
+          m_sessionStarted.Set();
+
+          return;
         }
+        else
+        {
+          OnStandardOutput(args.Data);
+        }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException (e);
       }
     }
 
@@ -548,15 +388,19 @@ namespace AndroidPlusPlus.Common
 
     public void ProcessStderr (object sendingProcess, DataReceivedEventArgs args)
     {
+      m_timeSinceLastOperation.Restart();
+
+      LoggingUtils.Print(string.Format("[JdbClient] ProcessStderr: {0}", args.Data));
+
       try
       {
-        m_timeSinceLastOperation.Restart ();
-
-        if (!string.IsNullOrWhiteSpace (args.Data))
+        if (string.IsNullOrEmpty(args.Data))
         {
-          LoggingUtils.Print (string.Format ("[JdbClient] ProcessStderr: {0}", args.Data));
-
-          OnAsyncStderr (new string [] { args.Data });
+          return;
+        }
+        else
+        {
+          OnStandardError(args.Data);
         }
       }
       catch (Exception e)
@@ -571,27 +415,11 @@ namespace AndroidPlusPlus.Common
 
     public void ProcessExited (object sendingProcess, EventArgs args)
     {
-      try
-      {
-        LoggingUtils.Print(string.Format("[JdbClient] ProcessExited"));
+      m_timeSinceLastOperation.Restart();
 
-        m_timeSinceLastOperation.Restart ();
+      m_sessionStarted.Reset();
 
-        m_jdbClientInstance = null;
-
-        // 
-        // If we're waiting on a synchronous command, signal a finish to process termination.
-        // 
-
-        foreach (KeyValuePair<string, ManualResetEvent> syncKeyPair in m_syncCommandLocks)
-        {
-          syncKeyPair.Value.Set ();
-        }
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-      }
+      LoggingUtils.Print(string.Format("[JdbClient] ProcessExited"));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -600,12 +428,4 @@ namespace AndroidPlusPlus.Common
 
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

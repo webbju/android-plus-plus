@@ -2,11 +2,16 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+using CliWrap;
+using CliWrap.Buffered;
 using System;
-using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -14,10 +19,6 @@ using System.Text.RegularExpressions;
 
 namespace AndroidPlusPlus.Common
 {
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public static class AndroidAdb
   {
@@ -39,9 +40,7 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private static readonly object m_updateLockMutex = new object ();
-
-    private static Dictionary<string, AndroidDevice> m_connectedDevices = new Dictionary<string, AndroidDevice> ();
+    private static ConcurrentDictionary<string, AndroidDevice> m_connectedDevices = new ConcurrentDictionary<string, AndroidDevice> ();
 
     private static List<IStateListener> m_registeredDeviceStateListeners = new List<IStateListener> ();
 
@@ -49,146 +48,285 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public static void Refresh ()
+    public async static Task<ConcurrentDictionary<string, AndroidDevice>> Refresh (CancellationToken cancellationToken = default)
     {
-      LoggingUtils.PrintFunction ();
+      //
+      // Start an ADB instance, if required.
+      //
 
-      lock (m_updateLockMutex)
+      await AdbCommand().WithArguments("start-server").WithValidation(CommandResultValidation.None).ExecuteAsync(cancellationToken);
+
+      //
+      // Parse 'devices' output, skipping headers and potential 'start-server' output.
+      //
+
+      var adbDevices = await AdbCommand().WithArguments("devices").ExecuteBufferedAsync(cancellationToken);
+
+      var pattern = new Regex(@"^([^ ]+)\t([^ ]+)$", RegexOptions.Compiled);
+
+      var currentAdbDevices = new Dictionary<string, string>();
+
+      using (var reader = new StringReader(adbDevices.StandardOutput))
       {
-        //
-        // Start an ADB instance, if required.
-        //
-
-        using (var adbStartServer = AdbCommand("start-server", string.Empty))
+        for (string line = await reader.ReadLineAsync (); !string.IsNullOrEmpty(line); line = await reader.ReadLineAsync())
         {
-          adbStartServer.StartAndWaitForExit (30000);
+          Match match = pattern.Match(line);
+
+          if (!match.Success)
+          {
+            continue;
+          }
+
+          string deviceName = match.Groups[1].Value;
+
+          string deviceType = match.Groups[2].Value;
+
+          LoggingUtils.Print($"[AndroidAdb] Device: {deviceName} ({deviceType})");
+
+          currentAdbDevices.Add(deviceName, deviceType);
         }
+      }
 
-        using var adbDevices = AdbCommand("devices", string.Empty);
+      //
+      // First identify any previously tracked devices which aren't in 'devices' output.
+      //
 
-        adbDevices.StartAndWaitForExit(30000);
+      var disconnectedDevices = new HashSet<string>();
 
-        //
-        // Parse 'devices' output, skipping headers and potential 'start-server' output.
-        //
+      foreach (string key in m_connectedDevices.Keys)
+      {
+        string deviceName = (string)key;
 
-        Dictionary<string, string> currentAdbDevices = new Dictionary<string, string>();
-
-        LoggingUtils.Print(string.Concat("[AndroidAdb] Devices output: ", adbDevices.StandardOutput));
-
-        if (!string.IsNullOrEmpty(adbDevices.StandardOutput))
+        if (!currentAdbDevices.ContainsKey(deviceName))
         {
-          var deviceOutputLines = adbDevices.StandardOutput.Replace("\r", "").Split(new char[] { '\n' });
-
-          foreach (string line in deviceOutputLines)
-          {
-            if (Regex.IsMatch(line, "^[A-Za-z0-9.:\\-]+[\t][A-Za-z]+$"))
-            {
-              var segments = line.Split(new char[] { '\t' });
-
-              string deviceName = segments[0];
-
-              string deviceType = segments[1];
-
-              currentAdbDevices.Add(deviceName, deviceType);
-            }
-          }
+          disconnectedDevices.Add(deviceName);
         }
+      }
 
-        //
-        // First identify any previously tracked devices which aren't in 'devices' output.
-        //
+      //
+      // Identify whether any devices have changed state; connected/persisted/disconnected.
+      //
 
-        HashSet<string> disconnectedDevices = new HashSet<string>();
+      foreach (KeyValuePair<string, string> devicePair in currentAdbDevices)
+      {
+        string deviceName = devicePair.Key;
 
-        foreach (string key in m_connectedDevices.Keys)
+        string deviceType = devicePair.Value;
+
+        if (deviceType.Equals("offline", StringComparison.InvariantCultureIgnoreCase))
         {
-          string deviceName = (string)key;
-
-          if (!currentAdbDevices.ContainsKey(deviceName))
-          {
-            disconnectedDevices.Add(deviceName);
-          }
+          disconnectedDevices.Add(deviceName);
         }
-
-        //
-        // Identify whether any devices have changed state; connected/persisted/disconnected.
-        //
-
-        foreach (KeyValuePair<string, string> devicePair in currentAdbDevices)
+        else if (deviceType.Equals("unauthorized", StringComparison.InvariantCultureIgnoreCase))
         {
-          string deviceName = devicePair.Key;
+          // User needs to allow USB debugging.
+        }
+        else if (m_connectedDevices.TryGetValue(deviceName, out AndroidDevice connectedDevice))
+        {
+          //
+          // Device is pervasive. Refresh internal properties.
+          //
 
-          string deviceType = devicePair.Value;
+          LoggingUtils.Print($"[AndroidAdb] Device pervaded: {deviceName} - {deviceType}");
 
-          if (deviceType.Equals("offline", StringComparison.InvariantCultureIgnoreCase))
+          foreach (IStateListener deviceListener in m_registeredDeviceStateListeners)
           {
-            disconnectedDevices.Add(deviceName);
-          }
-          else if (deviceType.Equals("unauthorized", StringComparison.InvariantCultureIgnoreCase))
-          {
-            // User needs to allow USB debugging.
-          }
-          else
-          {
-            if (m_connectedDevices.TryGetValue(deviceName, out AndroidDevice connectedDevice))
-            {
-              //
-              // Device is pervasive. Refresh internal properties.
-              //
-
-              LoggingUtils.Print(string.Format("[AndroidAdb] Device pervaded: {0} - {1}", deviceName, deviceType));
-
-              connectedDevice.Refresh();
-
-              foreach (IStateListener deviceListener in m_registeredDeviceStateListeners)
-              {
-                deviceListener.DevicePervasive(connectedDevice);
-              }
-            }
-            else
-            {
-              //
-              // Device connected.
-              //
-
-              LoggingUtils.Print(string.Format("[AndroidAdb] Device connected: {0} - {1}", deviceName, deviceType));
-
-              connectedDevice = new AndroidDevice(deviceName);
-
-              connectedDevice.Refresh();
-
-              m_connectedDevices.Add(deviceName, connectedDevice);
-
-              foreach (IStateListener deviceListener in m_registeredDeviceStateListeners)
-              {
-                deviceListener.DeviceConnected(connectedDevice);
-              }
-            }
+            deviceListener.DevicePervasive(connectedDevice);
           }
         }
-
-        //
-        // Finally, handle device disconnection.
-        //
-
-        foreach (string deviceName in disconnectedDevices)
+        else
         {
-          if (m_connectedDevices.TryGetValue(deviceName, out AndroidDevice disconnectedDevice))
+          //
+          // Device connected.
+          //
+
+          LoggingUtils.Print($"[AndroidAdb] Device connected: {deviceName} - {deviceType}");
+
+          connectedDevice = new AndroidDevice(deviceName);
+
+          m_connectedDevices.TryAdd(deviceName, connectedDevice);
+
+          foreach (IStateListener deviceListener in m_registeredDeviceStateListeners)
           {
-            LoggingUtils.Print(string.Concat("[AndroidAdb] Device disconnected: ", deviceName));
-
-            m_connectedDevices.Remove(deviceName);
-
-            foreach (IStateListener deviceListener in m_registeredDeviceStateListeners)
-            {
-              deviceListener.DeviceDisconnected(disconnectedDevice);
-            }
+            deviceListener.DeviceConnected(connectedDevice);
           }
         }
       }
+
+      //
+      // Finally, handle device disconnection.
+      //
+
+      foreach (string deviceName in disconnectedDevices)
+      {
+        LoggingUtils.Print($"[AndroidAdb] Device disconnected: {deviceName}");
+
+        if (m_connectedDevices.TryRemove(deviceName, out AndroidDevice disconnectedDevice))
+        {
+          foreach (IStateListener deviceListener in m_registeredDeviceStateListeners)
+          {
+            deviceListener.DeviceDisconnected(disconnectedDevice);
+          }
+        }
+      }
+
+      return m_connectedDevices;
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public async static Task Push(AndroidDevice device, string localPath, string remotePath, CancellationToken cancellationToken = default)
+    {
+      try
+      {
+        await AdbCommand().WithArguments($"-s {device.ID} push {PathUtils.QuoteIfNeeded(localPath)} {remotePath}").ExecuteAsync(cancellationToken);
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException(e);
+
+        throw;
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public async static Task Pull(AndroidDevice device, string remotePath, string localPath, CancellationToken cancellationToken = default)
+    {
+      try
+      {
+        //
+        // Check if the remote path is a symbolic link, and adjust the target file.
+        // (ADB Pull doesn't follow these links)
+        //
+
+        var readlink = await AdbCommand().WithArguments($"-s {device.ID} shell readlink {remotePath}").WithValidation(CommandResultValidation.None).ExecuteBufferedAsync(cancellationToken);
+
+        if (readlink.ExitCode == 0)
+        {
+          using var reader = new StringReader(readlink.StandardOutput);
+
+          for (string line = await reader.ReadLineAsync(); !string.IsNullOrEmpty(line); line = await reader.ReadLineAsync())
+          {
+            if (line.StartsWith("/"))  // absolute path link
+            {
+              remotePath = line;
+            }
+            else // relative path link
+            {
+              int i = remotePath.LastIndexOf('/');
+
+              if (i != -1)
+              {
+                string parentPath = remotePath.Substring(0, i);
+
+                string file = remotePath.Substring(i + 1);
+
+                remotePath = parentPath + '/' + file;
+              }
+            }
+          }
+        }
+
+        await AdbCommand().WithArguments($"-s {device.ID} pull {remotePath} {PathUtils.QuoteIfNeeded(localPath)}").ExecuteAsync(cancellationToken);
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException(e);
+
+        throw;
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public async static Task<Dictionary<uint, AndroidProcess>> ProcessesSnapshot(AndroidDevice device, string args, CancellationToken cancellationToken = default)
+    {
+      var processList = new Dictionary<uint, AndroidProcess>();
+
+      try
+      {
+        var command = await AdbCommand().WithArguments($"-s {device.ID} shell ps {args}").ExecuteBufferedAsync(cancellationToken);
+
+        var processesRegEx = new Regex(@"(?<user>[^ ]+)[ ]*(?<pid>[0-9]+)[ ]*(?<ppid>[0-9]+)[ ]*(?<vsize>[0-9]+)[ ]*(?<rss>[0-9]+)[ ]*(?<wchan>[^ ]+)[ ]*(?<pc>[A-Za-z0-9]+)[ ]*(?<s>[^ ]+)[ ]*(?<name>[^\r\n]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+        using var reader = new StringReader(command.StandardOutput);
+
+        for (string line = await reader.ReadLineAsync(); !string.IsNullOrEmpty(line); line = await reader.ReadLineAsync())
+        {
+          Match match = processesRegEx.Match(line);
+
+          if (!match.Success)
+          {
+            continue;
+          }
+
+          string user = match.Result("${user}");
+
+          uint pid = uint.Parse(match.Result("${pid}"));
+
+          uint ppid = uint.Parse(match.Result("${ppid}"));
+
+          string name = match.Result("${name}");
+
+          processList.Add(pid, new AndroidProcess(device, name, pid, ppid, user));
+        }
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException(e);
+      }
+
+      return processList;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public async static Task<Dictionary<string, string>> GetProp(AndroidDevice device, string args, CancellationToken cancellationToken = default)
+    {
+      try
+      {
+        var command = AdbCommand().WithArguments($"-s {device.ID} shell getprop {args}").ExecuteBufferedAsync(cancellationToken);
+
+        var regExMatcher = new Regex(@"^\[(?<key>[^\]:]+)\]:[ ]+\[(?<value>[^\]$]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+        var deviceProperties = new Dictionary<string, string>();
+        
+        using var reader = new StringReader((await command).StandardOutput);
+
+        for (string line = await reader.ReadLineAsync(); !string.IsNullOrEmpty(line); line = await reader.ReadLineAsync())
+        {
+          Match match = regExMatcher.Match(line);
+
+          if (!match.Success)
+          {
+            continue;
+          }
+
+          string key = match.Result("${key}");
+
+          string value = match.Result("${value}");
+
+          deviceProperties[key] = value;
+        }
+
+        return deviceProperties;
+      }
+      catch (Exception e)
+      {
+        LoggingUtils.HandleException(e);
+
+        return new Dictionary<string, string>();
+      }
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -196,74 +334,22 @@ namespace AndroidPlusPlus.Common
 
     public static AndroidDevice GetConnectedDeviceById (string id)
     {
-      AndroidDevice device = null;
-
-      lock (m_updateLockMutex)
-      {
-        m_connectedDevices.TryGetValue (id, out device);
-      }
-
-      return device;
+      return m_connectedDevices.TryGetValue(id, out AndroidDevice device) ? device : null;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public static ICollection<AndroidDevice> GetConnectedDevices ()
+    public static string AdbExe = Path.Combine(AndroidSettings.SdkRoot, "platform-tools", "adb.exe");
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public static Command AdbCommand ()
     {
-      lock (m_updateLockMutex)
-      {
-        return m_connectedDevices.Values;
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public static SyncRedirectProcess AdbCommand (string command)
-    {
-      return AdbCommand(command, string.Empty);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public static SyncRedirectProcess AdbCommand (string command, string arguments)
-    {
-      LoggingUtils.Print (string.Format ("[AndroidDevice] AdbCommand: Cmd={0} Args={1}", command, arguments));
-
-      var adbCommand = new SyncRedirectProcess (AndroidSettings.SdkRoot + @"\platform-tools\adb.exe", string.Format ("{0} {1}", command, arguments));
-
-      return adbCommand;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public static SyncRedirectProcess AdbCommand (AndroidDevice target, string command, string arguments)
-    {
-      LoggingUtils.Print (string.Format ("[AndroidDevice] AdbCommand: Target={0} Cmd={1} Args={2}", target.ID, command, arguments));
-
-      var adbCommand = new SyncRedirectProcess (AndroidSettings.SdkRoot + @"\platform-tools\adb.exe", string.Format ("-s {0} {1} {2}", target.ID, command, arguments));
-
-      return adbCommand;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public static AsyncRedirectProcess AdbCommandAsync (AndroidDevice target, string command, string arguments)
-    {
-      LoggingUtils.Print (string.Format ("[AndroidDevice] AdbCommandAsync: Target={0} Cmd={1} Args={2}", target.ID, command, arguments));
-
-      var adbCommand = new AsyncRedirectProcess (AndroidSettings.SdkRoot + @"\platform-tools\adb.exe", string.Format ("-s {0} {1} {2}", target.ID, command, arguments));
-
-      return adbCommand;
+      return Cli.Wrap(AdbExe);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -281,12 +367,7 @@ namespace AndroidPlusPlus.Common
 
     public static void RegisterDeviceStateListener (IStateListener listener)
     {
-      LoggingUtils.PrintFunction ();
-
-      lock (m_updateLockMutex)
-      {
-        m_registeredDeviceStateListeners.Add (listener);
-      }
+      m_registeredDeviceStateListeners.Add(listener);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -295,12 +376,7 @@ namespace AndroidPlusPlus.Common
 
     public static void UnregisterDeviceStateListener (IStateListener listener)
     {
-      LoggingUtils.PrintFunction ();
-
-      lock (m_updateLockMutex)
-      {
-        m_registeredDeviceStateListeners.Remove (listener);
-      }
+      m_registeredDeviceStateListeners.Remove(listener);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -309,12 +385,4 @@ namespace AndroidPlusPlus.Common
 
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

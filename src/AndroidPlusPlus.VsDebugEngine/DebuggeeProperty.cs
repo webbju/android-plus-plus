@@ -187,15 +187,15 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        List<DEBUG_PROPERTY_INFO> childPropertyInfo = new List<DEBUG_PROPERTY_INFO> ();
+        var childPropertyInfo = new List<DEBUG_PROPERTY_INFO> ();
 
-        List<DebuggeeProperty> childRegisterProperties = new List<DebuggeeProperty> ();
+        var childRegisterProperties = new List<DebuggeeProperty> ();
 
         foreach (DebuggeeProperty child in m_children)
         {
           bool displayProperty = false;
 
-          DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
+          var infoArray = new DEBUG_PROPERTY_INFO [1];
 
           LoggingUtils.RequireOk (child.GetPropertyInfo (dwFields, dwRadix, dwTimeout, null, 0, infoArray));
 
@@ -246,11 +246,11 @@ namespace AndroidPlusPlus.VsDebugEngine
           // Other types documented: https://msdn.microsoft.com/en-us/library/aa290860(v=vs.71).aspx
           //
 
-          DebuggeeProperty registersProperty = new DebuggeeProperty (m_debugEngine, m_stackFrame, "CPU", string.Empty);
+          var registersProperty = new DebuggeeProperty (m_debugEngine, m_stackFrame, "CPU", string.Empty);
 
           LoggingUtils.RequireOk (registersProperty.AddChildren (childRegisterProperties.ToArray ()));
 
-          DEBUG_PROPERTY_INFO [] infoArray = new DEBUG_PROPERTY_INFO [1];
+          var infoArray = new DEBUG_PROPERTY_INFO [1];
 
           LoggingUtils.RequireOk (registersProperty.GetPropertyInfo (dwFields, dwRadix, dwTimeout, null, 0, infoArray));
 

@@ -20,17 +20,23 @@
     <ConfigurationType>Application</ConfigurationType>
     <PlatformToolset>Clang11.0</PlatformToolset>
   </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|I686'">
+    <Link>
+      <StripDebugSymbols>false</StripDebugSymbols>
+    </Link>
+  </ItemDefinitionGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'" Label="Configuration">
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ItemGroup>
-    <ClCompile Include="jni\hello-gdbserver.c" />
+    <ClCompile Include="jni\hello-gdbserver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <AndroidJava Include="src\com\example\hellogdbserver\HelloGdbServer.java" />
   </ItemGroup>
   <ItemGroup>
-    <AndroidManifest Include="AndroidManifest.xml">
-      <DebugMode Condition="'$(Configuration)|$(Platform)'=='Debug|I686'">true</DebugMode>
-    </AndroidManifest>
+    <AndroidManifest Include="AndroidManifest.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

@@ -2,11 +2,10 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugCommon;
+using System;
+using System.Collections.Generic;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -36,6 +35,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public DebugConnectionEnumerator (ICollection<T> data, uint position = 0)
     {
+      if (data == null)
+      {
+        throw new ArgumentNullException(nameof(data));
+      }
+
       m_data = data;
 
       m_position = position;
@@ -85,9 +89,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      uint fetched;
-
-      int hr = Move ((uint)celt, rgelt, out fetched);
+      int hr = Move ((uint)celt, rgelt, out uint fetched);
 
       celtFetched = (IntPtr) fetched;
 
@@ -124,9 +126,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      uint celtFetched;
-
-      return Move ((uint)celt, null, out celtFetched);
+      return Move ((uint)celt, null, out uint celtFetched);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

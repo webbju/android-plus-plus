@@ -3,12 +3,13 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
-using System.IO;
+using System.Threading.Tasks;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -17,11 +18,7 @@ using System.IO;
 namespace AndroidPlusPlus.Common
 {
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  public class GdbServer : AsyncRedirectProcess.IEventListener, IDisposable
+  public class GdbServer : RedirectEventListener, IDisposable
   {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -88,77 +85,53 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void Start ()
+    public async Task Start (CancellationToken cancellationToken = default)
     {
       LoggingUtils.PrintFunction ();
 
       // 
-      // Check the target 'gdbserver' binary exits on target device/emulator.
+      // Check the target 'gdbserver' binary exists on target device/emulator.
       // 
 
-      string gdbServerPath = string.Empty;
+      AndroidDevice device = m_gdbSetup.Process.HostDevice;
 
-      List<string> potentialGdbServerPaths = new List<string> ();
+      var potentialGdbServerPaths = new HashSet<string> ();
 
-      foreach (string libraryPath in m_gdbSetup.Process.NativeLibraryAbiPaths)
-      {
-        potentialGdbServerPaths.Add (string.Format ("{0}/gdbserver", libraryPath));
-      }
-
-      potentialGdbServerPaths.Add (string.Format ("{0}/gdbserver", m_gdbSetup.Process.NativeLibraryPath));
-
-      foreach (string path in potentialGdbServerPaths)
-      {
-        try
-        {
-          string ls = m_gdbSetup.Process.HostDevice.Shell ("ls", path);
-
-          if (ls.ToLowerInvariant ().Contains ("no such file"))
-          {
-            throw new DirectoryNotFoundException (path);
-          }
-
-          gdbServerPath = path;
-
-          break;
-        }
-        catch (Exception)
-        {
-          // Ignore.
-        }
-      }
+      potentialGdbServerPaths.UnionWith(m_gdbSetup.Process.GetNativeLibraryAbiPaths().Select(path => $"{path}/gdbserver"));
 
       // 
       // If we can't find a bundled 'gdbserver' binary, attempt to find one in the NDK.
       // 
 
-      if (string.IsNullOrWhiteSpace (gdbServerPath))
+      if (!potentialGdbServerPaths.Any())
       {
-        foreach (string path in m_gdbSetup.Process.NativeLibraryAbiPaths)
+        foreach (string path in m_gdbSetup.Process.GetNativeLibraryAbiPaths())
         {
           try
           {
             string shortAbi = path.Substring(path.LastIndexOf('/') + 1);
 
-            string local = Path.Combine (AndroidSettings.NdkRoot, string.Format(@"prebuilt\android-{0}\gdbserver\gdbserver", shortAbi));
+            string local = Path.Combine(AndroidSettings.NdkRoot, $@"prebuilt\android-{shortAbi}\gdbserver\gdbserver");
 
-            string remote = string.Format ("/data/local/tmp/gdbserver-{0}", shortAbi);
+            string remote = $"/data/local/tmp/gdbserver-{shortAbi}";
 
-            m_gdbSetup.Process.HostDevice.Push (local, remote);
+            await AndroidAdb.Push(device, local, remote);
+
+            potentialGdbServerPaths.Add(remote);
           }
           catch (Exception e)
           {
-            LoggingUtils.HandleException (e);
+            LoggingUtils.HandleException(e);
           }
         }
       }
 
-      if (string.IsNullOrWhiteSpace (gdbServerPath))
+      if (!potentialGdbServerPaths.Any())
       {
-        throw new InvalidOperationException (string.Format ("Failed to locate required 'gdbserver' binary on device ({0}).", m_gdbSetup.Process.HostDevice.ID));
+        throw new InvalidOperationException ($"Failed to locate required 'gdbserver' binary on device ({device.ID}).");
       }
 
-      KillActiveGdbServerSessions ();
+      await KillActiveGdbServerSessions ();
 
       // 
       // Construct a adaptive command line based on GdbSetup requirements.
@@ -166,7 +139,7 @@ namespace AndroidPlusPlus.Common
 
       StringBuilder commandLineArgumentsBuilder = new StringBuilder ();
 
-      commandLineArgumentsBuilder.AppendFormat ("run-as {0} {1} ", m_gdbSetup.Process.Name, gdbServerPath);
+      commandLineArgumentsBuilder.AppendFormat ("run-as {0} {1} ", m_gdbSetup.Process.Name, potentialGdbServerPaths.First());
 
       if (!string.IsNullOrWhiteSpace (m_gdbSetup.Socket))
       {
@@ -186,17 +159,52 @@ namespace AndroidPlusPlus.Common
       // Launch 'gdbserver' and wait for output to determine success.
       // 
 
-      Stopwatch waitForConnectionTimer = new Stopwatch ();
-
-      waitForConnectionTimer.Start ();
+      var waitForConnectionTimer = new Stopwatch();
 
       m_gdbServerAttached = new ManualResetEvent (false);
 
-      m_gdbServerInstance = AndroidAdb.AdbCommandAsync (m_gdbSetup.Process.HostDevice, "shell", commandLineArgumentsBuilder.ToString ());
+      m_gdbServerInstance = new AsyncRedirectProcess(AndroidAdb.AdbExe, $"-s {device.ID} shell {commandLineArgumentsBuilder}");
 
       m_gdbServerInstance.Start (this);
 
-      LoggingUtils.Print (string.Format ("[GdbServer] Waiting to attach..."));
+      waitForConnectionTimer.Start();
+
+      /*var gdbServerInstance = AndroidAdb.AdbCommand().WithArguments($"-s {device.ID} shell {commandLineArgumentsBuilder}");
+
+      await foreach (CommandEvent gdbServerEvent in gdbServerInstance.ListenAsync(cancellationToken))
+      {
+        switch (gdbServerEvent)
+        {
+          case StartedCommandEvent started:
+            {
+              LoggingUtils.Print(string.Format("[GdbServer] Waiting to attach..."));
+
+              break;
+            }
+          case StandardOutputCommandEvent stdOut:
+            {
+              if (stdOut.Text.Contains("Attached;"))
+              {
+                m_gdbServerAttached.Set();
+              }
+
+              break;
+            }
+          case StandardErrorCommandEvent stdErr:
+            {
+              break;
+            }
+
+          case ExitedCommandEvent exited:
+            {
+              LoggingUtils.Print($"[GdbServer] ProcessExited with exit code: {exited.ExitCode}");
+
+              m_gdbServerAttached.Reset();
+
+              break;
+            }
+        }
+      }*/
 
       uint timeout = 5000;
 
@@ -216,6 +224,15 @@ namespace AndroidPlusPlus.Common
       {
         throw new TimeoutException ("Timed out waiting for GdbServer to execute.");
       }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public bool WaitAttached(int milliseconds)
+    {
+      return m_gdbServerAttached.WaitOne(milliseconds);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -243,44 +260,19 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private void KillActiveGdbServerSessions ()
+    private async Task KillActiveGdbServerSessions ()
     {
       LoggingUtils.PrintFunction ();
 
-      // 
-      // Killing GDB server instances requires use of run-as [package-name],
-      // but it's very difficult to get the parent package of lib/gdbserver as the PPID
-      // will always refer to the zygote. This hack uses the sand-boxed 'user' to try all combinations.
-      // 
+      AndroidDevice device = m_gdbSetup.Process.HostDevice;
 
-      m_gdbSetup.Process.HostDevice.Refresh ();
-
-      uint [] activeDevicePids = m_gdbSetup.Process.HostDevice.GetActivePids ();
-
-      List <AndroidProcess> activeGdbProcesses = new List<AndroidProcess> ();
-
-      foreach (uint pid in activeDevicePids)
+      foreach (var process in await AndroidAdb.ProcessesSnapshot(device, ""))
       {
-        AndroidProcess process = m_gdbSetup.Process.HostDevice.GetProcessFromPid (pid);
-
-        if (process.Name.Contains ("lib/gdbserver"))
+        if (process.Value.Name.Contains ("lib/gdbserver"))
         {
-          activeGdbProcesses.Add (process);
-        }
-      }
+          LoggingUtils.Print($"[{GetType().Name}] Attempting to terminate existing GDB debugging session: {process.Key}");
 
-      foreach (AndroidProcess gdbProcess in activeGdbProcesses)
-      {
-        foreach (uint pid in activeDevicePids)
-        {
-          AndroidProcess process = m_gdbSetup.Process.HostDevice.GetProcessFromPid (pid);
-
-          if ((gdbProcess != process) && (gdbProcess.User.Equals (process.User)))
-          {
-            LoggingUtils.Print (string.Format ("[GdbServer] Attempting to terminate existing GDB debugging session: {0} ({1}).", gdbProcess.Name, gdbProcess.Pid));
-
-            m_gdbSetup.Process.HostDevice.Shell ("run-as", string.Format ("{0} kill -9 {1}", process.Name, gdbProcess.Pid));
-          }
+          await AndroidAdb.AdbCommand().WithArguments($"-s {device.ID} shell run-as {m_gdbSetup.Process.Name} kill -9 {process.Key}").ExecuteAsync();
         }
       }
     }
@@ -291,14 +283,16 @@ namespace AndroidPlusPlus.Common
 
     public void ProcessStdout (object sendingProcess, DataReceivedEventArgs args)
     {
-      if (!string.IsNullOrEmpty (args.Data))
+      if (string.IsNullOrEmpty (args.Data))
       {
-        LoggingUtils.Print (string.Format ("[GdbServer] ProcessStdout: {0}", args.Data));
+        return;
+      }
 
-        if (args.Data.Contains ("Attached;"))
-        {
-          m_gdbServerAttached.Set ();
-        }
+      //LoggingUtils.Print(string.Format("[GdbServer] ProcessStdout: {0}", args.Data));
+
+      if (args.Data.Contains("Attached;"))
+      {
+        m_gdbServerAttached.Set();
       }
     }
 
@@ -308,14 +302,16 @@ namespace AndroidPlusPlus.Common
 
     public void ProcessStderr (object sendingProcess, DataReceivedEventArgs args)
     {
-      if (!string.IsNullOrEmpty (args.Data))
+      if (string.IsNullOrEmpty (args.Data))
       {
-        LoggingUtils.Print (string.Format ("[GdbServer] ProcessStderr: {0}", args.Data));
+        return;
+      }
 
-        if (args.Data.Contains ("Attached;"))
-        {
-          m_gdbServerAttached.Set ();
-        }
+      //LoggingUtils.Print(string.Format("[GdbServer] ProcessStderr: {0}", args.Data));
+
+      if (args.Data.Contains("Attached;"))
+      {
+        m_gdbServerAttached.Set();
       }
     }
 
@@ -325,6 +321,8 @@ namespace AndroidPlusPlus.Common
 
     public void ProcessExited (object sendingProcess, EventArgs args)
     {
+      m_gdbServerAttached.Reset();
+
       LoggingUtils.Print (string.Format ("[GdbServer] ProcessExited"));
     }
 
@@ -334,12 +332,4 @@ namespace AndroidPlusPlus.Common
 
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

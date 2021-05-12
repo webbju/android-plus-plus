@@ -2,12 +2,11 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugCommon;
+using Microsoft.VisualStudio.Debugger.Interop;
+using System;
+using System.Collections.Generic;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -40,9 +39,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public sealed class Event : AsynchronousDebugEvent, IDebugBreakpointBoundEvent2
     {
-      private IDebugPendingBreakpoint2 m_pendingBreakpoint;
+      private readonly IDebugPendingBreakpoint2 m_pendingBreakpoint;
 
-      private IDebugBoundBreakpoint2 m_boundBreakpoint;
+      private readonly IDebugBoundBreakpoint2 m_boundBreakpoint;
 
       public Event (IDebugPendingBreakpoint2 pendingBreakpoint, IDebugBoundBreakpoint2 boundBreakpoint)
       {
@@ -53,9 +52,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       int IDebugBreakpointBoundEvent2.EnumBoundBreakpoints (out IEnumDebugBoundBreakpoints2 ppEnum)
       {
-        IDebugBoundBreakpoint2 [] breakpoints = new IDebugBoundBreakpoint2 [] { m_boundBreakpoint };
-
-        ppEnum = new DebuggeeBreakpointBound.Enumerator (breakpoints);
+        ppEnum = new DebuggeeBreakpointBound.Enumerator (new IDebugBoundBreakpoint2[] { m_boundBreakpoint });
 
         return Constants.S_OK;
       }
@@ -132,9 +129,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           return Constants.E_BP_DELETED;
         }
 
-        IDebugBreakpointRequest2 breakpointRequest;
-
-        LoggingUtils.RequireOk (m_pendingBreakpoint.GetBreakpointRequest (out breakpointRequest));
+        LoggingUtils.RequireOk(m_pendingBreakpoint.GetBreakpointRequest(out IDebugBreakpointRequest2 breakpointRequest));
 
         m_breakpointManager.Engine.Broadcast (new DebugEngineEvent.BreakpointUnbound (this), m_breakpointManager.Engine.Program, null);
 

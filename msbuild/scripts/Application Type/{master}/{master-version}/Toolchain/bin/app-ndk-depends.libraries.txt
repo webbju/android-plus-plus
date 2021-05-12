@@ -20,8 +20,6 @@ libbinder_ndk.so
 
 libc.so
 
-libc++_shared.so
-
 libcamera2ndk.so
 
 libdl.so

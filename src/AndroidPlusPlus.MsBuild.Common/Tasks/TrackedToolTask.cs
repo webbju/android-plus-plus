@@ -9,7 +9,6 @@ using Microsoft.Build.Framework.XamlTypes;
 using Microsoft.Build.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -236,72 +235,72 @@ namespace AndroidPlusPlus.MsBuild.Common
       switch (exitCode)
       {
         case 0:
+        {
+          //
+          // Successful build. Begin by collating known output files. (We have a manual workaround for instances where TrackedOutputFiles can't find rooted output.)
+          //
+
+          string commandLine = (commandLineCommands.Length > 0) ? commandLineCommands + " " + responseFileCommands : responseFileCommands;
+
+          foreach (var inputFile in OutOfDateInputFiles)
           {
-            //
-            // Successful build. Begin by collating known output files. (We have a manual workaround for instances where TrackedOutputFiles can't find rooted output.)
-            //
-
-            string commandLine = (commandLineCommands.Length > 0) ? commandLineCommands + " " + responseFileCommands : responseFileCommands;
-
-            foreach (var inputFile in OutOfDateInputFiles)
-            {
-              trackedCommands[FileTracker.FormatRootingMarker(inputFile)] = commandLine;
-            }
-
-            OutputFiles = TrackedOutputFiles.OutputsForSource(OutOfDateInputFiles);
-
-            if (OutputFiles != null)
-            {
-              foreach (var outfile in OutputFiles)
-              {
-                outfile.ItemSpec = PathUtils.GetExactPathName(outfile.ItemSpec);
-              }
-            }
-
-            //
-            // Remove any instances where "input files" (sources which existed before this build) are shown as read/touched/written.
-            //
-
-            TrackedOutputFiles.RemoveDependenciesFromEntryIfMissing(OutOfDateInputFiles);
-
-            TrackedInputFiles.RemoveDependenciesFromEntryIfMissing(OutOfDateInputFiles);
-
-            //
-            // Crunch the logs. This will erradicate un-rooted tracking data.
-            //
-
-            TrackedOutputFiles.SaveTlog();
-
-            TrackedInputFiles.SaveTlog();
-
-            TrackerUtilities.OutputCommandTLog(TLogCommandFiles[0], trackedCommands, ResponseFileEncoding);
-
-            break;
+            trackedCommands[FileTracker.FormatRootingMarker(inputFile)] = commandLine;
           }
+
+          OutputFiles = TrackedOutputFiles.OutputsForSource(OutOfDateInputFiles);
+
+          if (OutputFiles != null)
+          {
+            foreach (var outfile in OutputFiles)
+            {
+              outfile.ItemSpec = PathUtils.GetExactPathName(outfile.ItemSpec);
+            }
+          }
+
+          //
+          // Remove any instances where "input files" (sources which existed before this build) are shown as read/touched/written.
+          //
+
+          TrackedOutputFiles.RemoveDependenciesFromEntryIfMissing(OutOfDateInputFiles);
+
+          TrackedInputFiles.RemoveDependenciesFromEntryIfMissing(OutOfDateInputFiles);
+
+          //
+          // Crunch the logs. This will erradicate un-rooted tracking data.
+          //
+
+          TrackedOutputFiles.SaveTlog();
+
+          TrackedInputFiles.SaveTlog();
+
+          TrackerUtilities.OutputCommandTLog(TLogCommandFiles[0], trackedCommands, ResponseFileEncoding);
+
+          break;
+        }
 
         default:
+        {
+          //
+          // Task failed. Remove any potentially processed file outputs to refresh clean state.
+          //
+
+          foreach (var file in OutOfDateInputFiles)
           {
-            //
-            // Task failed. Remove any potentially processed file outputs to refresh clean state.
-            //
-
-            foreach (var file in OutOfDateInputFiles)
-            {
-              trackedCommands.Remove(FileTracker.FormatRootingMarker(file));
-            }
-
-            TrackedOutputFiles.RemoveEntriesForSource(OutOfDateInputFiles);
-
-            TrackedInputFiles.RemoveEntriesForSource(OutOfDateInputFiles);
-
-            TrackedOutputFiles.SaveTlog();
-
-            TrackedInputFiles.SaveTlog();
-
-            TrackerUtilities.OutputCommandTLog(TLogCommandFiles[0], trackedCommands, ResponseFileEncoding);
-
-            break;
+            trackedCommands.Remove(FileTracker.FormatRootingMarker(file));
           }
+
+          TrackedOutputFiles.RemoveEntriesForSource(OutOfDateInputFiles);
+
+          TrackedInputFiles.RemoveEntriesForSource(OutOfDateInputFiles);
+
+          TrackedOutputFiles.SaveTlog();
+
+          TrackedInputFiles.SaveTlog();
+
+          TrackerUtilities.OutputCommandTLog(TLogCommandFiles[0], trackedCommands, ResponseFileEncoding);
+
+          break;
+        }
       }
 
       return exitCode;
@@ -455,29 +454,16 @@ namespace AndroidPlusPlus.MsBuild.Common
     {
       base.LogEventsFromTextOutput(singleLine, messageImportance);
 
-      Trace.WriteLine(singleLine);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override void LogPathToTool(string toolName, string pathToTool)
-    {
-      base.LogPathToTool(toolName, pathToTool);
-
-      Trace.WriteLine($"{toolName}: {pathToTool}");
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    protected override void LogToolCommand(string message)
-    {
-      base.LogToolCommand(message);
-
-      Trace.WriteLine(message);
+      switch (messageImportance)
+      {
+        case MessageImportance.High:
+        case MessageImportance.Normal:
+          Serilog.Log.Information(singleLine);
+          break;
+        case MessageImportance.Low:
+          Serilog.Log.Verbose(singleLine);
+          break;
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -628,7 +614,7 @@ namespace AndroidPlusPlus.MsBuild.Common
         return Array.Empty<ITaskItem>();
       }
 
-      Dictionary<string, ITaskItem> uncheckedSourcesRooted = new Dictionary<string, ITaskItem>();
+      var uncheckedSourcesRooted = new Dictionary<string, ITaskItem>();
 
       foreach (var uncheckedSource in uncheckedSources)
       {

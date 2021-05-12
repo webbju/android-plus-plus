@@ -78,7 +78,12 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
       var debuggerService = await provider.GetServiceAsync(typeof(SVsShellDebugger)) as IVsDebugger;
-      
+
+      if (debuggerService != null)
+      {
+        throw new InvalidOperationException($"Failed to acquire {nameof(SVsShellDebugger)} service.");
+      }
+
       LoggingUtils.RequireOk(debuggerService.AdviseDebuggerEvents(this, out m_debuggerServiceCookie));
 
       LoggingUtils.RequireOk(debuggerService.AdviseDebugEventCallback(this));
@@ -87,25 +92,26 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       // Register required listener events and paired process function callbacks.
       //
 
-      m_eventCallbacks = new Dictionary<Guid, DebuggerEventListenerDelegate>();
+      m_eventCallbacks = new Dictionary<Guid, DebuggerEventListenerDelegate>
+      {
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.SessionCreate)), OnSessionCreate },
 
-      m_eventCallbacks.Add(ComUtils.GuidOf(typeof(DebugEngineEvent.SessionCreate)), OnSessionCreate);
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.SessionDestroy)), OnSessionDestroy },
 
-      m_eventCallbacks.Add(ComUtils.GuidOf(typeof(DebugEngineEvent.SessionDestroy)), OnSessionDestroy);
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.EngineCreate)), OnEngineCreate },
 
-      m_eventCallbacks.Add(ComUtils.GuidOf(typeof(DebugEngineEvent.EngineCreate)), OnEngineCreate);
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.ProgramCreate)), OnProgramCreate },
 
-      m_eventCallbacks.Add(ComUtils.GuidOf(typeof(DebugEngineEvent.ProgramCreate)), OnProgramCreate);
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.ProgramDestroy)), OnProgramDestroy },
 
-      m_eventCallbacks.Add(ComUtils.GuidOf(typeof(DebugEngineEvent.ProgramDestroy)), OnProgramDestroy);
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.AttachComplete)), OnAttachComplete },
 
-      m_eventCallbacks.Add(ComUtils.GuidOf(typeof(DebugEngineEvent.AttachComplete)), OnAttachComplete);
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.Error)), OnError },
 
-      m_eventCallbacks.Add(ComUtils.GuidOf(typeof(DebugEngineEvent.Error)), OnError);
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.DebuggerConnectionEvent)), OnDebuggerConnectionEvent },
 
-      m_eventCallbacks.Add(ComUtils.GuidOf(typeof(DebugEngineEvent.DebuggerConnectionEvent)), OnDebuggerConnectionEvent);
-
-      m_eventCallbacks.Add(ComUtils.GuidOf(typeof(DebugEngineEvent.DebuggerLogcatEvent)), OnDebuggerLogcatEvent);
+        { ComUtils.GuidOf(typeof(DebugEngineEvent.DebuggerLogcatEvent)), OnDebuggerLogcatEvent }
+      };
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -201,14 +207,19 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       {
         LoggingUtils.Print($"[{GetType().Name}] Event: {riidEvent}");
 
-        int handle = VsDebugCommon.Constants.E_NOTIMPL;
+        Guid nonRefEventGuid = riidEvent;
 
-        if (!m_eventCallbacks.TryGetValue(riidEvent, out DebuggerEventListenerDelegate callback))
+        Func<Task<int>> callbackHandler = async () =>
         {
-          return handle;
-        }
+          if (!m_eventCallbacks.TryGetValue(nonRefEventGuid, out DebuggerEventListenerDelegate callback))
+          {
+            return VsDebugCommon.Constants.E_NOTIMPL;
+          }
 
-        handle = callback(pEngine, pProcess, pProgram, pThread, pEvent, riidEvent, dwAttrib).Result;
+          return await callback(pEngine, pProcess, pProgram, pThread, pEvent, nonRefEventGuid, dwAttrib);
+        };
+
+        int handle = ThreadHelper.JoinableTaskFactory.Run(callbackHandler);
 
         if (handle != VsDebugCommon.Constants.E_NOTIMPL)
         {
@@ -366,13 +377,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
         enum_MESSAGETYPE[] messageType = new enum_MESSAGETYPE[1];
 
-        string errorFormat, errorHelpFileName;
-
-        int errorReason;
-
-        uint errorType, errorHelpId;
-
-        LoggingUtils.RequireOk(errorEvent.GetErrorMessage(messageType, out errorFormat, out errorReason, out errorType, out errorHelpFileName, out errorHelpId));
+        LoggingUtils.RequireOk(errorEvent.GetErrorMessage(messageType, out string errorFormat, out int errorReason, out uint errorType, out string errorHelpFileName, out uint errorHelpId));
 
         LoggingUtils.RequireOk(await LaunchDialogUpdate(errorFormat, true));
 
@@ -398,12 +403,14 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       {
         DebugEngineEvent.DebuggerLogcatEvent debuggerLogcatEvent = pEvent as DebugEngineEvent.DebuggerLogcatEvent;
 
+#if false
         using (SyncRedirectProcess command = AndroidAdb.AdbCommand(debuggerLogcatEvent.HostDevice, "logcat", "-c"))
         {
           command.StartAndWaitForExit();
         }
 
         m_adbLogcatProcess = AndroidAdb.AdbCommandAsync(debuggerLogcatEvent.HostDevice, "logcat", "");
+#endif
 
         return VSConstants.S_OK;
       }
@@ -427,32 +434,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
       {
         DebugEngineEvent.DebuggerConnectionEvent debuggerConnectionEvent = pEvent as DebugEngineEvent.DebuggerConnectionEvent;
 
-        switch (debuggerConnectionEvent.Type)
-        {
-          case DebugEngineEvent.DebuggerConnectionEvent.EventType.ShowDialog:
-            {
-              LoggingUtils.RequireOk(await LaunchDialogShow());
-
-              break;
-            }
-
-          case DebugEngineEvent.DebuggerConnectionEvent.EventType.CloseDialog:
-            {
-              LoggingUtils.RequireOk(await LaunchDialogClose());
-
-              break;
-            }
-
-          case DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus:
-          case DebugEngineEvent.DebuggerConnectionEvent.EventType.LogError:
-            {
-              bool isError = (debuggerConnectionEvent.Type == DebugEngineEvent.DebuggerConnectionEvent.EventType.LogError);
-
-              LoggingUtils.RequireOk(await LaunchDialogUpdate(debuggerConnectionEvent.Message, isError));
-
-              break;
-            }
-        }
+        Serilog.Log.Information(debuggerConnectionEvent.Message);
 
         return VSConstants.S_OK;
       }
@@ -468,7 +450,7 @@ namespace AndroidPlusPlus.VsIntegratedPackage
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    #endregion
+#endregion
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

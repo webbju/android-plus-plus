@@ -50,24 +50,10 @@
     Subtype="file"
   />
 
-  <BoolProperty
-    Name="DebuggerConfigUpToDateCheck"
-    DisplayName="Perform up-to-date check"
-    Description="Only install the target application if it is modified more recently that any existing installation."
-    Category="LaunchConfiguration"
-  />
-
   <StringProperty
     Name="DebuggerConfigLaunchActivity"
     DisplayName="Launch activity name"
     Description="Override the default launch activity. If unset, debugger will use activity with 'android.intent.category.LAUNCHER' intent."
-    Category="LaunchConfiguration"
-  />
-
-  <BoolProperty
-    Name="DebuggerConfigDebugMode"
-    DisplayName="Debug mode"
-    Description="Launch the Application in 'debug mode'. This suspends execution until a JDB client has attached, allowing GDB to debug native launch/startup methods."
     Category="LaunchConfiguration"
   />
 

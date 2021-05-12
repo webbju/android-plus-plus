@@ -2,16 +2,10 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-
 using AndroidPlusPlus.Common;
-using AndroidPlusPlus.VsDebugCommon;
-
 using Microsoft.VisualStudio.Debugger.Interop;
+using System;
+using System.Runtime.InteropServices;
 using Constants = AndroidPlusPlus.VsDebugCommon.Constants;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -444,19 +438,18 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         try
         {
-          pExceptionInfo [0] = new EXCEPTION_INFO ();
+          pExceptionInfo[0] = new EXCEPTION_INFO
+          {
+            bstrExceptionName = m_exceptionName,
 
-          pExceptionInfo [0].bstrExceptionName = m_exceptionName;
+            pProgram = m_debugProgram,
 
-          pExceptionInfo [0].pProgram = m_debugProgram as IDebugProgram2;
+            dwCode = m_exceptionCode,
+
+            dwState = enum_EXCEPTION_STATE.EXCEPTION_NONE | enum_EXCEPTION_STATE.EXCEPTION_STOP_FIRST_CHANCE,
+          };
 
           LoggingUtils.RequireOk (m_debugProgram.DebugProcess.GetName (enum_GETNAME_TYPE.GN_NAME, out pExceptionInfo [0].bstrProgramName));
-
-          pExceptionInfo [0].dwCode = m_exceptionCode;
-
-          pExceptionInfo [0].dwState = enum_EXCEPTION_STATE.EXCEPTION_NONE;
-
-          pExceptionInfo [0].dwState |= enum_EXCEPTION_STATE.EXCEPTION_STOP_FIRST_CHANCE;
 
           if (!m_canContinue)
           {
@@ -712,11 +705,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.PrintFunction ();
 
-        List<IDebugBoundBreakpoint2> boundBreakpoints = new List<IDebugBoundBreakpoint2> (1);
-
-        boundBreakpoints.Add (m_boundBreakpoint);
-
-        ppEnum = new DebuggeeBreakpointBound.Enumerator (boundBreakpoints);
+        ppEnum = new DebuggeeBreakpointBound.Enumerator (new IDebugBoundBreakpoint2[] { m_boundBreakpoint });
 
         return Constants.S_OK;
       }
@@ -775,7 +764,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     [InheritGuid (typeof (IDebugBreakpointErrorEvent2))]
     public sealed class BreakpointError : AsynchronousDebugEvent, IDebugEvent2, IDebugBreakpointErrorEvent2
     {
-      private IDebugErrorBreakpoint2 m_errorBreakpoint;
+      private readonly IDebugErrorBreakpoint2 m_errorBreakpoint;
 
       public BreakpointError (IDebugErrorBreakpoint2 errorBreakpoint)
       {
@@ -1141,22 +1130,10 @@ namespace AndroidPlusPlus.VsDebugEngine
     [Guid ("DA9A360F-0380-41EB-8BC8-70996E9072BE")]
     public sealed class DebuggerConnectionEvent : AsynchronousDebugEvent, IDebugEvent2
     {
-      public enum EventType
+      public DebuggerConnectionEvent (string message)
       {
-        ShowDialog,
-        CloseDialog,
-        LogStatus,
-        LogError,
-      };
-
-      public DebuggerConnectionEvent (EventType type, string message)
-      {
-        Type = type;
-
         Message = message;
       }
-
-      public EventType Type { get; private set; }
 
       public string Message { get; private set; }
     }

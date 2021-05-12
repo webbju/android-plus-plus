@@ -2,12 +2,14 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugCommon;
+using Microsoft.VisualStudio.Debugger.Interop;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -29,9 +31,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     protected readonly CLangDebugger m_debugger;
 
-    protected Dictionary <string, DebuggeeModule> m_debugModules;
+    protected ConcurrentDictionary<string, DebuggeeModule> m_debugModules;
 
-    protected Dictionary <uint, DebuggeeThread> m_debugThreads;
+    protected ConcurrentDictionary <uint, DebuggeeThread> m_debugThreads;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -45,9 +47,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       IsRunning = false;
 
-      m_debugModules = new Dictionary<string, DebuggeeModule> ();
+      m_debugModules = new ConcurrentDictionary<string, DebuggeeModule> ();
 
-      m_debugThreads = new Dictionary<uint, DebuggeeThread> ();
+      m_debugThreads = new ConcurrentDictionary<uint, DebuggeeThread> ();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -72,24 +74,24 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void RefreshAllThreads ()
+    public async Task RefreshAllThreadsAsync ()
     {
       LoggingUtils.PrintFunction ();
 
-      RefreshThread (0);
+      await RefreshThreadAsync (0);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public void RefreshThread (uint tid)
+    public async Task RefreshThreadAsync (uint tid)
     {
       LoggingUtils.PrintFunction ();
 
       try
       {
-        m_debugger.RunInterruptOperation (delegate (CLangDebugger debugger)
+        m_debugger.RunInterruptOperation (async (CLangDebugger debugger) =>
         {
           string command = string.Format ("-thread-info {0}", (tid == 0) ? "" : tid.ToString ());
 
@@ -104,7 +106,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           MiResultValueList threadsValueList = (MiResultValueList) resultRecord ["threads"] [0];
 
-          List<MiResultValue> threadsData = threadsValueList.List;
+          var threadsData = threadsValueList.List;
 
           bool refreshedProcesses = false;
 
@@ -122,7 +124,7 @@ namespace AndroidPlusPlus.VsDebugEngine
               {
                 AndroidDevice hostDevice = DebugProgram.DebugProcess.NativeProcess.HostDevice;
 
-                hostDevice.RefreshProcesses (DebugProgram.DebugProcess.NativeProcess.Pid);
+                //await hostDevice.RefreshProcesses ();
 
                 refreshedProcesses = true;
               }
@@ -156,19 +158,12 @@ namespace AndroidPlusPlus.VsDebugEngine
         throw new ArgumentNullException (nameof(moduleName));
       }
 
-      DebuggeeModule module = null;
-
-      lock (m_debugModules)
+      if (!m_debugModules.TryGetValue(moduleName, out DebuggeeModule module))
       {
-        if (!m_debugModules.TryGetValue (moduleName, out module))
-        {
-          module = new CLangDebuggeeModule (m_debugger.Engine, asyncRecord);
-
-          m_debugModules.Add (moduleName, module);
-        }
+        module = new CLangDebuggeeModule(m_debugger, asyncRecord);
       }
 
-      if (module != null)
+      if (m_debugModules.TryAdd(moduleName, module))
       {
         m_debugger.Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, true), DebugProgram, null);
 
@@ -196,12 +191,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         throw new ArgumentNullException (nameof(moduleName));
       }
 
-      DebuggeeModule module = null;
-
-      lock (m_debugModules)
-      {
-        m_debugModules.TryGetValue (moduleName, out module);
-      }
+      m_debugModules.TryGetValue (moduleName, out DebuggeeModule module);
 
       return (CLangDebuggeeModule) module;
     }
@@ -219,22 +209,12 @@ namespace AndroidPlusPlus.VsDebugEngine
         throw new ArgumentNullException (nameof(moduleName));
       }
 
-      DebuggeeModule module = null;
-
-      lock (m_debugModules)
-      {
-        if (m_debugModules.TryGetValue (moduleName, out module))
-        {
-          m_debugModules.Remove (moduleName);
-        }
-      }
-
-      if (module != null)
+      if (m_debugModules.TryRemove(moduleName, out DebuggeeModule module))
       {
         m_debugger.Engine.Broadcast (new DebugEngineEvent.ModuleLoad (module as IDebugModule2, false), DebugProgram, null);
       }
 
-      return (module != null);
+      return module != null;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -245,19 +225,12 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      DebuggeeThread thread = null;
-
-      lock (m_debugThreads)
+      if (!m_debugThreads.TryGetValue (threadId, out DebuggeeThread thread))
       {
-        if (!m_debugThreads.TryGetValue (threadId, out thread))
-        {
-          thread = new CLangDebuggeeThread (m_debugger, this, threadId);
-
-          m_debugThreads.Add (threadId, thread);
-        }
+        thread = new CLangDebuggeeThread (m_debugger, this, threadId);
       }
 
-      if (thread != null)
+      if (m_debugThreads.TryAdd(threadId, thread))
       {
         m_debugger.Engine.Broadcast (new DebugEngineEvent.ThreadCreate (), DebugProgram, thread);
       }
@@ -273,22 +246,12 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      DebuggeeThread thread = null;
-
-      lock (m_debugThreads)
-      {
-        if (m_debugThreads.TryGetValue (threadId, out thread))
-        {
-          m_debugThreads.Remove (threadId);
-        }
-      }
-
-      if (thread != null)
+      if (m_debugThreads.TryRemove(threadId, out DebuggeeThread thread))
       {
         m_debugger.Engine.Broadcast (new DebugEngineEvent.ThreadDestroy (exitCode), DebugProgram, thread);
       }
 
-      return (thread != null);
+      return thread != null;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -299,12 +262,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      DebuggeeThread thread = null;
-
-      lock (m_debugThreads)
-      {
-        m_debugThreads.TryGetValue (threadId, out thread);
-      }
+      m_debugThreads.TryGetValue(threadId, out DebuggeeThread thread);
 
       return (CLangDebuggeeThread) thread;
     }
@@ -313,7 +271,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public Dictionary<uint, DebuggeeThread> GetThreads ()
+    public ConcurrentDictionary<uint, DebuggeeThread> GetThreads ()
     {
       LoggingUtils.PrintFunction ();
 
@@ -349,8 +307,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      Exception rethrowable = null;
-
       try
       {
         m_debugger.Engine.Broadcast (new CLangDebuggerEvent.StartServer (), DebugProgram, null);
@@ -363,16 +319,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        rethrowable = e; // Allow exceptions to persist, despite returning failure.
-
-        return Constants.E_FAIL;
-      }
-      finally
-      {
-        if (rethrowable != null)
-        {
-          throw rethrowable;
-        }
+        throw;
       }
     }
 
@@ -395,8 +342,6 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      Exception rethrowable = null;
-
       try
       {
         m_debugger.Engine.Broadcast (new CLangDebuggerEvent.StopClient (), DebugProgram, null);
@@ -407,16 +352,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        rethrowable = e;
-
-        return Constants.E_FAIL;
-      }
-      finally
-      {
-        if (rethrowable != null)
-        {
-          throw rethrowable;
-        }
+        throw;
       }
     }
 
@@ -427,8 +363,6 @@ namespace AndroidPlusPlus.VsDebugEngine
     public int Continue (IDebugThread2 pThread)
     {
       LoggingUtils.PrintFunction ();
-
-      Exception rethrowable = null;
 
       try
       {
@@ -443,16 +377,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        rethrowable = e;
-
-        return Constants.E_FAIL;
-      }
-      finally
-      {
-        if (rethrowable != null)
-        {
-          throw rethrowable;
-        }
+        throw;
       }
     }
 
@@ -463,8 +388,6 @@ namespace AndroidPlusPlus.VsDebugEngine
     public int Detach ()
     {
       LoggingUtils.PrintFunction ();
-
-      Exception rethrowable = null;
 
       try
       {
@@ -478,16 +401,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       {
         LoggingUtils.HandleException (e);
 
-        rethrowable = e;
-
-        return Constants.E_FAIL;
-      }
-      finally
-      {
-        if (rethrowable != null)
-        {
-          throw rethrowable;
-        }
+        throw;
       }
     }
 
@@ -517,9 +431,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         CLangDebuggeeCodeContext codeContext = CLangDebuggeeCodeContext.GetCodeContextForDocumentContext (m_debugger, documentContext) ?? throw new InvalidOperationException ("Failed evaluating code-context for location.");
 
-        CLangDebuggeeCodeContext [] codeContexts = new CLangDebuggeeCodeContext [] { codeContext };
-
-        ppEnum = new DebuggeeCodeContext.Enumerator (codeContexts);
+        ppEnum = new DebuggeeCodeContext.Enumerator (new CLangDebuggeeCodeContext[] { codeContext });
 
         return Constants.S_OK;
       }
@@ -557,9 +469,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         CLangDebuggeeThread stackFrameThread = thread as CLangDebuggeeThread;
 
-        List<DebuggeeStackFrame> threadCallStack = stackFrameThread.StackTrace (uint.MaxValue);
+        var threadCallStack = stackFrameThread.StackTrace (uint.MaxValue);
 
-        List <CODE_PATH> threadCodePaths = new List <CODE_PATH> ();
+        var threadCodePaths = new List <CODE_PATH> ();
 
         for (int i = 0; i < threadCallStack.Count; ++i)
         {
@@ -611,27 +523,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      try
-      {
-        List<IDebugModule2> modules = new List<IDebugModule2> ();
+      ppEnum = new DebuggeeModule.Enumerator (m_debugModules.Values.ToArray());
 
-        foreach (DebuggeeModule module in m_debugModules.Values)
-        {
-          modules.Add (module as IDebugModule2);
-        }
-
-        ppEnum = new DebuggeeModule.Enumerator (modules);
-
-        return Constants.S_OK;
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-
-        ppEnum = null;
-
-        return Constants.E_FAIL;
-      }
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -646,24 +540,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      try
-      {
-        List<IDebugThread2> threads = new List<IDebugThread2> ();
+      ppEnum = new DebuggeeThread.Enumerator (m_debugThreads.Values.ToArray());
 
-        threads.AddRange (m_debugThreads.Values);
-
-        ppEnum = new DebuggeeThread.Enumerator (threads);
-
-        return Constants.S_OK;
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-
-        ppEnum = null;
-
-        return Constants.E_FAIL;
-      }
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

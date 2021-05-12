@@ -6,6 +6,7 @@ using AndroidPlusPlus.MsBuild.Common;
 using AndroidPlusPlus.MsBuild.Common.Attributes;
 using Microsoft.Build.Framework;
 using System;
+using System.IO;
 using System.Reflection;
 using System.Resources;
 using System.Text;
@@ -86,15 +87,17 @@ namespace AndroidPlusPlus.MsBuild.CppTasks.Tasks
 
         StringBuilder buildIdBuilder = new StringBuilder(40);
 
-        string[] readElfOutputLines = m_readElfOutput.ToString().Replace("\r", "").Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        using var reader = new StringReader(m_readElfOutput.ToString());
 
-        for (int i = 2; i < readElfOutputLines.Length; ++i) // Skip the first 3 lines of output
+        reader.ReadLine();
+
+        reader.ReadLine();
+
+        for (string line = reader.ReadLine(); !string.IsNullOrEmpty(line); line = reader.ReadLine())
         {
-          string santisedLine = readElfOutputLines[i].TrimStart(new char[] { ' ' });
-
           for (int wordId = 0; wordId < 4; ++wordId)
           {
-            string longWord = santisedLine.Substring(11 + (9 * wordId), 8);
+            string longWord = line.Trim().Substring(11 + (9 * wordId), 8);
 
             if (!string.IsNullOrWhiteSpace(longWord))
             {

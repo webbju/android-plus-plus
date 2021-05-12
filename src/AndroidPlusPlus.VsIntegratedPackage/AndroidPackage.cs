@@ -257,11 +257,6 @@ namespace AndroidPlusPlus.VsIntegratedPackage
 
       AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(AssemblyResolveHandler);
 
-      Log.Logger = new LoggerConfiguration()
-        .WriteTo.File(@"Android++.log", rollOnFileSizeLimit: true)
-        .WriteTo.Debug(Serilog.Events.LogEventLevel.Verbose)
-        .CreateLogger();
-
       //
       // Register service listeners.
       //

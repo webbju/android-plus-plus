@@ -2,13 +2,11 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
-using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugCommon;
+using Microsoft.VisualStudio.Debugger.Interop;
+using System;
+using System.Collections.Generic;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -16,10 +14,6 @@ using AndroidPlusPlus.VsDebugCommon;
 
 namespace AndroidPlusPlus.VsDebugEngine
 {
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public class CLangDebuggeeThread : DebuggeeThread
   {
@@ -35,7 +29,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public CLangDebuggeeThread (CLangDebugger debugger, CLangDebuggeeProgram program, uint id)
-      : base (program.DebugProgram, id, string.Format ("[Native-{0}]", id))
+      : base (program.DebugProgram, id, $"[Native-{id}]")
     {
       m_debugger = debugger;
 
@@ -71,34 +65,19 @@ namespace AndroidPlusPlus.VsDebugEngine
       else if (threadData.HasField ("target-id"))
       {
         m_threadDisplayName = threadData ["target-id"] [0].GetString (); // usually the raw name, i.e. 'Thread 18771'
-
-        if (m_threadDisplayName.StartsWith ("Thread ") && uint.TryParse (m_threadDisplayName.Substring ("Thread ".Length), out uint threadPid))
-        {
-          AndroidDevice hostDevice = NativeProgram.DebugProgram.DebugProcess.NativeProcess.HostDevice;
-
-          AndroidProcess threadProcess = hostDevice.GetProcessFromPid (threadPid);
-
-          if (threadProcess != null)
-          {
-            m_threadDisplayName = threadProcess.Name;
-          }
-        }
       }
 
       if (threadData.HasField ("frame"))
       {
-        MiResultValueTuple frameTuple = threadData ["frame"] [0] as MiResultValueTuple;
+        var frameTuple = threadData ["frame"] [0] as MiResultValueTuple;
 
         uint stackLevel = frameTuple ["level"] [0].GetUnsignedInt ();
 
         string stackFrameId = m_threadName + "#" + stackLevel;
 
-        CLangDebuggeeStackFrame stackFrame = new CLangDebuggeeStackFrame (m_debugger, this, frameTuple, stackFrameId);
+        var stackFrame = new CLangDebuggeeStackFrame (m_debugger, this, frameTuple, stackFrameId);
 
-        lock (m_threadStackFrames)
-        {
-          m_threadStackFrames.Add (stackFrame);
-        }
+        m_threadStackFrames.Add (stackFrame);
       }
 
       RequiresRefresh = false;
@@ -122,21 +101,17 @@ namespace AndroidPlusPlus.VsDebugEngine
         {
           LoggingUtils.RequireOk(GetThreadId(out uint threadId));
 
-          m_debugProgram.AttachedEngine.NativeDebugger.RunInterruptOperation (delegate (CLangDebugger debugger)
+          m_debugger.RunInterruptOperation (async (CLangDebugger debugger) =>
           {
             // 
             // Determine the maximum available stack depth.
             // 
 
-            string command;
-
-            MiResultRecord resultRecord;
-
             if (depth == uint.MaxValue)
             {
-              command = string.Format ("-stack-info-depth --thread {0}", threadId);
+              string command = string.Format ("-stack-info-depth --thread {0}", threadId);
 
-              resultRecord = debugger.GdbClient.SendSyncCommand (command);
+              var resultRecord = debugger.GdbClient.SendSyncCommand (command);
 
               MiResultRecord.RequireOk (resultRecord, command);
 
@@ -149,9 +124,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
             if (m_threadStackFrames.Count < depth)
             {
-              command = string.Format ("-stack-list-frames --thread {0} {1} {2}", threadId, m_threadStackFrames.Count, depth - 1);
+              string command = string.Format ("-stack-list-frames --thread {0} {1} {2}", threadId, m_threadStackFrames.Count, depth - 1);
 
-              resultRecord = debugger.GdbClient.SendSyncCommand (command);
+              var resultRecord = debugger.GdbClient.SendSyncCommand (command);
 
               MiResultRecord.RequireOk (resultRecord, command);
 
@@ -169,10 +144,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
                   CLangDebuggeeStackFrame stackFrame = new CLangDebuggeeStackFrame (debugger, this, frameTuple, stackFrameId);
 
-                  lock (m_threadStackFrames)
-                  {
-                    m_threadStackFrames.Add (stackFrame);
-                  }
+                  m_threadStackFrames.Add (stackFrame);
                 }
               }
             }
@@ -203,17 +175,17 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        CONTEXT_INFO [] contextInfo = new CONTEXT_INFO [1];
+        var contextInfo = new CONTEXT_INFO [1];
 
         LoggingUtils.RequireOk (codeContext.GetInfo (enum_CONTEXT_INFO_FIELDS.CIF_ADDRESSABSOLUTE, contextInfo));
 
-        string location = "*" + contextInfo [0].bstrAddressAbsolute;
-
-        m_debugProgram.AttachedEngine.NativeDebugger.RunInterruptOperation (delegate (CLangDebugger debugger)
+        m_debugger.RunInterruptOperation (async (CLangDebugger debugger) =>
         {
           // 
           // Create a temporary breakpoint to stop -exec-jump continuing when we'd rather it didn't.
           // 
+
+          string location = "*" + contextInfo[0].bstrAddressAbsolute;
 
           string command = string.Format ("-break-insert -t \"{0}\"", location);
 
@@ -248,12 +220,4 @@ namespace AndroidPlusPlus.VsDebugEngine
 
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

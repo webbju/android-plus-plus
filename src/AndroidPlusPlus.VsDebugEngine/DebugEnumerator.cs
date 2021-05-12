@@ -2,11 +2,10 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugCommon;
+using System;
+using System.Collections.Generic;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -36,6 +35,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public DebugEnumerator (ICollection<T> data)
     {
+      if (data == null)
+      {
+        throw new ArgumentNullException(nameof(data));
+      }
+
       m_data = data;
 
       m_position = 0;
@@ -50,8 +54,6 @@ namespace AndroidPlusPlus.VsDebugEngine
       // 
       // Creates an enumerator that contains the same enumeration state as the current enumerator.
       // 
-
-      LoggingUtils.PrintFunction ();
 
       ppEnum = new DebugConnectionEnumerator<T, I> (m_data, m_position) as I;
 
@@ -68,8 +70,6 @@ namespace AndroidPlusPlus.VsDebugEngine
       // Gets the number of ports in an enumerator.
       // 
 
-      LoggingUtils.PrintFunction ();
-
       pcelt = (uint)m_data.Count;
 
       return Constants.S_OK;
@@ -85,9 +85,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       // Retrieves a specified number of ports in an enumeration sequence.
       // 
 
-      LoggingUtils.PrintFunction ();
-
-      return Next ((uint)celt, rgelt, celtFetched);
+      return Next (celt, rgelt, celtFetched);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -99,8 +97,6 @@ namespace AndroidPlusPlus.VsDebugEngine
       // 
       // Retrieves a specified number of ports in an enumeration sequence.
       // 
-
-      LoggingUtils.PrintFunction ();
 
       return Move (celt, rgelt, out celtFetched);
     }
@@ -115,12 +111,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       // Resets an enumeration sequence to the beginning.
       // 
 
-      LoggingUtils.PrintFunction ();
-
-      lock (this)
-      {
-        m_position = 0;
-      }
+      m_position = 0;
 
       return Constants.S_OK;
     }
@@ -137,9 +128,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      uint celtFetched;
-
-      return Move (celt, null, out celtFetched);
+      return Move (celt, null, out uint celtFetched);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -150,34 +139,31 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      lock (this)
+      int hr = Constants.S_OK;
+
+      celtFetched = (uint)m_data.Count - m_position;
+
+      if (celt > celtFetched)
       {
-        int hr = Constants.S_OK;
-
-        celtFetched = (uint)m_data.Count - m_position;
-
-        if (celt > celtFetched)
-        {
-          hr = Constants.S_FALSE;
-        }
-        else if (celt < celtFetched)
-        {
-          celtFetched = celt;
-        }
-
-        if (rgelt != null)
-        {
-          T[] duplicate = new T[m_data.Count];
-
-          m_data.CopyTo(duplicate, 0);
-
-          Array.Copy(duplicate, rgelt, celtFetched);
-        }
-
-        m_position += celtFetched;
-
-        return hr;
+        hr = Constants.S_FALSE;
       }
+      else if (celt < celtFetched)
+      {
+        celtFetched = celt;
+      }
+
+      if (rgelt != null)
+      {
+        var duplicate = new T[m_data.Count];
+
+        m_data.CopyTo(duplicate, 0);
+
+        Array.Copy(duplicate, rgelt, celtFetched);
+      }
+
+      m_position += celtFetched;
+
+      return hr;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -67,7 +67,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
           throw new ArgumentNullException ("Failed to find 'ndk-depends.exe'. Tried: " + NdkDependsTool);
         }
 
-        // 
+        //
         // --help|-h|-?    Print this message.
         // --verbose       Increase verbosity.
         // --print-direct  Only print direct dependencies.
@@ -76,7 +76,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
         // --print-paths   Print full paths of all libraries.
         // --print-java    Print Java library load sequence.
         // --print-dot     Print the dependency graph as a Graphviz .dot file.
-        // 
+        //
 
         StringBuilder commandLineBuilder = new StringBuilder ();
 
@@ -101,17 +101,17 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
           commandLineBuilder.Append (PathUtils.SantiseWindowsPath (targetElf.GetMetadata ("FullPath")) + " ");
         }
 
-        // 
+        //
         // Skim tool output to extract required dependency paths.
-        // 
+        //
 
         int returnCode = -1;
 
         bool receivedErrorOutput = false;
 
-        List<ITaskItem> depedentLibraries = new List<ITaskItem> ();
+        var depedentLibraries = new List<ITaskItem> ();
 
-        List<ITaskItem> dependentSystemLibraries = new List<ITaskItem> ();
+        var dependentSystemLibraries = new List<ITaskItem> ();
 
         using (Process trackedProcess = new Process ())
         {
@@ -131,7 +131,7 @@ namespace AndroidPlusPlus.MsBuild.DeployTasks
               // libSDL2.so -> L:\dev\projects\android-plus-plus\msbuild\samples\Android++\Debug\armeabi-v7a/libSDL2.so
               // libstdc++.so -> $ /system/lib/libstdc++.so
               // libSDL2.so -> !! Could not find library
-              // 
+              //
 
               if (Verbose)
               {

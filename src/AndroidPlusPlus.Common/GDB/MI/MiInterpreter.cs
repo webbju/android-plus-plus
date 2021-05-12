@@ -3,10 +3,8 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using System.Text.RegularExpressions;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -14,10 +12,6 @@ using System.Text.RegularExpressions;
 
 namespace AndroidPlusPlus.Common
 {
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public class MiInterpreter
   {
@@ -33,25 +27,25 @@ namespace AndroidPlusPlus.Common
         return null;
       }
 
-      // 
+      //
       // Process any leading 'async-record' or 'result-record' token.
-      // 
+      //
 
       int streamIndex = 0;
 
       if (streamOutput.StartsWith ("(gdb)"))
       {
-        // 
+        //
         // GDB prompt. Waiting for input.
-        // 
+        //
 
         return new MiPromptRecord ();
       }
       else if (streamOutput [streamIndex] == '~')
       {
-        // 
+        //
         // Console stream record. Clears leading '~" and trailing '\\n"' characters.
-        // 
+        //
 
         ++streamIndex;
 
@@ -63,9 +57,9 @@ namespace AndroidPlusPlus.Common
       }
       else if (streamOutput [streamIndex] == '@')
       {
-        // 
+        //
         // Target stream record. Clears leading '@" and trailing '\\n"' characters.
-        // 
+        //
 
         ++streamIndex;
 
@@ -77,9 +71,9 @@ namespace AndroidPlusPlus.Common
       }
       else if (streamOutput [streamIndex] == '&')
       {
-        // 
+        //
         // Log stream record. Clears leading '&" and trailing '\\n"' characters.
-        // 
+        //
 
         ++streamIndex;
 
@@ -91,9 +85,9 @@ namespace AndroidPlusPlus.Common
       }
       else
       {
-        // 
+        //
         // The following record types have associated key-pair data; identify the type and build a result collection.
-        // 
+        //
 
         string recordData = streamOutput.Substring (streamIndex);
 
@@ -120,7 +114,7 @@ namespace AndroidPlusPlus.Common
 
             MiRecord resultRecord = null;
 
-            List<MiResultValue> values = new List<MiResultValue> ();
+            var values = new List<MiResultValue> ();
 
             try
             {
@@ -215,11 +209,11 @@ namespace AndroidPlusPlus.Common
 
         if (((bufferCurrentPos + 1) >= streamOutput.Length) || ((streamOutput [bufferCurrentPos + 1] == ',') && (enclosureCount == 0)))
         {
-          // 
+          //
           // Handle a nested enclosure, const-variable, or the end of a string.
-          // 
+          //
 
-          List<MiResultValue> nestedResultValues = new List<MiResultValue> ();
+          var nestedResultValues = new List<MiResultValue> ();
 
           if (string.IsNullOrEmpty(enclosureVariable))
           {
@@ -272,12 +266,4 @@ namespace AndroidPlusPlus.Common
 
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

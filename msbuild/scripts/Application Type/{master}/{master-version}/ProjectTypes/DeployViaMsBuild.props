@@ -10,11 +10,7 @@
 
     <DebuggerConfigTargetApk Condition="'$(DebuggerConfigTargetApk)' == ''">$(OutDir)$(ProjectName)-$(Configuration.Replace(' ','_')).apk</DebuggerConfigTargetApk>
 
-    <DebuggerConfigUpToDateCheck Condition="'$(DebuggerConfigUpToDateCheck)' == ''">true</DebuggerConfigUpToDateCheck>
-
     <DebuggerConfigCustomLaunchActivity Condition="'$(DebuggerConfigCustomLaunchActivity)' == ''"></DebuggerConfigCustomLaunchActivity>
-
-    <DebuggerConfigDebugMode Condition="'$(DebuggerConfigDebugMode)' == ''">true</DebuggerConfigDebugMode>
 
     <DebuggerConfigKeepAppData Condition="'$(DebuggerConfigKeepAppData)' == ''">true</DebuggerConfigKeepAppData>
 

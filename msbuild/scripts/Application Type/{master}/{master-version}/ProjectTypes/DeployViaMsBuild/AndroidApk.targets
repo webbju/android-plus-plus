@@ -38,7 +38,7 @@
     <PropertyGroup>
       <UnsignedOutputFile>$(IntDir)bin\$(ProjectName)-$(Configuration.Replace(' ','_'))-Unsigned.apk</UnsignedOutputFile>
       <SignedUnalignedOutputFile>$(IntDir)bin\$(ProjectName)-$(Configuration.Replace(' ','_'))-Unaligned.apk</SignedUnalignedOutputFile>
-      <SignedAlignedOutputFile>$(IntDir)bin\$(ProjectName)-$(Configuration.Replace(' ','_')).apk</SignedAlignedOutputFile>
+      <SignedAlignedOutputFile>$(IntDir)$(ProjectName)-$(Configuration.Replace(' ','_')).apk</SignedAlignedOutputFile>
     </PropertyGroup>
 
     <!--
@@ -57,6 +57,7 @@
 
       <__Temp_TargetElfSearchPaths Include="
         @(_TargetElfFiles->'%(RootDir)%(Directory)');
+        $(LibraryPath);
         %(Link.AdditionalLibraryDirectories);
         $(IntDir)raw\lib\$(TargetPlatformArchitectureEabi)">
       </__Temp_TargetElfSearchPaths>

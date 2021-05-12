@@ -2,20 +2,21 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Runtime.InteropServices;
-using System.Diagnostics;
-using System.Threading;
-using System.IO;
-using System.Windows.Forms;
-
 using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugCommon;
-
+using CliWrap.Buffered;
 using Microsoft.VisualStudio.Debugger.Interop;
+using Microsoft.VisualStudio.Shell;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Task = System.Threading.Tasks.Task;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -47,13 +48,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     private DebugEngineCallback m_sdmCallback = null;
 
-    private CLangDebuggerCallback m_cLangCallback = null;
-
-    private JavaLangDebuggerCallback m_javaLangCallback = null;
-
     private AutoResetEvent m_broadcastHandleLock;
 
     private DebugBreakpointManager m_breakpointManager;
+
+    private Dictionary<string, object> m_metrics;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -122,13 +121,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public DebugBreakpointManager BreakpointManager
-    {
-      get
-      {
-        return m_breakpointManager;
-      }
-    }
+    public DebugBreakpointManager BreakpointManager => m_breakpointManager;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -145,20 +138,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public void Broadcast (IDebugEvent2 debugEvent, IDebugProgram2 program, IDebugThread2 thread)
     {
-      Guid eventGuid = ComUtils.GuidOf (debugEvent);
-
-      if ((m_cLangCallback != null) && (m_cLangCallback.IsRegistered (ref eventGuid)))
-      {
-        Broadcast (m_cLangCallback, debugEvent, program, thread);
-      }
-      else if ((m_javaLangCallback != null) && (m_javaLangCallback.IsRegistered (ref eventGuid)))
-      {
-        Broadcast (m_javaLangCallback, debugEvent, program, thread);
-      }
-      else
-      {
-        Broadcast (m_sdmCallback, debugEvent, program, thread);
-      }
+      Broadcast (m_sdmCallback, debugEvent, program, thread);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -171,9 +151,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       Guid eventGuid = ComUtils.GuidOf (debugEvent);
 
-      uint eventAttributes = 0;
-
-      LoggingUtils.RequireOk (debugEvent.GetAttributes (out eventAttributes));
+      LoggingUtils.RequireOk(debugEvent.GetAttributes(out uint eventAttributes));
 
       if (((eventAttributes & (uint) enum_EVENTATTRIBUTES.EVENT_STOPPING) != 0) && (thread == null))
       {
@@ -195,6 +173,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         throw;
       }
+#if false
       finally
       {
         if ((eventAttributes & (uint) enum_EVENTATTRIBUTES.EVENT_SYNCHRONOUS) != 0)
@@ -205,64 +184,14 @@ namespace AndroidPlusPlus.VsDebugEngine
           }
         }
       }
+#endif
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public int Detach (DebuggeeProgram program)
-    {
-      LoggingUtils.PrintFunction ();
-
-      try
-      {
-        if ((program.AttachedEngine != null) && (program.AttachedEngine.NativeDebugger != null))
-        {
-          program.AttachedEngine.NativeDebugger.Kill ();
-
-          program.AttachedEngine.NativeDebugger.Dispose ();
-
-          program.AttachedEngine.NativeDebugger = null;
-        }
-
-        if ((program.AttachedEngine != null) && (program.AttachedEngine.JavaDebugger != null))
-        {
-          program.AttachedEngine.JavaDebugger.Kill ();
-
-          program.AttachedEngine.JavaDebugger.Dispose ();
-
-          program.AttachedEngine.JavaDebugger = null;
-        }
-
-        return Constants.S_OK;
-      }
-      catch (Exception e)
-      {
-        LoggingUtils.HandleException (e);
-
-        return Constants.E_FAIL;
-      }
-      finally
-      {
-        if ((program != null) && (program.AttachedEngine != null))
-        {
-          Broadcast (new DebugEngineEvent.ProgramDestroy (0), program, null);
-
-          program.AttachedEngine = null;
-        }
-
-        m_cLangCallback = null;
-
-        m_javaLangCallback = null;
-      }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    #region IDebugEngine2 Members
+#region IDebugEngine2 Members
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -275,12 +204,6 @@ namespace AndroidPlusPlus.VsDebugEngine
       //
 
       LoggingUtils.PrintFunction ();
-
-      m_sdmCallback = new DebugEngineCallback (this, ad7Callback);
-
-      m_cLangCallback = new CLangDebuggerCallback (this);
-
-      m_javaLangCallback = new JavaLangDebuggerCallback (this);
 
       try
       {
@@ -299,23 +222,65 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new ApplicationException ("Attach failed. Already attached to " + Program.DebugProcess.NativeProcess.Name);
         }
 
-        AndroidAdb.Refresh ();
-
-        Program = rgpPrograms [0] as DebuggeeProgram;
+        Program = rgpPrograms[0] as DebuggeeProgram;
 
         Program.AttachedEngine = this;
 
-        Program.DebugProcess.NativeProcess.RefreshPackageInfo ();
+        ThreadHelper.JoinableTaskFactory.Run(async () =>
+        {
+          await AndroidAdb.Refresh();
 
-        Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus, string.Format ("Starting GDB client...")), null, null);
+          //
+          // Run a couple of tests which prevent the run-as tool from functioning properly:
+          //
+          // 1) Test if this device/emulator is susceptible to a (usually 4.3 specific) run-as permissions bug.
+          //      https://code.google.com/p/android/issues/detail?id=58373
+          // 2) Test if the installed package is not declared 'debuggable'.
+          //
 
-        NativeDebugger = new CLangDebugger (this, null, Program);
+          AndroidDevice debuggingDevice = Program.DebugProcess.NativeProcess.HostDevice;
 
-        Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus, string.Format ("Starting JDB client...")), null, null);
+          try
+          {
+            await AndroidAdb.AdbCommand().WithArguments($"-s {debuggingDevice.ID} shell run-as {Program.DebugProcess.NativeProcess.Name} ls -l").ExecuteAsync();
+          }
+          catch (Exception e)
+          {
+            throw new InvalidOperationException("Can not debug native code on this device/emulator.\nMore info: https://code.google.com/p/android/issues/detail?id=58373", e);
+          }
+        });
 
-        JavaDebugger = new JavaLangDebugger (this, Program);
+        var gdbSetup = new GdbSetup(Program.DebugProcess.NativeProcess, Path.Combine(AndroidSettings.NdkRoot, @"prebuilt\windows-x86_64\bin\gdb.exe"));
 
-        ThreadPool.QueueUserWorkItem (delegate (object obj)
+        var jdbSetup = new JdbSetup(Program.DebugProcess.NativeProcess);
+
+        gdbSetup.DebugFileDirectories.Add(@"C:\webbju\android-plus-plus\msbuild\samples\hello-gdbserver\I686\Debug");
+
+        NativeDebugger = new CLangDebugger (this, Program, gdbSetup);
+
+        JavaDebugger = new JavaLangDebugger (this, Program, jdbSetup);
+
+        var cLangCallback = new CLangDebuggerCallback(NativeDebugger);
+
+        var javaLangCallback = new JavaLangDebuggerCallback(JavaDebugger);
+
+        m_sdmCallback = new DebugEngineCallback(this, cLangCallback, javaLangCallback, ad7Callback);
+
+        LoggingUtils.RequireOk(Program.Attach(m_sdmCallback), "Failed to attach to target application.");
+
+        CLangDebuggeeThread currentThread = null;
+
+        NativeDebugger.RunInterruptOperation(async (CLangDebugger debugger) =>
+        {
+          await debugger.NativeProgram.RefreshAllThreadsAsync();
+
+          uint currentThreadId = debugger.NativeProgram.CurrentThreadId;
+
+          // Lack of current thread is usually a good indication that connection/attaching failed.
+          currentThread = debugger.NativeProgram.GetThread(currentThreadId) ?? throw new InvalidOperationException($"Failed to retrieve program's main thread (tid: {currentThreadId}).");
+        });
+
+        Func<DebuggeeProgram, DebuggeeThread, Task<int>> debugEngineBindingHandler = async (DebuggeeProgram program, DebuggeeThread thread) =>
         {
           //
           // When this method is called, the DE needs to send these events in sequence:
@@ -327,79 +292,45 @@ namespace AndroidPlusPlus.VsDebugEngine
 
           try
           {
-            Broadcast (new DebugEngineEvent.EngineCreate (this), Program, null);
+            Broadcast(new DebugEngineEvent.EngineCreate(this), program, null);
 
-            //
-            // Run a couple of tests which prevent the run-as tool from functioning properly:
-            //
-            // 1) Test if this device/emulator is susceptible to a (usually 4.3 specific) run-as permissions bug.
-            //      https://code.google.com/p/android/issues/detail?id=58373
-            // 2) Test if the installed package is not declared 'debuggable'.
-            //
+            Broadcast(new DebugEngineEvent.ProgramCreate(), program, null);
 
-            AndroidDevice debuggingDevice = Program.DebugProcess.NativeProcess.HostDevice;
-
-            string runasPackageFileList = debuggingDevice.Shell (string.Format ("run-as {0}", Program.DebugProcess.NativeProcess.Name), "ls -l");
-
-            if (runasPackageFileList.Contains (string.Format ("run-as: Package '{0}' is unknown", Program.DebugProcess.NativeProcess.Name)))
-            {
-              throw new InvalidOperationException ("Can not debug native code on this device/emulator.\nMore info: https://code.google.com/p/android/issues/detail?id=58373");
-            }
-            else if (runasPackageFileList.Contains (string.Format ("run-as: Package '{0}' is not debuggable", Program.DebugProcess.NativeProcess.Name)))
-            {
-              throw new InvalidOperationException (string.Format ("Package '{0}' is not debuggable.\nPlease ensure you're trying to connect to a 'Debug' application.\nAlternatively, completely uninstall the current app and try again.", Program.DebugProcess.NativeProcess.Name));
-            }
-
-            Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus, string.Format ("Attaching to '{0}'...", Program.DebugProcess.NativeProcess.Name)), null, null);
-
-            LoggingUtils.RequireOk (Program.Attach (m_sdmCallback), "Failed to attach to target application.");
-
-            CLangDebuggeeThread currentThread = null;
-
-            NativeDebugger.RunInterruptOperation ((CLangDebugger debugger) =>
-            {
-              debugger.NativeProgram.RefreshAllThreads ();
-
-              // Lack of current thread is usually a good indication that connection/attaching failed.
-              currentThread = debugger.NativeProgram.GetThread (debugger.NativeProgram.CurrentThreadId) ?? throw new InvalidOperationException (string.Format ("Failed to retrieve program's main thread (tid: {0}).", debugger.NativeProgram.CurrentThreadId));
-            });
-
-            Broadcast (new DebugEngineEvent.ProgramCreate (), Program, null);
-
-            Broadcast (new DebugEngineEvent.LoadComplete (), Program, currentThread);
+            Broadcast(new DebugEngineEvent.LoadComplete(), program, thread);
 
             if (dwReason == enum_ATTACH_REASON.ATTACH_REASON_LAUNCH)
             {
-              Broadcast (new DebugEngineEvent.EntryPoint (), Program, currentThread);
+              Broadcast(new DebugEngineEvent.EntryPoint(), program, thread);
             }
 
-            Broadcast (new DebugEngineEvent.AttachComplete (), Program, null);
+            Broadcast(new DebugEngineEvent.AttachComplete(), program, null);
 
-            Broadcast (new DebugEngineEvent.DebuggerLogcatEvent (debuggingDevice), Program, null);
+            //Broadcast(new DebugEngineEvent.DebuggerLogcatEvent(program.DebugProcess.NativeProcess.HostDevice), Program, null);
 
-            Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus, string.Format ("Attached successfully to '{0}'.", Program.DebugProcess.NativeProcess.Name)), null, null);
-
-            Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.CloseDialog, string.Empty), null, null);
+            Serilog.Log.Information($"Attached successfully to {program.DebugProcess.NativeProcess.Name}'");
           }
           catch (Exception e)
           {
-            LoggingUtils.HandleException (e);
+            LoggingUtils.HandleException(e);
 
-            Broadcast (ad7Callback, new DebugEngineEvent.Error (e.Message, true), Program, null);
+            Broadcast(ad7Callback, new DebugEngineEvent.Error(e.Message, true), program, null);
 
-            Detach (Program);
+            Broadcast(new DebugEngineEvent.ProgramDestroy(0), program, null);
           }
-        });
+
+          return Constants.S_OK;
+        };
+
+        ThreadPool.QueueUserWorkItem((object state) =>
+        {
+          debugEngineBindingHandler(Program, currentThread);
+        }, null);
 
         return Constants.S_OK;
       }
       catch (Exception e)
       {
         LoggingUtils.HandleException (e);
-
-        Broadcast (ad7Callback, new DebugEngineEvent.Error (e.Message, true), Program, null);
-
-        Detach (Program);
 
         return Constants.E_FAIL;
       }
@@ -444,10 +375,33 @@ namespace AndroidPlusPlus.VsDebugEngine
       // was received and processed. An example of this is 'Program Destroy', which triggers a shutdown of the DebugEngine.
       //
 
-      LoggingUtils.PrintFunction ();
+      LoggingUtils.Print($"ContinueFromSynchronousEvent: {eventObject.GetType()}");
 
       try
       {
+        if (ComUtils.GuidOf(eventObject).Equals(ComUtils.GuidOf(typeof(DebugEngineEvent.ProgramDestroy))))
+        {
+          if (Program.AttachedEngine?.NativeDebugger != null)
+          {
+            Program.AttachedEngine.NativeDebugger.Kill();
+
+            Program.AttachedEngine.NativeDebugger.Dispose();
+
+            Program.AttachedEngine.NativeDebugger = null;
+          }
+
+          if (Program.AttachedEngine?.JavaDebugger != null)
+          {
+            Program.AttachedEngine.JavaDebugger.Kill();
+
+            Program.AttachedEngine.JavaDebugger.Dispose();
+
+            Program.AttachedEngine.JavaDebugger = null;
+          }
+
+          Program.AttachedEngine = null;
+        }
+
         m_broadcastHandleLock.Set ();
 
         return Constants.S_OK;
@@ -528,9 +482,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        IDebugProgram2 [] programs = new IDebugProgram2 [] { Program };
-
-        ppEnum = new DebuggeeProgram.Enumerator (programs);
+        ppEnum = new DebuggeeProgram.Enumerator (new IDebugProgram2[] { Program });
 
         return Constants.S_OK;
       }
@@ -575,13 +527,26 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        throw new NotImplementedException ();
+        LoggingUtils.RequireOk(Program.EnumModules(out IEnumDebugModules2 ppEnum));
+
+        LoggingUtils.RequireOk(ppEnum.GetCount(out uint count));
+
+        var debugModules = new DebuggeeModule[count];
+
+        LoggingUtils.RequireOk(ppEnum.Next(count, debugModules, ref count));
+
+        foreach (var module in debugModules)
+        {
+          LoggingUtils.RequireOk(module.LoadSymbols());
+        }
+
+        return Constants.S_OK;
       }
-      catch (NotImplementedException e)
+      catch (Exception e)
       {
         LoggingUtils.HandleException (e);
 
-        return Constants.E_NOTIMPL;
+        return Constants.E_FAIL;
       }
     }
 
@@ -675,7 +640,7 @@ namespace AndroidPlusPlus.VsDebugEngine
         // Filter exceptions to those targeted at this debug engine.
         //
 
-        List<EXCEPTION_INFO> filtedExceptions = new List<EXCEPTION_INFO> (pException.Length);
+        var filtedExceptions = new List<EXCEPTION_INFO> (pException.Length);
 
         for (int i = 0; i < pException.Length; ++i)
         {
@@ -687,7 +652,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         if (filtedExceptions.Count > 0)
         {
-          NativeDebugger.RunInterruptOperation (delegate (CLangDebugger debugger)
+          NativeDebugger.RunInterruptOperation (async (CLangDebugger debugger) =>
           {
             for (int i = 0; i < pException.Length; ++i)
             {
@@ -724,7 +689,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       // This method sets the debug engine's (DE) GUID.
       //
 
-      LoggingUtils.PrintFunction ();
+      LoggingUtils.Print ($"SetEngineGuid: {guidEngine}");
 
       return Constants.S_OK;
     }
@@ -771,16 +736,11 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       LoggingUtils.PrintFunction ();
 
-      try
-      {
-        throw new NotImplementedException ();
-      }
-      catch (NotImplementedException e)
-      {
-        LoggingUtils.HandleException (e);
+      m_metrics ??= new Dictionary<string, object>();
 
-        return Constants.E_NOTIMPL;
-      }
+      m_metrics[pszMetric] = varValue;
+
+      return Constants.S_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -793,7 +753,7 @@ namespace AndroidPlusPlus.VsDebugEngine
       // Sets the registry root for the Engine. Different VS installations can change where their registry data is stored.
       //
 
-      LoggingUtils.PrintFunction ();
+      LoggingUtils.Print ($"SetRegistryRoot: {pszRegistryRoot}");
 
       return Constants.S_OK;
     }
@@ -812,19 +772,21 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        List<string> symbolSearchPaths = new List<string> ();
-
-        if (!string.IsNullOrWhiteSpace (szSymbolSearchPath))
+        if (string.IsNullOrWhiteSpace (szSymbolSearchPath))
         {
-          var symbolsPaths = szSymbolSearchPath.Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-
-          foreach (string path in symbolsPaths)
-          {
-            symbolSearchPaths.Add (PathUtils.SantiseWindowsPath (path));
-          }
+          return Constants.S_OK; // Nothing to do.
         }
 
-        NativeDebugger.RunInterruptOperation ((CLangDebugger debugger) =>
+        var symbolSearchPaths = new List<string> ();
+
+        var symbolsPaths = szSymbolSearchPath.Split (new char [] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (string path in symbolsPaths)
+        {
+          symbolSearchPaths.Add (PathUtils.SantiseWindowsPath (path));
+        }
+
+        NativeDebugger.RunInterruptOperation (async (CLangDebugger debugger) =>
         {
           debugger.GdbClient.SetSetting ("solib-search-path", string.Join<string> (";", symbolSearchPaths), true);
 
@@ -849,13 +811,13 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    #endregion
+#endregion
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    #region IDebugEngineLaunch2 Members
+#region IDebugEngineLaunch2 Members
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -903,12 +865,6 @@ namespace AndroidPlusPlus.VsDebugEngine
           throw new FileNotFoundException ("Failed to find target application: " + exe);
         }
 
-        m_sdmCallback = new DebugEngineCallback (this, ad7Callback);
-
-        DebuggeePort debuggeePort = port as DebuggeePort;
-
-        DebuggeeProcess debugProcess = null;
-
         //
         // Evaluate options; including current debugger target application.
         //
@@ -916,8 +872,6 @@ namespace AndroidPlusPlus.VsDebugEngine
         var launchConfiguration = JsonConvert.DeserializeObject<Dictionary<string, string>> (options);
 
         string packageName = launchConfiguration["PackageName"];
-
-        bool appIsRunning = false;
 
         //
         // Cache any LaunchSuspended specific parameters.
@@ -933,152 +887,107 @@ namespace AndroidPlusPlus.VsDebugEngine
         // Prevent blocking the main VS thread when launching a suspended application.
         //
 
-        Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.ShowDialog, string.Empty), null, null);
+        Func<DebuggeePort, Task> launchAppViaIntent = async (DebuggeePort port) =>
+        {
+          //
+          // Launch application on device in a 'suspended' state.
+          //
 
-        ManualResetEvent launchSuspendedMutex = new ManualResetEvent (false);
+          AndroidDevice device = port.PortDevice;
 
-        Thread asyncLaunchSuspendedThread = new Thread (delegate ()
+          Serilog.Log.Information($"[{GetType().Name}] Starting {packageName} on {device.ID} ...");
+
+          var launchArgumentsBuilder = new StringBuilder();
+
+          launchArgumentsBuilder.Append("start ");
+
+          if ((launchFlags & enum_LAUNCH_FLAGS.LAUNCH_NODEBUG) != 0)
+          {
+            launchArgumentsBuilder.Append("-W "); // wait
+          }
+          else
+          {
+            launchArgumentsBuilder.Append("-D "); // debug
+
+            launchArgumentsBuilder.Append("-N "); // enable native debugging
+          }
+
+          launchArgumentsBuilder.Append("-S "); // force stop the target app before starting the activity
+
+          if (launchConfiguration.TryGetValue("LaunchActivity", out string launchActivity) && !string.IsNullOrWhiteSpace(launchActivity))
+          {
+            launchArgumentsBuilder.Append(packageName + "/" + launchActivity);
+          }
+          else
+          {
+            var resolveActivity = await AndroidAdb.AdbCommand().WithArguments($"-s {device.ID} shell \"cmd package resolve-activity --brief {packageName} | tail -1\"").ExecuteBufferedAsync();
+
+            using var reader = new StringReader(resolveActivity.StandardOutput);
+
+            launchArgumentsBuilder.Append(await reader.ReadLineAsync());
+          }
+
+          await AndroidAdb.AdbCommand().WithArguments($"-s {device.ID} shell am {launchArgumentsBuilder}").ExecuteBufferedAsync();
+        };
+
+        Func<DebuggeePort, Task<DebuggeeProcess>> waitForRunningStatus = async (DebuggeePort port) =>
         {
           try
           {
             //
-            // Launch application on device in a 'suspended' state.
-            //
-
-            Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus, string.Format ("Starting '{0}'...", packageName)), null, null);
-
-            if (!appIsRunning)
-            {
-              StringBuilder launchArgumentsBuilder = new StringBuilder ();
-
-              launchArgumentsBuilder.Append ("start ");
-
-              /*if (launchConfiguration.TryGetValue("DebugMode", out string debugMode) && string.Equals(debugMode, "true", StringComparison.OrdinalIgnoreCase))
-              {
-                launchArgumentsBuilder.Append ("-D "); // debug
-              }
-              else*/
-              {
-                launchArgumentsBuilder.Append ("-W "); // wait
-              }
-
-              launchArgumentsBuilder.Append ("-N "); // enable native debugging
-
-              launchArgumentsBuilder.Append ("-S "); // force stop the target app before starting the activity
-
-              if (launchConfiguration.TryGetValue("LaunchActivity", out string launchActivity) && !string.IsNullOrWhiteSpace(launchActivity))
-              {
-                launchArgumentsBuilder.Append (packageName + "/" + launchActivity);
-              }
-              else
-              {
-                string resolvedActivity = debuggeePort.PortDevice.Shell ("cmd", $"\"package resolve-activity --brief {packageName} | tail -1\"");
-
-                launchArgumentsBuilder.Append (resolvedActivity.Trim(new char[] { '\n', '\r' }));
-              }
-
-              Broadcast (new DebugEngineEvent.DebuggerConnectionEvent (DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus, string.Format ("[adb:shell:am] {0}", launchArgumentsBuilder)), null, null);
-
-              string launchResponse = debuggeePort.PortDevice.Shell ("am", launchArgumentsBuilder.ToString ());
-
-              if (string.IsNullOrEmpty (launchResponse) || launchResponse.Contains ("Error:"))
-              {
-                throw new InvalidOperationException ("Launch intent failed:\n" + launchResponse);
-              }
-            }
-
-            //
             // Query whether the target application is already running. (Double-check)
             //
 
-            int launchAttempt = 1;
+            int maxLaunchAttempts = 25;
 
-            int maxLaunchAttempts = 20;
-
-            while (!appIsRunning)
+            for (int launchAttempt = 1; launchAttempt <= maxLaunchAttempts; ++launchAttempt)
             {
-              Broadcast(new DebugEngineEvent.DebuggerConnectionEvent(DebugEngineEvent.DebuggerConnectionEvent.EventType.LogStatus, string.Format("Waiting for '{0}' to launch (Attempt {1} of {2})...", packageName, launchAttempt, maxLaunchAttempts)), null, null);
-
-              LoggingUtils.RequireOk (debuggeePort.RefreshProcesses ());
+              Serilog.Log.Information($"Waiting for {packageName} to launch (attempt {launchAttempt} of {maxLaunchAttempts}) ...");
 
               //
               // Validate that the process is running and was spawned by one of the zygote processes.
               //
 
-              uint [] zygotePids = debuggeePort.PortDevice.GetPidsFromName ("zygote");
+              await port.RefreshProcessesAsync();
 
-              uint [] zygote64Pids = debuggeePort.PortDevice.GetPidsFromName ("zygote64");
-
-              uint [] packagePids = debuggeePort.PortDevice.GetPidsFromName (packageName);
-
-              for (int i = packagePids.Length - 1; i >= 0; --i)
+              foreach (var portProcess in port.PortProcesses.Where(port => port.Value.NativeProcess.IsUserProcess))
               {
-                uint pid = packagePids [i];
+                PROCESS_INFO[] processInfo = new PROCESS_INFO[1];
 
-                AndroidProcess packageProcess = debuggeePort.PortDevice.GetProcessFromPid (pid);
+                LoggingUtils.RequireOk(portProcess.Value.GetInfo(enum_PROCESS_INFO_FIELDS.PIF_ALL, processInfo));
 
-                bool spawnedByZygote = false;
-
-                if ((zygotePids.Length > 0) && (packageProcess.ParentPid == zygotePids [0]))
+                if (string.Equals(packageName, processInfo[0].bstrTitle))
                 {
-                  spawnedByZygote = true;
-                }
-                else if ((zygote64Pids.Length > 0) && (packageProcess.ParentPid == zygote64Pids [0]))
-                {
-                  spawnedByZygote = true;
-                }
+                  Serilog.Log.Information($"Found {packageName} (pid: {processInfo[0].ProcessId})");
 
-                if (spawnedByZygote)
-                {
-                  debugProcess = debuggeePort.GetProcessForPid (pid);
-
-                  appIsRunning = (debugProcess != null);
-
-                  break;
+                  return portProcess.Value;
                 }
               }
 
-              if (!appIsRunning)
-              {
-                if (++launchAttempt > maxLaunchAttempts)
-                {
-                  throw new TimeoutException (string.Format ("'{0}' failed to launch. Please ensure device is unlocked.", packageName));
-                }
-
-                Application.DoEvents ();
-
-                Thread.Sleep (100);
-              }
+              await System.Threading.Tasks.Task.Delay(500);
             }
-
-            launchSuspendedMutex.Set ();
           }
           catch (Exception e)
           {
             LoggingUtils.HandleException (e);
 
-            string error = string.Format ("[Exception] {0}\n{1}", e.Message, e.StackTrace);
-
-            Broadcast (ad7Callback, new DebugEngineEvent.Error (error, true), null, null);
-
-            launchSuspendedMutex.Set ();
+            Broadcast (ad7Callback, new DebugEngineEvent.Error ($"[Exception] {e.Message}\n{e.StackTrace}", true), null, null);
           }
+
+          return null;
+        };
+
+        process = ThreadHelper.JoinableTaskFactory.Run(async () =>
+        {
+          await launchAppViaIntent(port as DebuggeePort);
+
+          return await waitForRunningStatus(port as DebuggeePort);
         });
 
-        asyncLaunchSuspendedThread.Start ();
-
-        while (!launchSuspendedMutex.WaitOne (0))
+        if (process == null)
         {
-          Application.DoEvents ();
-
-          Thread.Sleep (100);
+          throw new TimeoutException($"{packageName} failed to launch. Could not continue.");
         }
-
-        //
-        // Attach to launched process.
-        //
-
-        process = debugProcess ?? throw new InvalidOperationException ($"{packageName} failed to launch. Could not continue.");
 
         return Constants.S_OK;
       }
@@ -1122,11 +1031,9 @@ namespace AndroidPlusPlus.VsDebugEngine
         // This will cause the SDM to turn around and call IDebugEngine2.Attach which will complete the hookup with AD7
         //
 
-        IDebugPort2 port;
-
         DebuggeeProcess debugProcess = process as DebuggeeProcess;
 
-        LoggingUtils.RequireOk (debugProcess.GetPort (out port));
+        LoggingUtils.RequireOk (debugProcess.GetPort (out IDebugPort2 port));
 
         DebuggeePort debugPort = port as DebuggeePort;
 
@@ -1162,7 +1069,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
         LoggingUtils.RequireOk (debugProcess.Terminate ());
 
-        Detach (debugProcess.DebuggeeProgram);
+        Broadcast(new DebugEngineEvent.ProgramDestroy(1), debugProcess.DebuggeeProgram, null);
 
         return Constants.S_OK;
       }
@@ -1178,13 +1085,13 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    #endregion
+#endregion
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    #region IDebugEngineProgram2 Members
+#region IDebugEngineProgram2 Members
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1264,7 +1171,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    #endregion
+#endregion
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1272,12 +1179,4 @@ namespace AndroidPlusPlus.VsDebugEngine
 
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

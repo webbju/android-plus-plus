@@ -2,14 +2,14 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.IO;
-using Microsoft.VisualStudio.Debugger.Interop;
 using AndroidPlusPlus.Common;
 using AndroidPlusPlus.VsDebugCommon;
+using Microsoft.VisualStudio.Debugger.Interop;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
+using System.Runtime.InteropServices;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -17,10 +17,6 @@ using AndroidPlusPlus.VsDebugCommon;
 
 namespace AndroidPlusPlus.VsDebugEngine
 {
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public class DebuggeeBreakpointPending : IDebugPendingBreakpoint2
   {
@@ -47,9 +43,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     protected readonly BP_REQUEST_INFO m_breakpointRequestInfo;
 
-    protected List<IDebugBoundBreakpoint2> m_boundBreakpoints;
+    protected ConcurrentBag<IDebugBoundBreakpoint2> m_boundBreakpoints;
 
-    protected List<IDebugErrorBreakpoint2> m_errorBreakpoints;
+    protected ConcurrentBag<IDebugErrorBreakpoint2> m_errorBreakpoints;
 
     protected bool m_breakpointEnabled;
 
@@ -71,9 +67,9 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       m_breakpointRequestInfo = requestInfo [0];
 
-      m_boundBreakpoints = new List<IDebugBoundBreakpoint2> ();
+      m_boundBreakpoints = new ConcurrentBag<IDebugBoundBreakpoint2> ();
 
-      m_errorBreakpoints = new List<IDebugErrorBreakpoint2> ();
+      m_errorBreakpoints = new ConcurrentBag<IDebugErrorBreakpoint2> ();
 
       m_breakpointEnabled = true;
 
@@ -94,21 +90,15 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        lock (m_boundBreakpoints)
+        while (m_boundBreakpoints.TryTake(out IDebugBoundBreakpoint2 boundBreakpoint))
         {
-          for (int i = m_boundBreakpoints.Count - 1; i >= 0; --i)
+          int handle = boundBreakpoint.Delete();
+
+          if (handle != Constants.E_BP_DELETED)
           {
-            int handle = m_boundBreakpoints [i].Delete ();
-
-            if (handle != Constants.E_BP_DELETED)
-            {
-              LoggingUtils.RequireOk (handle);
-            }
+            LoggingUtils.RequireOk(handle);
           }
-
-          m_boundBreakpoints.Clear ();
         }
-
       }
       catch (Exception e)
       {
@@ -126,17 +116,14 @@ namespace AndroidPlusPlus.VsDebugEngine
     {
       LoggingUtils.PrintFunction ();
 
-      lock (m_errorBreakpoints)
-      {
-        m_errorBreakpoints.Clear ();
-      }
+      while (m_errorBreakpoints.TryTake(out IDebugErrorBreakpoint2 errorBreakpoint));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public virtual int EvaluateBreakpointLocation (out DebuggeeDocumentContext documentContext, out DebuggeeCodeContext codeContext, out string location)
+    public int EvaluateBreakpointLocation (out DebuggeeDocumentContext documentContext, out DebuggeeCodeContext codeContext, out string location)
     {
       LoggingUtils.PrintFunction ();
 
@@ -156,11 +143,9 @@ namespace AndroidPlusPlus.VsDebugEngine
             // Specifies the location type of the breakpoint as a line of source code.
             //
 
-            string fileName;
+            IDebugDocumentPosition2 documentPostion = (IDebugDocumentPosition2)Marshal.GetObjectForIUnknown(m_breakpointRequestInfo.bpLocation.unionmember2);
 
-            IDebugDocumentPosition2 documentPostion = (IDebugDocumentPosition2)Marshal.GetObjectForIUnknown (m_breakpointRequestInfo.bpLocation.unionmember2);
-
-            LoggingUtils.RequireOk (documentPostion.GetFileName (out fileName));
+            LoggingUtils.RequireOk (documentPostion.GetFileName (out string fileName));
 
             bool fileInCurrentProject = true; // TODO
 
@@ -293,8 +278,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
     public virtual int CreateBoundBreakpoint (string location, DebuggeeDocumentContext documentContext, DebuggeeCodeContext codeContext)
     {
-      LoggingUtils.PrintFunction ();
-
       throw new NotImplementedException ();
     }
 
@@ -302,7 +285,7 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public virtual int CreateErrorBreakpoint (string errorReason, DebuggeeDocumentContext documentContext, DebuggeeCodeContext codeContext)
+    private int CreateErrorBreakpoint (string errorReason, DebuggeeDocumentContext documentContext, DebuggeeCodeContext codeContext)
     {
       //
       // Create and broadcast a generic (non language-specific) errored breakpoint.
@@ -312,24 +295,13 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        DebuggeeBreakpointError errorBreakpoint = new DebuggeeBreakpointError (m_breakpointManager, this, codeContext, errorReason);
+        ClearErrorBreakpoints();
 
-        lock (m_errorBreakpoints)
-        {
-          m_errorBreakpoints.Add (errorBreakpoint);
-        }
+        var errorBreakpoint = new DebuggeeBreakpointError (m_breakpointManager, this, codeContext, errorReason);
 
-        uint numDebugPrograms = 1;
+        m_errorBreakpoints.Add (errorBreakpoint);
 
-        IEnumDebugPrograms2 debugPrograms;
-
-        IDebugProgram2 [] debugProgramsArray = new IDebugProgram2 [numDebugPrograms];
-
-        LoggingUtils.RequireOk (m_breakpointManager.Engine.EnumPrograms (out debugPrograms));
-
-        LoggingUtils.RequireOk (debugPrograms.Next (numDebugPrograms, debugProgramsArray, ref numDebugPrograms));
-
-        m_breakpointManager.Engine.Broadcast (new DebugEngineEvent.BreakpointError (errorBreakpoint), debugProgramsArray [0], null);
+        m_breakpointManager.Engine.Broadcast (new DebugEngineEvent.BreakpointError (errorBreakpoint), m_breakpointManager.Engine.Program, null);
 
         return Constants.S_OK;
       }
@@ -345,22 +317,45 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public virtual void RefreshBoundBreakpoints ()
+    public void RefreshBoundBreakpoints()
     {
-      LoggingUtils.PrintFunction ();
+      //
+      // Refresh the status of any active/satisfied breakpoints.
+      //
 
-      throw new NotImplementedException ();
+      LoggingUtils.PrintFunction();
+
+      foreach (IDebugBoundBreakpoint2 boundBreakpoint in m_boundBreakpoints.ToArray())
+      {
+        RefreshBreakpoint(boundBreakpoint);
+      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public virtual void RefreshErrorBreakpoints ()
+    public void RefreshErrorBreakpoints()
     {
-      LoggingUtils.PrintFunction ();
+      //
+      // Refresh the status of any previously failed breakpoints. Ignore any DebuggeeBreakpointError base class objects.
+      //
 
-      throw new NotImplementedException ();
+      LoggingUtils.PrintFunction();
+
+      foreach (IDebugErrorBreakpoint2 errorBreakpoint in m_errorBreakpoints.ToArray())
+      {
+        RefreshBreakpoint(errorBreakpoint);
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    protected virtual void RefreshBreakpoint(object breakpoint)
+    {
+      throw new NotImplementedException();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -373,19 +368,13 @@ namespace AndroidPlusPlus.VsDebugEngine
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public virtual int Bind ()
+    public int Bind ()
     {
       //
       // Binds this pending breakpoint to one or more code locations.
       //
 
       LoggingUtils.PrintFunction ();
-
-      DebuggeeDocumentContext documentContext = null;
-
-      DebuggeeCodeContext codeContext = null;
-
-      string bindLocation = string.Empty;
 
       try
       {
@@ -396,9 +385,13 @@ namespace AndroidPlusPlus.VsDebugEngine
           return Constants.E_BP_DELETED;
         }
 
-        LoggingUtils.RequireOk (EvaluateBreakpointLocation (out documentContext, out codeContext, out bindLocation));
+        LoggingUtils.RequireOk (EvaluateBreakpointLocation (out DebuggeeDocumentContext documentContext, out DebuggeeCodeContext codeContext, out string bindLocation));
 
-        LoggingUtils.RequireOk (CreateBoundBreakpoint (bindLocation, documentContext, codeContext));
+        LoggingUtils.RequireOk (CreateBoundBreakpoint(bindLocation, documentContext, null));
+
+        LoggingUtils.RequireOk (SetPassCount(m_breakpointRequestInfo.bpPassCount));
+
+        LoggingUtils.RequireOk (SetCondition(m_breakpointRequestInfo.bpCondition));
 
         return Constants.S_OK;
       }
@@ -431,12 +424,7 @@ namespace AndroidPlusPlus.VsDebugEngine
           return Constants.E_BP_DELETED;
         }
 
-        if (m_errorBreakpoints.Count > 0)
-        {
-          LoggingUtils.RequireOk (EnumErrorBreakpoints (enum_BP_ERROR_TYPE.BPET_ALL, out ppErrorEnum));
-
-          return Constants.S_FALSE;
-        }
+        LoggingUtils.RequireOk (EnumErrorBreakpoints (enum_BP_ERROR_TYPE.BPET_ALL, out ppErrorEnum));
 
         return Constants.S_OK;
       }
@@ -528,7 +516,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        ppEnum = new DebuggeeBreakpointBound.Enumerator (m_boundBreakpoints);
+        ppEnum = new DebuggeeBreakpointBound.Enumerator (m_boundBreakpoints.ToArray());
 
         return Constants.S_OK;
       }
@@ -556,12 +544,7 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        ppEnum = new DebuggeeBreakpointError.Enumerator (m_errorBreakpoints);
-
-        if (m_breakpointDeleted)
-        {
-          return Constants.E_BP_DELETED;
-        }
+        ppEnum = new DebuggeeBreakpointError.Enumerator (m_errorBreakpoints.ToArray());
 
         return Constants.S_OK;
       }
@@ -691,11 +674,6 @@ namespace AndroidPlusPlus.VsDebugEngine
 
       try
       {
-        if (m_breakpointDeleted)
-        {
-          return Constants.E_BP_DELETED;
-        }
-
         foreach (var boundBreakpoint in m_boundBreakpoints)
         {
           LoggingUtils.RequireOk (boundBreakpoint.SetPassCount (bpPassCount));
@@ -743,12 +721,4 @@ namespace AndroidPlusPlus.VsDebugEngine
 
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

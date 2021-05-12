@@ -2,12 +2,11 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Security;
-using Microsoft.Win32;
+using System.Linq;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -16,10 +15,6 @@ using Microsoft.Win32;
 namespace AndroidPlusPlus.Common
 {
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   public class JavaSettings
   {
 
@@ -27,58 +22,44 @@ namespace AndroidPlusPlus.Common
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    private static string _jdkRoot;
+
     public static string JdkRoot
     {
       get
       {
-
-        // 
-        // Probe for possible JDK installation directories.
-        // 
-
-        List<string> jdkPossibleLocations = new List<string> (2);
-
-        try
+        if (_jdkRoot == null)
         {
-          jdkPossibleLocations.Add (Environment.GetEnvironmentVariable ("JAVA_HOME"));
+          var jdkPossibleLocations = new HashSet<string>(2);
 
-          using (RegistryKey localMachineJavaDevelopmentKit = Registry.LocalMachine.OpenSubKey (@"SOFTWARE\JavaSoft\Java Development Kit\"))
+          jdkPossibleLocations.Add(Environment.ExpandEnvironmentVariables("%JAVA_HOME%"));
+
+          try
           {
-            if (localMachineJavaDevelopmentKit != null)
+            using RegistryKey localMachineJavaDevelopmentKit = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\JavaSoft\Java Development Kit\");
+
+            string currentVersion = localMachineJavaDevelopmentKit?.GetValue("CurrentVersion") as string;
+
+            if (!string.IsNullOrEmpty(currentVersion))
             {
-              string currentVersion = localMachineJavaDevelopmentKit.GetValue ("CurrentVersion") as string;
+              using RegistryKey localMachineJdkCurrentVersion = localMachineJavaDevelopmentKit.OpenSubKey(currentVersion);
 
-              if (!string.IsNullOrEmpty (currentVersion))
-              {
-                using RegistryKey localMachineJdkCurrentVersion = localMachineJavaDevelopmentKit.OpenSubKey(currentVersion);
-
-                if (localMachineJdkCurrentVersion != null)
-                {
-                  jdkPossibleLocations.Add(localMachineJdkCurrentVersion.GetValue("JavaHome") as string);
-                }
-              }
+              jdkPossibleLocations.Add(localMachineJdkCurrentVersion?.GetValue("JavaHome") as string);
             }
           }
-
-          // 
-          // Search specified path the default 'java.exe' executable.
-          // 
-
-          foreach (string location in jdkPossibleLocations)
+          catch (Exception e)
           {
-            if (!string.IsNullOrEmpty(location) && File.Exists(location + @"\bin\java.exe"))
-            {
-              return location;
-            }
+            LoggingUtils.HandleException(e);
           }
-        }
-        catch (Exception e)
-        {
-          LoggingUtils.HandleException (e);
+
+          jdkPossibleLocations.RemoveWhere(path => !File.Exists(Path.Combine(path, "bin", "java.exe")));
+
+          _jdkRoot = jdkPossibleLocations.First();
         }
 
-        return string.Empty;
+        return _jdkRoot;
       }
+      set => _jdkRoot = value;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -87,12 +68,4 @@ namespace AndroidPlusPlus.Common
 
   }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
