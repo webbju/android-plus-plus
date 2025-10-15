@@ -24,7 +24,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Build" Version="16.9.0" />
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="17.14.7" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="17.14.28" />
   </ItemGroup>
 
 </Project>
